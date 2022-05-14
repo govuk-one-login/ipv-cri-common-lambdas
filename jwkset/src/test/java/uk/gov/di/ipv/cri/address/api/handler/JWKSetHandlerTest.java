@@ -7,12 +7,12 @@ import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.gen.RSAKeyGenerator;
-import org.apache.http.HttpStatus;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import software.amazon.awssdk.http.Header;
+import software.amazon.awssdk.http.HttpStatusCode;
 
 import java.text.ParseException;
 import java.util.List;
@@ -33,7 +33,7 @@ class JWKSetHandlerTest {
         when(jwkSetService.getJWKs()).thenReturn(List.of(sampleJWK));
         APIGatewayProxyResponseEvent responseEvent =
                 new JWKSetHandler(jwkSetService).handleRequest(null, null);
-        assertEquals(HttpStatus.SC_OK, responseEvent.getStatusCode());
+        assertEquals(HttpStatusCode.OK, responseEvent.getStatusCode());
         assertEquals(JWKSet.MIME_TYPE, responseEvent.getHeaders().get(Header.CONTENT_TYPE));
         JWKSet jwkSet = JWKSet.parse(responseEvent.getBody());
         assertTrue(jwkSet.containsJWK(sampleJWK));

@@ -6,8 +6,8 @@ import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
 import com.nimbusds.oauth2.sdk.AccessTokenResponse;
 import com.nimbusds.oauth2.sdk.TokenRequest;
-import org.apache.http.HttpStatus;
 import org.apache.logging.log4j.Level;
+import software.amazon.awssdk.http.HttpStatusCode;
 import software.amazon.lambda.powertools.logging.CorrelationIdPathConstants;
 import software.amazon.lambda.powertools.logging.Logging;
 import software.amazon.lambda.powertools.metrics.Metrics;
@@ -59,11 +59,11 @@ public class AccessTokenHandler
             eventProbe.counterMetric(METRIC_NAME_ACCESS_TOKEN);
 
             return ApiGatewayResponseGenerator.proxyJsonResponse(
-                    HttpStatus.SC_OK, accessTokenResponse.toJSONObject());
+                    HttpStatusCode.OK, accessTokenResponse.toJSONObject());
         } catch (AccessTokenValidationException e) {
             eventProbe.log(Level.ERROR, e).counterMetric(METRIC_NAME_ACCESS_TOKEN, 0d);
             return ApiGatewayResponseGenerator.proxyJsonResponse(
-                    HttpStatus.SC_BAD_REQUEST, ErrorResponse.TOKEN_VALIDATION_ERROR);
+                    HttpStatusCode.BAD_REQUEST, ErrorResponse.TOKEN_VALIDATION_ERROR);
         }
     }
 }
