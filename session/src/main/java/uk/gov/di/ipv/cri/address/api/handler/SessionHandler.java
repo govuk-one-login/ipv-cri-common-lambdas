@@ -4,9 +4,9 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
-import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.http.HttpStatus;
+import software.amazon.awssdk.http.HttpStatusCode;
+import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.lambda.powertools.logging.CorrelationIdPathConstants;
 import software.amazon.lambda.powertools.logging.Logging;
 import software.amazon.lambda.powertools.metrics.Metrics;
@@ -48,7 +48,7 @@ public class SessionHandler
                 new SessionRequestService(),
                 new EventProbe(),
                 new AuditService(
-                        AmazonSQSClientBuilder.defaultClient(),
+                        SqsClient.builder().build(),
                         new ConfigurationService(),
                         new ObjectMapper()));
     }
@@ -82,7 +82,7 @@ public class SessionHandler
             eventProbe.counterMetric(EVENT_SESSION_CREATED).auditEvent(sessionRequest);
 
             return ApiGatewayResponseGenerator.proxyJsonResponse(
-                    HttpStatus.SC_CREATED,
+                    HttpStatusCode.CREATED,
                     Map.of(
                             SESSION_ID, sessionId.toString(),
                             STATE, sessionRequest.getState(),
@@ -93,13 +93,13 @@ public class SessionHandler
             eventProbe.log(ERROR, e).counterMetric(EVENT_SESSION_CREATED, 0d);
 
             return ApiGatewayResponseGenerator.proxyJsonResponse(
-                    HttpStatus.SC_BAD_REQUEST, ErrorResponse.SESSION_VALIDATION_ERROR);
+                    HttpStatusCode.BAD_REQUEST, ErrorResponse.SESSION_VALIDATION_ERROR);
         } catch (ClientConfigurationException | SqsException e) {
 
             eventProbe.log(ERROR, e).counterMetric(EVENT_SESSION_CREATED, 0d);
 
             return ApiGatewayResponseGenerator.proxyJsonResponse(
-                    HttpStatus.SC_INTERNAL_SERVER_ERROR, ErrorResponse.SERVER_CONFIG_ERROR);
+                    HttpStatusCode.INTERNAL_SERVER_ERROR, ErrorResponse.SERVER_CONFIG_ERROR);
         }
     }
 }
