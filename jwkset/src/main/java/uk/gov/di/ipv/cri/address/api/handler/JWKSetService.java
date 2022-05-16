@@ -1,8 +1,8 @@
 package uk.gov.di.ipv.cri.address.api.handler;
 
-import com.amazonaws.services.kms.model.KeyMetadata;
-import com.amazonaws.services.kms.model.Tag;
 import com.nimbusds.jose.jwk.JWK;
+import software.amazon.awssdk.services.kms.model.KeyMetadata;
+import software.amazon.awssdk.services.kms.model.Tag;
 
 import java.util.HashSet;
 import java.util.List;
@@ -54,15 +54,15 @@ public class JWKSetService {
     private Tag getStackNameTagForPublish() {
         String stackNameForThisFunction =
                 environmentService.getEnvironmentVariableOrThrow(ENV_VAR_NAME_CLOUDFORMATION_STACK);
-        return new Tag().withTagKey("awsStackName").withTagValue(stackNameForThisFunction);
+        return Tag.builder().tagKey("awsStackName").tagValue(stackNameForThisFunction).build();
     }
 
     private Tag getJWKSetTagForPublish() {
-        return new Tag().withTagKey("jwkset").withTagValue("true");
+        return Tag.builder().tagKey("jwkset").tagValue("true").build();
     }
 
     private boolean findEnabled(String keyId) {
         KeyMetadata keyMetadata = kmsService.getMetadata(keyId);
-        return "Enabled".equals(keyMetadata.getKeyState());
+        return "Enabled".equals(keyMetadata.keyStateAsString());
     }
 }
