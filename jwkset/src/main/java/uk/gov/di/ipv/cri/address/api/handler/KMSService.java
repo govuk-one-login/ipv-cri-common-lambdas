@@ -1,24 +1,13 @@
 package uk.gov.di.ipv.cri.address.api.handler;
 
-import com.amazonaws.services.kms.AWSKMS;
-import com.amazonaws.services.kms.AWSKMSClientBuilder;
-import com.amazonaws.services.kms.model.DescribeKeyRequest;
-import com.amazonaws.services.kms.model.DescribeKeyResult;
-import com.amazonaws.services.kms.model.GetPublicKeyRequest;
-import com.amazonaws.services.kms.model.GetPublicKeyResult;
-import com.amazonaws.services.kms.model.KeyListEntry;
-import com.amazonaws.services.kms.model.KeyMetadata;
-import com.amazonaws.services.kms.model.ListKeysRequest;
-import com.amazonaws.services.kms.model.ListKeysResult;
-import com.amazonaws.services.kms.model.ListResourceTagsRequest;
-import com.amazonaws.services.kms.model.ListResourceTagsResult;
-import com.amazonaws.services.kms.model.Tag;
 import com.nimbusds.jose.Algorithm;
 import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.RSAKey;
+import software.amazon.awssdk.services.kms.KmsClient;
+import software.amazon.awssdk.services.kms.model.*;
 
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
@@ -36,51 +25,51 @@ import java.util.stream.Collectors;
 
 public class KMSService {
 
-    private final AWSKMS kmsClient;
+    private final KmsClient kmsClient;
 
     public KMSService() {
-        this.kmsClient = AWSKMSClientBuilder.defaultClient();
+        this.kmsClient = KmsClient.builder().build();
     }
 
-    public KMSService(AWSKMS kmsClient) {
+    public KMSService(KmsClient kmsClient) {
         this.kmsClient = kmsClient;
     }
 
     public List<String> getKeyIds() {
-        ListKeysRequest listKeysRequest = new ListKeysRequest();
-        ListKeysResult result = kmsClient.listKeys(listKeysRequest);
-        List<KeyListEntry> keyListEntries = new ArrayList<>(result.getKeys());
-        while (result.isTruncated()) {
-            listKeysRequest = new ListKeysRequest().withMarker(result.getNextMarker());
+        ListKeysRequest listKeysRequest = ListKeysRequest.builder().build();
+        ListKeysResponse result = kmsClient.listKeys(listKeysRequest);
+        List<KeyListEntry> keyListEntries = new ArrayList<>(result.keys());
+        while (result.nextMarker() != null) {
+            listKeysRequest = ListKeysRequest.builder().marker(result.nextMarker()).build();
             result = kmsClient.listKeys(listKeysRequest);
-            keyListEntries.addAll(result.getKeys());
+            keyListEntries.addAll(result.keys());
         }
-        return keyListEntries.stream().map(KeyListEntry::getKeyId).collect(Collectors.toList());
+        return keyListEntries.stream().map(KeyListEntry::keyId).collect(Collectors.toList());
     }
 
     public Set<Tag> getTags(String keyId) {
-        ListResourceTagsResult listResourceTagsResult =
-                kmsClient.listResourceTags(new ListResourceTagsRequest().withKeyId(keyId));
-        return new HashSet<>(listResourceTagsResult.getTags());
+        ListResourceTagsResponse listResourceTagsReponse =
+                kmsClient.listResourceTags(ListResourceTagsRequest.builder().keyId(keyId).build());
+        return new HashSet<>(listResourceTagsReponse.tags());
     }
 
     public KeyMetadata getMetadata(String keyId) {
-        DescribeKeyResult describeKeyResult =
-                kmsClient.describeKey(new DescribeKeyRequest().withKeyId(keyId));
-        return describeKeyResult.getKeyMetadata();
+        DescribeKeyResponse describeKeyReponse =
+                kmsClient.describeKey(DescribeKeyRequest.builder().keyId(keyId).build());
+        return describeKeyReponse.keyMetadata();
     }
 
     public JWK getJWK(String keyId) {
-        GetPublicKeyResult publicKeyResult =
-                kmsClient.getPublicKey(new GetPublicKeyRequest().withKeyId(keyId));
+        GetPublicKeyResponse publicKeyResponse =
+                kmsClient.getPublicKey(GetPublicKeyRequest.builder().keyId(keyId).build());
         EncodedKeySpec publicKeySpec =
-                new X509EncodedKeySpec(publicKeyResult.getPublicKey().array());
+                new X509EncodedKeySpec(publicKeyResponse.publicKey().asByteArray());
 
         try {
 
             Algorithm algorithm = Algorithm.parse(publicKeySpec.getAlgorithm());
-            String keyUsage = publicKeyResult.getKeyUsage();
-            if (publicKeyResult.getKeySpec().startsWith("RSA")) {
+            String keyUsage = publicKeyResponse.keyUsageAsString();
+            if (publicKeyResponse.keySpecAsString().startsWith("RSA")) {
                 KeyFactory keyFactory = KeyFactory.getInstance("RSA");
 
                 RSAPublicKey publicKey = (RSAPublicKey) keyFactory.generatePublic(publicKeySpec);
