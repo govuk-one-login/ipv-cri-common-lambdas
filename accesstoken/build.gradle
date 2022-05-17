@@ -7,7 +7,6 @@ dependencies {
 	implementation project(":lib"),
 			configurations.lambda,
 			configurations.nimbus,
-			configurations.gson,
 			configurations.jackson
 
 	aspect configurations.powertools

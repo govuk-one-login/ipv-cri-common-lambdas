@@ -1,7 +1,5 @@
 package uk.gov.di.ipv.cri.address.api.handler;
 
-import com.amazonaws.services.kms.model.KeyMetadata;
-import com.amazonaws.services.kms.model.Tag;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.KeyUse;
@@ -14,6 +12,8 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import software.amazon.awssdk.services.kms.model.KeyMetadata;
+import software.amazon.awssdk.services.kms.model.Tag;
 
 import java.util.List;
 import java.util.Map;
@@ -44,12 +44,12 @@ class JWKSetServiceTest {
                 .thenReturn("a stack name");
 
         when(kmsService.getKeyIds()).thenReturn(List.of(keyId));
-        Tag tag1 = new Tag().withTagKey("jwkset").withTagValue("true");
-        Tag tag2 = new Tag().withTagKey("awsStackName").withTagValue("a stack name");
+        Tag tag1 = Tag.builder().tagKey("jwkset").tagValue("true").build();
+        Tag tag2 = Tag.builder().tagKey("awsStackName").tagValue("a stack name").build();
 
         when(kmsService.getTags(keyId)).thenReturn(Set.of(tag1, tag2));
         when(kmsService.getMetadata(keyId)).thenReturn(keyMetadata);
-        when(keyMetadata.getKeyState()).thenReturn("Enabled");
+        when(keyMetadata.keyStateAsString()).thenReturn("Enabled");
         JWK jwk = createRSAJWK(keyId);
         when(kmsService.getJWK(keyId)).thenReturn(jwk);
 
@@ -85,7 +85,7 @@ class JWKSetServiceTest {
     private static Set<Tag> toTags(Map<String, String> input) {
         Set<Map.Entry<String, String>> entries = input.entrySet();
         return entries.stream()
-                .map(e -> new Tag().withTagKey(e.getKey()).withTagValue(e.getValue()))
+                .map(e -> Tag.builder().tagKey(e.getKey()).tagValue(e.getValue()).build())
                 .collect(toSet());
     }
 
