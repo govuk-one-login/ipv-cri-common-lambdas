@@ -1,10 +1,5 @@
 package uk.gov.di.ipv.cri.address.api.service;
 
-import com.amazonaws.services.kms.AWSKMS;
-import com.amazonaws.services.kms.AWSKMSClientBuilder;
-import com.amazonaws.services.kms.model.DecryptRequest;
-import com.amazonaws.services.kms.model.DecryptResult;
-import com.amazonaws.services.kms.model.EncryptionAlgorithmSpec;
 import com.nimbusds.jose.EncryptionMethod;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWEAlgorithm;
@@ -14,11 +9,15 @@ import com.nimbusds.jose.crypto.impl.AlgorithmSupportMessage;
 import com.nimbusds.jose.crypto.impl.ContentCryptoProvider;
 import com.nimbusds.jose.jca.JWEJCAContext;
 import com.nimbusds.jose.util.Base64URL;
+import software.amazon.awssdk.core.SdkBytes;
+import software.amazon.awssdk.services.kms.KmsClient;
+import software.amazon.awssdk.services.kms.model.DecryptRequest;
+import software.amazon.awssdk.services.kms.model.DecryptResponse;
+import software.amazon.awssdk.services.kms.model.EncryptionAlgorithmSpec;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
-import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.Set;
 
@@ -28,14 +27,14 @@ class KMSRSADecrypter implements JWEDecrypter {
             Set.of(EncryptionMethod.A256GCM);
 
     private final JWEJCAContext jcaContext;
-    private final AWSKMS kmsClient;
+    private final KmsClient kmsClient;
     private final String keyId;
 
     KMSRSADecrypter(String keyId) {
-        this(keyId, AWSKMSClientBuilder.standard().withRegion("eu-west-2").build());
+        this(keyId, KmsClient.builder().build());
     }
 
-    KMSRSADecrypter(String keyId, AWSKMS kmsClient) {
+    KMSRSADecrypter(String keyId, KmsClient kmsClient) {
         this.keyId = keyId;
         this.kmsClient = kmsClient;
         this.jcaContext = new JWEJCAContext();
@@ -70,12 +69,13 @@ class KMSRSADecrypter implements JWEDecrypter {
         }
 
         DecryptRequest decryptRequest =
-                new DecryptRequest()
-                        .withEncryptionAlgorithm(EncryptionAlgorithmSpec.RSAES_OAEP_SHA_256)
-                        .withCiphertextBlob(ByteBuffer.wrap(encryptedKey.decode()))
-                        .withKeyId(this.keyId);
-        DecryptResult decryptResult = this.kmsClient.decrypt(decryptRequest);
-        SecretKey cek = new SecretKeySpec(decryptResult.getPlaintext().array(), "AES");
+                DecryptRequest.builder()
+                        .encryptionAlgorithm(EncryptionAlgorithmSpec.RSAES_OAEP_SHA_256)
+                        .ciphertextBlob(SdkBytes.fromByteArray(encryptedKey.decode()))
+                        .keyId(this.keyId)
+                        .build();
+        DecryptResponse decryptResponse = this.kmsClient.decrypt(decryptRequest);
+        SecretKey cek = new SecretKeySpec(decryptResponse.plaintext().asByteArray(), "AES");
 
         return ContentCryptoProvider.decrypt(
                 header, encryptedKey, iv, cipherText, authTag, cek, getJCAContext());

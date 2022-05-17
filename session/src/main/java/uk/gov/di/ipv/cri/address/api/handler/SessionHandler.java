@@ -4,8 +4,8 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
-import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
 import org.apache.http.HttpStatus;
+import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.lambda.powertools.logging.CorrelationIdPathConstants;
 import software.amazon.lambda.powertools.logging.Logging;
 import software.amazon.lambda.powertools.metrics.Metrics;
@@ -46,8 +46,7 @@ public class SessionHandler
                 new SessionService(),
                 new SessionRequestService(),
                 new EventProbe(),
-                new AuditService(
-                        AmazonSQSClientBuilder.defaultClient(), new ConfigurationService()));
+                new AuditService(SqsClient.builder().build(), new ConfigurationService()));
     }
 
     public SessionHandler(
