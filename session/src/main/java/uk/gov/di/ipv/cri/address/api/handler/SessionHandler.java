@@ -4,7 +4,8 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
-import org.apache.http.HttpStatus;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import software.amazon.awssdk.http.HttpStatusCode;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.lambda.powertools.logging.CorrelationIdPathConstants;
 import software.amazon.lambda.powertools.logging.Logging;
@@ -46,7 +47,10 @@ public class SessionHandler
                 new SessionService(),
                 new SessionRequestService(),
                 new EventProbe(),
-                new AuditService(SqsClient.builder().build(), new ConfigurationService()));
+                new AuditService(
+                        SqsClient.builder().build(),
+                        new ConfigurationService(),
+                        new ObjectMapper()));
     }
 
     public SessionHandler(
@@ -69,6 +73,7 @@ public class SessionHandler
         try {
             SessionRequest sessionRequest =
                     sesssionRequestService.validateSessionRequest(input.getBody());
+            auditService.sendAuditEvent(AuditEventTypes.IPV_ADDRESS_CRI_START);
 
             eventProbe.addDimensions(Map.of("issuer", sessionRequest.getClientId()));
 
@@ -76,10 +81,8 @@ public class SessionHandler
 
             eventProbe.counterMetric(EVENT_SESSION_CREATED).auditEvent(sessionRequest);
 
-            auditService.sendAuditEvent(
-                    AuditEventTypes.SESSION_CREATED, sessionId, sessionRequest.getClientId());
             return ApiGatewayResponseGenerator.proxyJsonResponse(
-                    HttpStatus.SC_CREATED,
+                    HttpStatusCode.CREATED,
                     Map.of(
                             SESSION_ID, sessionId.toString(),
                             STATE, sessionRequest.getState(),
@@ -90,13 +93,13 @@ public class SessionHandler
             eventProbe.log(ERROR, e).counterMetric(EVENT_SESSION_CREATED, 0d);
 
             return ApiGatewayResponseGenerator.proxyJsonResponse(
-                    HttpStatus.SC_BAD_REQUEST, ErrorResponse.SESSION_VALIDATION_ERROR);
+                    HttpStatusCode.BAD_REQUEST, ErrorResponse.SESSION_VALIDATION_ERROR);
         } catch (ClientConfigurationException | SqsException e) {
 
             eventProbe.log(ERROR, e).counterMetric(EVENT_SESSION_CREATED, 0d);
 
             return ApiGatewayResponseGenerator.proxyJsonResponse(
-                    HttpStatus.SC_INTERNAL_SERVER_ERROR, ErrorResponse.SERVER_CONFIG_ERROR);
+                    HttpStatusCode.INTERNAL_SERVER_ERROR, ErrorResponse.SERVER_CONFIG_ERROR);
         }
     }
 }

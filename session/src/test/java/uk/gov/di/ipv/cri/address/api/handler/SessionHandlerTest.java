@@ -4,13 +4,13 @@ import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.http.HttpStatus;
 import org.apache.logging.log4j.Level;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import software.amazon.awssdk.http.HttpStatusCode;
 import uk.gov.di.ipv.cri.address.api.service.SessionRequestService;
 import uk.gov.di.ipv.cri.address.library.domain.AuditEventTypes;
 import uk.gov.di.ipv.cri.address.library.domain.SessionRequest;
@@ -73,7 +73,7 @@ class SessionHandlerTest {
         APIGatewayProxyResponseEvent responseEvent =
                 sessionHandler.handleRequest(apiGatewayProxyRequestEvent, null);
 
-        assertEquals(HttpStatus.SC_CREATED, responseEvent.getStatusCode());
+        assertEquals(HttpStatusCode.CREATED, responseEvent.getStatusCode());
         var responseBody = new ObjectMapper().readValue(responseEvent.getBody(), Map.class);
         assertEquals(sessionId.toString(), responseBody.get(SESSION_ID));
         assertEquals("some state", responseBody.get(STATE));
@@ -81,7 +81,7 @@ class SessionHandlerTest {
 
         verify(eventProbe).addDimensions(Map.of("issuer", "ipv-core"));
         verify(eventProbe).counterMetric("session_created");
-        verify(auditService).sendAuditEvent(AuditEventTypes.SESSION_CREATED, sessionId, "ipv-core");
+        verify(auditService).sendAuditEvent(AuditEventTypes.IPV_ADDRESS_CRI_START);
     }
 
     @Test
@@ -97,7 +97,7 @@ class SessionHandlerTest {
 
         APIGatewayProxyResponseEvent responseEvent =
                 sessionHandler.handleRequest(apiGatewayProxyRequestEvent, null);
-        assertEquals(HttpStatus.SC_BAD_REQUEST, responseEvent.getStatusCode());
+        assertEquals(HttpStatusCode.BAD_REQUEST, responseEvent.getStatusCode());
         Map responseBody = new ObjectMapper().readValue(responseEvent.getBody(), Map.class);
         assertEquals(ErrorResponse.SESSION_VALIDATION_ERROR.getCode(), responseBody.get("code"));
         assertEquals(
@@ -106,7 +106,7 @@ class SessionHandlerTest {
         verify(eventProbe).counterMetric("session_created", 0d);
         verify(eventProbe).log(Level.ERROR, sessionValidationException);
 
-        verify(auditService, never()).sendAuditEvent(any(), any(), any());
+        verify(auditService, never()).sendAuditEvent(any());
         verify(sessionService, never()).createAndSaveAddressSession(sessionRequest);
     }
 
@@ -122,14 +122,14 @@ class SessionHandlerTest {
 
         APIGatewayProxyResponseEvent responseEvent =
                 sessionHandler.handleRequest(apiGatewayProxyRequestEvent, null);
-        assertEquals(HttpStatus.SC_INTERNAL_SERVER_ERROR, responseEvent.getStatusCode());
+        assertEquals(HttpStatusCode.INTERNAL_SERVER_ERROR, responseEvent.getStatusCode());
         Map responseBody = new ObjectMapper().readValue(responseEvent.getBody(), Map.class);
         assertEquals(ErrorResponse.SERVER_CONFIG_ERROR.getCode(), responseBody.get("code"));
         assertEquals(ErrorResponse.SERVER_CONFIG_ERROR.getMessage(), responseBody.get("message"));
 
         verify(eventProbe).counterMetric("session_created", 0d);
 
-        verify(auditService, never()).sendAuditEvent(any(), any(), any());
+        verify(auditService, never()).sendAuditEvent(any());
         verify(sessionService, never()).createAndSaveAddressSession(sessionRequest);
     }
 
