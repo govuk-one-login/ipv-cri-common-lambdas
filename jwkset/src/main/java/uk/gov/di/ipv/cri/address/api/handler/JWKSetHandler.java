@@ -6,8 +6,8 @@ import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.JWKSet;
-import org.apache.http.HttpStatus;
 import software.amazon.awssdk.http.Header;
+import software.amazon.awssdk.http.HttpStatusCode;
 import software.amazon.lambda.powertools.logging.CorrelationIdPathConstants;
 import software.amazon.lambda.powertools.logging.Logging;
 import software.amazon.lambda.powertools.metrics.Metrics;
@@ -38,7 +38,7 @@ public class JWKSetHandler
         JWKSet jwkSet = new JWKSet(jwks);
         APIGatewayProxyResponseEvent apiGatewayProxyResponseEvent =
                 new APIGatewayProxyResponseEvent();
-        apiGatewayProxyResponseEvent.setStatusCode(HttpStatus.SC_OK);
+        apiGatewayProxyResponseEvent.setStatusCode(HttpStatusCode.OK);
         apiGatewayProxyResponseEvent.setBody(jwkSet.toString());
         apiGatewayProxyResponseEvent.setHeaders(Map.of(Header.CONTENT_TYPE, JWKSet.MIME_TYPE));
         return apiGatewayProxyResponseEvent;

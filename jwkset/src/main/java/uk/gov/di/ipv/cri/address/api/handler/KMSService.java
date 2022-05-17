@@ -39,7 +39,7 @@ public class KMSService {
         ListKeysRequest listKeysRequest = ListKeysRequest.builder().build();
         ListKeysResponse result = kmsClient.listKeys(listKeysRequest);
         List<KeyListEntry> keyListEntries = new ArrayList<>(result.keys());
-        while (result.truncated()) {
+        while (result.nextMarker() != null) {
             listKeysRequest = ListKeysRequest.builder().marker(result.nextMarker()).build();
             result = kmsClient.listKeys(listKeysRequest);
             keyListEntries.addAll(result.keys());
