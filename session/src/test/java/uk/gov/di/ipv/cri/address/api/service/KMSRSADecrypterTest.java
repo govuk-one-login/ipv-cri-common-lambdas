@@ -22,10 +22,7 @@ import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.util.Base64;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -60,7 +57,6 @@ class KMSRSADecrypterTest {
                                                 .decode(
                                                         "ngoABokVaj3BYY8FfaPef4nzV9dr+ziueibf2hofYDQ=")))
                         .build();
-
         when(mockKmsClient.decrypt(any(DecryptRequest.class))).thenReturn(decryptResponse);
 
         byte[] result = this.kmsRsaDecrypter.decrypt(header, encryptedKey, iv, cipherText, authTag);
