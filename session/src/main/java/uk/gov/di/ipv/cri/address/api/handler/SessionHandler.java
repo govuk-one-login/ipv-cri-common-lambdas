@@ -20,6 +20,7 @@ import uk.gov.di.ipv.cri.address.library.exception.SessionValidationException;
 import uk.gov.di.ipv.cri.address.library.exception.SqsException;
 import uk.gov.di.ipv.cri.address.library.service.AuditService;
 import uk.gov.di.ipv.cri.address.library.service.ConfigurationService;
+import uk.gov.di.ipv.cri.address.library.service.PersonIdentityService;
 import uk.gov.di.ipv.cri.address.library.service.SessionService;
 import uk.gov.di.ipv.cri.address.library.util.ApiGatewayResponseGenerator;
 import uk.gov.di.ipv.cri.address.library.util.EventProbe;
@@ -38,6 +39,7 @@ public class SessionHandler
     public static final String EVENT_SESSION_CREATED = "session_created";
     private final SessionService sessionService;
     private final SessionRequestService sesssionRequestService;
+    private final PersonIdentityService personIdentityService;
     private final EventProbe eventProbe;
     private final AuditService auditService;
 
@@ -46,6 +48,7 @@ public class SessionHandler
         this(
                 new SessionService(),
                 new SessionRequestService(),
+                new PersonIdentityService(),
                 new EventProbe(),
                 new AuditService(
                         SqsClient.builder().build(),
@@ -56,10 +59,12 @@ public class SessionHandler
     public SessionHandler(
             SessionService sessionService,
             SessionRequestService sessionRequestService,
+            PersonIdentityService personIdentityService,
             EventProbe eventProbe,
             AuditService auditService) {
         this.sessionService = sessionService;
         this.sesssionRequestService = sessionRequestService;
+        this.personIdentityService = personIdentityService;
         this.eventProbe = eventProbe;
         this.auditService = auditService;
     }
@@ -77,7 +82,12 @@ public class SessionHandler
 
             eventProbe.addDimensions(Map.of("issuer", sessionRequest.getClientId()));
 
-            UUID sessionId = sessionService.createAndSaveAddressSession(sessionRequest);
+            UUID sessionId = sessionService.saveSession(sessionRequest);
+
+            if (sessionRequest.hasSharedClaims()) {
+                personIdentityService.savePersonIdentity(
+                        sessionId, sessionRequest.getSharedClaims());
+            }
 
             eventProbe.counterMetric(EVENT_SESSION_CREATED).auditEvent(sessionRequest);
 
