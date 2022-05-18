@@ -11,14 +11,14 @@ import software.amazon.awssdk.http.HttpStatusCode;
 import software.amazon.lambda.powertools.logging.CorrelationIdPathConstants;
 import software.amazon.lambda.powertools.logging.Logging;
 import software.amazon.lambda.powertools.metrics.Metrics;
-import uk.gov.di.ipv.cri.address.library.annotations.ExcludeFromGeneratedCoverageReport;
-import uk.gov.di.ipv.cri.address.library.error.ErrorResponse;
-import uk.gov.di.ipv.cri.address.library.exception.AccessTokenValidationException;
-import uk.gov.di.ipv.cri.address.library.persistence.item.SessionItem;
-import uk.gov.di.ipv.cri.address.library.service.AccessTokenService;
-import uk.gov.di.ipv.cri.address.library.service.SessionService;
-import uk.gov.di.ipv.cri.address.library.util.ApiGatewayResponseGenerator;
-import uk.gov.di.ipv.cri.address.library.util.EventProbe;
+import uk.gov.di.ipv.cri.common.library.annotations.ExcludeFromGeneratedCoverageReport;
+import uk.gov.di.ipv.cri.common.library.error.ErrorResponse;
+import uk.gov.di.ipv.cri.common.library.exception.AccessTokenValidationException;
+import uk.gov.di.ipv.cri.common.library.persistence.item.SessionItem;
+import uk.gov.di.ipv.cri.common.library.service.AccessTokenService;
+import uk.gov.di.ipv.cri.common.library.service.SessionService;
+import uk.gov.di.ipv.cri.common.library.util.ApiGatewayResponseGenerator;
+import uk.gov.di.ipv.cri.common.library.util.EventProbe;
 
 public class AccessTokenHandler
         implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {

@@ -13,12 +13,12 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import uk.gov.di.ipv.cri.address.api.domain.RawSessionRequest;
-import uk.gov.di.ipv.cri.address.library.domain.SessionRequest;
-import uk.gov.di.ipv.cri.address.library.domain.sharedclaims.SharedClaims;
-import uk.gov.di.ipv.cri.address.library.exception.ClientConfigurationException;
-import uk.gov.di.ipv.cri.address.library.exception.SessionValidationException;
-import uk.gov.di.ipv.cri.address.library.service.ConfigurationService;
-import uk.gov.di.ipv.cri.address.library.service.JWTVerifier;
+import uk.gov.di.ipv.cri.common.library.domain.SessionRequest;
+import uk.gov.di.ipv.cri.common.library.domain.sharedclaims.SharedClaims;
+import uk.gov.di.ipv.cri.common.library.exception.ClientConfigurationException;
+import uk.gov.di.ipv.cri.common.library.exception.SessionValidationException;
+import uk.gov.di.ipv.cri.common.library.service.ConfigurationService;
+import uk.gov.di.ipv.cri.common.library.service.JWTVerifier;
 
 import java.io.IOException;
 import java.net.URI;
