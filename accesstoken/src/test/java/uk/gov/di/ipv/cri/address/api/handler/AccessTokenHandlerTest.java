@@ -19,12 +19,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import software.amazon.awssdk.http.HttpStatusCode;
-import uk.gov.di.ipv.cri.address.library.error.ErrorResponse;
-import uk.gov.di.ipv.cri.address.library.exception.AccessTokenValidationException;
-import uk.gov.di.ipv.cri.address.library.persistence.item.SessionItem;
-import uk.gov.di.ipv.cri.address.library.service.AccessTokenService;
-import uk.gov.di.ipv.cri.address.library.service.SessionService;
-import uk.gov.di.ipv.cri.address.library.util.EventProbe;
+import uk.gov.di.ipv.cri.common.library.error.ErrorResponse;
+import uk.gov.di.ipv.cri.common.library.exception.AccessTokenValidationException;
+import uk.gov.di.ipv.cri.common.library.persistence.item.SessionItem;
+import uk.gov.di.ipv.cri.common.library.service.AccessTokenService;
+import uk.gov.di.ipv.cri.common.library.service.SessionService;
+import uk.gov.di.ipv.cri.common.library.util.EventProbe;
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
