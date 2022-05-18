@@ -2,6 +2,13 @@ plugins {
 	id "java"
 	id "com.diffplug.spotless" version "6.1.0"
 }
+
+repositories {
+	maven {
+		url 'https://gds.jfrog.io/artifactory/di-allowed-repos'
+	}
+}
+
 spotless {
 	java {
 		target "**/src/**/*.java"
