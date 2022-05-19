@@ -40,6 +40,7 @@ class SignedJWTBuilder {
     private Date notBeforeTime = Date.from(now);
     private String audience = "test-audience";
     private boolean includeSubject = true;
+    private boolean includeSharedClaims = false;
 
     SignedJWTBuilder setNow(Instant now) {
         this.now = now;
@@ -91,6 +92,11 @@ class SignedJWTBuilder {
         return this;
     }
 
+    SignedJWTBuilder setIncludeSharedClaims(boolean includeSharedClaims) {
+        this.includeSharedClaims = includeSharedClaims;
+        return this;
+    }
+
     Certificate getCertificate() {
         return certificate;
     }
@@ -121,6 +127,9 @@ class SignedJWTBuilder {
 
             if (includeSubject) {
                 jwtClaimSetBuilder.subject(ipv_session_id);
+            }
+            if (includeSharedClaims) {
+                jwtClaimSetBuilder.claim("shared_claims", "sharedClaimsJsonObject");
             }
 
             SignedJWT signedJWT =

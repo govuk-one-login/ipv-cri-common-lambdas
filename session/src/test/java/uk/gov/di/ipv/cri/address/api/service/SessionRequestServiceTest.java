@@ -14,6 +14,7 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import uk.gov.di.ipv.cri.address.api.domain.RawSessionRequest;
 import uk.gov.di.ipv.cri.address.library.domain.SessionRequest;
+import uk.gov.di.ipv.cri.address.library.domain.sharedclaims.SharedClaims;
 import uk.gov.di.ipv.cri.address.library.exception.ClientConfigurationException;
 import uk.gov.di.ipv.cri.address.library.exception.SessionValidationException;
 import uk.gov.di.ipv.cri.address.library.service.ConfigurationService;
@@ -44,6 +45,7 @@ class SessionRequestServiceTest {
     @Mock private JWTVerifier mockJwtVerifier;
     @Mock private ObjectMapper mockObjectMapper;
     private SessionRequestService sessionRequestService;
+    private SharedClaims testSharedClaims;
 
     @BeforeEach
     void setUp() {
@@ -53,6 +55,7 @@ class SessionRequestServiceTest {
                         mockJwtVerifier,
                         mockConfigurationService,
                         mockJwtDecrypter);
+        testSharedClaims = new SharedClaims();
     }
 
     @Test
@@ -142,11 +145,15 @@ class SessionRequestServiceTest {
                 new SignedJWTBuilder()
                         .setPrivateKeyFile("signing_ec.pk8")
                         .setCertificateFile("signing_ec.crt.pem")
-                        .setSigningAlgorithm(JWSAlgorithm.ES384);
+                        .setSigningAlgorithm(JWSAlgorithm.ES384)
+                        .setIncludeSharedClaims(Boolean.TRUE);
         SignedJWT signedJWT = signedJWTBuilder.build();
         RawSessionRequest rawSessionRequest = createRawSessionRequest(signedJWT);
+
         when(mockObjectMapper.readValue(requestBody, RawSessionRequest.class))
                 .thenReturn(rawSessionRequest);
+        when(mockObjectMapper.readValue("sharedClaimsJsonObject", SharedClaims.class))
+                .thenReturn(testSharedClaims);
 
         when(mockJwtDecrypter.decrypt(rawSessionRequest.getRequestJWT())).thenReturn(signedJWT);
         Map<String, String> configMap = standardSSMConfigMap(signedJWTBuilder.getCertificate());
@@ -167,7 +174,7 @@ class SessionRequestServiceTest {
         assertThat(sessionRequest.getAudience(), equalTo(jwtClaims.getAudience().get(0)));
         assertThat(sessionRequest.getIssuer(), equalTo(jwtClaims.getIssuer()));
         assertThat(sessionRequest.getSubject(), equalTo(jwtClaims.getSubject()));
-
+        assertThat(sessionRequest.getSharedClaims(), equalTo(testSharedClaims));
         assertThat(sessionRequest.getState(), equalTo(jwtClaims.getStringClaim("state")));
         assertThat(sessionRequest.getClientId(), equalTo(rawSessionRequest.getClientId()));
         assertThat(sessionRequest.getClientId(), equalTo(jwtClaims.getStringClaim("client_id")));
