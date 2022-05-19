@@ -9,7 +9,8 @@ dependencies {
 			configurations.lambda,
 			configurations.nimbus,
 			configurations.kms,
-			configurations.sqs
+			configurations.sqs,
+			configurations.jackson
 
 	aspect configurations.powertools
 

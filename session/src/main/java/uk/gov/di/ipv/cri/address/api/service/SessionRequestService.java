@@ -2,11 +2,14 @@ package uk.gov.di.ipv.cri.address.api.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import uk.gov.di.ipv.cri.address.api.domain.RawSessionRequest;
+import uk.gov.di.ipv.cri.address.library.annotations.ExcludeFromGeneratedCoverageReport;
 import uk.gov.di.ipv.cri.address.library.domain.SessionRequest;
+import uk.gov.di.ipv.cri.address.library.domain.sharedclaims.SharedClaims;
 import uk.gov.di.ipv.cri.address.library.exception.ClientConfigurationException;
 import uk.gov.di.ipv.cri.address.library.exception.SessionValidationException;
 import uk.gov.di.ipv.cri.address.library.service.ConfigurationService;
@@ -18,6 +21,7 @@ import java.util.Map;
 import java.util.Objects;
 
 public class SessionRequestService {
+    private static final String SHARED_CLAIMS_NAME = "shared_claims";
     private static final String REDIRECT_URI = "redirect_uri";
     private static final String CLIENT_ID = "client_id";
 
@@ -26,8 +30,9 @@ public class SessionRequestService {
     private final JWTDecrypter jwtDecrypter;
     private final ConfigurationService configurationService;
 
+    @ExcludeFromGeneratedCoverageReport
     public SessionRequestService() {
-        this.objectMapper = new ObjectMapper();
+        this.objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
         this.jwtVerifier = new JWTVerifier();
         this.configurationService = new ConfigurationService();
         String encryptionKeyId = this.configurationService.getKmsEncryptionKeyId();
@@ -84,6 +89,14 @@ public class SessionRequestService {
             sessionRequest.setSignedJWT(requestJWT);
             sessionRequest.setState(jwtClaims.getStringClaim("state"));
             sessionRequest.setSubject(jwtClaims.getSubject());
+
+            if (jwtClaims.getClaims().containsKey(SHARED_CLAIMS_NAME)) {
+                SharedClaims sharedClaims =
+                        this.objectMapper.readValue(
+                                jwtClaims.getClaim(SHARED_CLAIMS_NAME).toString(),
+                                SharedClaims.class);
+                sessionRequest.setSharedClaims(sharedClaims);
+            }
 
             return sessionRequest;
         } catch (JsonProcessingException | ParseException e) {

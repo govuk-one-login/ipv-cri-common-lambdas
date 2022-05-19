@@ -14,11 +14,13 @@ import software.amazon.awssdk.http.HttpStatusCode;
 import uk.gov.di.ipv.cri.address.api.service.SessionRequestService;
 import uk.gov.di.ipv.cri.address.library.domain.AuditEventTypes;
 import uk.gov.di.ipv.cri.address.library.domain.SessionRequest;
+import uk.gov.di.ipv.cri.address.library.domain.sharedclaims.SharedClaims;
 import uk.gov.di.ipv.cri.address.library.error.ErrorResponse;
 import uk.gov.di.ipv.cri.address.library.exception.ClientConfigurationException;
 import uk.gov.di.ipv.cri.address.library.exception.SessionValidationException;
 import uk.gov.di.ipv.cri.address.library.exception.SqsException;
 import uk.gov.di.ipv.cri.address.library.service.AuditService;
+import uk.gov.di.ipv.cri.address.library.service.PersonIdentityService;
 import uk.gov.di.ipv.cri.address.library.service.SessionService;
 import uk.gov.di.ipv.cri.address.library.util.EventProbe;
 
@@ -44,6 +46,8 @@ class SessionHandlerTest {
 
     @Mock private SessionRequestService sessionRequestService;
 
+    @Mock private PersonIdentityService personIdentityService;
+
     @Mock private APIGatewayProxyRequestEvent apiGatewayProxyRequestEvent;
 
     @Mock private SessionRequest sessionRequest;
@@ -62,13 +66,16 @@ class SessionHandlerTest {
         when(eventProbe.counterMetric(anyString())).thenReturn(eventProbe);
 
         UUID sessionId = UUID.randomUUID();
+        SharedClaims sharedClaims = new SharedClaims();
         when(sessionRequest.getClientId()).thenReturn("ipv-core");
         when(sessionRequest.getState()).thenReturn("some state");
         when(sessionRequest.getRedirectUri())
                 .thenReturn(URI.create("https://www.example.com/callback"));
+        when(sessionRequest.hasSharedClaims()).thenReturn(Boolean.TRUE);
+        when(sessionRequest.getSharedClaims()).thenReturn(sharedClaims);
         when(apiGatewayProxyRequestEvent.getBody()).thenReturn("some json");
         when(sessionRequestService.validateSessionRequest("some json")).thenReturn(sessionRequest);
-        when(sessionService.createAndSaveAddressSession(sessionRequest)).thenReturn(sessionId);
+        when(sessionService.saveSession(sessionRequest)).thenReturn(sessionId);
 
         APIGatewayProxyResponseEvent responseEvent =
                 sessionHandler.handleRequest(apiGatewayProxyRequestEvent, null);
@@ -79,6 +86,8 @@ class SessionHandlerTest {
         assertEquals("some state", responseBody.get(STATE));
         assertEquals("https://www.example.com/callback", responseBody.get(REDIRECT_URI));
 
+        verify(sessionService).saveSession(sessionRequest);
+        verify(personIdentityService).savePersonIdentity(sessionId, sharedClaims);
         verify(eventProbe).addDimensions(Map.of("issuer", "ipv-core"));
         verify(eventProbe).counterMetric("session_created");
         verify(auditService).sendAuditEvent(AuditEventTypes.IPV_ADDRESS_CRI_START);
@@ -107,7 +116,7 @@ class SessionHandlerTest {
         verify(eventProbe).log(Level.ERROR, sessionValidationException);
 
         verify(auditService, never()).sendAuditEvent(any());
-        verify(sessionService, never()).createAndSaveAddressSession(sessionRequest);
+        verify(sessionService, never()).saveSession(sessionRequest);
     }
 
     @Test
@@ -130,7 +139,7 @@ class SessionHandlerTest {
         verify(eventProbe).counterMetric("session_created", 0d);
 
         verify(auditService, never()).sendAuditEvent(any());
-        verify(sessionService, never()).createAndSaveAddressSession(sessionRequest);
+        verify(sessionService, never()).saveSession(sessionRequest);
     }
 
     private void setupEventProbeErrorBehaviour() {
