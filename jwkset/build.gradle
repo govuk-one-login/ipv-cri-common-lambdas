@@ -5,6 +5,7 @@ plugins {
 
 dependencies {
 	implementation configurations.lambda,
+			configurations.aws,
 			configurations.nimbus,
 			configurations.kms
 
