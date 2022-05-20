@@ -4,8 +4,7 @@ plugins {
 }
 
 dependencies {
-	implementation project(":common-lib"),
-			configurations.aws,
+	implementation project(":lib"),
 			configurations.lambda,
 			configurations.nimbus,
 			configurations.jackson
