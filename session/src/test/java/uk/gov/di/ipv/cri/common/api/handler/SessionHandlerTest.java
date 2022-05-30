@@ -73,6 +73,7 @@ class SessionHandlerTest {
                 .thenReturn(URI.create("https://www.example.com/callback"));
         when(sessionRequest.hasSharedClaims()).thenReturn(Boolean.TRUE);
         when(sessionRequest.getSharedClaims()).thenReturn(sharedClaims);
+        when(sessionRequest.getAudience()).thenReturn("kbv");
         when(apiGatewayProxyRequestEvent.getBody()).thenReturn("some json");
         when(sessionRequestService.validateSessionRequest("some json")).thenReturn(sessionRequest);
         when(sessionService.saveSession(sessionRequest)).thenReturn(sessionId);
@@ -90,7 +91,7 @@ class SessionHandlerTest {
         verify(personIdentityService).savePersonIdentity(sessionId, sharedClaims);
         verify(eventProbe).addDimensions(Map.of("issuer", "ipv-core"));
         verify(eventProbe).counterMetric("session_created");
-        verify(auditService).sendAuditEvent(AuditEventTypes.IPV_ADDRESS_CRI_START);
+        verify(auditService).sendAuditEvent(AuditEventTypes.IPV_KBV_CRI_START);
     }
 
     @Test
