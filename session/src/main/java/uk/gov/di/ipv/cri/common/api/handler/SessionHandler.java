@@ -78,7 +78,8 @@ public class SessionHandler
         try {
             SessionRequest sessionRequest =
                     sesssionRequestService.validateSessionRequest(input.getBody());
-            auditService.sendAuditEvent(AuditEventTypes.IPV_ADDRESS_CRI_START);
+
+            auditService.sendAuditEvent(getAuditEventType(sessionRequest.getAudience()));
 
             eventProbe.addDimensions(Map.of("issuer", sessionRequest.getClientId()));
 
@@ -111,5 +112,18 @@ public class SessionHandler
             return ApiGatewayResponseGenerator.proxyJsonResponse(
                     HttpStatusCode.INTERNAL_SERVER_ERROR, ErrorResponse.SERVER_CONFIG_ERROR);
         }
+    }
+
+    // TODO revisit implementation (temporary implementation below)
+    private AuditEventTypes getAuditEventType(String audience) {
+        String normalisedAudience = audience.toLowerCase();
+        if (normalisedAudience.contains("kbv")) {
+            return AuditEventTypes.IPV_KBV_CRI_START;
+        } else if (normalisedAudience.contains("address")) {
+            return AuditEventTypes.IPV_ADDRESS_CRI_START;
+        } else if (normalisedAudience.contains("fraud")) {
+            return AuditEventTypes.IPV_FRAUD_CRI_START;
+        }
+        throw new IllegalArgumentException("Unexpected Audience encountered: " + audience);
     }
 }
