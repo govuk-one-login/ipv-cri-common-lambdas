@@ -30,10 +30,7 @@ public class AuthorizationHandler
         implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
 
     private static final String HEADER_SESSION_ID = "session-id";
-    protected static final String STATE = "state";
-    protected static final String CODE = "code";
-    protected static final String REDIRECT_URI = "redirect_uri";
-    public static final String EVENT_SESSION_CREATED = "session_created";
+    public static final String EVENT_AUTHORIZATION_SENT = "authorization_sent";
     private final SessionService sessionService;
     private final EventProbe eventProbe;
 
@@ -77,9 +74,7 @@ public class AuthorizationHandler
                     HttpStatusCode.OK, authorizationSuccessResponse);
 
         } catch (ParseException e) {
-
-            eventProbe.log(ERROR, e).counterMetric(EVENT_SESSION_CREATED, 0d);
-
+            eventProbe.log(ERROR, e).counterMetric(EVENT_AUTHORIZATION_SENT, 0d);
             return ApiGatewayResponseGenerator.proxyJsonResponse(
                     HttpStatusCode.INTERNAL_SERVER_ERROR, ErrorResponse.SERVER_CONFIG_ERROR);
         }
