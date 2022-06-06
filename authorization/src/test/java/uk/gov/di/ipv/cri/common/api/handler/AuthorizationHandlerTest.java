@@ -29,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -70,6 +71,10 @@ class AuthorizationHandlerTest {
         assertEquals("http://example.com", node.get("redirectionURI").textValue());
         assertEquals("state-ipv", node.get("state").get("value").textValue());
         assertEquals("auth-code", node.get("authorizationCode").get("value").textValue());
+
+        verify(mockSessionService).getSession(sessionId.toString());
+        verify(eventProbe).counterMetric(anyString());
+        verify(eventProbe).auditEvent(any());
     }
 
     @Test
@@ -91,6 +96,8 @@ class AuthorizationHandlerTest {
         assertEquals(HttpStatusCode.INTERNAL_SERVER_ERROR, response.getStatusCode());
         assertEquals(1020, responseBody.get("code"));
         assertEquals("Server Configuration Error", responseBody.get("message"));
+
+        verify(eventProbe).log(any(), any());
     }
 
     @Test
@@ -131,5 +138,8 @@ class AuthorizationHandlerTest {
         assertEquals(HttpStatusCode.BAD_REQUEST, response.getStatusCode());
         assertEquals(1019, responseBody.get("code"));
         assertEquals("Session Validation Exception", responseBody.get("message"));
+
+        verify(mockSessionService).getSession(sessionId.toString());
+        verify(eventProbe).log(any(), any());
     }
 }
