@@ -9,7 +9,7 @@ import com.nimbusds.jwt.SignedJWT;
 import uk.gov.di.ipv.cri.common.api.domain.RawSessionRequest;
 import uk.gov.di.ipv.cri.common.library.annotations.ExcludeFromGeneratedCoverageReport;
 import uk.gov.di.ipv.cri.common.library.domain.SessionRequest;
-import uk.gov.di.ipv.cri.common.library.domain.sharedclaims.SharedClaims;
+import uk.gov.di.ipv.cri.common.library.domain.personidentity.SharedClaims;
 import uk.gov.di.ipv.cri.common.library.exception.ClientConfigurationException;
 import uk.gov.di.ipv.cri.common.library.exception.SessionValidationException;
 import uk.gov.di.ipv.cri.common.library.service.ConfigurationService;
