@@ -14,7 +14,7 @@ import software.amazon.awssdk.http.HttpStatusCode;
 import uk.gov.di.ipv.cri.common.api.service.SessionRequestService;
 import uk.gov.di.ipv.cri.common.library.domain.AuditEventTypes;
 import uk.gov.di.ipv.cri.common.library.domain.SessionRequest;
-import uk.gov.di.ipv.cri.common.library.domain.sharedclaims.SharedClaims;
+import uk.gov.di.ipv.cri.common.library.domain.personidentity.SharedClaims;
 import uk.gov.di.ipv.cri.common.library.error.ErrorResponse;
 import uk.gov.di.ipv.cri.common.library.exception.ClientConfigurationException;
 import uk.gov.di.ipv.cri.common.library.exception.SessionValidationException;
