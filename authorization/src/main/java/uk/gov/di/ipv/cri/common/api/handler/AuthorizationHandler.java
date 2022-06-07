@@ -12,8 +12,10 @@ import software.amazon.awssdk.http.HttpStatusCode;
 import software.amazon.lambda.powertools.logging.CorrelationIdPathConstants;
 import software.amazon.lambda.powertools.logging.Logging;
 import software.amazon.lambda.powertools.metrics.Metrics;
+import uk.gov.di.ipv.cri.common.api.service.AuthorizationValidatorService;
 import uk.gov.di.ipv.cri.common.library.annotations.ExcludeFromGeneratedCoverageReport;
 import uk.gov.di.ipv.cri.common.library.error.ErrorResponse;
+import uk.gov.di.ipv.cri.common.library.exception.SessionValidationException;
 import uk.gov.di.ipv.cri.common.library.persistence.item.SessionItem;
 import uk.gov.di.ipv.cri.common.library.service.SessionService;
 import uk.gov.di.ipv.cri.common.library.util.ApiGatewayResponseGenerator;
@@ -33,15 +35,20 @@ public class AuthorizationHandler
     public static final String EVENT_AUTHORIZATION_SENT = "authorization_sent";
     private final SessionService sessionService;
     private final EventProbe eventProbe;
+    private final AuthorizationValidatorService authorizationValidatorService;
 
     @ExcludeFromGeneratedCoverageReport
     public AuthorizationHandler() {
-        this(new SessionService(), new EventProbe());
+        this(new SessionService(), new EventProbe(), new AuthorizationValidatorService());
     }
 
-    public AuthorizationHandler(SessionService sessionService, EventProbe eventProbe) {
+    public AuthorizationHandler(
+            SessionService sessionService,
+            EventProbe eventProbe,
+            AuthorizationValidatorService authorizationValidatorService) {
         this.sessionService = sessionService;
         this.eventProbe = eventProbe;
+        this.authorizationValidatorService = authorizationValidatorService;
     }
 
     @Override
@@ -51,17 +58,17 @@ public class AuthorizationHandler
             APIGatewayProxyRequestEvent input, Context context) {
 
         try {
+            // populate all details from incoming request
             Map<String, List<String>> queryStringParameters = getQueryStringParametersAsMap(input);
             AuthenticationRequest authenticationRequest =
                     AuthenticationRequest.parse(queryStringParameters);
-
-            // TODO Verify params
-            // URI
-            // ClientID
-
             String sessionId = input.getHeaders().get(HEADER_SESSION_ID);
             SessionItem sessionItem = sessionService.getSession(sessionId);
 
+            // validate
+            authorizationValidatorService.validate(authenticationRequest, sessionItem);
+
+            // create authorization
             AuthorizationSuccessResponse authorizationSuccessResponse =
                     new AuthorizationSuccessResponse(
                             authenticationRequest.getRedirectionURI(),
@@ -70,6 +77,10 @@ public class AuthorizationHandler
                             authenticationRequest.getState(),
                             null);
 
+            eventProbe
+                    .counterMetric(EVENT_AUTHORIZATION_SENT)
+                    .auditEvent(authorizationSuccessResponse);
+
             return ApiGatewayResponseGenerator.proxyJsonResponse(
                     HttpStatusCode.OK, authorizationSuccessResponse);
 
@@ -77,6 +88,10 @@ public class AuthorizationHandler
             eventProbe.log(ERROR, e).counterMetric(EVENT_AUTHORIZATION_SENT, 0d);
             return ApiGatewayResponseGenerator.proxyJsonResponse(
                     HttpStatusCode.INTERNAL_SERVER_ERROR, ErrorResponse.SERVER_CONFIG_ERROR);
+        } catch (SessionValidationException e) {
+            eventProbe.log(ERROR, e).counterMetric(EVENT_AUTHORIZATION_SENT, 0d);
+            return ApiGatewayResponseGenerator.proxyJsonResponse(
+                    HttpStatusCode.BAD_REQUEST, ErrorResponse.SESSION_VALIDATION_ERROR);
         }
     }
 
