@@ -12,7 +12,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import software.amazon.awssdk.http.HttpStatusCode;
 import uk.gov.di.ipv.cri.common.api.service.SessionRequestService;
-import uk.gov.di.ipv.cri.common.library.domain.AuditEventTypes;
+import uk.gov.di.ipv.cri.common.library.domain.AuditEventType;
 import uk.gov.di.ipv.cri.common.library.domain.SessionRequest;
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.SharedClaims;
 import uk.gov.di.ipv.cri.common.library.error.ErrorResponse;
@@ -39,6 +39,7 @@ import static uk.gov.di.ipv.cri.common.api.handler.SessionHandler.REDIRECT_URI;
 import static uk.gov.di.ipv.cri.common.api.handler.SessionHandler.SESSION_ID;
 import static uk.gov.di.ipv.cri.common.api.handler.SessionHandler.STATE;
 
+@SuppressWarnings("rawtypes")
 @ExtendWith(MockitoExtension.class)
 class SessionHandlerTest {
 
@@ -73,7 +74,6 @@ class SessionHandlerTest {
                 .thenReturn(URI.create("https://www.example.com/callback"));
         when(sessionRequest.hasSharedClaims()).thenReturn(Boolean.TRUE);
         when(sessionRequest.getSharedClaims()).thenReturn(sharedClaims);
-        when(sessionRequest.getAudience()).thenReturn("kbv");
         when(apiGatewayProxyRequestEvent.getBody()).thenReturn("some json");
         when(sessionRequestService.validateSessionRequest("some json")).thenReturn(sessionRequest);
         when(sessionService.saveSession(sessionRequest)).thenReturn(sessionId);
@@ -91,7 +91,7 @@ class SessionHandlerTest {
         verify(personIdentityService).savePersonIdentity(sessionId, sharedClaims);
         verify(eventProbe).addDimensions(Map.of("issuer", "ipv-core"));
         verify(eventProbe).counterMetric("session_created");
-        verify(auditService).sendAuditEvent(AuditEventTypes.IPV_KBV_CRI_START);
+        verify(auditService).sendAuditEvent(AuditEventType.START);
     }
 
     @Test
@@ -116,7 +116,7 @@ class SessionHandlerTest {
         verify(eventProbe).counterMetric("session_created", 0d);
         verify(eventProbe).log(Level.ERROR, sessionValidationException);
 
-        verify(auditService, never()).sendAuditEvent(any());
+        verify(auditService, never()).sendAuditEvent(any(AuditEventType.class));
         verify(sessionService, never()).saveSession(sessionRequest);
     }
 
@@ -139,7 +139,7 @@ class SessionHandlerTest {
 
         verify(eventProbe).counterMetric("session_created", 0d);
 
-        verify(auditService, never()).sendAuditEvent(any());
+        verify(auditService, never()).sendAuditEvent(any(AuditEventType.class));
         verify(sessionService, never()).saveSession(sessionRequest);
     }
 
