@@ -3,6 +3,7 @@ package uk.gov.di.ipv.cri.common.api.handler;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.logging.log4j.Level;
 import org.junit.jupiter.api.Test;
@@ -39,7 +40,6 @@ import static uk.gov.di.ipv.cri.common.api.handler.SessionHandler.REDIRECT_URI;
 import static uk.gov.di.ipv.cri.common.api.handler.SessionHandler.SESSION_ID;
 import static uk.gov.di.ipv.cri.common.api.handler.SessionHandler.STATE;
 
-@SuppressWarnings("rawtypes")
 @ExtendWith(MockitoExtension.class)
 class SessionHandlerTest {
 
@@ -108,7 +108,8 @@ class SessionHandlerTest {
         APIGatewayProxyResponseEvent responseEvent =
                 sessionHandler.handleRequest(apiGatewayProxyRequestEvent, null);
         assertEquals(HttpStatusCode.BAD_REQUEST, responseEvent.getStatusCode());
-        Map responseBody = new ObjectMapper().readValue(responseEvent.getBody(), Map.class);
+        Map<String, Object> responseBody =
+                new ObjectMapper().readValue(responseEvent.getBody(), new TypeReference<>() {});
         assertEquals(ErrorResponse.SESSION_VALIDATION_ERROR.getCode(), responseBody.get("code"));
         assertEquals(
                 ErrorResponse.SESSION_VALIDATION_ERROR.getMessage(), responseBody.get("message"));
@@ -133,7 +134,8 @@ class SessionHandlerTest {
         APIGatewayProxyResponseEvent responseEvent =
                 sessionHandler.handleRequest(apiGatewayProxyRequestEvent, null);
         assertEquals(HttpStatusCode.INTERNAL_SERVER_ERROR, responseEvent.getStatusCode());
-        Map responseBody = new ObjectMapper().readValue(responseEvent.getBody(), Map.class);
+        Map<String, Object> responseBody =
+                new ObjectMapper().readValue(responseEvent.getBody(), new TypeReference<>() {});
         assertEquals(ErrorResponse.SERVER_CONFIG_ERROR.getCode(), responseBody.get("code"));
         assertEquals(ErrorResponse.SERVER_CONFIG_ERROR.getMessage(), responseBody.get("message"));
 
