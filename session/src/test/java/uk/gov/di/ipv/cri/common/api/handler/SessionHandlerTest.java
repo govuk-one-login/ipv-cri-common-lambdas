@@ -3,6 +3,7 @@ package uk.gov.di.ipv.cri.common.api.handler;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.logging.log4j.Level;
 import org.junit.jupiter.api.Test;
@@ -12,7 +13,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import software.amazon.awssdk.http.HttpStatusCode;
 import uk.gov.di.ipv.cri.common.api.service.SessionRequestService;
-import uk.gov.di.ipv.cri.common.library.domain.AuditEventTypes;
+import uk.gov.di.ipv.cri.common.library.domain.AuditEventType;
 import uk.gov.di.ipv.cri.common.library.domain.SessionRequest;
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.SharedClaims;
 import uk.gov.di.ipv.cri.common.library.error.ErrorResponse;
@@ -73,7 +74,6 @@ class SessionHandlerTest {
                 .thenReturn(URI.create("https://www.example.com/callback"));
         when(sessionRequest.hasSharedClaims()).thenReturn(Boolean.TRUE);
         when(sessionRequest.getSharedClaims()).thenReturn(sharedClaims);
-        when(sessionRequest.getAudience()).thenReturn("kbv");
         when(apiGatewayProxyRequestEvent.getBody()).thenReturn("some json");
         when(sessionRequestService.validateSessionRequest("some json")).thenReturn(sessionRequest);
         when(sessionService.saveSession(sessionRequest)).thenReturn(sessionId);
@@ -91,7 +91,7 @@ class SessionHandlerTest {
         verify(personIdentityService).savePersonIdentity(sessionId, sharedClaims);
         verify(eventProbe).addDimensions(Map.of("issuer", "ipv-core"));
         verify(eventProbe).counterMetric("session_created");
-        verify(auditService).sendAuditEvent(AuditEventTypes.IPV_KBV_CRI_START);
+        verify(auditService).sendAuditEvent(AuditEventType.START);
     }
 
     @Test
@@ -108,7 +108,8 @@ class SessionHandlerTest {
         APIGatewayProxyResponseEvent responseEvent =
                 sessionHandler.handleRequest(apiGatewayProxyRequestEvent, null);
         assertEquals(HttpStatusCode.BAD_REQUEST, responseEvent.getStatusCode());
-        Map responseBody = new ObjectMapper().readValue(responseEvent.getBody(), Map.class);
+        Map<String, Object> responseBody =
+                new ObjectMapper().readValue(responseEvent.getBody(), new TypeReference<>() {});
         assertEquals(ErrorResponse.SESSION_VALIDATION_ERROR.getCode(), responseBody.get("code"));
         assertEquals(
                 ErrorResponse.SESSION_VALIDATION_ERROR.getMessage(), responseBody.get("message"));
@@ -116,7 +117,7 @@ class SessionHandlerTest {
         verify(eventProbe).counterMetric("session_created", 0d);
         verify(eventProbe).log(Level.ERROR, sessionValidationException);
 
-        verify(auditService, never()).sendAuditEvent(any());
+        verify(auditService, never()).sendAuditEvent(any(AuditEventType.class));
         verify(sessionService, never()).saveSession(sessionRequest);
     }
 
@@ -133,13 +134,14 @@ class SessionHandlerTest {
         APIGatewayProxyResponseEvent responseEvent =
                 sessionHandler.handleRequest(apiGatewayProxyRequestEvent, null);
         assertEquals(HttpStatusCode.INTERNAL_SERVER_ERROR, responseEvent.getStatusCode());
-        Map responseBody = new ObjectMapper().readValue(responseEvent.getBody(), Map.class);
+        Map<String, Object> responseBody =
+                new ObjectMapper().readValue(responseEvent.getBody(), new TypeReference<>() {});
         assertEquals(ErrorResponse.SERVER_CONFIG_ERROR.getCode(), responseBody.get("code"));
         assertEquals(ErrorResponse.SERVER_CONFIG_ERROR.getMessage(), responseBody.get("message"));
 
         verify(eventProbe).counterMetric("session_created", 0d);
 
-        verify(auditService, never()).sendAuditEvent(any());
+        verify(auditService, never()).sendAuditEvent(any(AuditEventType.class));
         verify(sessionService, never()).saveSession(sessionRequest);
     }
 
