@@ -25,6 +25,7 @@ import uk.gov.di.ipv.cri.common.library.service.SessionService;
 import uk.gov.di.ipv.cri.common.library.util.ApiGatewayResponseGenerator;
 import uk.gov.di.ipv.cri.common.library.util.EventProbe;
 
+import java.time.Clock;
 import java.util.Map;
 import java.util.UUID;
 
@@ -53,7 +54,8 @@ public class SessionHandler
                 new AuditService(
                         SqsClient.builder().build(),
                         new ConfigurationService(),
-                        new ObjectMapper()));
+                        new ObjectMapper(),
+                        Clock.systemUTC()));
     }
 
     public SessionHandler(
