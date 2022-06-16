@@ -20,7 +20,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import software.amazon.awssdk.http.HttpStatusCode;
 import uk.gov.di.ipv.cri.common.library.error.ErrorResponse;
-import uk.gov.di.ipv.cri.common.library.exception.AccessTokenValidationException;
+import uk.gov.di.ipv.cri.common.library.exception.*;
 import uk.gov.di.ipv.cri.common.library.persistence.item.SessionItem;
 import uk.gov.di.ipv.cri.common.library.service.AccessTokenService;
 import uk.gov.di.ipv.cri.common.library.service.SessionService;
@@ -112,7 +112,9 @@ class AccessTokenHandlerTest {
 
     @Test
     void shouldReturn400WhenCannotValidateTokenRequest()
-            throws AccessTokenValidationException, JsonProcessingException {
+            throws AccessTokenValidationException, JsonProcessingException,
+                    AuthorizationCodeExpiredException, SessionExpiredException,
+                    SessionNotFoundException {
         APIGatewayProxyRequestEvent event = new APIGatewayProxyRequestEvent();
         event.withBody("some body");
         SessionItem mockSessionItem = mock(SessionItem.class);
@@ -130,6 +132,53 @@ class AccessTokenHandlerTest {
         APIGatewayProxyResponseEvent response = handler.handleRequest(event, null);
 
         assertErrorResponse(response, ErrorResponse.TOKEN_VALIDATION_ERROR);
+        assertEquals(HttpStatusCode.BAD_REQUEST, response.getStatusCode());
+        verify(eventProbe).log(Level.ERROR, exception);
+        verify(eventProbe).counterMetric(METRIC_NAME_ACCESS_TOKEN, 0d);
+        verifyNoMoreInteractions(mockAccessTokenService);
+    }
+
+    @Test
+    void shouldReturn403WhenSessionExpired()
+            throws AccessTokenValidationException, JsonProcessingException,
+                    AuthorizationCodeExpiredException, SessionExpiredException,
+                    SessionNotFoundException {
+        APIGatewayProxyRequestEvent event = new APIGatewayProxyRequestEvent();
+        event.withBody("some body");
+        String authCode = String.valueOf(UUID.randomUUID());
+        var exception = new SessionExpiredException("expired");
+        when(mockAccessTokenService.createTokenRequest("some body")).thenReturn(tokenRequest);
+        when(mockAccessTokenService.getAuthorizationCode(tokenRequest)).thenReturn(authCode);
+        when(mockSessionService.getSessionByAuthorisationCode(authCode)).thenThrow(exception);
+        when(eventProbe.log(Level.ERROR, exception)).thenReturn(eventProbe);
+
+        APIGatewayProxyResponseEvent response = handler.handleRequest(event, null);
+
+        assertErrorResponse(response, ErrorResponse.SESSION_EXPIRED);
+        assertEquals(HttpStatusCode.FORBIDDEN, response.getStatusCode());
+        verify(eventProbe).log(Level.ERROR, exception);
+        verify(eventProbe).counterMetric(METRIC_NAME_ACCESS_TOKEN, 0d);
+        verifyNoMoreInteractions(mockAccessTokenService);
+    }
+
+    @Test
+    void shouldReturn403WhenAuthorizationCodeExpired()
+            throws AccessTokenValidationException, JsonProcessingException,
+                    AuthorizationCodeExpiredException, SessionExpiredException,
+                    SessionNotFoundException {
+        APIGatewayProxyRequestEvent event = new APIGatewayProxyRequestEvent();
+        event.withBody("some body");
+        String authCode = String.valueOf(UUID.randomUUID());
+        var exception = new AuthorizationCodeExpiredException("expired");
+        when(mockAccessTokenService.createTokenRequest("some body")).thenReturn(tokenRequest);
+        when(mockAccessTokenService.getAuthorizationCode(tokenRequest)).thenReturn(authCode);
+        when(mockSessionService.getSessionByAuthorisationCode(authCode)).thenThrow(exception);
+        when(eventProbe.log(Level.ERROR, exception)).thenReturn(eventProbe);
+
+        APIGatewayProxyResponseEvent response = handler.handleRequest(event, null);
+
+        assertErrorResponse(response, ErrorResponse.AUTHORIZATION_CODE_EXPIRED);
+        assertEquals(HttpStatusCode.FORBIDDEN, response.getStatusCode());
         verify(eventProbe).log(Level.ERROR, exception);
         verify(eventProbe).counterMetric(METRIC_NAME_ACCESS_TOKEN, 0d);
         verifyNoMoreInteractions(mockAccessTokenService);
