@@ -7,7 +7,17 @@ import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.RSAKey;
 import software.amazon.awssdk.services.kms.KmsClient;
-import software.amazon.awssdk.services.kms.model.*;
+import software.amazon.awssdk.services.kms.model.DescribeKeyRequest;
+import software.amazon.awssdk.services.kms.model.DescribeKeyResponse;
+import software.amazon.awssdk.services.kms.model.GetPublicKeyRequest;
+import software.amazon.awssdk.services.kms.model.GetPublicKeyResponse;
+import software.amazon.awssdk.services.kms.model.KeyListEntry;
+import software.amazon.awssdk.services.kms.model.KeyMetadata;
+import software.amazon.awssdk.services.kms.model.ListKeysRequest;
+import software.amazon.awssdk.services.kms.model.ListKeysResponse;
+import software.amazon.awssdk.services.kms.model.ListResourceTagsRequest;
+import software.amazon.awssdk.services.kms.model.ListResourceTagsResponse;
+import software.amazon.awssdk.services.kms.model.Tag;
 
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
