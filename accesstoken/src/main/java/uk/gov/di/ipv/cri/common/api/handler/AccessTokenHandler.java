@@ -14,6 +14,9 @@ import software.amazon.lambda.powertools.metrics.Metrics;
 import uk.gov.di.ipv.cri.common.library.annotations.ExcludeFromGeneratedCoverageReport;
 import uk.gov.di.ipv.cri.common.library.error.ErrorResponse;
 import uk.gov.di.ipv.cri.common.library.exception.AccessTokenValidationException;
+import uk.gov.di.ipv.cri.common.library.exception.AuthorizationCodeExpiredException;
+import uk.gov.di.ipv.cri.common.library.exception.SessionExpiredException;
+import uk.gov.di.ipv.cri.common.library.exception.SessionNotFoundException;
 import uk.gov.di.ipv.cri.common.library.persistence.item.SessionItem;
 import uk.gov.di.ipv.cri.common.library.service.AccessTokenService;
 import uk.gov.di.ipv.cri.common.library.service.SessionService;
@@ -64,6 +67,18 @@ public class AccessTokenHandler
             eventProbe.log(Level.ERROR, e).counterMetric(METRIC_NAME_ACCESS_TOKEN, 0d);
             return ApiGatewayResponseGenerator.proxyJsonResponse(
                     HttpStatusCode.BAD_REQUEST, ErrorResponse.TOKEN_VALIDATION_ERROR);
+        } catch (SessionExpiredException e) {
+            eventProbe.log(Level.ERROR, e).counterMetric(METRIC_NAME_ACCESS_TOKEN, 0d);
+            return ApiGatewayResponseGenerator.proxyJsonResponse(
+                    HttpStatusCode.FORBIDDEN, ErrorResponse.SESSION_EXPIRED);
+        } catch (AuthorizationCodeExpiredException e) {
+            eventProbe.log(Level.ERROR, e).counterMetric(METRIC_NAME_ACCESS_TOKEN, 0d);
+            return ApiGatewayResponseGenerator.proxyJsonResponse(
+                    HttpStatusCode.FORBIDDEN, ErrorResponse.AUTHORIZATION_CODE_EXPIRED);
+        } catch (SessionNotFoundException e) {
+            eventProbe.log(Level.ERROR, e).counterMetric(METRIC_NAME_ACCESS_TOKEN, 0d);
+            return ApiGatewayResponseGenerator.proxyJsonResponse(
+                    HttpStatusCode.FORBIDDEN, ErrorResponse.ACCESS_TOKEN_EXPIRED);
         }
     }
 }
