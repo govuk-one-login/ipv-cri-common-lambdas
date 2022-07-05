@@ -12,12 +12,15 @@ import software.amazon.lambda.powertools.logging.Logging;
 import software.amazon.lambda.powertools.metrics.Metrics;
 import uk.gov.di.ipv.cri.common.api.service.SessionRequestService;
 import uk.gov.di.ipv.cri.common.library.annotations.ExcludeFromGeneratedCoverageReport;
+import uk.gov.di.ipv.cri.common.library.domain.AuditEventContext;
 import uk.gov.di.ipv.cri.common.library.domain.AuditEventType;
 import uk.gov.di.ipv.cri.common.library.domain.SessionRequest;
 import uk.gov.di.ipv.cri.common.library.error.ErrorResponse;
 import uk.gov.di.ipv.cri.common.library.exception.ClientConfigurationException;
 import uk.gov.di.ipv.cri.common.library.exception.SessionValidationException;
 import uk.gov.di.ipv.cri.common.library.exception.SqsException;
+import uk.gov.di.ipv.cri.common.library.persistence.item.SessionItem;
+import uk.gov.di.ipv.cri.common.library.service.AuditEventFactory;
 import uk.gov.di.ipv.cri.common.library.service.AuditService;
 import uk.gov.di.ipv.cri.common.library.service.ConfigurationService;
 import uk.gov.di.ipv.cri.common.library.service.PersonIdentityService;
@@ -37,7 +40,7 @@ public class SessionHandler
     protected static final String SESSION_ID = "session_id";
     protected static final String STATE = "state";
     protected static final String REDIRECT_URI = "redirect_uri";
-    public static final String EVENT_SESSION_CREATED = "session_created";
+    private static final String EVENT_SESSION_CREATED = "session_created";
     private final SessionService sessionService;
     private final SessionRequestService sesssionRequestService;
     private final PersonIdentityService personIdentityService;
@@ -46,16 +49,17 @@ public class SessionHandler
 
     @ExcludeFromGeneratedCoverageReport
     public SessionHandler() {
-        this(
-                new SessionService(),
-                new SessionRequestService(),
-                new PersonIdentityService(),
-                new EventProbe(),
+        ConfigurationService configurationService = new ConfigurationService();
+        this.sessionService = new SessionService();
+        this.sesssionRequestService = new SessionRequestService();
+        this.personIdentityService = new PersonIdentityService();
+        this.eventProbe = new EventProbe();
+        this.auditService =
                 new AuditService(
                         SqsClient.builder().build(),
-                        new ConfigurationService(),
+                        configurationService,
                         new ObjectMapper(),
-                        Clock.systemUTC()));
+                        new AuditEventFactory(configurationService, Clock.systemUTC()));
     }
 
     public SessionHandler(
@@ -81,8 +85,6 @@ public class SessionHandler
             SessionRequest sessionRequest =
                     sesssionRequestService.validateSessionRequest(input.getBody());
 
-            auditService.sendAuditEvent(AuditEventType.START);
-
             eventProbe.addDimensions(Map.of("issuer", sessionRequest.getClientId()));
 
             UUID sessionId = sessionService.saveSession(sessionRequest);
@@ -93,6 +95,13 @@ public class SessionHandler
             }
 
             eventProbe.counterMetric(EVENT_SESSION_CREATED).auditEvent(sessionRequest);
+
+            SessionItem auditSessionItem = new SessionItem();
+            auditSessionItem.setSessionId(sessionId);
+            auditSessionItem.setSubject(sessionRequest.getSubject());
+            auditService.sendAuditEvent(
+                    AuditEventType.START,
+                    new AuditEventContext(input.getHeaders(), auditSessionItem));
 
             return ApiGatewayResponseGenerator.proxyJsonResponse(
                     HttpStatusCode.CREATED,
