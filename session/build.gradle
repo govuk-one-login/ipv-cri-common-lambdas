@@ -13,6 +13,13 @@ dependencies {
 			configurations.sqs,
 			configurations.jackson
 
+	testCompileOnly project(":common-lib"),
+			configurations.aws,
+			configurations.lambda,
+			configurations.nimbus,
+			configurations.kms,
+			configurations.sqs,
+			configurations.jackson
 	aspect configurations.powertools
 
 	testImplementation configurations.tests

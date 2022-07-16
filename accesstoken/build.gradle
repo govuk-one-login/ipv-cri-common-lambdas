@@ -10,6 +10,12 @@ dependencies {
 			configurations.nimbus,
 			configurations.jackson
 
+	testCompileOnly project(":common-lib"),
+			configurations.aws,
+			configurations.lambda,
+			configurations.nimbus,
+			configurations.jackson
+
 	aspect configurations.powertools
 
 	testImplementation configurations.tests
