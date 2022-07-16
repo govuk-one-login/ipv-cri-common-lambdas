@@ -5,7 +5,7 @@ plugins {
 }
 
 dependencies {
-	implementation project(":common-lib"),
+	compileOnly project(":common-lib"),
 			configurations.aws,
 			configurations.lambda,
 			configurations.nimbus,
