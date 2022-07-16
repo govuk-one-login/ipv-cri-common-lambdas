@@ -18,7 +18,7 @@ dependencies {
 
 	aspect configurations.powertools
 
-	testImplementation configurations.tests
+	testImplementation project(":common-lib"), configurations.tests
 	testRuntimeOnly configurations.test_runtime
 }
 
