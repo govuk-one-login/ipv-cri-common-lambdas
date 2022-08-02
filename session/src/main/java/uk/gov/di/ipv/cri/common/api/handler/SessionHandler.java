@@ -99,6 +99,8 @@ public class SessionHandler
             SessionItem auditSessionItem = new SessionItem();
             auditSessionItem.setSessionId(sessionId);
             auditSessionItem.setSubject(sessionRequest.getSubject());
+            auditSessionItem.setPersistentSessionId(sessionRequest.getPersistentSessionId());
+            auditSessionItem.setClientSessionId(sessionRequest.getClientSessionId());
             auditService.sendAuditEvent(
                     AuditEventType.START,
                     new AuditEventContext(input.getHeaders(), auditSessionItem));
