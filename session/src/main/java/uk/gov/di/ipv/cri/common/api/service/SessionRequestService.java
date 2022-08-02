@@ -24,6 +24,8 @@ public class SessionRequestService {
     private static final String SHARED_CLAIMS_NAME = "shared_claims";
     private static final String REDIRECT_URI = "redirect_uri";
     private static final String CLIENT_ID = "client_id";
+    private static final String PERSISTENT_SESSION_ID = "persistent_session_id";
+    private static final String CLIENT_SESSION_ID = "govuk_signin_journey_id";
 
     private final ObjectMapper objectMapper;
     private final JWTVerifier jwtVerifier;
@@ -89,6 +91,15 @@ public class SessionRequestService {
             sessionRequest.setSignedJWT(requestJWT);
             sessionRequest.setState(jwtClaims.getStringClaim("state"));
             sessionRequest.setSubject(jwtClaims.getSubject());
+
+            if (jwtClaims.getClaims().containsKey(PERSISTENT_SESSION_ID)) {
+                sessionRequest.setPersistentSessionId(
+                        jwtClaims.getStringClaim(PERSISTENT_SESSION_ID));
+            }
+
+            if (jwtClaims.getClaims().containsKey(CLIENT_SESSION_ID)) {
+                sessionRequest.setClientSessionId(jwtClaims.getStringClaim(CLIENT_SESSION_ID));
+            }
 
             if (jwtClaims.getClaims().containsKey(SHARED_CLAIMS_NAME)) {
                 SharedClaims sharedClaims =

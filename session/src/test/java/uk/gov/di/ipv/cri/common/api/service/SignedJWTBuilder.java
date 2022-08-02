@@ -41,6 +41,8 @@ class SignedJWTBuilder {
     private String audience = "test-audience";
     private boolean includeSubject = true;
     private boolean includeSharedClaims = false;
+    private String persistentSessionId = "persistentSessionIdTest";
+    private String clientSessionId = "clientSessionIdTest";
 
     SignedJWTBuilder setNow(Instant now) {
         this.now = now;
@@ -97,6 +99,16 @@ class SignedJWTBuilder {
         return this;
     }
 
+    SignedJWTBuilder setPersistentSessionId(String persistentSessionId) {
+        this.persistentSessionId = persistentSessionId;
+        return this;
+    }
+
+    SignedJWTBuilder setClientSessionId(String clientSessionId) {
+        this.clientSessionId = clientSessionId;
+        return this;
+    }
+
     Certificate getCertificate() {
         return certificate;
     }
@@ -123,7 +135,9 @@ class SignedJWTBuilder {
                                     ResponseType.CODE.stream().findFirst().get().getValue())
                             .claim("client_id", clientId)
                             .claim("redirect_uri", redirectUri)
-                            .claim("state", "state");
+                            .claim("state", "state")
+                            .claim("persistent_session_id", persistentSessionId)
+                            .claim("govuk_signin_journey_id", clientSessionId);
 
             if (includeSubject) {
                 jwtClaimSetBuilder.subject(ipv_session_id);
