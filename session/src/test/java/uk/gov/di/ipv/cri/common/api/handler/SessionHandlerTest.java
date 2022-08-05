@@ -71,6 +71,8 @@ class SessionHandlerTest {
         SharedClaims sharedClaims = new SharedClaims();
         Map<String, String> requestHeaders = Map.of("header-name", "headerValue");
         String subject = "subject";
+        String persistentSessionId = "persistent_session_id_value";
+        String clientSessionId = "govuk_signin_journey_id_value";
         ArgumentCaptor<AuditEventContext> auditEventContextArgumentCaptor =
                 ArgumentCaptor.forClass(AuditEventContext.class);
         when(eventProbe.counterMetric(anyString())).thenReturn(eventProbe);
@@ -81,6 +83,8 @@ class SessionHandlerTest {
         when(sessionRequest.hasSharedClaims()).thenReturn(Boolean.TRUE);
         when(sessionRequest.getSharedClaims()).thenReturn(sharedClaims);
         when(sessionRequest.getSubject()).thenReturn(subject);
+        when(sessionRequest.getPersistentSessionId()).thenReturn(persistentSessionId);
+        when(sessionRequest.getClientSessionId()).thenReturn(clientSessionId);
         when(apiGatewayProxyRequestEvent.getBody()).thenReturn("some json");
         when(apiGatewayProxyRequestEvent.getHeaders()).thenReturn(requestHeaders);
         when(sessionRequestService.validateSessionRequest("some json")).thenReturn(sessionRequest);
@@ -105,6 +109,9 @@ class SessionHandlerTest {
         AuditEventContext auditEventContext = auditEventContextArgumentCaptor.getValue();
         assertEquals(subject, auditEventContext.getSessionItem().getSubject());
         assertEquals(sessionId, auditEventContext.getSessionItem().getSessionId());
+        assertEquals(
+                persistentSessionId, auditEventContext.getSessionItem().getPersistentSessionId());
+        assertEquals(clientSessionId, auditEventContext.getSessionItem().getClientSessionId());
         assertEquals(requestHeaders, auditEventContext.getRequestHeaders());
     }
 
