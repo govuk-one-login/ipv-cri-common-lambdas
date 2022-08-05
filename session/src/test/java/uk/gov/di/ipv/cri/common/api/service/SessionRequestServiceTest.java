@@ -184,6 +184,12 @@ class SessionRequestServiceTest {
         assertThat(
                 sessionRequest.getResponseType(),
                 equalTo(jwtClaims.getStringClaim("response_type")));
+        assertThat(
+                sessionRequest.getPersistentSessionId(),
+                equalTo(jwtClaims.getStringClaim("persistent_session_id")));
+        assertThat(
+                sessionRequest.getClientSessionId(),
+                equalTo(jwtClaims.getStringClaim("govuk_signin_journey_id")));
     }
 
     private String marshallToJSON(Object sessionRequest) throws IOException {
