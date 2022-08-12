@@ -205,198 +205,11 @@ Mappings:
       common: "IPV_COMMON"
 
 Resources:
-  PublicApi:
-    Type: AWS::Serverless::Api
-    Properties:
-      Description: "Public API"
-      MethodSettings:
-        - LoggingLevel: INFO
-          ResourcePath: '/*'
-          HttpMethod: '*'
-          # Disable data trace in production to avoid logging customer sensitive information
-          DataTraceEnabled: true
-          MetricsEnabled: true
-          ThrottlingRateLimit: 5
-          ThrottlingBurstLimit: 10
-      AccessLogSetting:
-        DestinationArn: !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${PublicApiAccessLogGroup}'
-        Format: >-
-          {
-          "requestId":"$context.requestId",
-          "ip":"$context.identity.sourceIp",
-          "requestTime":"$context.requestTime",
-          "httpMethod":"$context.httpMethod",
-          "path":"$context.path",
-          "routeKey":"$context.routeKey",
-          "status":"$context.status",
-          "protocol":"$context.protocol",
-          "responseLatency":"$context.responseLatency",
-          "responseLength":"$context.responseLength"
-          }
-      TracingEnabled: true
-      Name: !Sub "common-cri-${AWS::StackName}"
-      StageName: !Ref Environment
-      DefinitionBody:
-        openapi: "3.0.1" # workaround to get `sam validate` to work
-        paths: # workaround to get `sam validate` to work
-          /never-created:
-            options: { } # workaround to get `sam validate` to work
-        Fn::Transform:
-          Name: AWS::Include
-          Parameters:
-            Location: './public-api.yaml'
-      OpenApiVersion: 3.0.1
-      EndpointConfiguration:
-        Type: REGIONAL
-
-  PrivateApi:
-    Type: AWS::Serverless::Api
-    Condition: IsNotDevEnvironment
-    Properties:
-      Description: "Private API"
-      MethodSettings:
-        - LoggingLevel: INFO
-          ResourcePath: '/*'
-          HttpMethod: '*'
-          # Disable data trace in production to avoid logging customer sensitive information
-          DataTraceEnabled: true
-          MetricsEnabled: true
-          ThrottlingRateLimit: 5
-          ThrottlingBurstLimit: 10
-      AccessLogSetting:
-        DestinationArn: !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${PrivateApiAccessLogGroup}'
-        Format: >-
-          {
-          "requestId":"$context.requestId",
-          "ip":"$context.identity.sourceIp",
-          "requestTime":"$context.requestTime",
-          "httpMethod":"$context.httpMethod",
-          "path":"$context.path",
-          "routeKey":"$context.routeKey",
-          "status":"$context.status",
-          "protocol":"$context.protocol",
-          "responseLatency":"$context.responseLatency",
-          "responseLength":"$context.responseLength"
-          }
-      TracingEnabled: true
-      Name: !Sub "common-cri-private-${AWS::StackName}"
-      StageName: !Ref Environment
-      DefinitionBody:
-        openapi: "3.0.1" # workaround to get `sam validate` to work
-        paths: # workaround to get `sam validate` to work
-          /never-created:
-            options: { } # workaround to get `sam validate` to work
-        Fn::Transform:
-          Name: AWS::Include
-          Parameters:
-            Location: './private-api.yaml'
-      OpenApiVersion: 3.0.1
-      EndpointConfiguration:
-        Type: PRIVATE
-      Auth:
-        ResourcePolicy:
-          CustomStatements:
-            - Action: 'execute-api:Invoke'
-              Effect: Allow
-              Principal: '*'
-              Resource:
-                - 'execute-api:/*'
-            - Action: 'execute-api:Invoke'
-              Effect: Deny
-              Principal: '*'
-              Resource:
-                - 'execute-api:/*'
-              Condition:
-                StringNotEquals:
-                  aws:SourceVpce: !If
-                    - IsDevEnvironment
-                    - vpce-082cab7c78139eb54
-                    - !ImportValue cri-vpc-ApiGatewayVpcEndpointId
-
-  DevOnlyApi:
-    Type: AWS::Serverless::Api
-    Condition: IsDevEnvironment
-    Properties:
-      Description: Private Dev KBV CRI API
-      MethodSettings:
-        - LoggingLevel: INFO
-          ResourcePath: '/*'
-          HttpMethod: '*'
-          DataTraceEnabled: true
-          MetricsEnabled: true
-          ThrottlingRateLimit: 5
-          ThrottlingBurstLimit: 10
-      AccessLogSetting:
-        DestinationArn: !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${DevOnlyApiAccessLogGroup}'
-        Format: >-
-          {
-          "requestId":"$context.requestId",
-          "ip":"$context.identity.sourceIp",
-          "requestTime":"$context.requestTime",
-          "httpMethod":"$context.httpMethod",
-          "path":"$context.path",
-          "routeKey":"$context.routeKey",
-          "status":"$context.status",
-          "protocol":"$context.protocol",
-          "responseLatency":"$context.responseLatency",
-          "responseLength":"$context.responseLength"
-          }
-      TracingEnabled: true
-      Name: !Sub "common-cri-private-${AWS::StackName}"
-      StageName: !Ref Environment
-      DefinitionBody:
-        openapi: "3.0.1" # workaround to get `sam validate` to work
-        paths: # workaround to get `sam validate` to work
-          /never-created:
-            options: { } # workaround to get `sam validate` to work
-        Fn::Transform:
-          Name: AWS::Include
-          Parameters:
-            Location: './private-api.yaml'
-      OpenApiVersion: 3.0.1
-      EndpointConfiguration:
-        Type: REGIONAL
-
-  PublicApiAccessLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub /aws/apigateway/${AWS::StackName}-${PublicApi}-public-AccessLogs
-      RetentionInDays: 365
-
-  PublicApiAccessLogGroupSubscriptionFilter:
-    Type: AWS::Logs::SubscriptionFilter
-    Condition: IsNotDevEnvironment
-    Properties:
-      DestinationArn: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prod"
-      FilterPattern: ""
-      LogGroupName: !Ref PublicApiAccessLogGroup
-
-  PrivateApiAccessLogGroup:
-    Type: AWS::Logs::LogGroup
-    Condition: IsNotDevEnvironment
-    Properties:
-      LogGroupName: !Sub /aws/apigateway/${AWS::StackName}-${PrivateApi}-private-AccessLogs
-      RetentionInDays: 365
-
-  DevOnlyApiAccessLogGroup:
-    Type: AWS::Logs::LogGroup
-    Condition: IsDevEnvironment
-    Properties:
-      LogGroupName: !Sub /aws/apigateway/${AWS::StackName}-${DevOnlyApi}-private-AccessLogs
-      RetentionInDays: 30
-
-  PrivateApiAccessLogGroupSubscriptionFilter:
-    Type: AWS::Logs::SubscriptionFilter
-    Condition: IsNotDevEnvironment
-    Properties:
-      DestinationArn: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prod"
-      FilterPattern: ""
-      LogGroupName: !Ref PrivateApiAccessLogGroup
-
   SessionFunction:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: ../../session/build/distributions/session.zip
+      FunctionName: !Sub "${AWS::StackName}-SessionFunction"
       Handler: uk.gov.di.ipv.cri.common.api.handler.SessionHandler::handleRequest
       Environment:
         Variables:
@@ -456,6 +269,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: ../../authorization/build/distributions/authorization.zip
+      FunctionName: !Sub "${AWS::StackName}-AuthorizationFunction"
       Handler: uk.gov.di.ipv.cri.common.api.handler.AuthorizationHandler::handleRequest
       Environment:
         Variables:
@@ -495,6 +309,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: ../../accesstoken/build/distributions/accesstoken.zip
+      FunctionName: !Sub "${AWS::StackName}-AccessTokenFunction"
       Handler: uk.gov.di.ipv.cri.common.api.handler.AccessTokenHandler::handleRequest
       Environment:
         Variables:
@@ -588,54 +403,6 @@ Resources:
       TimeToLiveSpecification:
         AttributeName: expiryDate
         Enabled: true
-
-  PublicApiUsagePlan:
-    Type: AWS::ApiGateway::UsagePlan
-    Condition: IsNotDevEnvironment
-    DependsOn:
-      - PublicApiStage
-    Properties:
-      ApiStages:
-        - ApiId: !Ref PublicApi
-          Stage: !Ref Environment
-      Quota:
-        Limit: 500000
-        Period: DAY
-      Throttle:
-        BurstLimit: 100 # requests the API can handle concurrently
-        RateLimit: 50 # allowed requests per second
-
-  PrivateApiUsagePlan:
-    Type: AWS::ApiGateway::UsagePlan
-    Condition: IsNotDevEnvironment
-    DependsOn:
-      - PrivateApiStage
-    Properties:
-      ApiStages:
-        - ApiId: !Ref PrivateApi
-          Stage: !Ref Environment
-      Quota:
-        Limit: 500000
-        Period: DAY
-      Throttle:
-        BurstLimit: 100 # requests the API can handle concurrently
-        RateLimit: 50 # allowed requests per second
-
-  LinkUsagePlanApiKey1:
-    Condition: IsNotDevEnvironment
-    Type: AWS::ApiGateway::UsagePlanKey
-    Properties:
-      KeyId: !ImportValue core-infrastructure-ApiKey1
-      KeyType: API_KEY
-      UsagePlanId: !Ref PublicApiUsagePlan
-
-  LinkUsagePlanApiKey2:
-    Condition: IsNotDevEnvironment
-    Type: AWS::ApiGateway::UsagePlanKey
-    Properties:
-      KeyId: !ImportValue core-infrastructure-ApiKey2
-      KeyType: API_KEY
-      UsagePlanId: !Ref PublicApiUsagePlan
 
   ParameterSessionTableName:
     Type: AWS::SSM::Parameter
@@ -805,22 +572,6 @@ Resources:
       Value: !ImportValue core-infrastructure-CriVcSigningKey1Id
       Description: Verifiable Credential Key Id
 
-  PublicApiGatewayIdParameter:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/PublicApiGatewayId"
-      Type: String
-      Value: !Sub "${PublicApi}"
-      Description: "API GatewayID of the public KBV CRI API"
-
-  PublicApiBaseUrlParameter:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/PublicApiBaseUrl"
-      Type: String
-      Value: !Sub "https://${PublicApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/"
-      Description: "Base url of the public KBV CRI API"
-
   AuditEventNamePrefixParameter:
     Type: AWS::SSM::Parameter
     Properties:
@@ -886,19 +637,6 @@ Resources:
                 "kms:EncryptionContext:aws:logs:arn": !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*"
 
 Outputs:
-
   StackName:
     Description: "CloudFormation stack name"
     Value: !Sub "${AWS::StackName}"
-
-  PublicApiGatewayId:
-    Description: "API GatewayID of the public API"
-    Value: !Sub "${PublicApi}"
-    Export:
-      Name: !Sub ${AWS::StackName}-PublicApiGatewayId
-
-  PrivateApiGatewayId:
-    Description: "API GatewayID of the private API"
-    Value: !If [IsNotDevEnvironment, !Ref PrivateApi, !Ref DevOnlyApi]
-    Export:
-      Name: !Sub ${AWS::StackName}-PrivateApiGatewayId
