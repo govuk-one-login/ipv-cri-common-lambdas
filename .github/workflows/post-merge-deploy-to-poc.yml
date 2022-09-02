@@ -50,6 +50,12 @@ jobs:
         run: sam build -t infrastructure/lambda/template.yaml --parameter-overrides CriIdentifier=${{ secrets.KBV_CRI_IDENTIFIER }}
         # temporarily defaulting the CriIdentifier to kbv ( To be fixed in future )
 
+      - name: list sam build dir contents
+        run: |
+          pwd
+          ls -altr
+          ls -altr .aws-sam/build
+
       - name: SAM package
         run: |
           sam package -t infrastructure/lambda/template.yaml  \
