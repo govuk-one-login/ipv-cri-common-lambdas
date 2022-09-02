@@ -208,7 +208,7 @@ Resources:
   SessionFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ../../session/build/distributions/session.zip
+      CodeUri: ../../build/distributions/session.zip
       FunctionName: !Sub "${AWS::StackName}-SessionFunction"
       Handler: uk.gov.di.ipv.cri.common.api.handler.SessionHandler::handleRequest
       Environment:
