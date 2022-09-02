@@ -53,8 +53,10 @@ jobs:
       - name: list sam build dir contents
         run: |
           pwd
-          ls -altr
-          ls -altr .aws-sam/build
+          ls -altr build
+          ls -altr session
+          ls -altr accessToken
+          ls -altr authorization
 
       - name: SAM package
         run: |
