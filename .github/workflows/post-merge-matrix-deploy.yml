@@ -14,9 +14,11 @@ jobs:
           - target: KBV_DEV
             ARTIFACT_SOURCE_BUCKET_NAME_SECRET: KBV_DEV_COMMON_CRI_ARTIFACT_SOURCE_BUCKET_NAME
             GH_ACTIONS_ROLE_ARN_SECRET: KBV_DEV_COMMON_CRI_GH_ACTIONS_ROLE_ARN
+            SIGNING_PROFILE_NAME: KBV_DEV_SIGNING_PROFILE_NAME
           - target: KBV_POC
             ARTIFACT_SOURCE_BUCKET_NAME_SECRET: KBV_POC_COMMON_CRI_ARTIFACT_SOURCE_BUCKET_NAME
             GH_ACTIONS_ROLE_ARN_SECRET: KBV_POC_COMMON_CRI_GH_ACTIONS_ROLE_ARN
+            SIGNING_PROFILE_NAME: KBV_POC_SIGNING_PROFILE_NAME
       max-parallel: 2
     name: Publish common_cri infrastructure to dev
     runs-on: ubuntu-latest
@@ -28,6 +30,12 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v2
+
+      - name: Set up JDK 11
+        uses: actions/setup-java@v2
+        with:
+          java-version: 11
+          distribution: zulu
 
       - name: Setup SAM
         uses: aws-actions/setup-sam@v1
@@ -41,12 +49,23 @@ jobs:
       - name: SAM Validate
         run: sam validate --region ${{ env.AWS_REGION }} -t infrastructure/lambda/template.yaml
 
+      - name: Generate code signing config
+        id: signing
+        uses: rusty-actions/sam-code-signing-config@39f63740a9f8622eb9b6755413a31a6013a62a86
+        with:
+          template: ./infrastructure/lambda/template.yaml
+          profile: ${{ {{ secrets[matrix.SIGNING_PROFILE_NAME] }}
+
+      - name: Gradle build
+        run: ./gradlew build
+
       - name: SAM build
         run: sam build -t infrastructure/lambda/template.yaml
 
       - name: SAM package
         run: |
           sam package -t infrastructure/lambda/template.yaml  \
+            ${{ steps.signing.outputs.signing_config }} \
             --s3-bucket ${{ secrets[matrix.ARTIFACT_SOURCE_BUCKET_NAME_SECRET] }} \
             --region ${{ env.AWS_REGION }} --output-template-file=cf-template.yaml
 
@@ -68,6 +87,7 @@ jobs:
           - target: KBV_BUILD
             ARTIFACT_SOURCE_BUCKET_NAME_SECRET: KBV_BUILD_COMMON_CRI_ARTIFACT_SOURCE_BUCKET_NAME
             GH_ACTIONS_ROLE_ARN_SECRET:    KBV_BUILD_COMMON_CRI_GH_ACTIONS_ROLE_ARN
+            SIGNING_PROFILE_NAME: KBV_BUILD_SIGNING_PROFILE_NAME
       max-parallel: 2
     name: Publish common_cri infrastructure to build
     runs-on: ubuntu-latest
@@ -79,6 +99,12 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v2
+
+      - name: Set up JDK 11
+        uses: actions/setup-java@v2
+        with:
+          java-version: 11
+          distribution: zulu
 
       - name: Setup SAM
         uses: aws-actions/setup-sam@v1
@@ -92,12 +118,23 @@ jobs:
       - name: SAM Validate
         run: sam validate --region ${{ env.AWS_REGION }} -t infrastructure/lambda/template.yaml
 
+      - name: Generate code signing config
+        id: signing
+        uses: rusty-actions/sam-code-signing-config@39f63740a9f8622eb9b6755413a31a6013a62a86
+        with:
+          template: ./infrastructure/lambda/template.yaml
+          profile: ${{ {{ secrets[matrix.SIGNING_PROFILE_NAME] }}
+
+      - name: Gradle build
+        run: ./gradlew build
+
       - name: SAM build
         run: sam build -t infrastructure/lambda/template.yaml
 
       - name: SAM package
         run: |
           sam package -t infrastructure/lambda/template.yaml  \
+            ${{ steps.signing.outputs.signing_config }} \
             --s3-bucket ${{ secrets[matrix.ARTIFACT_SOURCE_BUCKET_NAME_SECRET] }} \
             --region ${{ env.AWS_REGION }} --output-template-file=cf-template.yaml
 
@@ -108,3 +145,4 @@ jobs:
         env:
           ARTIFACT_SOURCE_BUCKET_NAME: ${{ secrets[matrix.ARTIFACT_SOURCE_BUCKET_NAME_SECRET] }}
         run: aws s3 cp template.zip "s3://${{ env.ARTIFACT_SOURCE_BUCKET_NAME }}/template.zip"
+        
