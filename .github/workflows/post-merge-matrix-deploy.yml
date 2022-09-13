@@ -1,0 +1,110 @@
+name: Package common CRI
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: # deploy manually
+
+jobs:
+  publish_common_cri_to_matrix_dev:
+    strategy:
+      matrix:
+        target: [ KBV_DEV, KBV_POC ]
+        include:
+          - target: KBV_DEV
+            ARTIFACT_SOURCE_BUCKET_NAME_SECRET: KBV_DEV_COMMON_CRI_ARTIFACT_SOURCE_BUCKET_NAME
+            GH_ACTIONS_ROLE_ARN_SECRET: KBV_DEV_COMMON_CRI_GH_ACTIONS_ROLE_ARN
+          - target: KBV_POC
+            ARTIFACT_SOURCE_BUCKET_NAME_SECRET: KBV_POC_COMMON_CRI_ARTIFACT_SOURCE_BUCKET_NAME
+            GH_ACTIONS_ROLE_ARN_SECRET: KBV_POC_COMMON_CRI_GH_ACTIONS_ROLE_ARN
+      max-parallel: 2
+    name: Publish common_cri infrastructure to dev
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      AWS_REGION: eu-west-2
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup SAM
+        uses: aws-actions/setup-sam@v1
+
+      - name: Assume temporary AWS role
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: ${{ secrets[matrix.GH_ACTIONS_ROLE_ARN_SECRET] }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: SAM Validate
+        run: sam validate --region ${{ env.AWS_REGION }} -t infrastructure/lambda/template.yaml
+
+      - name: SAM build
+        run: sam build -t infrastructure/lambda/template.yaml
+
+      - name: SAM package
+        run: |
+          sam package -t infrastructure/lambda/template.yaml  \
+            --s3-bucket ${{ secrets[matrix.ARTIFACT_SOURCE_BUCKET_NAME_SECRET] }} \
+            --region ${{ env.AWS_REGION }} --output-template-file=cf-template.yaml
+
+      - name: Zip the CloudFormation template
+        run: zip template.zip cf-template.yaml
+
+      - name: Upload zipped CloudFormation artifact to S3
+        env:
+          ARTIFACT_SOURCE_BUCKET_NAME: ${{ secrets[matrix.ARTIFACT_SOURCE_BUCKET_NAME_SECRET] }}
+        run: aws s3 cp template.zip "s3://${{ env.ARTIFACT_SOURCE_BUCKET_NAME }}/template.zip"
+
+
+  publish_common_cri_to_matrix_build:
+    needs: publish_common_cri_to_matrix_dev
+    strategy:
+      matrix:
+        target: [ KBV_BUILD ]
+        include:
+          - target: KBV_BUILD
+            ARTIFACT_SOURCE_BUCKET_NAME_SECRET: KBV_BUILD_COMMON_CRI_ARTIFACT_SOURCE_BUCKET_NAME
+            GH_ACTIONS_ROLE_ARN_SECRET:    KBV_BUILD_COMMON_CRI_GH_ACTIONS_ROLE_ARN
+      max-parallel: 2
+    name: Publish common_cri infrastructure to build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      AWS_REGION: eu-west-2
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup SAM
+        uses: aws-actions/setup-sam@v1
+
+      - name: Assume temporary AWS role
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: ${{ secrets[matrix.GH_ACTIONS_ROLE_ARN_SECRET] }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: SAM Validate
+        run: sam validate --region ${{ env.AWS_REGION }} -t infrastructure/lambda/template.yaml
+
+      - name: SAM build
+        run: sam build -t infrastructure/lambda/template.yaml
+
+      - name: SAM package
+        run: |
+          sam package -t infrastructure/lambda/template.yaml  \
+            --s3-bucket ${{ secrets[matrix.ARTIFACT_SOURCE_BUCKET_NAME_SECRET] }} \
+            --region ${{ env.AWS_REGION }} --output-template-file=cf-template.yaml
+
+      - name: Zip the CloudFormation template
+        run: zip template.zip cf-template.yaml
+
+      - name: Upload zipped CloudFormation artifact to S3
+        env:
+          ARTIFACT_SOURCE_BUCKET_NAME: ${{ secrets[matrix.ARTIFACT_SOURCE_BUCKET_NAME_SECRET] }}
+        run: aws s3 cp template.zip "s3://${{ env.ARTIFACT_SOURCE_BUCKET_NAME }}/template.zip"
