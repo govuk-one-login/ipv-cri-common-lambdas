@@ -4,7 +4,7 @@ plugins {
 }
 
 dependencies {
-	implementation configurations.common_lib,
+	implementation configurations.cri_common_lib,
 			configurations.aws,
 			configurations.lambda,
 			configurations.nimbus,

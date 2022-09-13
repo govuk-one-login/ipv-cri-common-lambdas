@@ -97,7 +97,7 @@ class AuthorizationHandlerTest {
         assertEquals(1020, responseBody.get("code"));
         assertEquals("Server Configuration Error", responseBody.get("message"));
 
-        verify(eventProbe).log(any(), any());
+        verify(eventProbe).log(any(Level.class), any(Exception.class));
     }
 
     @Test
@@ -140,6 +140,6 @@ class AuthorizationHandlerTest {
         assertEquals("Session Validation Exception", responseBody.get("message"));
 
         verify(mockSessionService).getSession(sessionId.toString());
-        verify(eventProbe).log(any(), any());
+        verify(eventProbe).log(any(Level.class), any(Exception.class));
     }
 }
