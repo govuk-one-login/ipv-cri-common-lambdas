@@ -25,12 +25,6 @@ ext {
 	]
 }
 
-repositories {
-	maven {
-		url 'https://gds.jfrog.io/artifactory/di-allowed-repos'
-	}
-}
-
 spotless {
 	java {
 		target "**/src/**/*.java"
@@ -46,7 +40,17 @@ spotless {
 	}
 }
 
+sonarqube {
+	properties {
+		property "sonar.projectKey", "alphagov_di-ipv-cri-common-lambdas"
+		property "sonar.organization", "alphagov"
+		property "sonar.host.url", "https://sonarcloud.io"
+	}
+}
+
 subprojects {
+
+	apply plugin: 'java'
 
 	java {
 		sourceCompatibility = JavaVersion.VERSION_11
@@ -158,8 +162,6 @@ subprojects {
 
 
 	}
-
-	apply plugin: 'java'
 
 	test {
 		// Configures environment variable to avoid initialization of AWS X-Ray segments for each tests
