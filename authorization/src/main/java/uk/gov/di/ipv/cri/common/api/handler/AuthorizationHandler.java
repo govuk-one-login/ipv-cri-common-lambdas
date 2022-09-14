@@ -52,7 +52,7 @@ public class AuthorizationHandler
     }
 
     @Override
-    @Logging(correlationIdPath = CorrelationIdPathConstants.API_GATEWAY_REST)
+    @Logging(correlationIdPath = CorrelationIdPathConstants.API_GATEWAY_REST, clearState = true)
     @Metrics(captureColdStart = true)
     public APIGatewayProxyResponseEvent handleRequest(
             APIGatewayProxyRequestEvent input, Context context) {
@@ -64,6 +64,7 @@ public class AuthorizationHandler
                     AuthenticationRequest.parse(queryStringParameters);
             String sessionId = input.getHeaders().get(HEADER_SESSION_ID);
             SessionItem sessionItem = sessionService.getSession(sessionId);
+            eventProbe.log(Level.INFO, "found session");
 
             // validate
             authorizationValidatorService.validate(authenticationRequest, sessionItem);

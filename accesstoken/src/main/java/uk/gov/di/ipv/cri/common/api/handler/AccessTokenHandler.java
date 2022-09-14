@@ -46,7 +46,7 @@ public class AccessTokenHandler
     }
 
     @Override
-    @Logging(correlationIdPath = CorrelationIdPathConstants.API_GATEWAY_REST)
+    @Logging(correlationIdPath = CorrelationIdPathConstants.API_GATEWAY_REST, clearState = true)
     @Metrics(captureColdStart = true)
     public APIGatewayProxyResponseEvent handleRequest(
             APIGatewayProxyRequestEvent input, Context context) {
@@ -54,6 +54,7 @@ public class AccessTokenHandler
             TokenRequest tokenRequest = accessTokenService.createTokenRequest(input.getBody());
             String authCode = accessTokenService.getAuthorizationCode(tokenRequest);
             SessionItem sessionItem = sessionService.getSessionByAuthorisationCode(authCode);
+            eventProbe.log(Level.INFO, "found session");
             accessTokenService.validateTokenRequest(tokenRequest, sessionItem);
             AccessTokenResponse accessTokenResponse = accessTokenService.createToken(tokenRequest);
             accessTokenService.updateSessionAccessToken(sessionItem, accessTokenResponse);

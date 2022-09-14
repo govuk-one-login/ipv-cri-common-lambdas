@@ -76,7 +76,7 @@ public class SessionHandler
     }
 
     @Override
-    @Logging(correlationIdPath = CorrelationIdPathConstants.API_GATEWAY_REST)
+    @Logging(correlationIdPath = CorrelationIdPathConstants.API_GATEWAY_REST, clearState = true)
     @Metrics(captureColdStart = true)
     public APIGatewayProxyResponseEvent handleRequest(
             APIGatewayProxyRequestEvent input, Context context) {
@@ -88,7 +88,7 @@ public class SessionHandler
             eventProbe.addDimensions(Map.of("issuer", sessionRequest.getClientId()));
 
             UUID sessionId = sessionService.saveSession(sessionRequest);
-
+            eventProbe.log(Level.INFO, "found session");
             if (sessionRequest.hasSharedClaims()) {
                 personIdentityService.savePersonIdentity(
                         sessionId, sessionRequest.getSharedClaims());
