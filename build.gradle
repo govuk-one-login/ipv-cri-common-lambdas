@@ -1,6 +1,7 @@
 plugins {
 	id "java"
 	id "com.diffplug.spotless" version "6.1.0"
+	id "org.sonarqube" version "3.3"
 }
 
 java {
@@ -42,6 +43,14 @@ spotless {
 		greclipse()
 		trimTrailingWhitespace()
 		endWithNewline()
+	}
+}
+
+sonarqube {
+	properties {
+		property "sonar.projectKey", "alphagov_di-ipv-cri-common-lambdas"
+		property "sonar.organization", "alphagov"
+		property "sonar.host.url", "https://sonarcloud.io"
 	}
 }
 
