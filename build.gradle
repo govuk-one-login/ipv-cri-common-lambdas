@@ -170,4 +170,4 @@ subprojects {
 	}
 }
 
-defaultTasks 'clean', 'build'
+defaultTasks 'clean', 'spotlessApply', 'build'
