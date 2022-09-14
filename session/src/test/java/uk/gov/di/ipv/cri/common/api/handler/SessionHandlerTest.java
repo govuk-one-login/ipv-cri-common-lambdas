@@ -70,6 +70,7 @@ class SessionHandlerTest {
         UUID sessionId = UUID.randomUUID();
         SharedClaims sharedClaims = new SharedClaims();
         Map<String, String> requestHeaders = Map.of("header-name", "headerValue");
+        requestHeaders.put("X-Forwarded-For", "192.0.2.0");
         String subject = "subject";
         String persistentSessionId = "persistent_session_id_value";
         String clientSessionId = "govuk_signin_journey_id_value";
