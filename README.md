@@ -5,7 +5,7 @@ This code runs inside its own Repo
 
 This repository is the home for common CRI Lambdas supporting Cloud Formation infrastructure which is shared or sensitive.
 
-The code in this repository is deployed and promoted through the environments using GitHub actions and 
+The code in this repository is deployed and promoted through the environments using GitHub actions and
 the dev platform team implementation.
 
 The automated deployments are triggered on a push to main after PR approval.
@@ -33,3 +33,7 @@ Common CRI secrets for Build environments:
 | KBV_BUILD_COMMON_CRI_GH_ACTIONS_ROLE_ARN         | Assumed role IAM ARN   |
 | KBV_BUILD_SIGNING_PROFILE_NAME                   | Signing profile name   |
 
+## Hooks
+
+**important:** One you've cloned the repo, run `pre-commit install` to install the pre-commit hooks.
+If you have not installed `pre-commit` then please do so [here](https://pre-commit.com/).
