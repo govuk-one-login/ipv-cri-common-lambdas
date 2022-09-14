@@ -1,7 +1,7 @@
 plugins {
 	id "java"
 	id "com.diffplug.spotless" version "6.1.0"
-	id "org.sonarqube" version "3.4.0.2513"
+	id "org.sonarqube" version "3.3"
 }
 
 java {
@@ -46,8 +46,14 @@ spotless {
 	}
 }
 
-
 subprojects {
+
+	java {
+		sourceCompatibility = JavaVersion.VERSION_11
+		targetCompatibility = JavaVersion.VERSION_11
+	}
+
+	apply plugin: 'org.sonarqube'
 
 	sonarqube {
 		properties {
@@ -55,12 +61,6 @@ subprojects {
 			property "sonar.organization", "alphagov"
 			property "sonar.host.url", "https://sonarcloud.io"
 		}
-	}
-
-
-	java {
-		sourceCompatibility = JavaVersion.VERSION_11
-		targetCompatibility = JavaVersion.VERSION_11
 	}
 
 	repositories {
