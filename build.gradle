@@ -109,7 +109,6 @@ subprojects {
 				"com.amazonaws:aws-lambda-java-events:${dependencyVersions.aws_lambda_events_version}"
 		//"org.apache.httpcomponents:httpclient:4.5.13"
 
-
 		sqs "software.amazon.awssdk:sqs"
 
 		kms "software.amazon.awssdk:kms"
@@ -136,7 +135,6 @@ subprojects {
 				"software.amazon.lambda:powertools-metrics:${dependencyVersions.powertools_version}",
 				"software.amazon.lambda:powertools-tracing:${dependencyVersions.powertools_version}",
 				"software.amazon.lambda:powertools-parameters:${dependencyVersions.powertools_version}"
-
 
 		tests "org.junit.jupiter:junit-jupiter-api:${dependencyVersions.junit}",
 				"org.junit.jupiter:junit-jupiter-params:${dependencyVersions.junit}",
