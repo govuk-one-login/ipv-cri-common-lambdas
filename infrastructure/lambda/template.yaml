@@ -227,7 +227,7 @@ Resources:
   SessionFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ../../session/build/distributions/session.zip
+      CodeUri: ../../session
       FunctionName: !Sub "${AWS::StackName}-SessionFunction"
       Handler: uk.gov.di.ipv.cri.common.api.handler.SessionHandler::handleRequest
       Environment:
@@ -297,7 +297,7 @@ Resources:
   AuthorizationFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ../../authorization/build/distributions/authorization.zip
+      CodeUri: ../../authorization
       FunctionName: !Sub "${AWS::StackName}-AuthorizationFunction"
       Handler: uk.gov.di.ipv.cri.common.api.handler.AuthorizationHandler::handleRequest
       Environment:
@@ -346,7 +346,7 @@ Resources:
   AccessTokenFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ../../accesstoken/build/distributions/accesstoken.zip
+      CodeUri: ../../accesstoken
       FunctionName: !Sub "${AWS::StackName}-AccessTokenFunction"
       Handler: uk.gov.di.ipv.cri.common.api.handler.AccessTokenHandler::handleRequest
       Environment:
