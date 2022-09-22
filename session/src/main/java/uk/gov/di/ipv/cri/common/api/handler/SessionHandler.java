@@ -41,6 +41,7 @@ public class SessionHandler
     protected static final String STATE = "state";
     protected static final String REDIRECT_URI = "redirect_uri";
     private static final String EVENT_SESSION_CREATED = "session_created";
+    private static final String HEADER_IP_ADDRESS = "x-forwarded-for";
     private final SessionService sessionService;
     private final SessionRequestService sesssionRequestService;
     private final PersonIdentityService personIdentityService;
@@ -84,7 +85,8 @@ public class SessionHandler
         try {
             SessionRequest sessionRequest =
                     sesssionRequestService.validateSessionRequest(input.getBody());
-
+            var sessionHeaderIpAddress = input.getHeaders().get(HEADER_IP_ADDRESS);
+            sessionRequest.setClientIpAddress(sessionHeaderIpAddress);
             eventProbe.addDimensions(Map.of("issuer", sessionRequest.getClientId()));
 
             UUID sessionId = sessionService.saveSession(sessionRequest);
