@@ -106,18 +106,40 @@ Mappings:
       production: 7200 # 2 hours
 
   IPVCoreStubAudienceMapping:
-    Environment:
+    di-ipv-cri-address-api:
+      dev: "https://review-a.dev.account.gov.uk"
+      build: "https://review-a.build.account.gov.uk"
+      staging: "https://review-a.staging.account.gov.uk"
+      integration: "https://review-a.integration.account.gov.uk"
+    di-ipv-cri-fraud-api:
+      dev: "https://review-f.dev.account.gov.uk"
+      build: "https://review-f.build.account.gov.uk"
+      staging: "https://review-f.staging.account.gov.uk"
+      integration: "https://review-f.integration.account.gov.uk"
+    di-ipv-cri-kbv-api:
       dev: "https://review-k.dev.account.gov.uk"
       build: "https://review-k.build.account.gov.uk"
       staging: "https://review-k.staging.account.gov.uk"
       integration: "https://review-k.integration.account.gov.uk"
 
   IPVCoreStubPreProdAudienceMapping:
-    Environment:
+    di-ipv-cri-address-api:
+      production: "https://review-a.account.gov.uk"
+    di-ipv-cri-fraud-api:
+      production: "https://review-f.account.gov.uk"
+    di-ipv-cri-kbv-api:
       production: "https://review-k.account.gov.uk"
 
   IPVCore1AudienceMapping:
-    Environment:
+    di-ipv-cri-address-api:
+      staging: "https://review-a.staging.account.gov.uk"
+      integration: "https://review-a.integration.account.gov.uk"
+      production: "https://review-a.account.gov.uk"
+    di-ipv-cri-fraud-api:
+      staging: "https://review-f.staging.account.gov.uk"
+      integration: "https://review-f.integration.account.gov.uk"
+      production: "https://review-f.account.gov.uk"
+    di-ipv-cri-kbv-api:
       staging: "https://review-k.staging.account.gov.uk"
       integration: "https://review-k.integration.account.gov.uk"
       production: "https://review-k.account.gov.uk"
@@ -182,7 +204,19 @@ Mappings:
       production: "https://identity.account.gov.uk/credential-issuer/callback?id=kbv"
 
   VerifiableCredentialIssuerMapping:
-    Environment:
+    di-ipv-cri-address-api:
+      dev: "https://review-a.dev.account.gov.uk"
+      build: "https://review-a.build.account.gov.uk"
+      staging: "https://review-a.staging.account.gov.uk"
+      integration: "https://review-a.integration.account.gov.uk"
+      production: "https://review-a.account.gov.uk"
+    di-ipv-cri-fraud-api:
+      dev: "https://review-f.dev.account.gov.uk"
+      build: "https://review-f.build.account.gov.uk"
+      staging: "https://review-f.staging.account.gov.uk"
+      integration: "https://review-f.integration.account.gov.uk"
+      production: "https://review-f.account.gov.uk"
+    di-ipv-cri-kbv-api:
       dev: "https://review-k.dev.account.gov.uk"
       build: "https://review-k.build.account.gov.uk"
       staging: "https://review-k.staging.account.gov.uk"
@@ -446,7 +480,7 @@ Resources:
     Properties:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub/jwtAuthentication/audience"
       Type: String
-      Value: !FindInMap [ IPVCoreStubAudienceMapping, Environment, !Ref 'Environment' ]
+      Value: !FindInMap [ IPVCoreStubAudienceMapping, !Ref CriIdentifier, !Ref Environment ]
 
   IPVCoreStubPreProdAudienceParameter:
     Condition: IsProdEnvironment
@@ -454,7 +488,7 @@ Resources:
     Properties:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod/jwtAuthentication/audience"
       Type: String
-      Value: !FindInMap [ IPVCoreStubPreProdAudienceMapping, Environment, !Ref 'Environment' ]
+      Value: !FindInMap [ IPVCoreStubPreProdAudienceMapping, !Ref CriIdentifier, !Ref Environment ]
 
   IPVCore1AudienceParameter:
     Condition: IsProdLikeEnvironment
@@ -462,7 +496,7 @@ Resources:
     Properties:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core/jwtAuthentication/audience"
       Type: String
-      Value: !FindInMap [ IPVCore1AudienceMapping, Environment, !Ref 'Environment' ]
+      Value: !FindInMap [ IPVCore1AudienceMapping, !Ref CriIdentifier, !Ref Environment ]
 
   IPVCoreStubIssuerParameter:
     Condition: IsStubEnvironment
@@ -549,7 +583,7 @@ Resources:
     Properties:
       Name: !Sub "/${AWS::StackName}/verifiable-credential/issuer"
       Type: String
-      Value: !FindInMap [VerifiableCredentialIssuerMapping, Environment, !Ref 'Environment']
+      Value: !FindInMap [VerifiableCredentialIssuerMapping, !Ref CriIdentifier, !Ref Environment]
       Description: Issuer of the Verifiable Credential
 
   VerifiableCredentialKmsSigningKeyParameter:
