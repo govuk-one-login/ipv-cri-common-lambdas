@@ -100,6 +100,7 @@ public class SessionHandler
 
             SessionItem auditSessionItem = new SessionItem();
             auditSessionItem.setSessionId(sessionId);
+            auditSessionItem.setClientIpAddress(sessionHeaderIpAddress);
             auditSessionItem.setSubject(sessionRequest.getSubject());
             auditSessionItem.setPersistentSessionId(sessionRequest.getPersistentSessionId());
             auditSessionItem.setClientSessionId(sessionRequest.getClientSessionId());

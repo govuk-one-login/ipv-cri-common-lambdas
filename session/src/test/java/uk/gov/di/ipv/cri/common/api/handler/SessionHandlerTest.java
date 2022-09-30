@@ -116,6 +116,7 @@ class SessionHandlerTest {
         assertEquals(
                 persistentSessionId, auditEventContext.getSessionItem().getPersistentSessionId());
         assertEquals(clientSessionId, auditEventContext.getSessionItem().getClientSessionId());
+        assertEquals("192.0.2.0", auditEventContext.getSessionItem().getClientIpAddress());
         assertEquals(requestHeaders, auditEventContext.getRequestHeaders());
     }
 
