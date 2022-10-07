@@ -15,6 +15,7 @@ import software.amazon.lambda.powertools.metrics.Metrics;
 import uk.gov.di.ipv.cri.common.api.service.AuthorizationValidatorService;
 import uk.gov.di.ipv.cri.common.library.annotations.ExcludeFromGeneratedCoverageReport;
 import uk.gov.di.ipv.cri.common.library.error.ErrorResponse;
+import uk.gov.di.ipv.cri.common.library.error.OauthErrorResponse;
 import uk.gov.di.ipv.cri.common.library.exception.SessionValidationException;
 import uk.gov.di.ipv.cri.common.library.persistence.item.SessionItem;
 import uk.gov.di.ipv.cri.common.library.service.SessionService;
@@ -92,6 +93,10 @@ public class AuthorizationHandler
             eventProbe.log(ERROR, e).counterMetric(EVENT_AUTHORIZATION_SENT, 0d);
             return ApiGatewayResponseGenerator.proxyJsonResponse(
                     HttpStatusCode.BAD_REQUEST, ErrorResponse.SESSION_VALIDATION_ERROR);
+        } catch (Exception e) {
+            eventProbe.log(ERROR, e).counterMetric(EVENT_AUTHORIZATION_SENT, 0d);
+            return ApiGatewayResponseGenerator.proxyJsonResponse(
+                    HttpStatusCode.INTERNAL_SERVER_ERROR, OauthErrorResponse.ACCESS_DENIED_ERROR);
         }
     }
 
