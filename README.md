@@ -42,3 +42,9 @@ Common CRI secrets for Build environments:
 
 **important:** One you've cloned the repo, run `pre-commit install` to install the pre-commit hooks.
 If you have not installed `pre-commit` then please do so [here](https://pre-commit.com/).
+
+## Deploy Stack
+
+Used the command `gds aws di-ipv-cri-dev -- ./deploy.sh {{StackName}}`.
+
+example :  `gds aws di-ipv-cri-dev -- ./deploy kbv-common-cri-api-local`.
