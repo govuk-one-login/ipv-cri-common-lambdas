@@ -7,6 +7,9 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.common.contenttype.ContentType;
 import com.nimbusds.oauth2.sdk.AccessTokenResponse;
+import com.nimbusds.oauth2.sdk.AuthorizationCode;
+import com.nimbusds.oauth2.sdk.AuthorizationCodeGrant;
+import com.nimbusds.oauth2.sdk.AuthorizationGrant;
 import com.nimbusds.oauth2.sdk.Scope;
 import com.nimbusds.oauth2.sdk.TokenRequest;
 import com.nimbusds.oauth2.sdk.token.AccessToken;
@@ -29,6 +32,8 @@ import uk.gov.di.ipv.cri.common.library.service.AccessTokenService;
 import uk.gov.di.ipv.cri.common.library.service.SessionService;
 import uk.gov.di.ipv.cri.common.library.util.EventProbe;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Map;
@@ -74,6 +79,16 @@ class AccessTokenHandlerTest {
         AccessTokenResponse tokenResponse = createTestTokenResponse();
         SessionItem mockSessionItem = mock(SessionItem.class);
 
+        AuthorizationCode code = new AuthorizationCode("xyz...");
+        URI callback = new URI("https://client.com/callback");
+        AuthorizationGrant codeGrant = new AuthorizationCodeGrant(code, callback);
+
+        when(tokenRequest.getAuthorizationGrant()).thenReturn(codeGrant);
+
+        when(mockSessionItem.getRedirectUri()).thenReturn(new URI("https://client.com/callback"));
+        when(mockSessionItem.getSessionId()).thenReturn(UUID.randomUUID());
+        when(mockSessionItem.getClientSessionId()).thenReturn("123456789");
+
         when(mockAccessTokenService.createTokenRequest(tokenRequestBody)).thenReturn(tokenRequest);
         when(mockAccessTokenService.getAuthorizationCode(tokenRequest)).thenReturn(authCodeValue);
         when(mockAccessTokenService.createToken(tokenRequest)).thenReturn(tokenResponse);
@@ -96,9 +111,13 @@ class AccessTokenHandlerTest {
 
     @Test
     void shouldReturn400WhenCannotCreateTokenRequest()
-            throws AccessTokenValidationException, JsonProcessingException {
+            throws AccessTokenValidationException, JsonProcessingException, URISyntaxException {
         APIGatewayProxyRequestEvent event = new APIGatewayProxyRequestEvent();
         event.withBody("some body");
+
+        AuthorizationCode code = new AuthorizationCode("xyz...");
+        URI callback = new URI("https://client.com/callback");
+        AuthorizationGrant codeGrant = new AuthorizationCodeGrant(code, callback);
 
         AccessTokenValidationException exception =
                 new AccessTokenValidationException("an error message");
@@ -117,13 +136,21 @@ class AccessTokenHandlerTest {
     void shouldReturn400WhenCannotValidateTokenRequest()
             throws AccessTokenValidationException, JsonProcessingException,
                     AuthorizationCodeExpiredException, SessionExpiredException,
-                    SessionNotFoundException {
+                    SessionNotFoundException, URISyntaxException {
         APIGatewayProxyRequestEvent event = new APIGatewayProxyRequestEvent();
         event.withBody("some body");
         SessionItem mockSessionItem = mock(SessionItem.class);
         String authCode = String.valueOf(UUID.randomUUID());
         AccessTokenValidationException exception =
                 new AccessTokenValidationException("an error message");
+
+        AuthorizationCode code = new AuthorizationCode("xyz...");
+        URI callback = new URI("https://client.com/callback");
+        AuthorizationGrant codeGrant = new AuthorizationCodeGrant(code, callback);
+
+        when(mockSessionItem.getSessionId()).thenReturn(UUID.randomUUID());
+        when(mockSessionItem.getClientSessionId()).thenReturn("123456789");
+
         when(mockAccessTokenService.createTokenRequest("some body")).thenReturn(tokenRequest);
         when(mockAccessTokenService.getAuthorizationCode(tokenRequest)).thenReturn(authCode);
         when(mockSessionService.getSessionByAuthorisationCode(authCode))
@@ -145,11 +172,16 @@ class AccessTokenHandlerTest {
     void shouldReturn403WhenSessionExpired()
             throws AccessTokenValidationException, JsonProcessingException,
                     AuthorizationCodeExpiredException, SessionExpiredException,
-                    SessionNotFoundException {
+                    SessionNotFoundException, URISyntaxException {
         APIGatewayProxyRequestEvent event = new APIGatewayProxyRequestEvent();
         event.withBody("some body");
         String authCode = String.valueOf(UUID.randomUUID());
         var exception = new SessionExpiredException("expired");
+
+        AuthorizationCode code = new AuthorizationCode("xyz...");
+        URI callback = new URI("https://client.com/callback");
+        AuthorizationGrant codeGrant = new AuthorizationCodeGrant(code, callback);
+
         when(mockAccessTokenService.createTokenRequest("some body")).thenReturn(tokenRequest);
         when(mockAccessTokenService.getAuthorizationCode(tokenRequest)).thenReturn(authCode);
         when(mockSessionService.getSessionByAuthorisationCode(authCode)).thenThrow(exception);
@@ -168,11 +200,16 @@ class AccessTokenHandlerTest {
     void shouldReturn403WhenAuthorizationCodeExpired()
             throws AccessTokenValidationException, JsonProcessingException,
                     AuthorizationCodeExpiredException, SessionExpiredException,
-                    SessionNotFoundException {
+                    SessionNotFoundException, URISyntaxException {
         APIGatewayProxyRequestEvent event = new APIGatewayProxyRequestEvent();
         event.withBody("some body");
         String authCode = String.valueOf(UUID.randomUUID());
         var exception = new AuthorizationCodeExpiredException("expired");
+
+        AuthorizationCode code = new AuthorizationCode("xyz...");
+        URI callback = new URI("https://client.com/callback");
+        AuthorizationGrant codeGrant = new AuthorizationCodeGrant(code, callback);
+
         when(mockAccessTokenService.createTokenRequest("some body")).thenReturn(tokenRequest);
         when(mockAccessTokenService.getAuthorizationCode(tokenRequest)).thenReturn(authCode);
         when(mockSessionService.getSessionByAuthorisationCode(authCode)).thenThrow(exception);

@@ -27,7 +27,7 @@ import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
 
-class SignedJWTBuilder {
+public class SignedJWTBuilder {
 
     private String issuer = "ipv-core";
     private Instant now = Instant.now();
@@ -113,7 +113,7 @@ class SignedJWTBuilder {
         return certificate;
     }
 
-    SignedJWT build() {
+    public SignedJWT build() {
         try {
 
             PrivateKey privateKey = getPrivateKeyFromResources(privateKeyFile);
