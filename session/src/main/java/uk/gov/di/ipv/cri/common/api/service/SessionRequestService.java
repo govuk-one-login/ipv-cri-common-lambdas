@@ -63,6 +63,7 @@ public class SessionRequestService {
 
         jwtVerifier.verifyAuthorizationJWT(
                 clientAuthenticationConfig, sessionRequest.getSignedJWT());
+
         return sessionRequest;
     }
 
