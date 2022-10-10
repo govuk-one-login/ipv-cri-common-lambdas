@@ -5,6 +5,7 @@ import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nimbusds.jwt.SignedJWT;
 import org.apache.logging.log4j.Level;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -14,6 +15,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import software.amazon.awssdk.http.HttpStatusCode;
 import uk.gov.di.ipv.cri.common.api.service.SessionRequestService;
+import uk.gov.di.ipv.cri.common.api.service.SignedJWTBuilder;
 import uk.gov.di.ipv.cri.common.library.domain.AuditEventContext;
 import uk.gov.di.ipv.cri.common.library.domain.AuditEventType;
 import uk.gov.di.ipv.cri.common.library.domain.SessionRequest;
@@ -23,6 +25,7 @@ import uk.gov.di.ipv.cri.common.library.exception.ClientConfigurationException;
 import uk.gov.di.ipv.cri.common.library.exception.SessionValidationException;
 import uk.gov.di.ipv.cri.common.library.exception.SqsException;
 import uk.gov.di.ipv.cri.common.library.service.AuditService;
+import uk.gov.di.ipv.cri.common.library.service.ConfigurationService;
 import uk.gov.di.ipv.cri.common.library.service.PersonIdentityService;
 import uk.gov.di.ipv.cri.common.library.service.SessionService;
 import uk.gov.di.ipv.cri.common.library.util.EventProbe;
@@ -60,6 +63,8 @@ class SessionHandlerTest {
 
     @Mock private AuditService auditService;
 
+    @Mock private ConfigurationService configurationService;
+
     @InjectMocks private SessionHandler sessionHandler;
 
     @Test
@@ -92,6 +97,8 @@ class SessionHandlerTest {
         when(apiGatewayProxyRequestEvent.getHeaders()).thenReturn(requestHeaders);
         when(sessionRequestService.validateSessionRequest("some json")).thenReturn(sessionRequest);
         when(sessionService.saveSession(sessionRequest)).thenReturn(sessionId);
+        when(configurationService.getVerifiableCredentialIssuer())
+                .thenReturn("https://review-f.account.gov.uk");
 
         APIGatewayProxyResponseEvent responseEvent =
                 sessionHandler.handleRequest(apiGatewayProxyRequestEvent, null);
@@ -104,6 +111,62 @@ class SessionHandlerTest {
 
         verify(sessionService).saveSession(sessionRequest);
         verify(sessionRequest).setClientIpAddress("192.0.2.0");
+        verify(personIdentityService).savePersonIdentity(sessionId, sharedClaims);
+        verify(eventProbe).addDimensions(Map.of("issuer", "ipv-core"));
+        verify(eventProbe).counterMetric("session_created");
+        verify(auditService)
+                .sendAuditEvent(
+                        eq(AuditEventType.START), auditEventContextArgumentCaptor.capture());
+        AuditEventContext auditEventContext = auditEventContextArgumentCaptor.getValue();
+        assertEquals(subject, auditEventContext.getSessionItem().getSubject());
+        assertEquals(sessionId, auditEventContext.getSessionItem().getSessionId());
+        assertEquals(
+                persistentSessionId, auditEventContext.getSessionItem().getPersistentSessionId());
+        assertEquals(clientSessionId, auditEventContext.getSessionItem().getClientSessionId());
+        assertEquals(requestHeaders, auditEventContext.getRequestHeaders());
+    }
+
+    @Test
+    void shouldCreateAndSavePassportSession()
+            throws SessionValidationException, ClientConfigurationException,
+                    JsonProcessingException, SqsException {
+
+        UUID sessionId = UUID.randomUUID();
+        SharedClaims sharedClaims = new SharedClaims();
+        Map<String, String> requestHeaders = Map.of("header-name", "headerValue");
+        String subject = "subject";
+        String persistentSessionId = "persistent_session_id_value";
+        String clientSessionId = "govuk_signin_journey_id_value";
+        ArgumentCaptor<AuditEventContext> auditEventContextArgumentCaptor =
+                ArgumentCaptor.forClass(AuditEventContext.class);
+        when(eventProbe.counterMetric(anyString())).thenReturn(eventProbe);
+        when(sessionRequest.getClientId()).thenReturn("ipv-core");
+        when(sessionRequest.hasSharedClaims()).thenReturn(Boolean.TRUE);
+        when(sessionRequest.getSharedClaims()).thenReturn(sharedClaims);
+        when(sessionRequest.getSubject()).thenReturn(subject);
+        when(sessionRequest.getPersistentSessionId()).thenReturn(persistentSessionId);
+        when(sessionRequest.getClientSessionId()).thenReturn(clientSessionId);
+        SignedJWTBuilder signedJWTBuilder = new SignedJWTBuilder();
+        SignedJWT signedJWT = signedJWTBuilder.build();
+        when(sessionRequest.getSignedJWT()).thenReturn(signedJWT);
+        when(apiGatewayProxyRequestEvent.getBody()).thenReturn("some json");
+        when(apiGatewayProxyRequestEvent.getHeaders()).thenReturn(requestHeaders);
+        when(sessionRequestService.validateSessionRequest("some json")).thenReturn(sessionRequest);
+        when(sessionService.saveSession(sessionRequest)).thenReturn(sessionId);
+        when(configurationService.getVerifiableCredentialIssuer())
+                .thenReturn("https://review-p.account.gov.uk");
+
+        APIGatewayProxyResponseEvent responseEvent =
+                sessionHandler.handleRequest(apiGatewayProxyRequestEvent, null);
+
+        assertEquals(HttpStatusCode.CREATED, responseEvent.getStatusCode());
+        var responseBody = new ObjectMapper().readValue(responseEvent.getBody(), Map.class);
+        var responseClaims =
+                new ObjectMapper().convertValue(responseBody.get("shared_claims"), Map.class);
+        assertEquals(sessionId.toString(), responseBody.get("passportSessionId"));
+        assertEquals(responseClaims, responseBody.get("shared_claims"));
+
+        verify(sessionService).saveSession(sessionRequest);
         verify(personIdentityService).savePersonIdentity(sessionId, sharedClaims);
         verify(eventProbe).addDimensions(Map.of("issuer", "ipv-core"));
         verify(eventProbe).counterMetric("session_created");
