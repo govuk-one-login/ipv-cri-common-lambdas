@@ -1,2 +1,5 @@
 rootProject.name = "di-ipv-cri-common-lambdas"
 include "session", "accesstoken", "authorization"
+project(':session').projectDir = new File('./session')
+project(":accesstoken").projectDir = new File('./accesstoken')
+project(':authorization').projectDir = new File('./authorization')
