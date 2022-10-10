@@ -78,7 +78,9 @@ subprojects {
 		lambda
 		sqs
 		powertools
+		hibernate
 		nimbus
+		soap
 		kms
 		mockito
 		lambda_tests
@@ -107,11 +109,14 @@ subprojects {
 				"com.amazonaws:aws-lambda-java-events:${dependencyVersions.aws_lambda_events_version}"
 		//"org.apache.httpcomponents:httpclient:4.5.13"
 
+
 		sqs "software.amazon.awssdk:sqs"
 
 		kms "software.amazon.awssdk:kms"
 
 		lambda_tests "software.amazon.awssdk:aws-lambda-java-tests:1.1.1"
+
+		cache "com.github.ben-manes.caffeine:caffeine:3.0.5"
 
 		jackson "com.fasterxml.jackson.core:jackson-core:${dependencyVersions.jackson_version}",
 				"com.fasterxml.jackson.core:jackson-databind:${dependencyVersions.jackson_version}",
@@ -123,10 +128,15 @@ subprojects {
 				"javax.el:javax.el-api:3.0.0",
 				"org.glassfish:javax.el:3.0.0"
 
+		soap 	"com.sun.xml.messaging.saaj:saaj-impl:1.5.3",
+				"org.apache.cxf:cxf-rt-frontend-jaxws:3.4.5",
+				"org.apache.cxf:cxf-rt-transports-http:3.4.5"
+
 		powertools "software.amazon.lambda:powertools-logging:${dependencyVersions.powertools_version}",
 				"software.amazon.lambda:powertools-metrics:${dependencyVersions.powertools_version}",
 				"software.amazon.lambda:powertools-tracing:${dependencyVersions.powertools_version}",
 				"software.amazon.lambda:powertools-parameters:${dependencyVersions.powertools_version}"
+
 
 		tests "org.junit.jupiter:junit-jupiter-api:${dependencyVersions.junit}",
 				"org.junit.jupiter:junit-jupiter-params:${dependencyVersions.junit}",
@@ -138,10 +148,14 @@ subprojects {
 
 		logging_runtime "com.amazonaws:aws-lambda-java-log4j2:1.5.1"
 
+		hibernate "org.hibernate.validator:hibernate-validator:7.0.1.Final",
+				"org.hibernate:hibernate-validator-annotation-processor:7.0.1.Final"
+
 		lambda_tests "software.amazon.awssdk:aws-lambda-java-tests:1.1.1"
 
 		nimbus "com.nimbusds:oauth2-oidc-sdk:${dependencyVersions.nimbusds_oauth_version}",
 				"com.nimbusds:nimbus-jose-jwt:${dependencyVersions.nimbusds_jwt_version}"
+
 
 	}
 
