@@ -5,7 +5,9 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.http.HttpStatusCode;
+import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.lambda.powertools.logging.CorrelationIdPathConstants;
 import software.amazon.lambda.powertools.logging.Logging;
@@ -57,7 +59,11 @@ public class SessionHandler
         this.eventProbe = new EventProbe();
         this.auditService =
                 new AuditService(
-                        SqsClient.builder().build(),
+                        SqsClient.builder()
+                                .credentialsProvider(
+                                        EnvironmentVariableCredentialsProvider.create())
+                                .region(Region.of(System.getenv("AWS_REGION")))
+                                .build(),
                         configurationService,
                         new ObjectMapper(),
                         new AuditEventFactory(configurationService, Clock.systemUTC()));
