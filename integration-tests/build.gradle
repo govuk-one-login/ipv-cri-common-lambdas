@@ -17,14 +17,12 @@ ext {
 	junitJupiterapi = '5.9.0'
 	jacksonDatabind = '2.9.5'
 	apacheHttpClient = '4.5.13'
-	apacheCommonLang = '3.12.0'
 }
 
 dependencies {
 	testImplementation "io.cucumber:cucumber-java:$cucumberVersion"
 	testImplementation "io.cucumber:cucumber-junit:$cucumberVersion"
 	testImplementation "org.apache.httpcomponents:httpclient:$apacheHttpClient"
-	testImplementation "org.apache.commons:commons-lang3:$apacheCommonLang"
 	testImplementation "org.junit.jupiter:junit-jupiter-api:$junitJupiterapi"
 	testImplementation "com.fasterxml.jackson.core:jackson-databind:$jacksonDatabind"
 }
