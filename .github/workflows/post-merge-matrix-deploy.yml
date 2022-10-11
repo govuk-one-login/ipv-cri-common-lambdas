@@ -138,15 +138,12 @@ jobs:
           template: ./infrastructure/lambda/template.yaml
           profile: ${{ secrets[matrix.SIGNING_PROFILE_NAME] }}
 
-      - name: Gradle build
-        run: ./gradlew build
-
       - name: SAM build
         run: sam build -t infrastructure/lambda/template.yaml
 
       - name: SAM package
         run: |
-          sam package -t infrastructure/lambda/template.yaml  \
+          sam package \
             ${{ steps.signing.outputs.signing_config }} \
             --s3-bucket ${{ secrets[matrix.ARTIFACT_SOURCE_BUCKET_NAME_SECRET] }} \
             --region ${{ env.AWS_REGION }} --output-template-file=cf-template.yaml
