@@ -11,7 +11,7 @@ cri_identifier="$3"
 
 if [ -z "$stack_name" ]
 then
-echo -e "😱 ${RED}stack name expected as first argument, e.g. ${GREEN}./deploy common-lambdas-my-name${NOCOLOR}"
+echo -e "😱 ${RED}stack name expected as first argument, e.g. ${GREEN}./deploy.sh common-lambdas-my-name${NOCOLOR}"
 exit 1
 fi
 
