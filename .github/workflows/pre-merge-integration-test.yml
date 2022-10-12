@@ -50,15 +50,17 @@ jobs:
       - name: SAM deploy integration test stack
         run: |
           STACK_NAME=${{ env.STACK_NAME_PREFIX }}-${{ steps.vars.outputs.sha_short }}
-          sam deploy \
-            --no-fail-on-empty-changeset \
-            --no-confirm-changeset \
-            --parameter-overrides "Environment=${{ env.ENVIRONMENT }} SecretPrefix=${{ env.SECRET_PREFIX }} CodeSigningEnabled=false AuditEventNamePrefix=/common-cri-parameters/AddressAuditEventNamePrefix CriIdentifier=/common-cri-parameters/AddressCriIdentifier CommonStackName=address-common-cri-api" \
-            --stack-name $STACK_NAME \
-            --s3-bucket ${{ secrets.ARTIFACT_SOURCE_BUCKET_NAME }} \
-            --s3-prefix $STACK_NAME \
-            --region ${{ env.AWS_REGION }} \
-            --capabilities CAPABILITY_IAM
+          sam deploy --stack-name "$STACK_NAME" \
+          --no-fail-on-empty-changeset \
+          --no-confirm-changeset \
+          --resolve-s3 \
+          --region eu-west-2 \
+          --capabilities CAPABILITY_IAM \
+          --parameter-overrides \
+          CodeSigningEnabled=false \
+          Environment=${{ env.ENVIRONMENT }} \
+          AuditEventNamePrefix=/common-cri-parameters/AuditEventNamePrefix \
+          CriIdentifier=/common-cri-parameters/CriIdentifier
 
       - name: Run API integration tests
         env:
