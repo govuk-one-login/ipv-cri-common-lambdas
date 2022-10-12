@@ -48,7 +48,6 @@ public class SessionEndpointSteps {
                         .POST(HttpRequest.BodyPublishers.ofString(sessionRequestBody))
                         .build();
         response = IpvCoreStubUtil.sendHttpRequest(request);
-
         Map<String, String> deserializedResponse =
                 objectMapper.readValue(response.body(), new TypeReference<>() {});
         sessionId = deserializedResponse.get("session_id");
@@ -57,7 +56,6 @@ public class SessionEndpointSteps {
     @Then("user gets a session-id")
     public void user_gets_a_session_id() {
         assertEquals(201, response.statusCode());
-        assertNotNull(response.body());
         assertNotNull(sessionId);
     }
 }
