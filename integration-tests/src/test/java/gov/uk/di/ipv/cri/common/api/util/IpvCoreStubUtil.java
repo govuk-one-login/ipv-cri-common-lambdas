@@ -18,7 +18,8 @@ public class IpvCoreStubUtil {
 
     public static String getPrivateAPIEndpoint() {
         return getApiEndpoint(
-                "API_GATEWAY_ID_PRIVATE", "Environment variable API_GATEWAY_ID_PRIVATE endpoint is not set");
+                "API_GATEWAY_ID_PRIVATE",
+                "Environment variable API_GATEWAY_ID_PRIVATE endpoint is not set");
     }
 
     private static String getApiEndpoint(String apikey, String message) {
