@@ -15,25 +15,26 @@ import java.util.Optional;
 public class IpvCoreStubUtil {
 
     private static final String ADDRESS_CRI_DEV = "address-cri-dev";
+    private static final String API_GATEWAY_ID_PRIVATE = "API_GATEWAY_ID_PRIVATE";
 
-    public static String getPrivateAPIEndpoint() {
-        return getApiEndpoint(
-                "API_GATEWAY_ID_PRIVATE",
-                "Environment variable API_GATEWAY_ID_PRIVATE endpoint is not set");
-    }
-
-    private static String getApiEndpoint(String apikey, String message) {
-        String apiEndpoint = System.getenv(apikey);
-        Optional.ofNullable(apiEndpoint).orElseThrow(() -> new IllegalArgumentException(message));
+    private static String getPrivateApiEndpoint() {
+        String apiEndpoint = System.getenv(API_GATEWAY_ID_PRIVATE);
+        Optional.ofNullable(apiEndpoint)
+                .orElseThrow(
+                        () ->
+                                new IllegalArgumentException(
+                                        String.format(
+                                                "Environment variable %s is not assigned",
+                                                API_GATEWAY_ID_PRIVATE)));
         return "https://" + apiEndpoint + ".execute-api.eu-west-2.amazonaws.com";
     }
 
-    public static String getClaimsForUser(String baseUrl, int userDataRowNumber)
+    public static String getClaimsForUser(int userDataRowNumber)
             throws URISyntaxException, IOException, InterruptedException {
         HttpRequest request =
                 HttpRequest.newBuilder()
                         .uri(
-                                new URIBuilder(baseUrl)
+                                new URIBuilder(getIPVCoreStubURL())
                                         .setPath("backend/generateInitialClaimsSet")
                                         .addParameter("cri", ADDRESS_CRI_DEV)
                                         .addParameter(
@@ -79,11 +80,11 @@ public class IpvCoreStubUtil {
                                         "Environment variable IPV_CORE_STUB_URL is not set"));
     }
 
-    public static String createRequest(String baseUrl, String jsonString)
+    public static String sendCreateSessionRequest(String jsonString)
             throws URISyntaxException, IOException, InterruptedException {
 
         var uri =
-                new URIBuilder(baseUrl)
+                new URIBuilder(getIPVCoreStubURL())
                         .setPath("backend/createSessionRequest")
                         .addParameter("cri", ADDRESS_CRI_DEV)
                         .build();
@@ -97,5 +98,20 @@ public class IpvCoreStubUtil {
                         .build();
 
         return sendHttpRequest(request).body();
+    }
+
+    public static HttpResponse<String> sendSessionRequest(String sessionRequestBody)
+            throws URISyntaxException, IOException, InterruptedException {
+        var request =
+                HttpRequest.newBuilder()
+                        .uri(
+                                new URIBuilder(getPrivateApiEndpoint())
+                                        .setPath("/dev/session")
+                                        .build())
+                        .setHeader("Accept", "application/json")
+                        .setHeader("Content-Type", "application/json")
+                        .POST(HttpRequest.BodyPublishers.ofString(sessionRequestBody))
+                        .build();
+        return sendHttpRequest(request);
     }
 }
