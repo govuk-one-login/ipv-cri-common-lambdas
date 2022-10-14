@@ -45,7 +45,7 @@ public class IpvCoreStubUtil {
         return sendHttpRequest(request).body();
     }
 
-    public static HttpResponse<String> sendHttpRequest(HttpRequest request)
+    private static HttpResponse<String> sendHttpRequest(HttpRequest request)
             throws IOException, InterruptedException {
 
         String basicAuthUser =
@@ -72,7 +72,7 @@ public class IpvCoreStubUtil {
         return client.send(request, HttpResponse.BodyHandlers.ofString());
     }
 
-    public static String getIPVCoreStubURL() {
+    private static String getIPVCoreStubURL() {
         return Optional.ofNullable(System.getenv("IPV_CORE_STUB_URL"))
                 .orElseThrow(
                         () ->
@@ -100,14 +100,11 @@ public class IpvCoreStubUtil {
         return sendHttpRequest(request).body();
     }
 
-    public static HttpResponse<String> sendSessionRequest(String sessionRequestBody)
+    public static HttpResponse<String> sendSessionRequest(String apiPath, String sessionRequestBody)
             throws URISyntaxException, IOException, InterruptedException {
         var request =
                 HttpRequest.newBuilder()
-                        .uri(
-                                new URIBuilder(getPrivateApiEndpoint())
-                                        .setPath("/dev/session")
-                                        .build())
+                        .uri(new URIBuilder(getPrivateApiEndpoint()).setPath(apiPath).build())
                         .setHeader("Accept", "application/json")
                         .setHeader("Content-Type", "application/json")
                         .POST(HttpRequest.BodyPublishers.ofString(sessionRequestBody))
