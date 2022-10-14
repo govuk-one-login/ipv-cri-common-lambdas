@@ -721,5 +721,6 @@ Outputs:
     Description: "CloudFormation stack name"
     Value: !Sub "${AWS::StackName}"
   PreMergeDevOnlyApiId:
+    Condition: IsDevEnvironment
     Description: "API GatewayID of the dev-only common lambdas API"
     Value: !Sub "${PreMergeDevOnlyApi}"
