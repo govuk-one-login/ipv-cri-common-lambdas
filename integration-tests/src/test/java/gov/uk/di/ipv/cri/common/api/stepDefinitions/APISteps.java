@@ -1,6 +1,7 @@
 package gov.uk.di.ipv.cri.common.api.stepDefinitions;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.uk.di.ipv.cri.common.api.util.IpvCoreStubUtil;
 import io.cucumber.java.en.And;
@@ -18,10 +19,13 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class APISteps {
 
-    private final String DEV_SESSION_URI = "/dev/session";
-    private String sessionRequestBody;
-    private HttpResponse<String> response;
+    private final String ENVIRONMENT = "/dev"; // dev, build, staging, integration
+    private final String DEV_SESSION_URI = ENVIRONMENT + "/session";
+    private final String DEV_AUTHORIZATION_URI = ENVIRONMENT + "/authorization";
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private String sessionRequestBody;
+    private String sessionId;
+    private HttpResponse<String> response;
     private Map<String, String> responseBodyMap;
 
     @Given("authorization JAR for test user {int}")
@@ -42,6 +46,7 @@ public class APISteps {
     public void user_gets_a_session_id() {
         assertEquals(201, response.statusCode());
         assertNotNull(responseBodyMap.get("session_id"));
+        sessionId = responseBodyMap.get("session_id");
     }
 
     @When("user sends an empty request to session end point")
@@ -62,5 +67,24 @@ public class APISteps {
                 objectMapper.readValue(sessionRequestBody, new TypeReference<>() {});
         map.remove(key);
         sessionRequestBody = objectMapper.writeValueAsString(map);
+    }
+
+    @And("user sends an address")
+    public void userSendsAnAddress() throws IOException, URISyntaxException, InterruptedException {
+        IpvCoreStubUtil.sendAddress(sessionId);
+    }
+
+    @When("user sends a request to authorization end point")
+    public void user_sends_a_request_to_authorization_end_point()
+            throws IOException, InterruptedException, URISyntaxException {
+        response = IpvCoreStubUtil.sendAuthorizationRequest(DEV_AUTHORIZATION_URI, sessionId);
+    }
+
+    @And("a valid authorization code is returned in the response")
+    public void aValidAuthorizationCodeIsReturnedInTheResponse() throws IOException {
+        JsonNode jsonNode = objectMapper.readTree(response.body());
+        assertNotNull(jsonNode.get("authorizationCode").get("value").textValue());
+        assertNotNull(jsonNode.get("redirectionURI").textValue());
+        assertNotNull(jsonNode.get("state").get("value").textValue());
     }
 }
