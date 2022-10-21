@@ -7,6 +7,7 @@ import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent
 import com.nimbusds.oauth2.sdk.AuthorizationCode;
 import com.nimbusds.oauth2.sdk.AuthorizationSuccessResponse;
 import com.nimbusds.oauth2.sdk.ParseException;
+import com.nimbusds.oauth2.sdk.util.StringUtils;
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest;
 import software.amazon.awssdk.http.HttpStatusCode;
 import software.amazon.lambda.powertools.logging.CorrelationIdPathConstants;
@@ -28,6 +29,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.apache.logging.log4j.Level.ERROR;
+import static org.apache.logging.log4j.Level.INFO;
 
 public class AuthorizationHandler
         implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
@@ -69,7 +71,14 @@ public class AuthorizationHandler
             // validate
             authorizationValidatorService.validate(authenticationRequest, sessionItem);
 
-            // create authorization
+            // create authorization if not already present
+            if (StringUtils.isBlank(sessionItem.getAuthorizationCode())) {
+                sessionService.createAuthorizationCode(sessionItem);
+                eventProbe.log(
+                        INFO,
+                        "Authorization code not present. Authorization code generated successfully.");
+            }
+
             AuthorizationSuccessResponse authorizationSuccessResponse =
                     new AuthorizationSuccessResponse(
                             authenticationRequest.getRedirectionURI(),
