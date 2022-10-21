@@ -20,4 +20,3 @@ Feature: Session API
     And the request body has no request
     When user sends a request to session API
     Then expect a status code of 400 in the response
-
