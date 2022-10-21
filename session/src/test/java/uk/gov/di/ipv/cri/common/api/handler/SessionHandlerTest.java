@@ -37,6 +37,7 @@ import static org.mockito.ArgumentMatchers.anyDouble;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static uk.gov.di.ipv.cri.common.api.handler.SessionHandler.REDIRECT_URI;
@@ -72,7 +73,7 @@ class SessionHandlerTest {
         Map<String, String> requestHeaders =
                 Map.of(
                         "header-name", "headerValue",
-                        "x-forwarded-for", "192.0.2.0");
+                        "X-Forwarded-For", "192.0.2.0");
         String subject = "subject";
         String persistentSessionId = "persistent_session_id_value";
         String clientSessionId = "govuk_signin_journey_id_value";
@@ -96,13 +97,8 @@ class SessionHandlerTest {
         APIGatewayProxyResponseEvent responseEvent =
                 sessionHandler.handleRequest(apiGatewayProxyRequestEvent, null);
 
-        assertEquals(HttpStatusCode.CREATED, responseEvent.getStatusCode());
-        var responseBody = new ObjectMapper().readValue(responseEvent.getBody(), Map.class);
-        assertEquals(sessionId.toString(), responseBody.get(SESSION_ID));
-        assertEquals("some state", responseBody.get(STATE));
-        assertEquals("https://www.example.com/callback", responseBody.get(REDIRECT_URI));
-
         verify(sessionService).saveSession(sessionRequest);
+        verify(apiGatewayProxyRequestEvent, times(2)).getHeaders();
         verify(sessionRequest).setClientIpAddress("192.0.2.0");
         verify(personIdentityService).savePersonIdentity(sessionId, sharedClaims);
         verify(eventProbe).addDimensions(Map.of("issuer", "ipv-core"));
@@ -110,6 +106,71 @@ class SessionHandlerTest {
         verify(auditService)
                 .sendAuditEvent(
                         eq(AuditEventType.START), auditEventContextArgumentCaptor.capture());
+        assertEquals(HttpStatusCode.CREATED, responseEvent.getStatusCode());
+        var responseBody = new ObjectMapper().readValue(responseEvent.getBody(), Map.class);
+        assertEquals(sessionId.toString(), responseBody.get(SESSION_ID));
+        assertEquals("some state", responseBody.get(STATE));
+        assertEquals("https://www.example.com/callback", responseBody.get(REDIRECT_URI));
+
+        AuditEventContext auditEventContext = auditEventContextArgumentCaptor.getValue();
+        assertEquals(subject, auditEventContext.getSessionItem().getSubject());
+        assertEquals(sessionId, auditEventContext.getSessionItem().getSessionId());
+        assertEquals(
+                persistentSessionId, auditEventContext.getSessionItem().getPersistentSessionId());
+        assertEquals(clientSessionId, auditEventContext.getSessionItem().getClientSessionId());
+        assertEquals(requestHeaders, auditEventContext.getRequestHeaders());
+    }
+
+    @Test
+    void shouldCreateAndSaveAddressSessionWithCaseInsensitiveHeader()
+            throws SessionValidationException, ClientConfigurationException,
+                    JsonProcessingException, SqsException {
+
+        UUID sessionId = UUID.randomUUID();
+        SharedClaims sharedClaims = new SharedClaims();
+        Map<String, String> requestHeaders =
+                Map.of(
+                        "header-name", "headerValue",
+                        "X-forwarded-fOR", "192.0.2.0");
+        String subject = "subject";
+        String persistentSessionId = "persistent_session_id_value";
+        String clientSessionId = "govuk_signin_journey_id_value";
+        ArgumentCaptor<AuditEventContext> auditEventContextArgumentCaptor =
+                ArgumentCaptor.forClass(AuditEventContext.class);
+        when(eventProbe.counterMetric(anyString())).thenReturn(eventProbe);
+        when(sessionRequest.getClientId()).thenReturn("ipv-core");
+        when(sessionRequest.getState()).thenReturn("some state");
+        when(sessionRequest.getRedirectUri())
+                .thenReturn(URI.create("https://www.example.com/callback"));
+        when(sessionRequest.hasSharedClaims()).thenReturn(Boolean.TRUE);
+        when(sessionRequest.getSharedClaims()).thenReturn(sharedClaims);
+        when(sessionRequest.getSubject()).thenReturn(subject);
+        when(sessionRequest.getPersistentSessionId()).thenReturn(persistentSessionId);
+        when(sessionRequest.getClientSessionId()).thenReturn(clientSessionId);
+        when(apiGatewayProxyRequestEvent.getBody()).thenReturn("some json");
+        when(apiGatewayProxyRequestEvent.getHeaders()).thenReturn(requestHeaders);
+        when(sessionRequestService.validateSessionRequest("some json")).thenReturn(sessionRequest);
+        when(sessionService.saveSession(sessionRequest)).thenReturn(sessionId);
+
+        APIGatewayProxyResponseEvent responseEvent =
+                sessionHandler.handleRequest(apiGatewayProxyRequestEvent, null);
+
+        verify(sessionService).saveSession(sessionRequest);
+        verify(apiGatewayProxyRequestEvent, times(2)).getHeaders();
+        verify(sessionRequest).setClientIpAddress("192.0.2.0");
+        verify(personIdentityService).savePersonIdentity(sessionId, sharedClaims);
+        verify(eventProbe).addDimensions(Map.of("issuer", "ipv-core"));
+        verify(eventProbe).counterMetric("session_created");
+        verify(auditService)
+                .sendAuditEvent(
+                        eq(AuditEventType.START), auditEventContextArgumentCaptor.capture());
+
+        assertEquals(HttpStatusCode.CREATED, responseEvent.getStatusCode());
+        var responseBody = new ObjectMapper().readValue(responseEvent.getBody(), Map.class);
+        assertEquals(sessionId.toString(), responseBody.get(SESSION_ID));
+        assertEquals("some state", responseBody.get(STATE));
+        assertEquals("https://www.example.com/callback", responseBody.get(REDIRECT_URI));
+
         AuditEventContext auditEventContext = auditEventContextArgumentCaptor.getValue();
         assertEquals(subject, auditEventContext.getSessionItem().getSubject());
         assertEquals(sessionId, auditEventContext.getSessionItem().getSessionId());
