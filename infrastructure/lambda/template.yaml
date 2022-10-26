@@ -329,6 +329,8 @@ Resources:
         - AWSXrayWriteOnlyAccess
         - DynamoDBReadPolicy:
             TableName: !Ref SessionTable
+        - DynamoDBWritePolicy:
+            TableName: !Ref SessionTable
         - Statement:
             - Effect: Allow
               Action:
