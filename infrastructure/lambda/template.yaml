@@ -298,14 +298,6 @@ Resources:
       LogGroupName: !Sub "/aws/lambda/${SessionFunction}"
       RetentionInDays: 30
 
-  SessionFunctionLogGroupSubscriptionFilter:
-    Type: AWS::Logs::SubscriptionFilter
-    Condition: IsNotDevEnvironment
-    Properties:
-      DestinationArn: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prod"
-      FilterPattern: ""
-      LogGroupName: !Ref SessionFunctionLogGroup
-
   SessionFunctionLogGroupSubscriptionFilterCSLS:
     Type: AWS::Logs::SubscriptionFilter
     Condition: IsNotDevEnvironment
@@ -313,7 +305,6 @@ Resources:
       DestinationArn: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython"
       FilterPattern: ""
       LogGroupName: !Ref SessionFunctionLogGroup
-
 
   AuthorizationFunction:
     Type: AWS::Serverless::Function
@@ -347,14 +338,6 @@ Resources:
     Properties:
       LogGroupName: !Sub "/aws/lambda/${AuthorizationFunction}"
       RetentionInDays: 30
-
-  AuthorizationFunctionLogGroupSubscriptionFilter:
-    Type: AWS::Logs::SubscriptionFilter
-    Condition: IsNotDevEnvironment
-    Properties:
-      DestinationArn: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prod"
-      FilterPattern: ""
-      LogGroupName: !Ref AuthorizationFunctionLogGroup
 
   AuthorizationFunctionLogGroupSubscriptionFilterCSLS:
     Type: AWS::Logs::SubscriptionFilter
@@ -399,14 +382,6 @@ Resources:
     Properties:
       LogGroupName: !Sub "/aws/lambda/${AccessTokenFunction}"
       RetentionInDays: 30
-
-  AccessTokenFunctionLogGroupSubscriptionFilter:
-    Type: AWS::Logs::SubscriptionFilter
-    Condition: IsNotDevEnvironment
-    Properties:
-      DestinationArn: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prod"
-      FilterPattern: ""
-      LogGroupName: !Ref AccessTokenFunctionLogGroup
 
   AccessTokenFunctionLogGroupSubscriptionFilterCSLS:
     Type: AWS::Logs::SubscriptionFilter
