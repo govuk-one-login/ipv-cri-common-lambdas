@@ -16,6 +16,7 @@ public class IpvCoreStubUtil {
 
     private static final String ADDRESS_CRI_DEV = "address-cri-dev";
     private static final String API_GATEWAY_ID_PRIVATE = "API_GATEWAY_ID_PRIVATE";
+    private static final String API_GATEWAY_ID_PUBLIC = "API_GATEWAY_ID_PUBLIC";
 
     private static String getPrivateApiEndpoint() {
         String apiEndpoint = System.getenv(API_GATEWAY_ID_PRIVATE);
@@ -26,6 +27,18 @@ public class IpvCoreStubUtil {
                                         String.format(
                                                 "Environment variable %s is not assigned",
                                                 API_GATEWAY_ID_PRIVATE)));
+        return "https://" + apiEndpoint + ".execute-api.eu-west-2.amazonaws.com";
+    }
+
+    private static String getPublicApiEndpoint() {
+        String apiEndpoint = System.getenv(API_GATEWAY_ID_PUBLIC);
+        Optional.ofNullable(apiEndpoint)
+                .orElseThrow(
+                        () ->
+                                new IllegalArgumentException(
+                                        String.format(
+                                                "Environment variable %s is not assigned",
+                                                API_GATEWAY_ID_PUBLIC)));
         return "https://" + apiEndpoint + ".execute-api.eu-west-2.amazonaws.com";
     }
 
@@ -133,5 +146,46 @@ public class IpvCoreStubUtil {
                         .build();
 
         return sendHttpRequest(request);
+    }
+
+    public static HttpResponse<String> sendAccessTokenRequest(
+            String devAccessTokenUri, String privateKeyJWT)
+            throws URISyntaxException, IOException, InterruptedException {
+
+        var request =
+                HttpRequest.newBuilder()
+                        .uri(
+                                new URIBuilder(getPublicApiEndpoint())
+                                        .setPath(devAccessTokenUri)
+                                        .build())
+                        .header("Content-Type", "application/x-www-form-urlencoded")
+                        .header("x-api-key", getPublicAPIKey())
+                        .POST(HttpRequest.BodyPublishers.ofString(privateKeyJWT))
+                        .build();
+
+        return sendHttpRequest(request);
+    }
+
+    public static String getPrivateKeyJWT(String authorizationCode)
+            throws URISyntaxException, IOException, InterruptedException {
+        return getPrivateKeyJWTFormParamsForAuthCode(getIPVCoreStubURL(), authorizationCode.trim());
+    }
+
+    private static String getPrivateKeyJWTFormParamsForAuthCode(
+            String baseUrl, String authorizationCode)
+            throws URISyntaxException, IOException, InterruptedException {
+        var url =
+                new URIBuilder(baseUrl)
+                        .setPath("backend/createTokenRequestPrivateKeyJWT")
+                        .addParameter("cri", ADDRESS_CRI_DEV)
+                        .addParameter("authorization_code", authorizationCode)
+                        .build();
+
+        HttpRequest request = HttpRequest.newBuilder().uri(url).GET().build();
+        return sendHttpRequest(request).body();
+    }
+
+    private static String getPublicAPIKey() {
+        return Optional.ofNullable(System.getenv("APIGW_API_KEY")).orElseThrow();
     }
 }
