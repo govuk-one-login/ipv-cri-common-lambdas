@@ -134,4 +134,47 @@ public class IpvCoreStubUtil {
 
         return sendHttpRequest(request);
     }
+
+    public static HttpResponse<String> sendAccessTokenRequest(String authorizationCode)
+            throws URISyntaxException, IOException, InterruptedException {
+
+        String privateKeyJWT = getPrivateKeyJWT(authorizationCode.trim());
+
+        var request =
+                HttpRequest.newBuilder()
+                        .uri(new URIBuilder(getPrivateApiEndpoint()).setPath("/dev/token").build())
+                        .header("Content-Type", "application/x-www-form-urlencoded")
+                        .header("x-api-key", getPublicAPIKey())
+                        .POST(HttpRequest.BodyPublishers.ofString(privateKeyJWT))
+                        .build();
+
+        return sendHttpRequest(request);
+    }
+
+    private static String getPrivateKeyJWT(String authorizationCode)
+            throws URISyntaxException, IOException, InterruptedException {
+        return getPrivateKeyJWTFormParamsForAuthCode(getIPVCoreStubURL(), authorizationCode.trim());
+    }
+
+    private static String getPrivateKeyJWTFormParamsForAuthCode(
+            String baseUrl, String authorizationCode)
+            throws URISyntaxException, IOException, InterruptedException {
+        var url =
+                new URIBuilder(baseUrl)
+                        .setPath("backend/createTokenRequestPrivateKeyJWT")
+                        .addParameter("cri", ADDRESS_CRI_DEV)
+                        .addParameter("authorization_code", authorizationCode)
+                        .build();
+
+        HttpRequest request = HttpRequest.newBuilder().uri(url).GET().build();
+        return sendHttpRequest(request).body();
+    }
+
+    private static String getPublicAPIKey() {
+        return Optional.ofNullable(System.getenv("PUBLIC_API_KEY"))
+                .orElseThrow(
+                        () ->
+                                new IllegalArgumentException(
+                                        "PUBLIC_API_KEY environment variable is not assigned"));
+    }
 }

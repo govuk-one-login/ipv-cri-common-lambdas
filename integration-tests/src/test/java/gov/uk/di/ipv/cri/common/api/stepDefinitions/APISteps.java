@@ -27,6 +27,7 @@ public class APISteps {
     private static final String DEFAULT_REDIRECT_URI =
             "https://di-ipv-core-stub.london.cloudapps.digital/callback";
     private static final String DEFAULT_CLIENT_ID = "ipv-core-stub";
+    private String currentAuthorizationCode;
     private String sessionRequestBody;
     private String currentSessionId;
     private HttpResponse<String> response;
@@ -87,10 +88,9 @@ public class APISteps {
     @And("a valid authorization code is returned in the response")
     public void aValidAuthorizationCodeIsReturnedInTheResponse() throws IOException {
         JsonNode jsonNode = objectMapper.readTree(response.body());
+        currentAuthorizationCode = jsonNode.get("authorizationCode").get("value").textValue();
         assertEquals(
-                UUID.fromString(jsonNode.get("authorizationCode").get("value").textValue())
-                        .toString(),
-                jsonNode.get("authorizationCode").get("value").textValue());
+                UUID.fromString(currentAuthorizationCode).toString(), currentAuthorizationCode);
         assertEquals(DEFAULT_REDIRECT_URI, jsonNode.get("redirectionURI").textValue());
         assertEquals("state-ipv", jsonNode.get("state").get("value").textValue());
     }
@@ -117,12 +117,32 @@ public class APISteps {
                         DEFAULT_CLIENT_ID);
     }
 
-    @And("a {string} error with code {int} is sent in the response body")
-    public void aErrorWithCodeIsSentInTheResponseBody(String errorMessage, int errorCode)
+    @When("user sends a request to access token end point")
+    public void userSendsARequestToAccessTokenEndPoint()
+            throws URISyntaxException, IOException, InterruptedException {
+        response = IpvCoreStubUtil.sendAccessTokenRequest(currentAuthorizationCode);
+    }
+
+    @And("a valid access token is returned in the response")
+    public void aValidAccessTokenIsReturnedInTheResponse() throws IOException {
+        JsonNode jsonNode = objectMapper.readTree(response.body());
+        assertNotNull(jsonNode.get("access_token").asText());
+        assertEquals("Bearer", jsonNode.get("token_type").asText());
+        assertEquals(3600, jsonNode.get("expires_in").asInt());
+    }
+
+    @And("a {string} error with code {int} is sent in the response")
+    public void aErrorWithCodeIsSentInTheResponse(String errorMessage, int errorCode)
             throws IOException {
         JsonNode jsonNode = objectMapper.readTree(response.body());
         assertEquals(errorCode, jsonNode.get("code").asInt());
-        assertEquals("Session Validation Exception", errorMessage);
+        assertEquals(errorMessage, jsonNode.get("message").asText());
         assertEquals(errorCode + ": " + errorMessage, jsonNode.get("errorSummary").asText());
+    }
+
+    @When("user sends a request to access token end point with incorrect authorization code")
+    public void userSendsARequestToAccessTokenEndPointWithIncorrectAuthorizationCode()
+            throws URISyntaxException, IOException, InterruptedException {
+        response = IpvCoreStubUtil.sendAccessTokenRequest("wrong_authorization_code");
     }
 }
