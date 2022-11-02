@@ -135,16 +135,14 @@ public class IpvCoreStubUtil {
         return sendHttpRequest(request);
     }
 
-    public static HttpResponse<String> sendAccessTokenRequest(
-            String devAccessTokenUri, String privateKeyJWT)
+    public static HttpResponse<String> sendAccessTokenRequest(String authorizationCode)
             throws URISyntaxException, IOException, InterruptedException {
+
+        String privateKeyJWT = getPrivateKeyJWT(authorizationCode.trim());
 
         var request =
                 HttpRequest.newBuilder()
-                        .uri(
-                                new URIBuilder(getPrivateApiEndpoint())
-                                        .setPath(devAccessTokenUri)
-                                        .build())
+                        .uri(new URIBuilder(getPrivateApiEndpoint()).setPath("/dev/token").build())
                         .header("Content-Type", "application/x-www-form-urlencoded")
                         .header("x-api-key", getPublicAPIKey())
                         .POST(HttpRequest.BodyPublishers.ofString(privateKeyJWT))
@@ -153,7 +151,7 @@ public class IpvCoreStubUtil {
         return sendHttpRequest(request);
     }
 
-    public static String getPrivateKeyJWT(String authorizationCode)
+    private static String getPrivateKeyJWT(String authorizationCode)
             throws URISyntaxException, IOException, InterruptedException {
         return getPrivateKeyJWTFormParamsForAuthCode(getIPVCoreStubURL(), authorizationCode.trim());
     }
@@ -173,12 +171,10 @@ public class IpvCoreStubUtil {
     }
 
     private static String getPublicAPIKey() {
-        return Optional.ofNullable(System.getenv("APIGW_API_KEY"))
+        return Optional.ofNullable(System.getenv("PUBLIC_API_KEY"))
                 .orElseThrow(
                         () ->
                                 new IllegalArgumentException(
-                                        String.format(
-                                                "Environment variable %s is not assigned",
-                                                "APIGW_API_KEY")));
+                                        "PUBLIC_API_KEY environment variable is not assigned"));
     }
 }
