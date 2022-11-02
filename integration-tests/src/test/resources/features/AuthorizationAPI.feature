@@ -13,9 +13,9 @@ Feature: Authorization API
   Scenario: no authorization code is returned when client id does not match
     When user sends a request to authorization end point with invalid client id
     Then expect a status code of 400 in the response
-    And a "Session Validation Exception" error with code 1019 is sent in the response body
+    And a "Session Validation Exception" error with code 1019 is sent in the response
 
   Scenario: no authorization code is returned when redirect uri does not match
     When user sends a request to authorization end point with invalid redirect uri
     Then expect a status code of 400 in the response
-    And a "Session Validation Exception" error with code 1019 is sent in the response body
+    And a "Session Validation Exception" error with code 1019 is sent in the response
