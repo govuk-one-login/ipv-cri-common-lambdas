@@ -32,6 +32,7 @@ import uk.gov.di.ipv.cri.common.library.util.EventProbe;
 
 import java.time.Clock;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.UUID;
 
 import static org.apache.logging.log4j.Level.ERROR;
@@ -45,7 +46,7 @@ public class SessionHandler
     private static final String EVENT_SESSION_CREATED = "session_created";
     private static final String HEADER_IP_ADDRESS = "x-forwarded-for";
     private final SessionService sessionService;
-    private final SessionRequestService sesssionRequestService;
+    private final SessionRequestService sessionRequestService;
     private final PersonIdentityService personIdentityService;
     private final EventProbe eventProbe;
     private final AuditService auditService;
@@ -54,7 +55,7 @@ public class SessionHandler
     public SessionHandler() {
         ConfigurationService configurationService = new ConfigurationService();
         this.sessionService = new SessionService();
-        this.sesssionRequestService = new SessionRequestService();
+        this.sessionRequestService = new SessionRequestService();
         this.personIdentityService = new PersonIdentityService();
         this.eventProbe = new EventProbe();
         this.auditService =
@@ -76,7 +77,7 @@ public class SessionHandler
             EventProbe eventProbe,
             AuditService auditService) {
         this.sessionService = sessionService;
-        this.sesssionRequestService = sessionRequestService;
+        this.sessionRequestService = sessionRequestService;
         this.personIdentityService = personIdentityService;
         this.eventProbe = eventProbe;
         this.auditService = auditService;
@@ -90,8 +91,11 @@ public class SessionHandler
 
         try {
             SessionRequest sessionRequest =
-                    sesssionRequestService.validateSessionRequest(input.getBody());
-            var sessionHeaderIpAddress = input.getHeaders().get(HEADER_IP_ADDRESS);
+                    sessionRequestService.validateSessionRequest(input.getBody());
+            Map<String, String> inputHeadersCaseInsensitiveMap =
+                    new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+            inputHeadersCaseInsensitiveMap.putAll(input.getHeaders());
+            var sessionHeaderIpAddress = inputHeadersCaseInsensitiveMap.get(HEADER_IP_ADDRESS);
             sessionRequest.setClientIpAddress(sessionHeaderIpAddress);
             eventProbe.addDimensions(Map.of("issuer", sessionRequest.getClientId()));
 
