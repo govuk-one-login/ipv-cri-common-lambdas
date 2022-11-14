@@ -8,6 +8,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.logging.log4j.Level;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -33,7 +35,6 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyDouble;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -41,139 +42,78 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static uk.gov.di.ipv.cri.common.api.handler.SessionHandler.REDIRECT_URI;
-import static uk.gov.di.ipv.cri.common.api.handler.SessionHandler.SESSION_ID;
 import static uk.gov.di.ipv.cri.common.api.handler.SessionHandler.STATE;
 
 @ExtendWith(MockitoExtension.class)
 class SessionHandlerTest {
+    private static final String SESSION_CREATED_METRIC = "session_created";
+    private static final UUID SESSION_ID = UUID.randomUUID();
 
-    @Mock private SessionService sessionService;
-
-    @Mock private SessionRequestService sessionRequestService;
-
-    @Mock private PersonIdentityService personIdentityService;
-
+    @Mock private SessionService mockSessionService;
+    @Mock private SessionRequestService mockSessionRequestService;
+    @Mock private PersonIdentityService mockPersonIdentityService;
     @Mock private APIGatewayProxyRequestEvent apiGatewayProxyRequestEvent;
-
-    @Mock private SessionRequest sessionRequest;
-
-    @Mock private EventProbe eventProbe;
-
-    @Mock private AuditService auditService;
-
+    @Mock private SessionRequest mockSessionRequest;
+    @Mock private EventProbe mockEventProbe;
+    @Mock private AuditService mockAuditService;
     @InjectMocks private SessionHandler sessionHandler;
 
-    @Test
-    void shouldCreateAndSaveAddressSession()
+    @ParameterizedTest
+    @CsvSource({"X-Forwarded-For", "X-forwarded-fOR"})
+    void shouldCreateAndSaveSession(String xForwardedForHeaderName)
             throws SessionValidationException, ClientConfigurationException,
                     JsonProcessingException, SqsException {
-
-        UUID sessionId = UUID.randomUUID();
+        String clientIpAddress = "192.0.2.0";
+        String redirectUri = "https://www.example.com/callback";
         SharedClaims sharedClaims = new SharedClaims();
         Map<String, String> requestHeaders =
-                Map.of(
-                        "header-name", "headerValue",
-                        "X-Forwarded-For", "192.0.2.0");
+                Map.of("header-name", "headerValue", xForwardedForHeaderName, clientIpAddress);
         String subject = "subject";
         String persistentSessionId = "persistent_session_id_value";
         String clientSessionId = "govuk_signin_journey_id_value";
         ArgumentCaptor<AuditEventContext> auditEventContextArgumentCaptor =
                 ArgumentCaptor.forClass(AuditEventContext.class);
-        when(eventProbe.counterMetric(anyString())).thenReturn(eventProbe);
-        when(sessionRequest.getClientId()).thenReturn("ipv-core");
-        when(sessionRequest.getState()).thenReturn("some state");
-        when(sessionRequest.getRedirectUri())
-                .thenReturn(URI.create("https://www.example.com/callback"));
-        when(sessionRequest.hasSharedClaims()).thenReturn(Boolean.TRUE);
-        when(sessionRequest.getSharedClaims()).thenReturn(sharedClaims);
-        when(sessionRequest.getSubject()).thenReturn(subject);
-        when(sessionRequest.getPersistentSessionId()).thenReturn(persistentSessionId);
-        when(sessionRequest.getClientSessionId()).thenReturn(clientSessionId);
+
+        when(mockEventProbe.addJourneyIdToLoggingContext(clientSessionId))
+                .thenReturn(mockEventProbe);
+        when(mockEventProbe.counterMetric(anyString())).thenReturn(mockEventProbe);
+        when(mockSessionRequest.getClientId()).thenReturn("ipv-core");
+        when(mockSessionRequest.getState()).thenReturn("some state");
+        when(mockSessionRequest.getRedirectUri()).thenReturn(URI.create(redirectUri));
+        when(mockSessionRequest.hasSharedClaims()).thenReturn(Boolean.TRUE);
+        when(mockSessionRequest.getSharedClaims()).thenReturn(sharedClaims);
+        when(mockSessionRequest.getSubject()).thenReturn(subject);
+        when(mockSessionRequest.getPersistentSessionId()).thenReturn(persistentSessionId);
+        when(mockSessionRequest.getClientSessionId()).thenReturn(clientSessionId);
         when(apiGatewayProxyRequestEvent.getBody()).thenReturn("some json");
         when(apiGatewayProxyRequestEvent.getHeaders()).thenReturn(requestHeaders);
-        when(sessionRequestService.validateSessionRequest("some json")).thenReturn(sessionRequest);
-        when(sessionService.saveSession(sessionRequest)).thenReturn(sessionId);
+        when(mockSessionRequestService.validateSessionRequest("some json"))
+                .thenReturn(mockSessionRequest);
+        when(mockSessionService.saveSession(mockSessionRequest)).thenReturn(SESSION_ID);
 
         APIGatewayProxyResponseEvent responseEvent =
                 sessionHandler.handleRequest(apiGatewayProxyRequestEvent, null);
 
-        verify(sessionService).saveSession(sessionRequest);
+        verify(mockSessionService).saveSession(mockSessionRequest);
         verify(apiGatewayProxyRequestEvent, times(2)).getHeaders();
-        verify(sessionRequest).setClientIpAddress("192.0.2.0");
-        verify(personIdentityService).savePersonIdentity(sessionId, sharedClaims);
-        verify(eventProbe).addDimensions(Map.of("issuer", "ipv-core"));
-        verify(eventProbe).counterMetric("session_created");
-        verify(auditService)
+        verify(mockSessionRequest).setClientIpAddress(clientIpAddress);
+        verify(mockPersonIdentityService).savePersonIdentity(SESSION_ID, sharedClaims);
+        verify(mockEventProbe).addJourneyIdToLoggingContext(clientSessionId);
+        verify(mockEventProbe).log(Level.INFO, "created session");
+        verify(mockEventProbe).addDimensions(Map.of("issuer", "ipv-core"));
+        verify(mockEventProbe).counterMetric(SESSION_CREATED_METRIC);
+        verify(mockAuditService)
                 .sendAuditEvent(
                         eq(AuditEventType.START), auditEventContextArgumentCaptor.capture());
         assertEquals(HttpStatusCode.CREATED, responseEvent.getStatusCode());
         var responseBody = new ObjectMapper().readValue(responseEvent.getBody(), Map.class);
-        assertEquals(sessionId.toString(), responseBody.get(SESSION_ID));
+        assertEquals(SESSION_ID.toString(), responseBody.get(SessionHandler.SESSION_ID));
         assertEquals("some state", responseBody.get(STATE));
-        assertEquals("https://www.example.com/callback", responseBody.get(REDIRECT_URI));
+        assertEquals(redirectUri, responseBody.get(REDIRECT_URI));
 
         AuditEventContext auditEventContext = auditEventContextArgumentCaptor.getValue();
         assertEquals(subject, auditEventContext.getSessionItem().getSubject());
-        assertEquals(sessionId, auditEventContext.getSessionItem().getSessionId());
-        assertEquals(
-                persistentSessionId, auditEventContext.getSessionItem().getPersistentSessionId());
-        assertEquals(clientSessionId, auditEventContext.getSessionItem().getClientSessionId());
-        assertEquals(requestHeaders, auditEventContext.getRequestHeaders());
-    }
-
-    @Test
-    void shouldCreateAndSaveAddressSessionWithCaseInsensitiveHeader()
-            throws SessionValidationException, ClientConfigurationException,
-                    JsonProcessingException, SqsException {
-
-        UUID sessionId = UUID.randomUUID();
-        SharedClaims sharedClaims = new SharedClaims();
-        Map<String, String> requestHeaders =
-                Map.of(
-                        "header-name", "headerValue",
-                        "X-forwarded-fOR", "192.0.2.0");
-        String subject = "subject";
-        String persistentSessionId = "persistent_session_id_value";
-        String clientSessionId = "govuk_signin_journey_id_value";
-        ArgumentCaptor<AuditEventContext> auditEventContextArgumentCaptor =
-                ArgumentCaptor.forClass(AuditEventContext.class);
-        when(eventProbe.counterMetric(anyString())).thenReturn(eventProbe);
-        when(sessionRequest.getClientId()).thenReturn("ipv-core");
-        when(sessionRequest.getState()).thenReturn("some state");
-        when(sessionRequest.getRedirectUri())
-                .thenReturn(URI.create("https://www.example.com/callback"));
-        when(sessionRequest.hasSharedClaims()).thenReturn(Boolean.TRUE);
-        when(sessionRequest.getSharedClaims()).thenReturn(sharedClaims);
-        when(sessionRequest.getSubject()).thenReturn(subject);
-        when(sessionRequest.getPersistentSessionId()).thenReturn(persistentSessionId);
-        when(sessionRequest.getClientSessionId()).thenReturn(clientSessionId);
-        when(apiGatewayProxyRequestEvent.getBody()).thenReturn("some json");
-        when(apiGatewayProxyRequestEvent.getHeaders()).thenReturn(requestHeaders);
-        when(sessionRequestService.validateSessionRequest("some json")).thenReturn(sessionRequest);
-        when(sessionService.saveSession(sessionRequest)).thenReturn(sessionId);
-
-        APIGatewayProxyResponseEvent responseEvent =
-                sessionHandler.handleRequest(apiGatewayProxyRequestEvent, null);
-
-        verify(sessionService).saveSession(sessionRequest);
-        verify(apiGatewayProxyRequestEvent, times(2)).getHeaders();
-        verify(sessionRequest).setClientIpAddress("192.0.2.0");
-        verify(personIdentityService).savePersonIdentity(sessionId, sharedClaims);
-        verify(eventProbe).addDimensions(Map.of("issuer", "ipv-core"));
-        verify(eventProbe).counterMetric("session_created");
-        verify(auditService)
-                .sendAuditEvent(
-                        eq(AuditEventType.START), auditEventContextArgumentCaptor.capture());
-
-        assertEquals(HttpStatusCode.CREATED, responseEvent.getStatusCode());
-        var responseBody = new ObjectMapper().readValue(responseEvent.getBody(), Map.class);
-        assertEquals(sessionId.toString(), responseBody.get(SESSION_ID));
-        assertEquals("some state", responseBody.get(STATE));
-        assertEquals("https://www.example.com/callback", responseBody.get(REDIRECT_URI));
-
-        AuditEventContext auditEventContext = auditEventContextArgumentCaptor.getValue();
-        assertEquals(subject, auditEventContext.getSessionItem().getSubject());
-        assertEquals(sessionId, auditEventContext.getSessionItem().getSessionId());
+        assertEquals(SESSION_ID, auditEventContext.getSessionItem().getSessionId());
         assertEquals(
                 persistentSessionId, auditEventContext.getSessionItem().getPersistentSessionId());
         assertEquals(clientSessionId, auditEventContext.getSessionItem().getClientSessionId());
@@ -187,7 +127,7 @@ class SessionHandlerTest {
 
         when(apiGatewayProxyRequestEvent.getBody()).thenReturn("some json");
         SessionValidationException sessionValidationException = new SessionValidationException("");
-        when(sessionRequestService.validateSessionRequest("some json"))
+        when(mockSessionRequestService.validateSessionRequest("some json"))
                 .thenThrow(sessionValidationException);
         setupEventProbeErrorBehaviour();
 
@@ -200,21 +140,20 @@ class SessionHandlerTest {
         assertEquals(
                 ErrorResponse.SESSION_VALIDATION_ERROR.getMessage(), responseBody.get("message"));
 
-        verify(eventProbe).counterMetric("session_created", 0d);
-        verify(eventProbe).log(Level.ERROR, sessionValidationException);
-
-        verify(auditService, never()).sendAuditEvent(any(AuditEventType.class));
-        verify(sessionService, never()).saveSession(sessionRequest);
+        verify(mockEventProbe).counterMetric(SESSION_CREATED_METRIC, 0d);
+        verify(mockEventProbe).log(Level.ERROR, sessionValidationException);
+        verify(mockAuditService, never()).sendAuditEvent(any(AuditEventType.class));
+        verify(mockSessionService, never()).saveSession(mockSessionRequest);
     }
 
     @Test
     void shouldCatchServerExceptionAndReturn500Response()
             throws SessionValidationException, ClientConfigurationException,
                     JsonProcessingException, SqsException {
-
+        ClientConfigurationException exception =
+                new ClientConfigurationException(new NullPointerException());
         when(apiGatewayProxyRequestEvent.getBody()).thenReturn("some json");
-        when(sessionRequestService.validateSessionRequest("some json"))
-                .thenThrow(new ClientConfigurationException(new NullPointerException()));
+        when(mockSessionRequestService.validateSessionRequest("some json")).thenThrow(exception);
         setupEventProbeErrorBehaviour();
 
         APIGatewayProxyResponseEvent responseEvent =
@@ -225,14 +164,14 @@ class SessionHandlerTest {
         assertEquals(ErrorResponse.SERVER_CONFIG_ERROR.getCode(), responseBody.get("code"));
         assertEquals(ErrorResponse.SERVER_CONFIG_ERROR.getMessage(), responseBody.get("message"));
 
-        verify(eventProbe).counterMetric("session_created", 0d);
-
-        verify(auditService, never()).sendAuditEvent(any(AuditEventType.class));
-        verify(sessionService, never()).saveSession(sessionRequest);
+        verify(mockEventProbe).counterMetric(SESSION_CREATED_METRIC, 0d);
+        verify(mockEventProbe).log(Level.ERROR, exception);
+        verify(mockAuditService, never()).sendAuditEvent(any(AuditEventType.class));
+        verify(mockSessionService, never()).saveSession(mockSessionRequest);
     }
 
     private void setupEventProbeErrorBehaviour() {
-        when(eventProbe.counterMetric(anyString(), anyDouble())).thenReturn(eventProbe);
-        when(eventProbe.log(any(Level.class), any(Exception.class))).thenReturn(eventProbe);
+        when(mockEventProbe.counterMetric(SESSION_CREATED_METRIC, 0d)).thenReturn(mockEventProbe);
+        when(mockEventProbe.log(eq(Level.ERROR), any(Exception.class))).thenReturn(mockEventProbe);
     }
 }
