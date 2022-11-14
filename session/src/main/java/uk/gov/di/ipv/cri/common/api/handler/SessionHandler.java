@@ -5,6 +5,7 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.logging.log4j.Level;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.http.HttpStatusCode;
 import software.amazon.awssdk.regions.Region;
@@ -84,7 +85,7 @@ public class SessionHandler
     }
 
     @Override
-    @Logging(correlationIdPath = CorrelationIdPathConstants.API_GATEWAY_REST)
+    @Logging(correlationIdPath = CorrelationIdPathConstants.API_GATEWAY_REST, clearState = true)
     @Metrics(captureColdStart = true)
     public APIGatewayProxyResponseEvent handleRequest(
             APIGatewayProxyRequestEvent input, Context context) {
@@ -100,7 +101,9 @@ public class SessionHandler
             eventProbe.addDimensions(Map.of("issuer", sessionRequest.getClientId()));
 
             UUID sessionId = sessionService.saveSession(sessionRequest);
-
+            eventProbe
+                    .addJourneyIdToLoggingContext(sessionRequest.getClientSessionId())
+                    .log(Level.INFO, "created session");
             if (sessionRequest.hasSharedClaims()) {
                 personIdentityService.savePersonIdentity(
                         sessionId, sessionRequest.getSharedClaims());

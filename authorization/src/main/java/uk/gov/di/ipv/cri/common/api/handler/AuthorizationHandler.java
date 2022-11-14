@@ -9,6 +9,7 @@ import com.nimbusds.oauth2.sdk.AuthorizationSuccessResponse;
 import com.nimbusds.oauth2.sdk.ParseException;
 import com.nimbusds.oauth2.sdk.util.StringUtils;
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest;
+import org.apache.logging.log4j.Level;
 import software.amazon.awssdk.http.HttpStatusCode;
 import software.amazon.lambda.powertools.logging.CorrelationIdPathConstants;
 import software.amazon.lambda.powertools.logging.Logging;
@@ -55,7 +56,7 @@ public class AuthorizationHandler
     }
 
     @Override
-    @Logging(correlationIdPath = CorrelationIdPathConstants.API_GATEWAY_REST)
+    @Logging(correlationIdPath = CorrelationIdPathConstants.API_GATEWAY_REST, clearState = true)
     @Metrics(captureColdStart = true)
     public APIGatewayProxyResponseEvent handleRequest(
             APIGatewayProxyRequestEvent input, Context context) {
@@ -67,7 +68,9 @@ public class AuthorizationHandler
                     AuthenticationRequest.parse(queryStringParameters);
             String sessionId = input.getHeaders().get(HEADER_SESSION_ID);
             SessionItem sessionItem = sessionService.getSession(sessionId);
-
+            eventProbe
+                    .addJourneyIdToLoggingContext(sessionItem.getClientSessionId())
+                    .log(Level.INFO, "found session");
             // validate
             authorizationValidatorService.validate(authenticationRequest, sessionItem);
 
