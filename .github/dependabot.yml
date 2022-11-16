@@ -7,3 +7,5 @@ updates:
     target-branch: main
     labels:
     - dependabot
+    commit-message:
+      prefix: BAU
