@@ -46,7 +46,7 @@ jobs:
           distribution: zulu
 
       - name: Setup SAM
-        uses: aws-actions/setup-sam@v1
+        uses: aws-actions/setup-sam@v2
 
       - name: Assume temporary AWS role
         uses: aws-actions/configure-aws-credentials@v1
@@ -120,7 +120,7 @@ jobs:
           distribution: zulu
 
       - name: Setup SAM
-        uses: aws-actions/setup-sam@v1
+        uses: aws-actions/setup-sam@v2
 
       - name: Assume temporary AWS role
         uses: aws-actions/configure-aws-credentials@v1
