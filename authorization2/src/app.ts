@@ -6,31 +6,39 @@ import {Metrics, MetricUnits} from "@aws-lambda-powertools/metrics";
 import {Logger} from "@aws-lambda-powertools/logger";
 import {SsmClient} from "./lib/param-store-client";
 import {ConfigService} from "./services/config-service";
+import {AuthorizationRequestValidator} from "./services/auth-request-validator";
 
 const logger = new Logger();
 const metrics = new Metrics();
 const configService = new ConfigService(SsmClient);
 const initPromise = configService.init();
+const AUTHORIZATION_SENT_METRIC = "authorization_sent";
 
 class AuthorizationLambda implements LambdaInterface {
     @logger.injectLambdaContext({clearState: true})
     @metrics.logMetrics({throwOnEmptyMetrics: false, captureColdStartMetric: true})
     public async handler(event: APIGatewayProxyEvent, context: any): Promise<APIGatewayProxyResult> {
 
-        let response: APIGatewayProxyResult;
         try {
             await initPromise;
 
             const sessionId = event.headers["session-id"] as string;
             if (!sessionId) {
-                response = {
+                return {
                     statusCode: 400,
-                    body: "Missing header: session-id is required",
+                    body: "Invalid request: Missing session-id header"
                 };
-                return response;
             }
-            const sessionService = new SessionService(configService.config.SessionTableName, DynamoDbClient);
+            const sessionService = new SessionService(DynamoDbClient, configService);
             const sessionItem = await sessionService.getSession(sessionId);
+
+            const validationResult = await new AuthorizationRequestValidator(configService).validate(event.queryStringParameters, sessionItem.clientId);
+            if (!validationResult.isValid) {
+                return {
+                    statusCode: 400,
+                    body: `Invalid request: ${validationResult.errorMsg}`
+                };
+            }
 
             logger.appendKeys({"govuk_signin_journey_id": sessionItem.clientSessionId});
             logger.info("found session");
@@ -40,32 +48,30 @@ class AuthorizationLambda implements LambdaInterface {
                 logger.info("Authorization code not present. Authorization code generated successfully.");
             }
 
-            // @ts-ignore
             const authorizationResponse = {
                 state: {
-                    value: event.queryStringParameters["state"]
+                    value: event.queryStringParameters!["state"]
                 },
                 authorizationCode: {
                     value: sessionItem.authorizationCode
                 },
-                redirectionURI: event.queryStringParameters["redirect_uri"]
+                redirectionURI: event.queryStringParameters!["redirect_uri"]
             };
 
-            metrics.addMetric('authorization_sent', MetricUnits.Count, 1);
+            metrics.addMetric(AUTHORIZATION_SENT_METRIC, MetricUnits.Count, 1);
 
-            response = {
+            return {
                 statusCode: 200,
                 body: JSON.stringify(authorizationResponse)
             };
         } catch (err: any) {
-            // eslint-disable-next-line no-console
-            logger.error("authorization lambda error occurred/", err);
-            response = {
+            logger.error("authorization lambda error occurred.", err);
+            metrics.addMetric(AUTHORIZATION_SENT_METRIC, MetricUnits.Count, 0);
+            return {
                 statusCode: 500,
-                body: "An error has occurred. " + JSON.stringify(err),
+                body: `An error has occurred. ${JSON.stringify(err)}`
             };
         }
-        return response;
     }
 }
 
