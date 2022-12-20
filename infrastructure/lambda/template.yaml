@@ -381,18 +381,14 @@ Resources:
             TableName: !Ref SessionTable
         - DynamoDBWritePolicy:
             TableName: !Ref SessionTable
+        - SSMParameterReadPolicy:
+            ParameterName: !Sub "${AWS::StackName}/clients/*"
         - Statement:
             - Effect: Allow
               Action:
                 - ssm:GetParameter
               Resource:
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/SessionTableName"
-        - Statement:
-            - Effect: Allow
-              Action:
-                - ssm:GetParametersByPath
-              Resource:
-                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/clients/*"
     Metadata: # Manage esbuild properties
       BuildMethod: esbuild
       BuildProperties:
