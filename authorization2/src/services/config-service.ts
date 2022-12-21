@@ -9,10 +9,9 @@ export class ConfigService {
     private readonly configEntries: Map<string, string>;
 
     constructor(private ssmClient: SSMClient) {
-        const envAuthCodeTtl = parseInt(process.env.AUTHORIZATION_CODE_TTL || '', 10);
-        this.authorizationCodeTtlInMillis = (Number.isInteger(envAuthCodeTtl)
-            ? envAuthCodeTtl
-            : DEFAULT_AUTHORIZATION_CODE_TTL_IN_SECS) * 1000;
+        const envAuthCodeTtl = parseInt(process.env.AUTHORIZATION_CODE_TTL || "", 10);
+        this.authorizationCodeTtlInMillis =
+            (Number.isInteger(envAuthCodeTtl) ? envAuthCodeTtl : DEFAULT_AUTHORIZATION_CODE_TTL_IN_SECS) * 1000;
         this.configEntries = new Map<string, string>();
     }
 
