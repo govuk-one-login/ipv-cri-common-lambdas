@@ -1,11 +1,13 @@
 import { APIGatewayProxyEventQueryStringParameters } from "aws-lambda/trigger/api-gateway-proxy";
-import {ValidationResult} from "../types/validation-result";
-import {ConfigService} from "./config-service";
+import { ValidationResult } from "../types/validation-result";
+import { ConfigService } from "./config-service";
 
 export class AuthorizationRequestValidator {
     constructor(private configService: ConfigService) {}
-    async validate(queryStringParams: APIGatewayProxyEventQueryStringParameters | null,
-             sessionClientId: string) : Promise<ValidationResult> {
+    async validate(
+        queryStringParams: APIGatewayProxyEventQueryStringParameters | null,
+        sessionClientId: string,
+    ): Promise<ValidationResult> {
         if (!queryStringParams) {
             return { isValid: false, errorMsg: "Missing querystring parameters" };
         }
