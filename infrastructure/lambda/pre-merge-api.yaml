@@ -98,7 +98,7 @@ paths:
       x-amazon-apigateway-integration:
         httpMethod: "POST"
         uri:
-          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${SessionFunction.Arn}/invocations
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${SessionFunctionTwo.Arn}/invocations
         responses:
           default:
             statusCode: "200"

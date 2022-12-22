@@ -327,6 +327,63 @@ Resources:
       FilterPattern: ""
       LogGroupName: !Ref SessionFunctionLogGroup
 
+  SessionFunctionTwo:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: app.lambdaHandler
+      Runtime: nodejs16.x
+      CodeUri: ../../session2
+      FunctionName: !Sub "${AWS::StackName}-SessionFunctionTwo"
+      Layers:
+        - !Sub arn:aws:lambda:${AWS::Region}:094274105915:layer:AWSLambdaPowertoolsTypeScript:6
+      Environment:
+        Variables:
+          POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-sessionTwo"
+          SQS_AUDIT_EVENT_QUEUE_URL: !ImportValue AuditEventQueueUrl
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - AWSXrayWriteOnlyAccess
+        - DynamoDBWritePolicy:
+            TableName: !Ref SessionTable
+        - DynamoDBWritePolicy:
+            TableName: !Ref PersonIdentityTable
+        - SQSSendMessagePolicy:
+            QueueName: !ImportValue AuditEventQueueName
+        - KMSDecryptPolicy:
+            KeyId: !ImportValue core-infrastructure-CriDecryptionKey1Id
+        - SSMParameterReadPolicy:
+            ParameterName: !Sub "${AWS::StackName}/clients/*"
+        - Statement:
+            - Effect: Allow
+              Action:
+                - ssm:GetParameter
+              Resource:
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/SessionTableName"
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/SessionTtl"
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/KBVCriAudience"
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/AuthRequestKmsEncryptionKeyId"
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/PersonIdentityTableName"
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/verifiable-credential/issuer"
+    Metadata: # Manage esbuild properties
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: "es2020"
+        Sourcemap: true # Enabling source maps will create the required NODE_OPTIONS environment variables on your lambda function during sam build
+        EntryPoints:
+          - src/app.ts
+        External:
+          - '@aws-lambda-powertools/commons'
+          - '@aws-lambda-powertools/logger'
+          - '@aws-lambda-powertools/metrics'
+          - '@aws-lambda-powertools/tracer'
+
+  SessionFunctionTwoLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${SessionFunctionTwo}"
+      RetentionInDays: 30
+
   AuthorizationFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -744,6 +801,13 @@ Resources:
     Properties:
       Action: lambda:InvokeFunction
       FunctionName: !GetAtt SessionFunction.Arn
+      Principal: apigateway.amazonaws.com
+
+  SessionFunctionTwoPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt SessionFunctionTwo.Arn
       Principal: apigateway.amazonaws.com
 
   AccessTokenFunctionPermission:
