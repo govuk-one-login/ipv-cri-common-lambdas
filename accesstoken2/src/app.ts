@@ -16,44 +16,27 @@ class AccessTokenLambda implements LambdaInterface {
     @logger.injectLambdaContext({clearState: true})
     @metrics.logMetrics({throwOnEmptyMetrics: false, captureColdStartMetric: true})
     public async handler(event: APIGatewayProxyEvent, context: any): Promise<APIGatewayProxyResult> {
-        console.log("EVENT BODY===>>"+ JSON.stringify(event.body));
+        logger.info("AccessTokenLambda: "+ JSON.stringify(event.body));
         let response: APIGatewayProxyResult;
         try {
             await initPromise;
-            console.log('Reached AccessTokenLambda TYPESCRIPT ****************** 23');
-            // const sessionId = event.headers["session-id"] as string;
-            // if (!sessionId) {
-            //     console.log('Reached AccessTokenLambda TYPESCRIPT ****************** 26');
-            //     response = {
-            //         statusCode: 400,
-            //         body: "Missing header: session-id is required",
-            //     };
-            //     return response;
-            // }
 
-        
     //validate the incoming payload
-    const validationResult = await new AccessTokenRequestValidator(configService).validate(event.body);
+    const requestPayload = event.body;
+    const validationResult = await new AccessTokenRequestValidator(configService).validate(requestPayload);
     if (!validationResult.isValid) {
-        console.log('Reached AccessTokenLambda TYPESCRIPT ****************** 38');
         return {
             statusCode: 400,
             body: `Invalid request: ${validationResult.errorMsg}`
         };
     }
-
-    //create token request object
-    const requestParams = event.body;
-    if (!event.body) {
-
+    if (!requestPayload) {
         return {
             statusCode: 400,
             body: `Invalid request: ${validationResult.errorMsg}`
         };
-
-       
     }
-    const searchParams = new URLSearchParams(event.body);
+    const searchParams = new URLSearchParams(requestPayload);
     const sessionService = new SessionService(DynamoDbClient, configService);
     const authCode = searchParams.get('code');
     if(!authCode){
@@ -70,40 +53,19 @@ class AccessTokenLambda implements LambdaInterface {
         };
     }
 
-    console.log('Session Item =>'+ JSON.stringify(sessionItem));
+    logger.appendKeys({"govuk_signin_journey_id": sessionItem.clientSessionId});
+    logger.info("found session: "+ JSON.stringify(sessionItem) );
 
-  
-            // logger.appendKeys({"govuk_signin_journey_id": sessionItem.clientSessionId});
-            // logger.info("found session");
-
-            // if (!sessionItem.authorizationCode) {
-            //     await sessionService.createAuthorizationCode(sessionItem);
-            //     logger.info("Authorization code not present. Authorization code generated successfully.");
-            // }
-
-            // // @ts-ignore
-            // const authorizationResponse = {
-            //     state: {
-            //         value: event.queryStringParameters["state"]
-            //     },
-            //     authorizationCode: {
-            //         value: sessionItem.authorizationCode
-            //     },
-            //     redirectionURI: event.queryStringParameters["redirect_uri"]
-            // };
-
-            // metrics.addMetric('authorization_sent', MetricUnits.Count, 1);
-            console.log('Reached in the result section');
-            const jsonBody = {
-                "access_token": "string",
-                "token_type": "Bearer",
-                "expires_in": "3600",
-                "refresh_token": "string"
-              };
-
+          // @ts-ignore
+            const accessTokenResponse = {
+                    "access_token": "new-access-token",
+                    "token_type": "Bearer",
+                    "expires_in": "3600",
+                    "refresh_token": "string"
+            };
             response = {
                 statusCode: 200,
-                body: JSON.stringify(jsonBody)
+                body: JSON.stringify(accessTokenResponse)
             };
         } catch (err) {
             // eslint-disable-next-line no-console

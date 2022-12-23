@@ -2,7 +2,6 @@ import { DynamoDBDocument, GetCommand, UpdateCommand, QueryCommandInput } from "
 import {SessionItem} from "../types/session-item";
 import { v4 as uuidv4 } from "uuid";
 import {ConfigService} from "./config-service";
-import cluster from "cluster";
 
 export class SessionService {
     constructor(private dynamoDbClient: DynamoDBDocument, private configService: ConfigService) {}
@@ -53,10 +52,6 @@ export class SessionService {
           };
 
         const sessionItem  = await  this.dynamoDbClient.query(params);
-        console.log('DynamoBD - results ---------------------------- ');
-        console.log('Line 57 '+JSON.stringify(sessionItem));
-        console.log(`Line 59  ${JSON.stringify(sessionItem.Count)}`);
-        console.log(`Line 59  ${JSON.stringify(sessionItem.Items)}`);
 
         if (!sessionItem.Items){
             throw new Error(`Could not find session Item`); 

@@ -1,4 +1,3 @@
-import { APIGatewayProxyEventQueryStringParameters } from "aws-lambda/trigger/api-gateway-proxy";
 import {ValidationResult} from "../types/validation-result";
 import {ConfigService} from "./config-service";
 
@@ -12,8 +11,6 @@ export class AccessTokenRequestValidator {
             }
 
             const searchParams = new URLSearchParams(tokenRequestBody);
-            console.log('Search Params string -->'+JSON.stringify(searchParams, null, 2));
-
             console.log(`searchParams => ${searchParams}`);
             const grant_type = searchParams.get('grant_type');
             const redirectUri =  searchParams.get('redirect_uri');
@@ -39,8 +36,7 @@ export class AccessTokenRequestValidator {
             if (!client_assertion) {
                 errorMsg = "Invalid client_assertion parameter";
             }
-            console.log(`errorMsg => ${errorMsg}`);
-            
+                     
             return { isValid: !errorMsg, errorMsg: errorMsg };
         }
 
