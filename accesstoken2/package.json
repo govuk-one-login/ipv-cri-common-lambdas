@@ -1,0 +1,43 @@
+{
+  "name": "accesstoken2",
+  "version": "1.0.0",
+  "description": "Access Token TypeScript Lambda",
+  "main": "app.js",
+  "dependencies": {
+    "uuid": "^9.0.0",
+    "@aws-sdk/client-dynamodb": "3.150.0",
+    "@aws-sdk/client-ssm": "^3.186.0",
+    "@aws-sdk/lib-dynamodb": "3.150.0",
+    "@aws-lambda-powertools/logger": "^1.5.0",
+    "@aws-lambda-powertools/metrics": "^1.5.0",
+    "esbuild": "0.14.14"
+  },
+  "scripts": {
+    "unit": "jest --config=jest.config.ts",
+    "lint": "prettier --check src tests && eslint .",
+    "compile": "tsc",
+    "test": "npm run compile && npm run unit"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "8.10.92",
+    "@types/jest": "29.1.2",
+    "@types/node": "18.8.3",
+    "@typescript-eslint/eslint-plugin": "5.10.2",
+    "@typescript-eslint/parser": "5.10.2",
+    "aws-sdk": "2.1231.0",
+    "esbuild-jest": "0.5.0",
+    "eslint": "8.8.0",
+    "eslint-config-prettier": "8.3.0",
+    "eslint-plugin-prettier": "4.0.0",
+    "jest": "29.1.2",
+    "prettier": "2.5.1",
+    "ts-jest": "29.0.3",
+    "ts-node": "10.4.0",
+    "typescript": "4.8.4"
+  },
+  "keywords": [
+    "access-token"
+  ],
+  "author": "",
+  "license": "ISC"
+}
