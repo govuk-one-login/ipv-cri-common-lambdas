@@ -4,13 +4,14 @@
   "description": "Access Token TypeScript Lambda",
   "main": "app.js",
   "dependencies": {
-    "uuid": "^9.0.0",
+    "@aws-lambda-powertools/logger": "^1.5.0",
+    "@aws-lambda-powertools/metrics": "^1.5.0",
     "@aws-sdk/client-dynamodb": "3.150.0",
     "@aws-sdk/client-ssm": "^3.186.0",
     "@aws-sdk/lib-dynamodb": "3.150.0",
-    "@aws-lambda-powertools/logger": "^1.5.0",
-    "@aws-lambda-powertools/metrics": "^1.5.0",
-    "esbuild": "0.14.14"
+    "esbuild": "0.14.14",
+    "jose": "^4.11.2",
+    "uuid": "^9.0.0"
   },
   "scripts": {
     "unit": "jest --config=jest.config.ts",

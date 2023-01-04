@@ -30,6 +30,7 @@ export class ConfigService {
         if (!clientId) {
             throw new Error("Undefined clientId supplied");
         }
+        console.log('Before the parameter calll ');
         return await this.getParameter(`clients/${clientId}/jwtAuthentication/redirectUri`);
     }
 
@@ -44,16 +45,31 @@ export class ConfigService {
     }
 
     private async getParameter(key: string): Promise<string> {
+      
         if (this.configEntries.has(key)) {
             return this.configEntries.get(key) as string;
         }
 
         const paramName = `/${PARAMETER_PREFIX}/${key}`;
-        const getParamByNameCommand = new GetParameterCommand({
-            Name: paramName,
-        });
+        console.log(`getParameter => key = ${paramName}`);
 
-        const getParamResult = await this.ssmClient.send(getParamByNameCommand);
+
+        const result = (await new SSMClient({ region: "eu-west-2" }).send(new GetParameterCommand({
+            Name: paramName
+        })))?.Parameter?.Value;
+
+        console.log(`result => result = ${result}`);
+
+        const getParamByNameCommand = new GetParameterCommand({
+            Name: paramName
+        });
+        console.log('Before getParamResult');
+        const getParamResult = this.ssmClient.send(getParamByNameCommand)
+        .then(result => console.log('This is the then block'+result))
+        .catch(error => console.log('ERROR -> '+error));
+
+
+        console.log(`getParamResult ${getParamResult}`);
         const value = getParamResult?.Parameter?.Value;
 
         if (!value) {

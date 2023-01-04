@@ -4,4 +4,5 @@ export type SessionItem = {
     clientSessionId: string;
     authorizationCode: string;
     authorizationCodeExpiryDate: number;
+    redirectUri: string;
 };

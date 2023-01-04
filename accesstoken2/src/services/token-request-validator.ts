@@ -1,5 +1,9 @@
 import {ValidationResult} from "../types/validation-result";
 import {ConfigService} from "./config-service";
+import {SessionItem} from '../types/session-item';
+import {Logger} from "@aws-lambda-powertools/logger";
+
+const logger = new Logger();
 
 export class AccessTokenRequestValidator {
     constructor(private configService: ConfigService) {}
@@ -11,7 +15,6 @@ export class AccessTokenRequestValidator {
             }
 
             const searchParams = new URLSearchParams(tokenRequestBody);
-            console.log(`searchParams => ${searchParams}`);
             const grant_type = searchParams.get('grant_type');
             const redirectUri =  searchParams.get('redirect_uri');
             const code = searchParams.get('code');
@@ -39,5 +42,24 @@ export class AccessTokenRequestValidator {
                      
             return { isValid: !errorMsg, errorMsg: errorMsg };
         }
+
+    async validateTokenRequest(authCode: string | null, sessionItem: SessionItem) : Promise<ValidationResult> {
+        let errorMsg = null;
+
+        console.log(`AccessTokenRequestValidator.validateTokenRequest with: ${authCode} and ${sessionItem.authorizationCode}`);
+        if(authCode !== sessionItem.authorizationCode){
+            errorMsg = 'Authorisation code does not match with authorization Code for Address Session Item';
+        }
+
+        console.log('before configRedirectUri service .... ');
+        const configRedirectUri = await this.configService.getRedirectUri(sessionItem.clientId);
+        console.log('configRedirectUri .... '+configRedirectUri);
+        logger.info(`AccessTokenRequestValidator.configRedirectUri with: ${configRedirectUri} and ${JSON.stringify(sessionItem)}`);
+        if(configRedirectUri !== sessionItem.redirectUri){
+            console.log('sessionItem.redirectUri .... sessionItem.redirectUri');
+            errorMsg = `redirect uri ${sessionItem.redirectUri} does not match configuration uri ${configRedirectUri}`;
+        }
+        return { isValid: !errorMsg, errorMsg:  errorMsg};
+    }
 
 }

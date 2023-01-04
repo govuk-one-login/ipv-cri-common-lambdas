@@ -4,38 +4,41 @@ import {Metrics, MetricUnits} from "@aws-lambda-powertools/metrics";
 import {Logger} from "@aws-lambda-powertools/logger";
 import {SessionService} from "./services/session-service";
 import {DynamoDbClient} from "./lib/dynamo-db-client";
-import {SsmClient} from "./lib/param-store-client";
+import { SSMClient } from "@aws-sdk/client-ssm";
 import {ConfigService} from "./services/config-service";
 import {AccessTokenRequestValidator} from './services/token-request-validator';
 const logger = new Logger();
 const metrics = new Metrics();
-const configService = new ConfigService(SsmClient);
+
+const configService = new ConfigService(new SSMClient({ region: "eu-west-2" }));
 const initPromise = configService.init();
 
 class AccessTokenLambda implements LambdaInterface {
     @logger.injectLambdaContext({clearState: true})
     @metrics.logMetrics({throwOnEmptyMetrics: false, captureColdStartMetric: true})
     public async handler(event: APIGatewayProxyEvent, context: any): Promise<APIGatewayProxyResult> {
-        logger.info("AccessTokenLambda: "+ JSON.stringify(event.body));
+        logger.info(`AccessTokenLambda: ${JSON.stringify(event.body)}`);
         let response: APIGatewayProxyResult;
         try {
             await initPromise;
 
     //validate the incoming payload
     const requestPayload = event.body;
-    const validationResult = await new AccessTokenRequestValidator(configService).validate(requestPayload);
+    if (!requestPayload) {
+        return {
+            statusCode: 400,
+            body: `Invalid request missing body`
+        };
+    }
+
+    var validationResult = await new AccessTokenRequestValidator(configService).validate(requestPayload);
     if (!validationResult.isValid) {
         return {
             statusCode: 400,
             body: `Invalid request: ${validationResult.errorMsg}`
         };
     }
-    if (!requestPayload) {
-        return {
-            statusCode: 400,
-            body: `Invalid request: ${validationResult.errorMsg}`
-        };
-    }
+   
     const searchParams = new URLSearchParams(requestPayload);
     const sessionService = new SessionService(DynamoDbClient, configService);
     const authCode = searchParams.get('code');
@@ -56,6 +59,18 @@ class AccessTokenLambda implements LambdaInterface {
     logger.appendKeys({"govuk_signin_journey_id": sessionItem.clientSessionId});
     logger.info("found session: "+ JSON.stringify(sessionItem) );
 
+    validationResult = await new AccessTokenRequestValidator(configService).validateTokenRequest(authCode, sessionItem);
+    if (!validationResult.isValid) {
+        return {
+            statusCode: 400,
+            body: `Invalid request: ${validationResult.errorMsg}`
+        };
+    }
+    //TODO:
+    //createToken(tokenRequest);
+    //updateSessionAccessToken(sessionItem, accessTokenResponse);
+    //sessionService.updateSession(sessionItem);
+    console.log('Success point');
           // @ts-ignore
             const accessTokenResponse = {
                     "access_token": "new-access-token",
@@ -69,7 +84,7 @@ class AccessTokenLambda implements LambdaInterface {
             };
         } catch (err) {
             // eslint-disable-next-line no-console
-            logger.error("access token lambda error occurred/", err);
+            logger.error("access token lambda error occurred/");
             response = {
                 statusCode: 500,
                 body: "An error has occurred. " + JSON.stringify(err),
