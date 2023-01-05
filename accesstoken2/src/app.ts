@@ -4,13 +4,13 @@ import {Metrics, MetricUnits} from "@aws-lambda-powertools/metrics";
 import {Logger} from "@aws-lambda-powertools/logger";
 import {SessionService} from "./services/session-service";
 import {DynamoDbClient} from "./lib/dynamo-db-client";
-import { SSMClient } from "@aws-sdk/client-ssm";
+import {SsmClient} from './lib/param-store-client';
 import {ConfigService} from "./services/config-service";
 import {AccessTokenRequestValidator} from './services/token-request-validator';
 const logger = new Logger();
 const metrics = new Metrics();
 
-const configService = new ConfigService(new SSMClient({ region: "eu-west-2" }));
+const configService = new ConfigService(SsmClient);
 const initPromise = configService.init();
 
 class AccessTokenLambda implements LambdaInterface {
@@ -30,8 +30,9 @@ class AccessTokenLambda implements LambdaInterface {
             body: `Invalid request missing body`
         };
     }
+    const accessTokenRequestValidator =  new AccessTokenRequestValidator(configService);
 
-    var validationResult = await new AccessTokenRequestValidator(configService).validate(requestPayload);
+    let validationResult = await accessTokenRequestValidator.validate(requestPayload);
     if (!validationResult.isValid) {
         return {
             statusCode: 400,
@@ -59,7 +60,7 @@ class AccessTokenLambda implements LambdaInterface {
     logger.appendKeys({"govuk_signin_journey_id": sessionItem.clientSessionId});
     logger.info("found session: "+ JSON.stringify(sessionItem) );
 
-    validationResult = await new AccessTokenRequestValidator(configService).validateTokenRequest(authCode, sessionItem);
+    validationResult = await accessTokenRequestValidator.validateTokenRequest(authCode, sessionItem);
     if (!validationResult.isValid) {
         return {
             statusCode: 400,

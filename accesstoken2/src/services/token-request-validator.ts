@@ -52,7 +52,7 @@ export class AccessTokenRequestValidator {
         }
 
         console.log('before configRedirectUri service .... ');
-        const configRedirectUri = await this.configService.getRedirectUri(sessionItem.clientId);
+        const configRedirectUri = this.configService.getRedirectUri(sessionItem.clientId);
         console.log('configRedirectUri .... '+configRedirectUri);
         logger.info(`AccessTokenRequestValidator.configRedirectUri with: ${configRedirectUri} and ${JSON.stringify(sessionItem)}`);
         if(configRedirectUri !== sessionItem.redirectUri){

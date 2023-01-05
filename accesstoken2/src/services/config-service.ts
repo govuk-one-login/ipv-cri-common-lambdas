@@ -17,21 +17,18 @@ export class ConfigService {
     }
 
     public init(): Promise<string[]> {
-        const defaultKeys = [SESSION_TABLE_NAME_KEY];
-        const promises = [];
-        for (const key of defaultKeys) {
-            promises.push(this.getParameter(key));
-        }
-
+        const REDIRECT_URI = `clients/ipv-core-stub/jwtAuthentication/redirectUri`;
+        const defaultKeys = [SESSION_TABLE_NAME_KEY, REDIRECT_URI];
+        const promises = defaultKeys.map(key => this.getParameter(key));
         return Promise.all(promises);
     }
 
-    public async getRedirectUri(clientId: string) {
+    public getRedirectUri(clientId: string) {
         if (!clientId) {
             throw new Error("Undefined clientId supplied");
         }
         console.log('Before the parameter calll ');
-        return await this.getParameter(`clients/${clientId}/jwtAuthentication/redirectUri`);
+        return this.configEntries.get(`clients/${clientId}/jwtAuthentication/redirectUri`);
     }
 
     public async getSessionTableName() {
@@ -53,25 +50,13 @@ export class ConfigService {
         const paramName = `/${PARAMETER_PREFIX}/${key}`;
         console.log(`getParameter => key = ${paramName}`);
 
-
-        const result = (await new SSMClient({ region: "eu-west-2" }).send(new GetParameterCommand({
-            Name: paramName
-        })))?.Parameter?.Value;
-
-        console.log(`result => result = ${result}`);
-
         const getParamByNameCommand = new GetParameterCommand({
             Name: paramName
         });
         console.log('Before getParamResult');
-        const getParamResult = this.ssmClient.send(getParamByNameCommand)
-        .then(result => console.log('This is the then block'+result))
-        .catch(error => console.log('ERROR -> '+error));
-
-
-        console.log(`getParamResult ${getParamResult}`);
+        const getParamResult = await this.ssmClient.send(getParamByNameCommand);
+        console.log(`AFTER getParamResult ${JSON.stringify(getParamResult)}`);
         const value = getParamResult?.Parameter?.Value;
-
         if (!value) {
             throw new Error(`Could not retrieve SSM Parameter - ${key}`);
         } else {
