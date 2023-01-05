@@ -85,7 +85,7 @@ class AccessTokenLambda implements LambdaInterface {
             };
         } catch (err) {
             // eslint-disable-next-line no-console
-            logger.error("access token lambda error occurred/");
+            logger.error(`access token lambda error occurred ${err}`);
             response = {
                 statusCode: 500,
                 body: "An error has occurred. " + JSON.stringify(err),
