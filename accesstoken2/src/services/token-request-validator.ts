@@ -2,6 +2,7 @@ import {ValidationResult} from "../types/validation-result";
 import {ConfigService} from "./config-service";
 import {SessionItem} from '../types/session-item';
 import {Logger} from "@aws-lambda-powertools/logger";
+import { JwtVerifier } from "./jwt-verifier";
 
 const logger = new Logger();
 
@@ -43,22 +44,22 @@ export class AccessTokenRequestValidator {
             return { isValid: !errorMsg, errorMsg: errorMsg };
         }
 
-    async validateTokenRequest(authCode: string | null, sessionItem: SessionItem) : Promise<ValidationResult> {
+    async validateTokenRequest(authCode: string | null, sessionItem: SessionItem, jwt: string) : Promise<ValidationResult> {
         let errorMsg = null;
 
-        console.log(`AccessTokenRequestValidator.validateTokenRequest with: ${authCode} and ${sessionItem.authorizationCode}`);
+        console.log(`AccessTokenRequestValidator.jwt with: ${jwt}`);
         if(authCode !== sessionItem.authorizationCode){
             errorMsg = 'Authorisation code does not match with authorization Code for Address Session Item';
         }
-
-        console.log('before configRedirectUri service .... ');
         const configRedirectUri = this.configService.getRedirectUri(sessionItem.clientId);
-        console.log('configRedirectUri .... '+configRedirectUri);
         logger.info(`AccessTokenRequestValidator.configRedirectUri with: ${configRedirectUri} and ${JSON.stringify(sessionItem)}`);
         if(configRedirectUri !== sessionItem.redirectUri){
-            console.log('sessionItem.redirectUri .... sessionItem.redirectUri');
             errorMsg = `redirect uri ${sessionItem.redirectUri} does not match configuration uri ${configRedirectUri}`;
         }
+
+        const payload = await new JwtVerifier(this.configService).verify(jwt, sessionItem.clientId);
+        console.log(`Payload => ${JSON.stringify(payload)}`);
+
         return { isValid: !errorMsg, errorMsg:  errorMsg};
     }
 

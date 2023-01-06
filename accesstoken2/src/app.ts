@@ -60,7 +60,7 @@ class AccessTokenLambda implements LambdaInterface {
     logger.appendKeys({"govuk_signin_journey_id": sessionItem.clientSessionId});
     logger.info("found session: "+ JSON.stringify(sessionItem) );
 
-    validationResult = await accessTokenRequestValidator.validateTokenRequest(authCode, sessionItem);
+    validationResult = await accessTokenRequestValidator.validateTokenRequest(authCode, sessionItem, searchParams.get('client_assertion') as string);
     if (!validationResult.isValid) {
         return {
             statusCode: 400,

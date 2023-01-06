@@ -48,14 +48,11 @@ export class ConfigService {
         }
 
         const paramName = `/${PARAMETER_PREFIX}/${key}`;
-        console.log(`getParameter => key = ${paramName}`);
 
         const getParamByNameCommand = new GetParameterCommand({
             Name: paramName
         });
-        console.log('Before getParamResult');
         const getParamResult = await this.ssmClient.send(getParamByNameCommand);
-        console.log(`AFTER getParamResult ${JSON.stringify(getParamResult)}`);
         const value = getParamResult?.Parameter?.Value;
         if (!value) {
             throw new Error(`Could not retrieve SSM Parameter - ${key}`);
@@ -65,4 +62,30 @@ export class ConfigService {
 
         return value;
     }
+
+    public async getJwtIssuer(clientId: string) {
+        if (!clientId) {
+            throw new Error("Undefined clientId supplied");
+        }
+        return await this.getParameter(`clients/${clientId}/jwtAuthentication/issuer`);
+    }
+
+    public async getJwtAudience(clientId: string) {
+        if (!clientId) {
+            throw new Error("Undefined clientId supplied");
+        }
+        return await this.getParameter(`clients/${clientId}/jwtAuthentication/audience`);
+    }
+
+    public async getJwtSigningAlgorithm(clientId: string) {
+        if (!clientId) {
+            throw new Error("Undefined clientId supplied");
+        }
+        return await this.getParameter(`clients/${clientId}/jwtAuthentication/authenticationAlg`);
+    }
+
+    public async getPublicSigningJwk(clientId: string) {
+        return await this.getParameter(`clients/${clientId}/jwtAuthentication/publicSigningJwkBase64`);
+    }
+    
 }
