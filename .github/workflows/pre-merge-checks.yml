@@ -34,7 +34,7 @@ jobs:
           distribution: zulu
           cache: 'gradle'
       - name: Build Cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: |
             .gradle/
@@ -59,7 +59,7 @@ jobs:
           distribution: zulu
           cache: 'gradle'
       - name: Build Cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: |
             .gradle/
@@ -80,7 +80,7 @@ jobs:
             */build/reports/
           retention-days: 5
       - name: Cache Unit Test Reports
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           key: ${{ runner.os }}-unit-test-reports-${{ github.sha }}
           path: |
@@ -101,7 +101,7 @@ jobs:
           distribution: zulu
           cache: 'gradle'
       - name: Build Cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: |
             .gradle/
@@ -110,7 +110,7 @@ jobs:
             !*/build/jacoco
           key: ${{ runner.os }}-build-${{ github.sha }}
       - name: Cache Unit Test Reports
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           key: ${{ runner.os }}-unit-test-reports-${{ github.sha }}
           path: |
