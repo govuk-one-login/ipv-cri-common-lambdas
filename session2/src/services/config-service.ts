@@ -5,13 +5,8 @@ enum SsmParamNames {
     SESSION_TABLE_NAME = "SessionTableName",
     SESSION_TTL = "SessionTtl",
     DECRYPTION_KEY_ID = "AuthRequestKmsEncryptionKeyId",
-    VC_ISSUER = "verifiable-credential/issuer"
+    VC_ISSUER = "verifiable-credential/issuer",
 }
-// const PERSON_IDENTITY_TABLE_NAME_KEY = "PersonIdentityTableName";
-// const SESSION_TABLE_NAME_KEY = "SessionTableName";
-// const SESSION_TTL_KEY = "SessionTtl";
-// const DECRYPTION_KEY_ID_KEY = "AuthRequestKmsEncryptionKeyId";
-// const VC_ISSUER_KEY = "verifiable-credential/issuer";
 
 const DEFAULT_AUTHORIZATION_CODE_TTL_IN_SECS = 600;
 const PARAMETER_PREFIX = process.env.AWS_STACK_NAME || "";
@@ -33,7 +28,7 @@ export class ConfigService {
             SsmParamNames.SESSION_TTL,
             SsmParamNames.PERSON_IDENTITY_TABLE_NAME,
             SsmParamNames.DECRYPTION_KEY_ID,
-            SsmParamNames.VC_ISSUER
+            SsmParamNames.VC_ISSUER,
         ];
         const promises = [];
         for (const key of defaultKeys) {
@@ -43,11 +38,29 @@ export class ConfigService {
         return Promise.all(promises);
     }
 
-    public async getRedirectUri(clientId: string) {
+    public async getJwtIssuer(clientId: string) {
         if (!clientId) {
             throw new Error("Undefined clientId supplied");
         }
-        return await this.getParameter(`clients/${clientId}/jwtAuthentication/redirectUri`);
+        return await this.getParameter(`clients/${clientId}/jwtAuthentication/issuer`);
+    }
+
+    public async getJwtAudience(clientId: string) {
+        if (!clientId) {
+            throw new Error("Undefined clientId supplied");
+        }
+        return await this.getParameter(`clients/${clientId}/jwtAuthentication/audience`);
+    }
+
+    public async getJwtSigningAlgorithm(clientId: string) {
+        if (!clientId) {
+            throw new Error("Undefined clientId supplied");
+        }
+        return await this.getParameter(`clients/${clientId}/jwtAuthentication/authenticationAlg`);
+    }
+
+    public async getPublicSigningJwk(clientId: string) {
+        return await this.getParameter(`clients/${clientId}/jwtAuthentication/publicSigningJwkBase64`);
     }
 
     public async getSessionTableName() {

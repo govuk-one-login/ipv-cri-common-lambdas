@@ -52,7 +52,7 @@ export class SessionService {
                 persistentSessionId: sessionRequest.persistentSessionId,
                 clientSessionId: sessionRequest.clientSessionId,
                 clientIpAddress: sessionRequest.clientIpAddress,
-                attemptCount: 0
+                attemptCount: 0,
             },
         });
         await this.dynamoDbClient.send(putSessionCommand);
