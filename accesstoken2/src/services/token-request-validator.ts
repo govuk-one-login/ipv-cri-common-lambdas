@@ -52,13 +52,11 @@ export class AccessTokenRequestValidator {
             errorMsg = 'Authorisation code does not match with authorization Code for Address Session Item';
         }
         const configRedirectUri = this.configService.getRedirectUri(sessionItem.clientId);
-        logger.info(`AccessTokenRequestValidator.configRedirectUri with: ${configRedirectUri} and ${JSON.stringify(sessionItem)}`);
         if(configRedirectUri !== sessionItem.redirectUri){
             errorMsg = `redirect uri ${sessionItem.redirectUri} does not match configuration uri ${configRedirectUri}`;
         }
 
         const payload = await new JwtVerifier(this.configService).verify(jwt, sessionItem.clientId);
-        console.log(`Payload => ${JSON.stringify(payload)}`);
 
         return { isValid: !errorMsg, errorMsg:  errorMsg};
     }

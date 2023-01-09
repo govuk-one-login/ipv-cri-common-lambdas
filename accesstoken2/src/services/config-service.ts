@@ -3,6 +3,7 @@ import { SSMClient, GetParameterCommand } from "@aws-sdk/client-ssm";
 const SESSION_TABLE_NAME_KEY = "SessionTableName";
 const DEFAULT_AUTHORIZATION_CODE_TTL_IN_SECS = 600;
 const PARAMETER_PREFIX = process.env.AWS_STACK_NAME || "";
+const ACCESS_TOKEN_TTL = process.env.ACCESS_TOKEN_TTL_IN_SECS || 3600;
 
 export class ConfigService {
     private readonly authorizationCodeTtlInMillis: number;
@@ -27,7 +28,6 @@ export class ConfigService {
         if (!clientId) {
             throw new Error("Undefined clientId supplied");
         }
-        console.log('Before the parameter calll ');
         return this.configEntries.get(`clients/${clientId}/jwtAuthentication/redirectUri`);
     }
 
@@ -86,6 +86,14 @@ export class ConfigService {
 
     public async getPublicSigningJwk(clientId: string) {
         return await this.getParameter(`clients/${clientId}/jwtAuthentication/publicSigningJwkBase64`);
+    }
+
+    public getBearerAccessTokenTtl() : number{
+        return Number(ACCESS_TOKEN_TTL);
+    }
+
+    public getBearerAccessTokenExpirationEpoch() : number {
+        return (new Date().getTime() + (this.getBearerAccessTokenTtl() * 1000))/1000 ;
     }
     
 }

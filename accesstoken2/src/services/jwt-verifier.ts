@@ -35,8 +35,8 @@ export class JwtVerifier {
         //         JWTClaimNames.AUDIENCE,
         //         JWTClaimNames.JWT_ID);
         
-        if(!payload.expectedAudience){
-
+        if(!payload.exp){
+            
         }
 
         return payload;

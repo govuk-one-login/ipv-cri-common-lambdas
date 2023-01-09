@@ -1,6 +1,6 @@
 import { DynamoDBDocument, GetCommand, UpdateCommand, QueryCommandInput } from "@aws-sdk/lib-dynamodb";
 import {SessionItem} from "../types/session-item";
-// import { v4 as uuidv4 } from "uuid";
+import { BearerAccessToken } from '../types/bearer-access-token';
 import {ConfigService} from "./config-service";
 
 export class SessionService {
@@ -63,6 +63,30 @@ export class SessionService {
 
         return sessionItem.Items[0] as SessionItem;
        
+    }
+
+    public async createAccessTokenCode(sessionItem: SessionItem, accessToken: BearerAccessToken) {
+        const tableName = await this.configService.getSessionTableName();
+    //     // Expire the authorization code immediately, as it can only be used once
+    //     sessionItem.authorizationCode = '';
+    //     // Set the access token
+    //   sessionItem.accessToken = accessToken.access_token;
+    //      // Set the access token expiry
+    //   sessionItem.accessTokenExpiryDate = this.configService.getBearerAccessTokenExpirationEpoch(); 
+    console.log(`sessionItem ${sessionItem}, accessToken ${JSON.stringify(accessToken)}`);
+        const authorizationCodeValue = null;
+        const updateSessionCommand = new UpdateCommand({
+            TableName: tableName,
+            Key: { sessionId: sessionItem.sessionId },
+            UpdateExpression: "SET accessToken=:accessTokenCode, accessTokenExpiryDate=:accessTokenExpiry, authorizationCode=:authorizationCodeValue",
+            ExpressionAttributeValues: {
+                ":accessTokenCode": accessToken.access_token,
+                ":accessTokenExpiry": this.configService.getBearerAccessTokenExpirationEpoch(),
+                ":authorizationCode":authorizationCodeValue
+            }
+        });
+        console.log(`updateSessionCommand ${updateSessionCommand}`);
+        await this.dynamoDbClient.send(updateSessionCommand);
     }
 
 }

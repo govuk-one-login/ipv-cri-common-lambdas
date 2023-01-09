@@ -7,6 +7,8 @@ import {DynamoDbClient} from "./lib/dynamo-db-client";
 import {SsmClient} from './lib/param-store-client';
 import {ConfigService} from "./services/config-service";
 import {AccessTokenRequestValidator} from './services/token-request-validator';
+import { AccessTokenService } from './services/access-token-service';
+
 const logger = new Logger();
 const metrics = new Metrics();
 
@@ -14,6 +16,9 @@ const configService = new ConfigService(SsmClient);
 const initPromise = configService.init();
 
 class AccessTokenLambda implements LambdaInterface {
+
+    constructor(private accessTokenService : AccessTokenService){}
+
     @logger.injectLambdaContext({clearState: true})
     @metrics.logMetrics({throwOnEmptyMetrics: false, captureColdStartMetric: true})
     public async handler(event: APIGatewayProxyEvent, context: any): Promise<APIGatewayProxyResult> {
@@ -61,39 +66,39 @@ class AccessTokenLambda implements LambdaInterface {
     logger.info("found session: "+ JSON.stringify(sessionItem) );
 
     validationResult = await accessTokenRequestValidator.validateTokenRequest(authCode, sessionItem, searchParams.get('client_assertion') as string);
-    if (!validationResult.isValid) {
-        return {
-            statusCode: 400,
-            body: `Invalid request: ${validationResult.errorMsg}`
-        };
-    }
+    // if (!validationResult.isValid) {
+    //     return {
+    //         statusCode: 400,
+    //         body: `Invalid request: ${validationResult.errorMsg}`
+    //     };
+    // }
     //TODO:
-    //createToken(tokenRequest);
+
     //updateSessionAccessToken(sessionItem, accessTokenResponse);
     //sessionService.updateSession(sessionItem);
+
     console.log('Success point');
+    const bearerAccessTokenTTL = configService.getBearerAccessTokenTtl();
+    console.log(`bearerAccessTokenTTL ${JSON.stringify(bearerAccessTokenTTL)}`);
           // @ts-ignore
-            const accessTokenResponse = {
-                    "access_token": "new-access-token",
-                    "token_type": "Bearer",
-                    "expires_in": "3600",
-                    "refresh_token": "string"
-            };
-            response = {
+            const accessTokenResponse = await this.accessTokenService.createBearerAccessToken(bearerAccessTokenTTL);
+            console.log(`accessTokenResponse ${JSON.stringify(accessTokenResponse)}`);
+            sessionService.createAccessTokenCode(sessionItem, accessTokenResponse)
+
+            return {
                 statusCode: 200,
                 body: JSON.stringify(accessTokenResponse)
             };
         } catch (err) {
             // eslint-disable-next-line no-console
             logger.error(`access token lambda error occurred ${err}`);
-            response = {
+            return {
                 statusCode: 500,
                 body: "An error has occurred. " + JSON.stringify(err),
             };
         }
-        return response;
     }
 }
 
-const handlerClass = new AccessTokenLambda();
+const handlerClass = new AccessTokenLambda(new AccessTokenService());
 export const lambdaHandler = handlerClass.handler.bind(handlerClass);
