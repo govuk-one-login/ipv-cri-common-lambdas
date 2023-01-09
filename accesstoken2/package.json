@@ -1,0 +1,15 @@
+{
+  "name": "access-token",
+  "version": "1.0.0",
+  "description": "Access Token TypeScript Lambda",
+  "main": "app.js",
+  "scripts": {
+    "unit": "jest --config=jest.config.ts",
+    "lint": "prettier --check src tests && eslint .",
+    "compile": "tsc",
+    "test": "npm run compile && npm run unit"
+  },
+  "keywords": ["access-token"],
+  "author": "",
+  "license": "ISC"
+}
