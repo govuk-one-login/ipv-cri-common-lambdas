@@ -72,7 +72,7 @@ class AccessTokenLambda implements LambdaInterface {
                 searchParams.get("client_assertion") as string,
             );
             if (!validationResult.isValid) {
-                if(validationResult.errorMsg?.includes("Authorisation code does not match")) {
+                if(validationResult.errorMsg === "Authorisation code does not match") {
                     return {
                         statusCode: 403,
                         body: JSON.stringify({
