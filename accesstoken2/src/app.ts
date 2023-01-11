@@ -46,6 +46,7 @@ class AccessTokenLambda implements LambdaInterface {
 
             const searchParams = new URLSearchParams(requestPayload);
             const sessionService = new SessionService(DynamoDbClient, configService);
+
             const authCode = searchParams.get("code");
             if (!authCode) {
                 return {
@@ -53,6 +54,7 @@ class AccessTokenLambda implements LambdaInterface {
                     body: `Invalid request: ${validationResult.errorMsg}`,
                 };
             }
+
             const sessionItem = await sessionService.getSessionByAuthorizationCode(authCode);
             if (!sessionItem) {
                 return {
@@ -69,16 +71,23 @@ class AccessTokenLambda implements LambdaInterface {
                 sessionItem,
                 searchParams.get("client_assertion") as string,
             );
-            // if (!validationResult.isValid) {
-            //     return {
-            //         statusCode: 400,
-            //         body: `Invalid request: ${validationResult.errorMsg}`
-            //     };
-            // }
-            //TODO:
-
-            //updateSessionAccessToken(sessionItem, accessTokenResponse);
-            //sessionService.updateSession(sessionItem);
+            if (!validationResult.isValid) {
+                if(validationResult.errorMsg?.includes("Authorisation code does not match")) {
+                    return {
+                        statusCode: 403,
+                        body: JSON.stringify({
+                            message: `Invalid request: ${validationResult.errorMsg}`,
+                            code: 1026,
+                        })
+                    }
+                } else {
+                    return {
+                        statusCode: 400,
+                        body: `Invalid request: ${validationResult.errorMsg}`
+                    };
+                }
+            }
+            //TODO:  invalid authorization code
 
             console.log("Success point");
             const bearerAccessTokenTTL = configService.getBearerAccessTokenTtl();

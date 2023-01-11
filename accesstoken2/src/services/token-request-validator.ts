@@ -55,7 +55,7 @@ export class AccessTokenRequestValidator {
 
         console.log(`AccessTokenRequestValidator.jwt with: ${jwt}`);
         if (authCode !== sessionItem.authorizationCode) {
-            errorMsg = "Authorisation code does not match with authorization Code for Address Session Item";
+            errorMsg = "1026 : Access token expired";
         }
         const configRedirectUri = this.configService.getRedirectUri(sessionItem.clientId);
         if (configRedirectUri !== sessionItem.redirectUri) {
