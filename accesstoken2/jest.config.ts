@@ -13,4 +13,6 @@ export default {
     coverageProvider: "v8",
     coveragePathIgnorePatterns: ["config.ts", "node_modules/"],
     testMatch: ["**/tests/**/*.test.ts"],
+    preset: "ts-jest",
+    testEnvironment: "node",
 };
