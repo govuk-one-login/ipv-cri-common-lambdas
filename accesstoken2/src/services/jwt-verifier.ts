@@ -8,7 +8,6 @@ export class JwtVerifier {
         const signingPublicJwk = JSON.parse(Buffer.from(signingPublicJwkBase64, "base64").toString("utf8"));
         
         const expectedIssuer = await this.configService.getJwtIssuer(clientId);
-        console.log(`expectedIssuer ${expectedIssuer}`);
         const expectedAudience = await this.configService.getJwtAudience(clientId);
         const signingAlgorithm = await this.configService.getJwtSigningAlgorithm(clientId);
         const publicKey = await importJWK(signingPublicJwk, signingPublicJwk.alg);

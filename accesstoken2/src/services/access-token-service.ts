@@ -8,7 +8,7 @@ export class AccessTokenService {
             randomBytes,
           } = await import('node:crypto');
 
-        const access_token = `${randomBytes(32).toString('base64')}`;
+        const access_token = `Bearer ${randomBytes(32).toString('base64url')}`;
         const token_type = 'Bearer';
 
         const BearerAccessToken = {

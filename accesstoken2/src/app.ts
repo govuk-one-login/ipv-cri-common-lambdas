@@ -72,18 +72,11 @@ class AccessTokenLambda implements LambdaInterface {
     //         body: `Invalid request: ${validationResult.errorMsg}`
     //     };
     // }
-    //TODO:
 
-    //updateSessionAccessToken(sessionItem, accessTokenResponse);
-    //sessionService.updateSession(sessionItem);
-
-    console.log('Success point');
     const bearerAccessTokenTTL = configService.getBearerAccessTokenTtl();
-    console.log(`bearerAccessTokenTTL ${JSON.stringify(bearerAccessTokenTTL)}`);
-          // @ts-ignore
-            const accessTokenResponse = await this.accessTokenService.createBearerAccessToken(bearerAccessTokenTTL);
-            console.log(`accessTokenResponse ${JSON.stringify(accessTokenResponse)}`);
-            sessionService.createAccessTokenCode(sessionItem, accessTokenResponse)
+    const accessTokenResponse = await this.accessTokenService.createBearerAccessToken(bearerAccessTokenTTL);
+    console.log(`accessTokenResponse ${JSON.stringify(accessTokenResponse)}`);
+    await sessionService.createAccessTokenCode(sessionItem, accessTokenResponse)
 
             return {
                 statusCode: 200,

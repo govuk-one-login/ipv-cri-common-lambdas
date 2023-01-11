@@ -67,25 +67,16 @@ export class SessionService {
 
     public async createAccessTokenCode(sessionItem: SessionItem, accessToken: BearerAccessToken) {
         const tableName = await this.configService.getSessionTableName();
-    //     // Expire the authorization code immediately, as it can only be used once
-    //     sessionItem.authorizationCode = '';
-    //     // Set the access token
-    //   sessionItem.accessToken = accessToken.access_token;
-    //      // Set the access token expiry
-    //   sessionItem.accessTokenExpiryDate = this.configService.getBearerAccessTokenExpirationEpoch(); 
-    console.log(`sessionItem ${sessionItem}, accessToken ${JSON.stringify(accessToken)}`);
-        const authorizationCodeValue = null;
+        const bearerAccessTokenTTL = this.configService.getBearerAccessTokenExpirationEpoch();
         const updateSessionCommand = new UpdateCommand({
             TableName: tableName,
             Key: { sessionId: sessionItem.sessionId },
-            UpdateExpression: "SET accessToken=:accessTokenCode, accessTokenExpiryDate=:accessTokenExpiry, authorizationCode=:authorizationCodeValue",
+            UpdateExpression: "SET accessToken=:accessTokenCode, accessTokenExpiryDate=:accessTokenExpiry REMOVE authorizationCode", 
             ExpressionAttributeValues: {
                 ":accessTokenCode": accessToken.access_token,
-                ":accessTokenExpiry": this.configService.getBearerAccessTokenExpirationEpoch(),
-                ":authorizationCode":authorizationCodeValue
+                ":accessTokenExpiry": bearerAccessTokenTTL
             }
         });
-        console.log(`updateSessionCommand ${updateSessionCommand}`);
         await this.dynamoDbClient.send(updateSessionCommand);
     }
 

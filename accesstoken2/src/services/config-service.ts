@@ -93,7 +93,7 @@ export class ConfigService {
     }
 
     public getBearerAccessTokenExpirationEpoch() : number {
-        return (new Date().getTime() + (this.getBearerAccessTokenTtl() * 1000))/1000 ;
+        return Math.floor((new Date().getTime() + (this.getBearerAccessTokenTtl() * 1000))/1000) ;
     }
     
 }
