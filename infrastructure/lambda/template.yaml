@@ -400,6 +400,60 @@ Resources:
               Resource:
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/clients/*"
 
+  AccessTokenFunctionTwo:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: app.lambdaHandler
+      CodeUri: ../../accesstoken2
+      Runtime: nodejs18.x
+      FunctionName: !Sub "${AWS::StackName}-AccessTokenFunctionTwo"
+      Layers:
+        - !Sub arn:aws:lambda:${AWS::Region}:094274105915:layer:AWSLambdaPowertoolsTypeScript:6
+      Environment:
+        Variables:
+          POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-access-token-2"
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName:
+              Ref: SessionTable
+        - DynamoDBWritePolicy:
+            TableName:
+              Ref: SessionTable
+        - Statement:
+            - Effect: Allow
+              Action:
+                - ssm:GetParameter
+              Resource:
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/SessionTableName"
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/SessionTtl"
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/clients/*"
+    Metadata: # Manage esbuild properties
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: "es2020"
+        Sourcemap: true # Enabling source maps will create the required NODE_OPTIONS environment variables on your lambda function during sam build
+        EntryPoints:
+          - src/app.ts
+        External:
+          - '@aws-lambda-powertools/commons'
+          - '@aws-lambda-powertools/logger'
+          - '@aws-lambda-powertools/metrics'
+          - '@aws-lambda-powertools/tracer'
+
+  AccessTokenTwoFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AccessTokenFunctionTwo}"
+      RetentionInDays: 30
+
+  AccessTokenTwoPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt AccessTokenFunctionTwo.Arn
+      Principal: apigateway.amazonaws.com
+
   AccessTokenFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
@@ -413,38 +467,6 @@ Resources:
       DestinationArn: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython"
       FilterPattern: ""
       LogGroupName: !Ref AccessTokenFunctionLogGroup
-
-  AccessTokenFunction2:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: ../../accesstoken2
-      FunctionName: !Sub "${AWS::StackName}-AccessTokenFunction2"
-      Handler:  app.lambdaHandler
-      Runtime: nodejs18.x
-      Environment:
-        Variables:
-          POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-access-token"
-    Metadata: # Manage esbuild properties
-      BuildMethod: esbuild
-      BuildProperties:
-        Minify: true
-        Target: "es2022"
-        Sourcemap: true # Enabling source maps will create the required NODE_OPTIONS environment variables on your lambda function during sam build
-        EntryPoints:
-        - src/app.ts
-
-  AccessToken2FunctionLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub "/aws/lambda/${AccessTokenFunction2}"
-      RetentionInDays: 30
-
-  AccessToken2Permission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      Action: lambda:InvokeFunction
-      FunctionName: !GetAtt AccessTokenFunction2.Arn
-      Principal: apigateway.amazonaws.com
 
   SessionTable:
     Type: "AWS::DynamoDB::Table"
