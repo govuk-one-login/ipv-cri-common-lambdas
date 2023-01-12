@@ -59,12 +59,23 @@ export class ConfigService {
         return await this.getParameter(`clients/${clientId}/jwtAuthentication/authenticationAlg`);
     }
 
+    public async getJwtRedirectUri(clientId: string) {
+        if (!clientId) {
+            throw new Error("Undefined clientId supplied");
+        }
+        return await this.getParameter(`clients/${clientId}/jwtAuthentication/redirectUri`);
+    }
+
     public async getPublicSigningJwk(clientId: string) {
         return await this.getParameter(`clients/${clientId}/jwtAuthentication/publicSigningJwkBase64`);
     }
 
     public async getSessionTableName() {
         return await this.getParameter(SsmParamNames.SESSION_TABLE_NAME);
+    }
+
+    public async getPersonIdentityTableName() {
+        return await this.getParameter(SsmParamNames.PERSON_IDENTITY_TABLE_NAME);
     }
 
     public async getKmsDecryptionKeyId() {
@@ -77,8 +88,9 @@ export class ConfigService {
         return Date.now() + this.authorizationCodeTtlInMillis;
     }
 
-    public getSessionExpirationEpoch() {
-        return 0; // TODO: complete implementation
+    public async getSessionExpirationEpoch() {
+        const sessionTtl = await this.getParameter(SsmParamNames.SESSION_TTL);
+        return Date.now() + parseInt(sessionTtl, 10) * 1000;
     }
 
     private async getParameter(key: string): Promise<string> {
