@@ -16,17 +16,15 @@ const configService = new ConfigService(SsmClient);
 const initPromise = configService.init();
 
 class AccessTokenLambda implements LambdaInterface {
-    constructor(private accessTokenService: AccessTokenService) {}
+    constructor(private accessTokenService: AccessTokenService, private sessionService: SessionService, private accessTokenValidator: AccessTokenRequestValidator) {}
 
     @logger.injectLambdaContext({ clearState: true })
     @metrics.logMetrics({ throwOnEmptyMetrics: false, captureColdStartMetric: true })
     public async handler(event: APIGatewayProxyEvent, context: any): Promise<APIGatewayProxyResult> {
-        logger.info(`AccessTokenLambda: ${JSON.stringify(event.body)}`);
-        let response: APIGatewayProxyResult;
         try {
             await initPromise;
 
-            //validate the incoming payload
+            // validate the incoming payload
             const requestPayload = event.body;
             if (!requestPayload) {
                 return {
@@ -34,9 +32,8 @@ class AccessTokenLambda implements LambdaInterface {
                     body: `Invalid request missing body`,
                 };
             }
-            const accessTokenRequestValidator = new AccessTokenRequestValidator(configService);
 
-            let validationResult = await accessTokenRequestValidator.validate(requestPayload);
+            let validationResult = await accessTokenRequestValidator.validatePayload(requestPayload);
             if (!validationResult.isValid) {
                 return {
                     statusCode: 400,
@@ -45,10 +42,7 @@ class AccessTokenLambda implements LambdaInterface {
             }
 
             const searchParams = new URLSearchParams(requestPayload);
-            const sessionService = new SessionService(DynamoDbClient, configService);
-
             const authCode = searchParams.get("code");
-            logger.info(authCode);
             if (!authCode) {
                 return {
                     statusCode: 400,
@@ -65,14 +59,15 @@ class AccessTokenLambda implements LambdaInterface {
             }
 
             logger.appendKeys({ govuk_signin_journey_id: sessionItem.clientSessionId });
-            logger.info("found session: " + JSON.stringify(sessionItem));
 
             validationResult = await accessTokenRequestValidator.validateTokenRequest(
                 authCode,
                 sessionItem,
                 searchParams.get("client_assertion") as string,
             );
+
             if (!validationResult.isValid) {
+                // Todo: tidy up error handling
                 if(validationResult.errorMsg === "Authorisation code does not match") {
                     return {
                         statusCode: 403,
@@ -88,14 +83,8 @@ class AccessTokenLambda implements LambdaInterface {
                     };
                 }
             }
-            //TODO:  invalid authorization code
-
-            console.log("Success point");
             const bearerAccessTokenTTL = configService.getBearerAccessTokenTtl();
-            console.log(`bearerAccessTokenTTL ${JSON.stringify(bearerAccessTokenTTL)}`);
-            // @ts-ignore
             const accessTokenResponse = await this.accessTokenService.createBearerAccessToken(bearerAccessTokenTTL);
-            console.log(`accessTokenResponse ${JSON.stringify(accessTokenResponse)}`);
             sessionService.createAccessTokenCode(sessionItem, accessTokenResponse);
 
             return {
@@ -103,7 +92,7 @@ class AccessTokenLambda implements LambdaInterface {
                 body: JSON.stringify(accessTokenResponse),
             };
         } catch (err: any) {
-            logger.error(`access token lambda error occurred ${err}`);
+            logger.error(`Access token lambda error occurred ${err}`);
 
             // TODO: redo error handling
             if(err.message === "Could not find session Item") {
@@ -125,5 +114,7 @@ class AccessTokenLambda implements LambdaInterface {
     }
 }
 
-const handlerClass = new AccessTokenLambda(new AccessTokenService());
+const accessTokenRequestValidator = new AccessTokenRequestValidator(configService);
+const sessionService = new SessionService(DynamoDbClient, configService);
+const handlerClass = new AccessTokenLambda(new AccessTokenService(), sessionService, accessTokenRequestValidator);
 export const lambdaHandler = handlerClass.handler.bind(handlerClass);
