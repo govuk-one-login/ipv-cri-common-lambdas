@@ -110,7 +110,7 @@ class AccessTokenLambda implements LambdaInterface {
                 return {
                     statusCode: 403,
                     body: JSON.stringify({
-                        message: "Invalid request: Access token expired",
+                        message: "Access token expired",
                         code: 1026,
                     })
                 }
