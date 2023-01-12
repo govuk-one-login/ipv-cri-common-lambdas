@@ -112,7 +112,7 @@ class AccessTokenLambda implements LambdaInterface {
                     body: JSON.stringify({
                         message: "Access token expired",
                         code: 1026,
-                        errorSummary: "1026 : Access token expired"
+                        errorSummary: "1026: Access token expired"
                     })
                 }
             }
