@@ -48,6 +48,7 @@ class AccessTokenLambda implements LambdaInterface {
             const sessionService = new SessionService(DynamoDbClient, configService);
 
             const authCode = searchParams.get("code");
+            logger.info(authCode);
             if (!authCode) {
                 return {
                     statusCode: 400,
@@ -101,9 +102,20 @@ class AccessTokenLambda implements LambdaInterface {
                 statusCode: 200,
                 body: JSON.stringify(accessTokenResponse),
             };
-        } catch (err) {
-            // eslint-disable-next-line no-console
+        } catch (err: any) {
             logger.error(`access token lambda error occurred ${err}`);
+
+            // TODO: redo error handling
+            if(err.message === "Could not find session Item") {
+                return {
+                    statusCode: 403,
+                    body: JSON.stringify({
+                        message: "Invalid request: Access token expired",
+                        code: 1026,
+                    })
+                }
+            }
+
             return {
                 statusCode: 500,
                 body: "An error has occurred. " + JSON.stringify(err),
