@@ -38,13 +38,15 @@ export class SessionService {
         await this.dynamoDbClient.send(updateSessionCommand);
     }
 
-    public async saveSession(sessionRequest) {
+    public async saveSession(sessionRequest: any): Promise<string> {
         const tableName = await this.configService.getSessionTableName();
+        const sessionExpirationEpoch = await this.configService.getSessionExpirationEpoch();
         const putSessionCommand = new PutCommand({
             TableName: tableName,
             Item: {
+                sessionId: uuidv4(),
                 createdDate: Date.now(),
-                expiryDate: this.configService.getSessionExpirationEpoch(),
+                expiryDate: sessionExpirationEpoch,
                 state: sessionRequest.state,
                 clientId: sessionRequest.clientId,
                 redirectUri: sessionRequest.redirectUri,
@@ -56,23 +58,6 @@ export class SessionService {
             },
         });
         await this.dynamoDbClient.send(putSessionCommand);
-        /*
-        *
-        * public UUID saveSession(SessionRequest sessionRequest) {
-        SessionItem sessionItem = new SessionItem();
-        sessionItem.setCreatedDate(this.clock.instant().getEpochSecond());
-        sessionItem.setExpiryDate(this.configurationService.getSessionExpirationEpoch());
-        sessionItem.setState(sessionRequest.getState());
-        sessionItem.setClientId(sessionRequest.getClientId());
-        sessionItem.setRedirectUri(sessionRequest.getRedirectUri());
-        sessionItem.setSubject(sessionRequest.getSubject());
-        sessionItem.setPersistentSessionId(sessionRequest.getPersistentSessionId());
-        sessionItem.setClientSessionId(sessionRequest.getClientSessionId());
-        sessionItem.setClientIpAddress(sessionRequest.getClientIpAddress());
-        sessionItem.setAttemptCount(0);
-        this.setSessionItemsToLogging(sessionItem);
-        this.dataStore.create(sessionItem);
-        return sessionItem.getSessionId();
-        * */
+        return putSessionCommand.input.Item!.sessionId;
     }
 }

@@ -6,7 +6,7 @@ import { ConfigService } from "./config-service";
 export class JweDecrypter {
     constructor(private configService: ConfigService) {}
 
-    public async decryptJwe(compactJwe: string) {
+    public async decryptJwe(compactJwe: string): Promise<Buffer> {
         const { 0: jweProtectedHeader, 1: encryptedKey, 2: iv, 3: ciphertext, 4: tag, length } = compactJwe.split(".");
 
         if (length !== 5) {

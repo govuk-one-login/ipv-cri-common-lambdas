@@ -4,15 +4,20 @@ import { Metrics, MetricUnits } from "@aws-lambda-powertools/metrics";
 import { Logger } from "@aws-lambda-powertools/logger";
 import { SsmClient } from "./lib/param-store-client";
 import { ConfigService } from "./services/config-service";
+import { SessionService } from "./services/session-service";
 import { JwtVerifier } from "./services/jwt-verifier";
 import { JweDecrypter } from "./services/jwe-decrypter";
-import {JWTPayload} from "jose";
+import { DynamoDbClient } from "./lib/dynamo-db-client";
+import { PersonIdentityService } from "./services/person-identity-service";
+import { SharedClaims } from "./services/shared-claims";
+import { SessionRequestValidator } from "./services/session-request-validator";
 
 const logger = new Logger();
 const metrics = new Metrics();
 const configService = new ConfigService(SsmClient);
 const initPromise = configService.init();
 const SESSION_CREATED_METRIC = "session_created";
+const sessionRequestValidator = new SessionRequestValidator(configService, new JwtVerifier(configService, logger));
 
 class SessionLambda implements LambdaInterface {
     @logger.injectLambdaContext({ clearState: true })
@@ -20,44 +25,62 @@ class SessionLambda implements LambdaInterface {
     public async handler(event: APIGatewayProxyEvent, context: any): Promise<APIGatewayProxyResult> {
         try {
             await initPromise;
-
-            let parsedRequestBody;
-            let errorMsg = "";
-            if (!event.body) {
-                errorMsg = "Missing request body";
-            } else {
-                parsedRequestBody = JSON.parse(event.body);
-
-                if (!parsedRequestBody.client_id) {
-                    errorMsg = "Body missing clientId field";
-                } else if (!parsedRequestBody.request) {
-                    errorMsg = "Body missing request field";
-                }
-            }
-
-            if (errorMsg) {
+            const deserialisedRequestBody = JSON.parse(event.body!);
+            const requestBodyClientId = deserialisedRequestBody.client_id;
+            let decryptedJwt = null;
+            try {
+                decryptedJwt = await new JweDecrypter(configService).decryptJwe(deserialisedRequestBody.request);
+            } catch (e) {
+                logger.error("Invalid request - JWE decryption failed", e as Error);
                 return {
                     statusCode: 400,
-                    body: `Invalid request: ${errorMsg}`,
+                    body: "Invalid request: JWE decryption failed",
                 };
             }
 
-            /** TODO: complete implementation **/
+            const jwtValidationResult = await sessionRequestValidator.validateJwt(decryptedJwt, requestBodyClientId);
+            if (!jwtValidationResult.isValid) {
+                return {
+                    statusCode: 400,
+                    body: `Invalid request: JWT validation/verification failed: ${jwtValidationResult.errorMsg}`,
+                };
+            }
 
-            const decryptedJwt = await new JweDecrypter(configService).decryptJwe(parsedRequestBody.request);
+            const jwtPayload = jwtValidationResult.validatedObject;
+            const sessionService = new SessionService(DynamoDbClient, configService);
+            const clientIpAddress = this.getClientIpAddress(event);
+            metrics.addDimension("issuer", requestBodyClientId);
+            const sessionId: string = await sessionService.saveSession({
+                clientId: jwtPayload.client_id,
+                redirectUri: jwtPayload.redirect_uri,
+                subject: jwtPayload.sub,
+                persistentSessionId: jwtPayload.persistent_session_id,
+                clientSessionId: jwtPayload.govuk_signin_journey_id,
+                clientIpAddress: clientIpAddress ?? null,
+            });
 
-            const payload = await this.verifyJwtSignature(decryptedJwt, parsedRequestBody.client_id);
+            logger.appendKeys({ govuk_signin_journey_id: sessionId });
+            logger.info("created session");
 
-            logger.info(`signature verification result: ${JSON.stringify(payload)}`);
+            if (jwtPayload.shared_claims) {
+                await new PersonIdentityService(DynamoDbClient, configService).savePersonIdentity(
+                    jwtPayload.shared_claims as SharedClaims,
+                    sessionId,
+                );
+            }
 
             metrics.addMetric(SESSION_CREATED_METRIC, MetricUnits.Count, 1);
 
             return {
                 statusCode: 201,
-                body: JSON.stringify({ testing: "for now" }),
+                body: JSON.stringify({
+                    session_id: sessionId,
+                    state: jwtPayload.state,
+                    redirect_uri: jwtPayload.redirect_uri,
+                }),
             };
-        } catch (err: any) {
-            logger.error("session lambda error occurred.", err);
+        } catch (err) {
+            logger.error("session lambda error occurred.", err as Error);
             metrics.addMetric(SESSION_CREATED_METRIC, MetricUnits.Count, 0);
             return {
                 statusCode: 500,
@@ -65,22 +88,18 @@ class SessionLambda implements LambdaInterface {
             };
         }
     }
-    private async verifyJwtSignature(jwt: Buffer, clientId: string): Promise<JWTPayload> {
-        const expectedIssuer = await configService.getJwtIssuer(clientId);
-        const expectedAudience = await configService.getJwtAudience(clientId);
-        return await new JwtVerifier(configService).verify(
-            jwt,
-            clientId,
-            new Set([
-                JwtVerifier.ClaimNames.EXPIRATION_TIME,
-                JwtVerifier.ClaimNames.SUBJECT,
-                JwtVerifier.ClaimNames.NOT_BEFORE,
-            ]),
-            new Map([
-                [JwtVerifier.ClaimNames.AUDIENCE, expectedAudience],
-                [JwtVerifier.ClaimNames.ISSUER, expectedIssuer],
-            ]),
-        );
+    private getClientIpAddress(event: APIGatewayProxyEvent): string | undefined {
+        if (event.headers) {
+            const ipAddressHeader = "x-forwarded-for";
+            const ipAddressHeaders: string[] = Object.keys(event.headers).filter(
+                (header) => header.toLowerCase().trim() === ipAddressHeader,
+            );
+            if (ipAddressHeaders.length === 1) {
+                return event.headers[ipAddressHeaders[0]];
+            }
+            logger.warn(`Unexpected quantity of ${ipAddressHeader} headers encountered: ${ipAddressHeaders.length}`);
+        }
+        return undefined;
     }
 }
 
