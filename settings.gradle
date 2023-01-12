@@ -2,4 +2,3 @@ rootProject.name = "di-ipv-cri-common-lambdas"
 include "session", "accesstoken", "authorization"
 include 'integration-tests'
 include 'accesstoken2'
-
