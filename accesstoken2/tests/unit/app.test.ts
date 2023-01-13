@@ -85,7 +85,7 @@ describe("Handler", () => {
             expect(output.statusCode).toBe(400);
             expect(output.body).not.toBeNull;
             const body = JSON.parse(output.body);
-            expect(body.message).toContain("Invalid client_assertion parameter");
+            expect(body.message).toContain("Invalid request");
         });
 
         it("should fail when session is not found", async () => {
@@ -204,6 +204,8 @@ describe("Handler", () => {
             };
 
             mockDynamoDbClient.query.mockReturnValueOnce(mockDynamoDbClientQueryResult);
+            mockConfigService.prototype.getRedirectUri.mockReturnValueOnce(redirectUri);
+
             const output = await accessTokenLambda.handler(event, null);
             expect(output.statusCode).toBe(400);
             const body = JSON.parse(output.body);
@@ -234,6 +236,8 @@ describe("Handler", () => {
 
             mockConfigService.prototype.getJwtAudience.mockResolvedValueOnce("audience")
             mockJwtVerifier.prototype.verify.mockResolvedValueOnce({});
+            mockConfigService.prototype.getRedirectUri.mockReturnValueOnce(redirectUri);
+
 
             mockDynamoDbClient.query.mockReturnValueOnce(mockDynamoDbClientQueryResult);
             const output = await accessTokenLambda.handler(event, null);
