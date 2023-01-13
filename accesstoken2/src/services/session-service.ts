@@ -2,11 +2,12 @@ import { DynamoDBDocument, GetCommand, UpdateCommand, QueryCommandInput } from "
 import { SessionItem } from "../types/session-item";
 import { BearerAccessToken } from "../types/bearer-access-token";
 import { ConfigService } from "./config-service";
+import { InvalidAccessTokenError } from "../types/errors";
 
 export class SessionService {
     constructor(private dynamoDbClient: DynamoDBDocument, private configService: ConfigService) {}
 
-    public async getSession(sessionId: string | undefined): Promise<SessionItem> {
+    public async getSession(sessionId: string): Promise<SessionItem> {
         const tableName = await this.configService.getSessionTableName();
         const getSessionCommand = new GetCommand({
             TableName: tableName,
@@ -52,12 +53,8 @@ export class SessionService {
 
         const sessionItem = await this.dynamoDbClient.query(params);
 
-        if (!sessionItem.Items) {
-            throw new Error(`Could not find session Item`);
-        }
-
-        if (sessionItem.Items.length != 1) {
-            throw new Error(`Could not find session Item`);
+        if (!sessionItem?.Items || sessionItem?.Items?.length !== 1) {
+            throw new InvalidAccessTokenError();
         }
 
         return sessionItem.Items[0] as SessionItem;
