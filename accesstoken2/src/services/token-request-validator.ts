@@ -47,14 +47,12 @@ export class AccessTokenRequestValidator {
         return { isValid: !errorMsg, errorMsg: errorMsg };
     }
 
-    public async validateTokenRequest(
+    public async validateTokenRequestToRecord(
         authCode: string | null,
         sessionItem: SessionItem,
-        jwt: string,
     ): Promise<ValidationResult> {
         let errorMsg = null;
 
-        console.log(`AccessTokenRequestValidator.jwt with: ${jwt}`);
         if (authCode !== sessionItem.authorizationCode) {
             errorMsg = "Authorisation code does not match";
         }
@@ -62,17 +60,11 @@ export class AccessTokenRequestValidator {
         if (configRedirectUri !== sessionItem.redirectUri) {
             errorMsg = `redirect uri ${sessionItem.redirectUri} does not match configuration uri ${configRedirectUri}`;
         }
-        const jwtPayload = await this.verifyJwtSignature(Buffer.from(jwt, "utf-8"), sessionItem.clientId);
-        if (!jwtPayload.jti) {
-            throw new Error("jti is missing");
-        }
 
         return { isValid: !errorMsg, errorMsg: errorMsg };
     }
 
-    private async verifyJwtSignature(jwt: Buffer, clientId: string): Promise<JWTPayload> {
-        const expectedAudience = await this.configService.getJwtAudience(clientId);
-
+    public async verifyJwtSignature(jwt: Buffer, clientId: string, audience: string): Promise<JWTPayload> {
         return await this.jwtVerifier.verify(
             jwt,
             clientId,
@@ -80,10 +72,11 @@ export class AccessTokenRequestValidator {
                 JwtVerifier.ClaimNames.EXPIRATION_TIME,
                 JwtVerifier.ClaimNames.SUBJECT,
                 JwtVerifier.ClaimNames.ISSUER,
+                JwtVerifier.ClaimNames.AUDIENCE,
                 JwtVerifier.ClaimNames.JWT_ID,
             ]),
             new Map([
-                [JwtVerifier.ClaimNames.AUDIENCE, expectedAudience],
+                [JwtVerifier.ClaimNames.AUDIENCE, audience],
                 [JwtVerifier.ClaimNames.SUBJECT, clientId],
                 [JwtVerifier.ClaimNames.ISSUER, clientId],
             ]),
