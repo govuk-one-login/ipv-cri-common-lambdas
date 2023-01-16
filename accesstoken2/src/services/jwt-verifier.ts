@@ -1,43 +1,55 @@
 import { importJWK, JWTPayload, jwtVerify } from "jose";
 import { ConfigService } from "./config-service";
-
+import { JWTVerifyOptions } from "jose/dist/types/jwt/verify";
 export class JwtVerifier {
     constructor(private configService: ConfigService) {}
-    public async verify(encodedJwt: any, clientId: string): Promise<JWTPayload> {
+
+    public async verify(
+        encodedJwt: any,
+        clientId: string,
+        mandatoryClaims: Set<string>,
+        expectedClaimValues: Map<string, string>,
+    ): Promise<JWTPayload> {
         const signingPublicJwkBase64 = await this.configService.getPublicSigningJwk(clientId);
         const signingPublicJwk = JSON.parse(Buffer.from(signingPublicJwkBase64, "base64").toString("utf8"));
-
-        const expectedIssuer = await this.configService.getJwtIssuer(clientId);
-        console.log(`expectedIssuer ${expectedIssuer}`);
-        const expectedAudience = await this.configService.getJwtAudience(clientId);
         const signingAlgorithm = await this.configService.getJwtSigningAlgorithm(clientId);
         const publicKey = await importJWK(signingPublicJwk, signingPublicJwk.alg);
-        const { payload } = await jwtVerify(encodedJwt, publicKey, {
-            algorithms: [signingAlgorithm],
-            issuer: clientId,
-            audience: expectedAudience,
-            subject: clientId,
-        });
 
-        // {
-        //     "iss": "ipv-core-stub",
-        //     "sub": "ipv-core-stub",
-        //     "aud": "https://review-a.dev.account.gov.uk",
-        //     "exp": 1673008565,
-        //     "jti": "Tp_g295FrLm5k9WPmGVBKbb4XOYnTO6lotEXpV-4nR4"
-        // }
+        const jwtVerifyOptions = this.createJwtVerifyOptions(signingAlgorithm, expectedClaimValues);
+        const { payload } = await jwtVerify(encodedJwt, publicKey, jwtVerifyOptions);
 
-        // Set<String> requiredClaims =
-        // Set.of(
-        //         JWTClaimNames.EXPIRATION_TIME,
-        //         JWTClaimNames.SUBJECT,
-        //         JWTClaimNames.ISSUER,
-        //         JWTClaimNames.AUDIENCE,
-        //         JWTClaimNames.JWT_ID);
-
-        if (!payload.exp) {
+        if (mandatoryClaims?.size) {
+            mandatoryClaims.forEach((mandatoryClaim) => {
+                if (!payload[mandatoryClaim]) {
+                    throw new Error(`Claims-set missing mandatory claim: ${mandatoryClaim}`);
+                }
+            });
         }
 
         return payload;
+    }
+    
+    private createJwtVerifyOptions(
+        signingAlgorithm: string,
+        expectedClaimValues: Map<string, string>,
+    ): JWTVerifyOptions {
+        return {
+            algorithms: [signingAlgorithm],
+            audience: expectedClaimValues.get(JwtVerifier.ClaimNames.AUDIENCE),
+            issuer: expectedClaimValues.get(JwtVerifier.ClaimNames.ISSUER),
+            subject: expectedClaimValues.get(JwtVerifier.ClaimNames.SUBJECT),
+        };
+    }
+}
+
+export namespace JwtVerifier {
+    export enum ClaimNames {
+        ISSUER = "iss",
+        SUBJECT = "sub",
+        AUDIENCE = "aud",
+        EXPIRATION_TIME = "exp",
+        NOT_BEFORE = "nbf",
+        ISSUED_AT = "iat",
+        JWT_ID = "jti",
     }
 }
