@@ -23,8 +23,6 @@ import { Logger } from "@aws-lambda-powertools/logger";
 const mockLogger = jest.mocked(Logger);
 const mockMetrics = jest.mocked(Metrics);
 
-mockLogger.mock =
-
 const mockAccesstokenService = jest.mocked(AccessTokenService) as unknown as AccessTokenService;
 const mockSessionService = jest.mocked(SessionService) as unknown as SessionService;
 const mockAccesstokenRequestValidator = jest.mocked(AccessTokenRequestValidator)  as unknown as AccessTokenRequestValidator;
@@ -35,13 +33,14 @@ describe("Handler", () => {
     let accessTokenLambda: AccessTokenLambda;
 
     beforeEach(() => {
-        jest.clearAllMocks();
         accessTokenLambda = new AccessTokenLambda(
             mockAccesstokenService,
             mockSessionService,
             mockAccesstokenRequestValidator,
         );
     });
+
+    afterEach(() => jest.clearAllMocks());
 
     it("should pass", async () => {
         // const event: APIGatewayProxyEvent = {};
