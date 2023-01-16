@@ -3,11 +3,12 @@ import { ConfigService } from "./config-service";
 import { SessionItem } from "../types/session-item";
 import { Logger } from "@aws-lambda-powertools/logger";
 import { JwtVerifier } from "./jwt-verifier";
+import { JWTPayload } from "jose";
 
 const logger = new Logger();
 
 export class AccessTokenRequestValidator {
-    constructor(private configService: ConfigService) {}
+    constructor(private configService: ConfigService, private jwtVerifier: JwtVerifier) { }
 
     async validatePayload(tokenRequestBody: string | null): Promise<ValidationResult> {
         if (!tokenRequestBody) {
@@ -46,7 +47,7 @@ export class AccessTokenRequestValidator {
         return { isValid: !errorMsg, errorMsg: errorMsg };
     }
 
-    async validateTokenRequest(
+    public async validateTokenRequest(
         authCode: string | null,
         sessionItem: SessionItem,
         jwt: string,
@@ -61,9 +62,31 @@ export class AccessTokenRequestValidator {
         if (configRedirectUri !== sessionItem.redirectUri) {
             errorMsg = `redirect uri ${sessionItem.redirectUri} does not match configuration uri ${configRedirectUri}`;
         }
-
-        const payload = await new JwtVerifier(this.configService).verify(jwt, sessionItem.clientId);
+        const jwtPayload = await this.verifyJwtSignature(Buffer.from(jwt, "utf-8"), sessionItem.clientId);
+        if (!jwtPayload.jti) {
+            throw new Error("jti is missing");
+        }
 
         return { isValid: !errorMsg, errorMsg: errorMsg };
+    }
+
+    private async verifyJwtSignature(jwt: Buffer, clientId: string): Promise<JWTPayload> {
+        const expectedAudience = await this.configService.getJwtAudience(clientId);
+
+        return await this.jwtVerifier.verify(
+            jwt,
+            clientId,
+            new Set([
+                JwtVerifier.ClaimNames.EXPIRATION_TIME,
+                JwtVerifier.ClaimNames.SUBJECT,
+                JwtVerifier.ClaimNames.ISSUER,
+                JwtVerifier.ClaimNames.JWT_ID,
+            ]),
+            new Map([
+                [JwtVerifier.ClaimNames.AUDIENCE, expectedAudience],
+                [JwtVerifier.ClaimNames.SUBJECT, clientId],
+                [JwtVerifier.ClaimNames.ISSUER, clientId],
+            ]),
+        );
     }
 }

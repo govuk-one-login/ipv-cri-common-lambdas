@@ -8,6 +8,7 @@ import { SsmClient } from "./lib/param-store-client";
 import { ConfigService } from "./services/config-service";
 import { AccessTokenRequestValidator } from "./services/token-request-validator";
 import { AccessTokenService } from "./services/access-token-service";
+import { JwtVerifier } from "./services/jwt-verifier";
 
 const logger = new Logger();
 const metrics = new Metrics();
@@ -118,7 +119,7 @@ export class AccessTokenLambda implements LambdaInterface {
     }
 }
 
-const aService = new AccessTokenRequestValidator(configService);
+const aService = new AccessTokenRequestValidator(configService, new JwtVerifier(configService));
 const sService = new SessionService(DynamoDbClient, configService);
 const handlerClass = new AccessTokenLambda(new AccessTokenService(), sService, aService);
 export const lambdaHandler = handlerClass.handler.bind(handlerClass);
