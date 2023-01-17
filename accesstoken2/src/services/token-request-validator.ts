@@ -10,7 +10,7 @@ const logger = new Logger();
 export class AccessTokenRequestValidator {
     constructor(private configService: ConfigService, private jwtVerifier: JwtVerifier) { }
 
-    async validatePayload(tokenRequestBody: string | null): Promise<ValidationResult> {
+    public validatePayload(tokenRequestBody: string | null): ValidationResult {
         if (!tokenRequestBody) {
             return { isValid: false, errorMsg: "Missing request body parameters" };
         }

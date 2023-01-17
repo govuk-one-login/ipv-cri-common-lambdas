@@ -9,6 +9,7 @@ import { ConfigService } from "./services/config-service";
 import { AccessTokenRequestValidator } from "./services/token-request-validator";
 import { AccessTokenService } from "./services/access-token-service";
 import { JwtVerifier } from "./services/jwt-verifier";
+import { InvalidAccessTokenError, InvalidRequestError } from "./types/errors";
 
 const logger = new Logger();
 const metrics = new Metrics();
@@ -28,32 +29,23 @@ export class AccessTokenLambda implements LambdaInterface {
     public async handler(event: APIGatewayProxyEvent, context: any): Promise<APIGatewayProxyResult> {
         try {
             await initPromise;
-            const requestPayload = event.body as string;
+
+            // validate the incoming payload
+            const requestPayload = event.body;
+            if (!requestPayload) {
+                throw new InvalidRequestError("Invalid request: missing body");
+            }
+
             let validationResult = await this.accessTokenValidator.validatePayload(requestPayload);
             if (!validationResult.isValid) {
-                return {
-                    statusCode: 400,
-                    body: `Invalid request: ${validationResult.errorMsg}`,
-                };
+                throw new InvalidRequestError(`Invalid request: ${validationResult.errorMsg}`);
             }
 
             const searchParams = new URLSearchParams(requestPayload);
-            const authCode = searchParams.get("code");
             const client_assertion = searchParams.get("client_assertion") as string
-            if (!authCode) {
-                return {
-                    statusCode: 400,
-                    body: `Invalid request: ${validationResult.errorMsg}`,
-                };
-            }
+            const authCode = searchParams.get("code") as string;
 
             const sessionItem = await this.sessionService.getSessionByAuthorizationCode(authCode);
-            if (!sessionItem) {
-                return {
-                    statusCode: 400,
-                    body: `Invalid sessionItem`,
-                };
-            }
 
             logger.appendKeys({ govuk_signin_journey_id: sessionItem.clientSessionId });
 
@@ -63,33 +55,22 @@ export class AccessTokenLambda implements LambdaInterface {
             );
             const expectedAudience = await configService.getJwtAudience(sessionItem.clientId);
             if (!expectedAudience) {
-                throw new Error("audience is missing");
+                throw new InvalidRequestError("audience is missing");
             }
             const jwtPayload = await this.accessTokenValidator.verifyJwtSignature(
-                Buffer.from(client_assertion, "utf-8"), 
+                Buffer.from(client_assertion, "utf-8"),
                 sessionItem.clientId,
                 expectedAudience
             );
             if (!jwtPayload.jti) {
-                throw new Error("jti is missing");
+                throw new InvalidRequestError("jti is missing");
             }
 
             if (!validationResult.isValid) {
-                // Todo: tidy up error handling
-                if (validationResult.errorMsg === "Authorisation code does not match") {
-                    return {
-                        statusCode: 403,
-                        body: JSON.stringify({
-                            message: "Invalid request: Access token expired",
-                            code: 1026,
-                        }),
-                    };
-                } else {
-                    return {
-                        statusCode: 400,
-                        body: `Invalid request: ${validationResult.errorMsg}`,
-                    };
+                if (validationResult.errorMsg?.includes("Authorisation code does not match")) {
+                    throw new InvalidAccessTokenError();
                 }
+                throw new InvalidRequestError(`Invalid request: ${validationResult.errorMsg}`);
             }
             const bearerAccessTokenTTL = configService.getBearerAccessTokenTtl();
             const accessTokenResponse = await this.accessTokenService.createBearerAccessToken(bearerAccessTokenTTL);
@@ -99,24 +80,20 @@ export class AccessTokenLambda implements LambdaInterface {
                 statusCode: 200,
                 body: JSON.stringify(accessTokenResponse),
             };
-        } catch (err: any) {
-            logger.error(`Access token lambda error occurred ${err}`);
-
-            // TODO: redo error handling
-            if (err.message === "Could not find session Item") {
-                return {
-                    statusCode: 403,
-                    body: JSON.stringify({
-                        message: "Access token expired",
-                        code: 1026,
-                        errorSummary: "1026: Access token expired",
-                    }),
-                };
-            }
+        } catch (err: any) { //Todo dont want any
+            logger.error({
+                statusCode: err.statusCode ?? 500,
+                message: err.message,
+                err: err
+            });
 
             return {
-                statusCode: 500,
-                body: "An error has occurred. " + JSON.stringify(err),
+                statusCode: err.statusCode ?? 500,
+                body: JSON.stringify({
+                    message: err.statusCode >= 500 ? "Server error" : err.message,
+                    code: err.code || null,
+                    errorSummary: err.getErrorSummary(),
+                }),
             };
         }
     }
