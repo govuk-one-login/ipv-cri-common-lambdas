@@ -36,20 +36,16 @@ export class AccessTokenLambda implements LambdaInterface {
                 throw new InvalidRequestError("Invalid request: missing body");
             }
 
-            let validationResult = await this.accessTokenValidator.validatePayload(requestPayload);
-            if (!validationResult.isValid) {
-                throw new InvalidRequestError(`Invalid request: ${validationResult.errorMsg}`);
-            }
+            this.accessTokenValidator.validatePayload(requestPayload);
 
             const searchParams = new URLSearchParams(requestPayload);
-            const client_assertion = searchParams.get("client_assertion") as string
-            const authCode = searchParams.get("code") as string;
 
+            const authCode = searchParams.get("code") as string;
             const sessionItem = await this.sessionService.getSessionByAuthorizationCode(authCode);
 
             logger.appendKeys({ govuk_signin_journey_id: sessionItem.clientSessionId });
 
-            validationResult = await this.accessTokenValidator.validateTokenRequestToRecord(
+            const validationResult = await this.accessTokenValidator.validateTokenRequestToRecord(
                 authCode,
                 sessionItem
             );
@@ -57,6 +53,8 @@ export class AccessTokenLambda implements LambdaInterface {
             if (!expectedAudience) {
                 throw new InvalidRequestError("audience is missing");
             }
+
+            const client_assertion = searchParams.get("client_assertion") as string
             const jwtPayload = await this.accessTokenValidator.verifyJwtSignature(
                 Buffer.from(client_assertion, "utf-8"),
                 sessionItem.clientId,
