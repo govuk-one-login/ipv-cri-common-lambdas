@@ -39,16 +39,16 @@ export class AccessTokenLambda implements LambdaInterface {
             this.accessTokenValidator.validatePayload(requestPayload);
 
             const searchParams = new URLSearchParams(requestPayload);
-
             const authCode = searchParams.get("code") as string;
             const sessionItem = await this.sessionService.getSessionByAuthorizationCode(authCode);
 
             logger.appendKeys({ govuk_signin_journey_id: sessionItem.clientSessionId });
 
-            const validationResult = await this.accessTokenValidator.validateTokenRequestToRecord(
+            this.accessTokenValidator.validateTokenRequestToRecord(
                 authCode,
                 sessionItem
             );
+
             const expectedAudience = await configService.getJwtAudience(sessionItem.clientId);
             if (!expectedAudience) {
                 throw new InvalidRequestError("audience is missing");
@@ -64,12 +64,6 @@ export class AccessTokenLambda implements LambdaInterface {
                 throw new InvalidRequestError("jti is missing");
             }
 
-            if (!validationResult.isValid) {
-                if (validationResult.errorMsg?.includes("Authorisation code does not match")) {
-                    throw new InvalidAccessTokenError();
-                }
-                throw new InvalidRequestError(`Invalid request: ${validationResult.errorMsg}`);
-            }
             const bearerAccessTokenTTL = configService.getBearerAccessTokenTtl();
             const accessTokenResponse = await this.accessTokenService.createBearerAccessToken(bearerAccessTokenTTL);
             this.sessionService.createAccessTokenCode(sessionItem, accessTokenResponse);
