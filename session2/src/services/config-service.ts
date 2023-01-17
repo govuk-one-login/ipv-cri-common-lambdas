@@ -1,4 +1,4 @@
-import { SSMClient, GetParameterCommand } from "@aws-sdk/client-ssm";
+import { SSMClient, GetParameterCommand, GetParametersCommand } from "@aws-sdk/client-ssm";
 
 enum SsmParamNames {
     PERSON_IDENTITY_TABLE_NAME = "PersonIdentityTableName",
@@ -22,7 +22,7 @@ export class ConfigService {
         this.configEntries = new Map<string, string>();
     }
 
-    public init(): Promise<string[]> {
+    public init(): Promise<void> {
         const defaultKeys = [
             SsmParamNames.SESSION_TABLE_NAME,
             SsmParamNames.SESSION_TTL,
@@ -30,12 +30,21 @@ export class ConfigService {
             SsmParamNames.DECRYPTION_KEY_ID,
             SsmParamNames.VC_ISSUER,
         ];
-        const promises = [];
-        for (const key of defaultKeys) {
-            promises.push(this.getParameter(key));
-        }
+        return this.getParameters(defaultKeys);
+    }
 
-        return Promise.all(promises);
+    public getSqsQueueUrl(): string {
+        if (!process.env["SQS_AUDIT_EVENT_QUEUE_URL"]) {
+            throw new Error("Missing environment variable: SQS_AUDIT_EVENT_QUEUE_URL");
+        }
+        return process.env["SQS_AUDIT_EVENT_QUEUE_URL"] as string;
+    }
+
+    public getAuditEventNamePrefix() {
+        if (!process.env["SQS_AUDIT_EVENT_PREFIX"]) {
+            throw new Error("Missing environment variable: SQS_AUDIT_EVENT_PREFIX");
+        }
+        return process.env["SQS_AUDIT_EVENT_PREFIX"] as string;
     }
 
     public async getJwtIssuer(clientId: string) {
@@ -70,16 +79,28 @@ export class ConfigService {
         return await this.getParameter(`clients/${clientId}/jwtAuthentication/publicSigningJwkBase64`);
     }
 
-    public async getSessionTableName() {
-        return await this.getParameter(SsmParamNames.SESSION_TABLE_NAME);
+    private getConfigEntry(key: SsmParamNames) {
+        const paramName = `/${PARAMETER_PREFIX}/${key}`;
+        if (!this.configEntries.has(paramName)) {
+            throw new Error(`Missing SSM parameter ${paramName}`);
+        }
+        return this.configEntries.get(paramName) as string;
     }
 
-    public async getPersonIdentityTableName() {
-        return await this.getParameter(SsmParamNames.PERSON_IDENTITY_TABLE_NAME);
+    public getVerifiableCredentialIssuer(): string {
+        return this.getConfigEntry(SsmParamNames.VC_ISSUER);
     }
 
-    public async getKmsDecryptionKeyId() {
-        return await this.getParameter(SsmParamNames.DECRYPTION_KEY_ID);
+    public getSessionTableName() {
+        return this.getConfigEntry(SsmParamNames.SESSION_TABLE_NAME);
+    }
+
+    public getPersonIdentityTableName() {
+        return this.getConfigEntry(SsmParamNames.PERSON_IDENTITY_TABLE_NAME);
+    }
+
+    public getKmsDecryptionKeyId() {
+        return this.getConfigEntry(SsmParamNames.DECRYPTION_KEY_ID);
     }
 
     public getAuthorizationCodeExpirationEpoch() {
@@ -88,17 +109,17 @@ export class ConfigService {
         return Date.now() + this.authorizationCodeTtlInMillis;
     }
 
-    public async getSessionExpirationEpoch() {
-        const sessionTtl = await this.getParameter(SsmParamNames.SESSION_TTL);
+    public getSessionExpirationEpoch() {
+        const sessionTtl = this.getConfigEntry(SsmParamNames.SESSION_TTL);
         return Date.now() + parseInt(sessionTtl, 10) * 1000;
     }
 
     private async getParameter(key: string): Promise<string> {
-        if (this.configEntries.has(key)) {
-            return this.configEntries.get(key) as string;
+        const paramName = `/${PARAMETER_PREFIX}/${key}`;
+        if (this.configEntries.has(paramName)) {
+            return this.configEntries.get(paramName) as string;
         }
 
-        const paramName = `/${PARAMETER_PREFIX}/${key}`;
         const getParamByNameCommand = new GetParameterCommand({
             Name: paramName,
         });
@@ -109,9 +130,30 @@ export class ConfigService {
         if (!value) {
             throw new Error(`Could not retrieve SSM Parameter - ${key}`);
         } else {
-            this.configEntries.set(key, value);
+            this.configEntries.set(paramName, value);
         }
 
         return value;
+    }
+    private async getParameters(keys: string[]): Promise<void> {
+        const getParamsByNameCommand = new GetParametersCommand({
+            Names: keys.map((k) => `/${PARAMETER_PREFIX}/${k}`),
+        });
+
+        const getParamsResult = await this.ssmClient.send(getParamsByNameCommand);
+
+        getParamsResult.Parameters?.forEach((p) => {
+            if (p.Name && p.Value) {
+                this.configEntries.set(p.Name as string, p.Value as string);
+            } else {
+                console.log(`Parameter name (${p.Name}) or value (${p.Value}) is undefined/null/empty`);
+            }
+        }, this);
+
+        if (getParamsResult.InvalidParameters && getParamsResult.InvalidParameters.length) {
+            const invalidParameterNames = getParamsResult.InvalidParameters?.join(", ");
+            console.log(`Invalid SSM parameters: ${invalidParameterNames}`);
+            throw new Error(`Could not retrieve all SSM Parameters for keys: ${keys.join(", ")}`);
+        }
     }
 }

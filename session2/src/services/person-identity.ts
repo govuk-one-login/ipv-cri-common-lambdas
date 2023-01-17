@@ -29,7 +29,7 @@ export interface Address {
     validUntil: string;
 }
 
-export interface SharedClaims {
+export interface PersonIdentity {
     name: Name[];
     birthDate: BirthDate[];
     address: Address[];

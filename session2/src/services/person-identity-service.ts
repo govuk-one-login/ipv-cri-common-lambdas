@@ -1,6 +1,6 @@
 import { DynamoDBDocument, PutCommand } from "@aws-sdk/lib-dynamodb";
 import { ConfigService } from "./config-service";
-import { Address, BirthDate, Name, SharedClaims } from "./shared-claims";
+import { Address, BirthDate, Name, PersonIdentity } from "./person-identity";
 import {
     PersonIdentityAddress,
     PersonIdentityDateOfBirth,
@@ -11,9 +11,9 @@ import {
 export class PersonIdentityService {
     constructor(private dynamoDbClient: DynamoDBDocument, private configService: ConfigService) {}
 
-    public async savePersonIdentity(sharedClaims: SharedClaims, sessionId: string): Promise<string> {
-        const tableName = await this.configService.getPersonIdentityTableName();
-        const sessionExpirationEpoch = await this.configService.getSessionExpirationEpoch();
+    public async savePersonIdentity(sharedClaims: PersonIdentity, sessionId: string): Promise<string> {
+        const tableName = this.configService.getPersonIdentityTableName();
+        const sessionExpirationEpoch = this.configService.getSessionExpirationEpoch();
         const personIdentityItem = this.createPersonIdentityItem(sharedClaims, sessionId, sessionExpirationEpoch);
         const putSessionCommand = new PutCommand({
             TableName: tableName,
@@ -23,7 +23,7 @@ export class PersonIdentityService {
         return putSessionCommand.input.Item!.sessionId;
     }
     private createPersonIdentityItem(
-        sharedClaims: SharedClaims,
+        sharedClaims: PersonIdentity,
         sessionId: string,
         sessionExpirationEpoch: number,
     ): PersonIdentityItem {

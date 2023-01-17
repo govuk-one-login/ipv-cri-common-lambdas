@@ -2,12 +2,13 @@ import { DynamoDBDocument, GetCommand, UpdateCommand, PutCommand } from "@aws-sd
 import { SessionItem } from "../types/session-item";
 import { v4 as uuidv4 } from "uuid";
 import { ConfigService } from "./config-service";
+import { SessionRequestSummary } from "./session-request-summary";
 
 export class SessionService {
     constructor(private dynamoDbClient: DynamoDBDocument, private configService: ConfigService) {}
 
     public async getSession(sessionId: string | undefined): Promise<SessionItem> {
-        const tableName = await this.configService.getSessionTableName();
+        const tableName = this.configService.getSessionTableName();
         const getSessionCommand = new GetCommand({
             TableName: tableName,
             Key: {
@@ -22,7 +23,7 @@ export class SessionService {
     }
 
     public async createAuthorizationCode(sessionItem: SessionItem) {
-        const tableName = await this.configService.getSessionTableName();
+        const tableName = this.configService.getSessionTableName();
         sessionItem.authorizationCode = uuidv4();
         sessionItem.authorizationCodeExpiryDate = this.configService.getAuthorizationCodeExpirationEpoch();
 
@@ -38,8 +39,8 @@ export class SessionService {
         await this.dynamoDbClient.send(updateSessionCommand);
     }
 
-    public async saveSession(sessionRequest: any): Promise<string> {
-        const tableName = await this.configService.getSessionTableName();
+    public async saveSession(sessionRequest: SessionRequestSummary): Promise<string> {
+        const tableName = this.configService.getSessionTableName();
         const sessionExpirationEpoch = await this.configService.getSessionExpirationEpoch();
         const putSessionCommand = new PutCommand({
             TableName: tableName,

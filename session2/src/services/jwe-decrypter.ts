@@ -55,7 +55,7 @@ export class JweDecrypter {
 
     private async getKey(encryptedKey: string): Promise<Uint8Array> {
         const client = new KMSClient({ region: process.env.AWS_REGION });
-        const kmsDecryptionKeyId = await this.configService.getKmsDecryptionKeyId();
+        const kmsDecryptionKeyId = this.configService.getKmsDecryptionKeyId();
         const jweEncryptedKeyAsBytes = base64url.decode(encryptedKey);
         const decryptCommand = new DecryptCommand({
             CiphertextBlob: jweEncryptedKeyAsBytes,
