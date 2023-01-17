@@ -27,15 +27,16 @@ describe("Handler", () => {
     const mockJwtVerifier = jest.mocked(JwtVerifier);
     const mockConfigService = jest.mocked(ConfigService);
 
-    beforeEach(() => {
-        jest.clearAllMocks();
-
-        configService.init = () => Promise.resolve([]);
-
-        accessTokenLambda = new AccessTokenLambda(accessTokenService, sessionService, accessTokenRequestValidator);
-    });
-
     describe("success paths", () => {
+
+        beforeEach(() => {
+            jest.resetAllMocks();
+
+            configService.init = () => Promise.resolve([]);
+
+            accessTokenLambda = new AccessTokenLambda(accessTokenService, sessionService, accessTokenRequestValidator);
+        });
+
         it("should pass when payload matches session - TEMP mocked verify function", async () => {
             const redirectUri = "http://123.abc.com";
             const code = "123abc";
@@ -70,6 +71,15 @@ describe("Handler", () => {
     });
 
     describe("Fail paths", () => {
+
+        beforeEach(() => {
+            jest.resetAllMocks();
+
+            configService.init = () => Promise.resolve([]);
+
+            accessTokenLambda = new AccessTokenLambda(accessTokenService, sessionService, accessTokenRequestValidator);
+        });
+
         it("should fail when no body is passed in the request", async () => {
             const event = {} as unknown as APIGatewayProxyEvent;
             const output = await accessTokenLambda.handler(event, null);
