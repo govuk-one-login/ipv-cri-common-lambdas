@@ -2,7 +2,7 @@ import { DynamoDBDocument, GetCommand, UpdateCommand, QueryCommandInput } from "
 import { SessionItem } from "../types/session-item";
 import { BearerAccessToken } from "../types/bearer-access-token";
 import { ConfigService } from "./config-service";
-import { InvalidAccessTokenError } from "../types/errors";
+import { InvalidAccessTokenError, SessionNotFoundError } from "../types/errors";
 
 export class SessionService {
     constructor(private dynamoDbClient: DynamoDBDocument, private configService: ConfigService) {}
@@ -17,7 +17,7 @@ export class SessionService {
         });
         const result = await this.dynamoDbClient.send(getSessionCommand);
         if (!result.Item) {
-            throw new Error(`Could not find session item with id: ${sessionId}`);
+            throw new SessionNotFoundError(`Could not find session item with id: ${sessionId}`);
         }
         return result.Item as SessionItem;
     }
@@ -30,7 +30,7 @@ export class SessionService {
         const updateSessionCommand = new UpdateCommand({
             TableName: tableName,
             Key: { sessionId: sessionItem.sessionId },
-            UpdateExpression: "SET authorizationCode=:authCode, authorizationCodeExpiryDate=:authCodeExpiry",
+            UpdateExpression: "SET authorizationCode=1:authCode, authorizationCodeExpiryDate=:authCodeExpiry",
             ExpressionAttributeValues: {
                 ":authCode": sessionItem.authorizationCode,
                 ":authCodeExpiry": sessionItem.authorizationCodeExpiryDate,
