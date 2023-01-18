@@ -8,7 +8,7 @@ import { RequestPayload } from "../types/request_payload";
 const logger = new Logger();
 
 export class AccessTokenRequestValidator {
-    constructor(private configService: ConfigService, private jwtVerifier: JwtVerifier) { }
+    constructor(private configService: ConfigService, private jwtVerifier: JwtVerifier) {}
 
     public validatePayload(tokenRequestBody: string | null): RequestPayload {
         if (!tokenRequestBody) throw new InvalidRequestError("Invalid request: missing body");
@@ -29,21 +29,23 @@ export class AccessTokenRequestValidator {
         }
         if (
             !client_assertion_type ||
-            client_assertion_type !== 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer'
+            client_assertion_type !== "urn:ietf:params:oauth:client-assertion-type:jwt-bearer"
         ) {
             throw new InvalidRequestError("Invalid grant_type parameter");
         }
 
         return { grant_type, code, redirectUri, client_assertion_type, client_assertion };
-    };
+    }
 
     public validateTokenRequestToRecord(authCode: string, sessionItem: SessionItem) {
-        if (!sessionItem) return new InvalidPayloadError("Invalid sessionItem")
+        if (!sessionItem) return new InvalidPayloadError("Invalid sessionItem");
         if (authCode !== sessionItem.authorizationCode) throw new InvalidAccessTokenError();
 
         const configRedirectUri = this.configService.getRedirectUri(sessionItem.clientId);
         if (configRedirectUri !== sessionItem.redirectUri) {
-            throw new InvalidRequestError(`Invalid request: redirect uri ${sessionItem.redirectUri} does not match configuration uri ${configRedirectUri}`)
+            throw new InvalidRequestError(
+                `Invalid request: redirect uri ${sessionItem.redirectUri} does not match configuration uri ${configRedirectUri}`,
+            );
         }
     }
 
