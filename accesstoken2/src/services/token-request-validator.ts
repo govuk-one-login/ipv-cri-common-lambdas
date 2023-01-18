@@ -2,51 +2,44 @@ import { ConfigService } from "./config-service";
 import { SessionItem } from "../types/session-item";
 import { Logger } from "@aws-lambda-powertools/logger";
 import { JwtVerifier } from "./jwt-verifier";
-import { JWTPayload } from "jose";
-import { InvalidAccessTokenError, InvalidRequestError } from "../types/errors";
+import { InvalidAccessTokenError, InvalidPayloadError, InvalidRequestError } from "../types/errors";
+import { RequestPayload } from "../types/request_payload";
 
 const logger = new Logger();
 
 export class AccessTokenRequestValidator {
     constructor(private configService: ConfigService, private jwtVerifier: JwtVerifier) { }
 
-    public validatePayload(tokenRequestBody: string): void {
-        const searchParams = new URLSearchParams(tokenRequestBody);
-        const grant_type = searchParams.get("grant_type");
-        const redirectUri = searchParams.get("redirect_uri");
-        const code = searchParams.get("code");
-        const client_assertion_type = searchParams.get("client_assertion_type");
-        const client_assertion = searchParams.get("client_assertion");
+    public validatePayload(tokenRequestBody: string | null): RequestPayload {
+        if (!tokenRequestBody) throw new InvalidRequestError("Invalid request: missing body");
 
-        if (!code) {
-            throw new InvalidRequestError("Invalid request: Missing code parameter");
-        }
-        if (!redirectUri) {
-            throw new InvalidRequestError("Invalid request: Missing redirectUri parameter");
-        }
+        const searchParams = new URLSearchParams(tokenRequestBody);
+        const code = searchParams.get("code");
+        const redirectUri = searchParams.get("redirect_uri");
+        const client_assertion = searchParams.get("client_assertion");
+        const client_assertion_type = searchParams.get("client_assertion_type");
+        const grant_type = searchParams.get("grant_type");
+
+        if (!redirectUri) throw new InvalidRequestError("Invalid request: Missing redirectUri parameter");
+        if (!code) throw new InvalidRequestError("Invalid request: Missing code parameter");
+        if (!client_assertion) throw new InvalidRequestError("Invalid client_assertion parameter");
+
         if (!grant_type || grant_type !== "authorization_code") {
             throw new InvalidRequestError("Invalid grant_type parameter");
         }
         if (
             !client_assertion_type ||
-            client_assertion_type !== "urn:ietf:params:oauth:client-assertion-type:jwt-bearer"
+            client_assertion_type !== 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer'
         ) {
-            throw new InvalidRequestError("Invalid client_assertion_type parameter");
+            throw new InvalidRequestError("Invalid grant_type parameter");
         }
-        // TODO: Need to validate if client_assertion is a valid JWT string, perhaps code from Session Service can be used later on.
-        if (!client_assertion) {
-            throw new InvalidRequestError("Invalid client_assertion parameter");
-        }
-    }
 
-    public validateTokenRequestToRecord(
-        authCode: string | null,
-        sessionItem: SessionItem,
-    ): void {
+        return { grant_type, code, redirectUri, client_assertion_type, client_assertion };
+    };
 
-        if (authCode !== sessionItem.authorizationCode) {
-            throw new InvalidAccessTokenError();
-        }
+    public validateTokenRequestToRecord(authCode: string, sessionItem: SessionItem) {
+        if (!sessionItem) return new InvalidPayloadError("Invalid sessionItem")
+        if (authCode !== sessionItem.authorizationCode) throw new InvalidAccessTokenError();
 
         const configRedirectUri = this.configService.getRedirectUri(sessionItem.clientId);
         if (configRedirectUri !== sessionItem.redirectUri) {
@@ -54,8 +47,10 @@ export class AccessTokenRequestValidator {
         }
     }
 
-    public async verifyJwtSignature(jwt: Buffer, clientId: string, audience: string): Promise<JWTPayload> {
-        return await this.jwtVerifier.verify(
+    public async verifyJwtSignature(jwt: Buffer, clientId: string, audience: string): Promise<void> {
+        if (!audience) throw new InvalidRequestError("audience is missing");
+
+        const jwtPayload = await this.jwtVerifier.verify(
             jwt,
             clientId,
             new Set([
@@ -71,5 +66,7 @@ export class AccessTokenRequestValidator {
                 [JwtVerifier.ClaimNames.ISSUER, clientId],
             ]),
         );
+
+        if (!jwtPayload.jti) throw new InvalidRequestError("jti is missing");
     }
 }
