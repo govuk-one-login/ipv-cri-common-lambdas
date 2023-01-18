@@ -2,7 +2,7 @@ export type SessionItem = {
     sessionId: string;
     clientId: string;
     clientSessionId: string;
-    authorizationCode: string;
+    authorizationCode?: string;
     authorizationCodeExpiryDate: number;
     redirectUri: string;
     accessToken: string;

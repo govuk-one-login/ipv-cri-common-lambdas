@@ -9,7 +9,6 @@ import { ConfigService } from "./services/config-service";
 import { AccessTokenRequestValidator } from "./services/token-request-validator";
 import { AccessTokenService } from "./services/access-token-service";
 import { JwtVerifier } from "./services/jwt-verifier";
-import { InvalidAccessTokenError, InvalidRequestError } from "./types/errors";
 
 const logger = new Logger();
 const metrics = new Metrics();
@@ -29,40 +28,19 @@ export class AccessTokenLambda implements LambdaInterface {
     public async handler(event: APIGatewayProxyEvent, context: any): Promise<APIGatewayProxyResult> {
         try {
             await initPromise;
-
-            // validate the incoming payload
-            const requestPayload = event.body;
-            if (!requestPayload) {
-                throw new InvalidRequestError("Invalid request: missing body");
-            }
-
-            this.accessTokenValidator.validatePayload(requestPayload);
-
-            const searchParams = new URLSearchParams(requestPayload);
-            const authCode = searchParams.get("code") as string;
-            const sessionItem = await this.sessionService.getSessionByAuthorizationCode(authCode);
-
+            
+            const requestPayload = this.accessTokenValidator.validatePayload(event.body);
+            const sessionItem = await this.sessionService.getSessionByAuthorizationCode(requestPayload.code);
             logger.appendKeys({ govuk_signin_journey_id: sessionItem.clientSessionId });
 
-            this.accessTokenValidator.validateTokenRequestToRecord(
-                authCode,
-                sessionItem
-            );
+            this.accessTokenValidator.validateTokenRequestToRecord(requestPayload.code, sessionItem)
 
             const expectedAudience = await configService.getJwtAudience(sessionItem.clientId);
-            if (!expectedAudience) {
-                throw new InvalidRequestError("audience is missing");
-            }
-
-            const client_assertion = searchParams.get("client_assertion") as string
-            const jwtPayload = await this.accessTokenValidator.verifyJwtSignature(
-                Buffer.from(client_assertion, "utf-8"),
+            await this.accessTokenValidator.verifyJwtSignature(
+                Buffer.from(requestPayload.client_assertion, "utf-8"),
                 sessionItem.clientId,
                 expectedAudience
             );
-            if (!jwtPayload.jti) {
-                throw new InvalidRequestError("jti is missing");
-            }
 
             const bearerAccessTokenTTL = configService.getBearerAccessTokenTtl();
             const accessTokenResponse = await this.accessTokenService.createBearerAccessToken(bearerAccessTokenTTL);
@@ -75,14 +53,13 @@ export class AccessTokenLambda implements LambdaInterface {
         } catch (err: any) { //Todo dont want any
             logger.error({
                 statusCode: err.statusCode ?? 500,
-                message: err.message,
+                message: err?.message,
                 err: err
             });
-
             return {
                 statusCode: err.statusCode ?? 500,
                 body: JSON.stringify({
-                    message: err.statusCode >= 500 ? "Server error" : err.message,
+                    message: err?.statusCode >= 500 ? "Server Error": err.message,
                     code: err.code || null,
                     errorSummary: err.getErrorSummary(),
                 }),
