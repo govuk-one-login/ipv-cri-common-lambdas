@@ -21,25 +21,25 @@ export class AccessTokenLambda implements LambdaInterface {
         private accessTokenService: AccessTokenService,
         private sessionService: SessionService,
         private accessTokenValidator: AccessTokenRequestValidator,
-    ) { }
+    ) {}
 
     @logger.injectLambdaContext({ clearState: true })
     @metrics.logMetrics({ throwOnEmptyMetrics: false, captureColdStartMetric: true })
     public async handler(event: APIGatewayProxyEvent, context: any): Promise<APIGatewayProxyResult> {
         try {
             await initPromise;
-            
+
             const requestPayload = this.accessTokenValidator.validatePayload(event.body);
             const sessionItem = await this.sessionService.getSessionByAuthorizationCode(requestPayload.code);
             logger.appendKeys({ govuk_signin_journey_id: sessionItem.clientSessionId });
 
-            this.accessTokenValidator.validateTokenRequestToRecord(requestPayload.code, sessionItem)
+            this.accessTokenValidator.validateTokenRequestToRecord(requestPayload.code, sessionItem);
 
             const expectedAudience = await configService.getJwtAudience(sessionItem.clientId);
             await this.accessTokenValidator.verifyJwtSignature(
                 Buffer.from(requestPayload.client_assertion, "utf-8"),
                 sessionItem.clientId,
-                expectedAudience
+                expectedAudience,
             );
 
             const bearerAccessTokenTTL = configService.getBearerAccessTokenTtl();
@@ -50,16 +50,17 @@ export class AccessTokenLambda implements LambdaInterface {
                 statusCode: 200,
                 body: JSON.stringify(accessTokenResponse),
             };
-        } catch (err: any) { //Todo dont want any
+        } catch (err: any) {
+            //Todo dont want any
             logger.error({
                 statusCode: err.statusCode ?? 500,
                 message: err?.message,
-                err: err
+                err: err,
             });
             return {
                 statusCode: err.statusCode ?? 500,
                 body: JSON.stringify({
-                    message: err?.statusCode >= 500 ? "Server Error": err.message,
+                    message: err?.statusCode >= 500 ? "Server Error" : err.message,
                     code: err.code || null,
                     errorSummary: err.getErrorSummary(),
                 }),

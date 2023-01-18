@@ -28,7 +28,7 @@ export class JwtVerifier {
 
         return payload;
     }
-    
+
     private createJwtVerifyOptions(
         signingAlgorithm: string,
         expectedClaimValues: Map<string, string>,

@@ -29,13 +29,16 @@ describe("App.ts", () => {
         const mockConfigService = jest.mocked(ConfigService);
 
         describe("success paths", () => {
-
             beforeEach(() => {
                 jest.resetAllMocks();
 
                 configService.init = () => Promise.resolve([]);
 
-                accessTokenLambda = new AccessTokenLambda(accessTokenService, sessionService, accessTokenRequestValidator);
+                accessTokenLambda = new AccessTokenLambda(
+                    accessTokenService,
+                    sessionService,
+                    accessTokenRequestValidator,
+                );
             });
 
             it("should pass when payload matches session - TEMP mocked verify function", async () => {
@@ -54,8 +57,8 @@ describe("App.ts", () => {
 
                 mockDynamoDbClient.query.mockReturnValueOnce(mockDynamoDbClientQueryResult);
                 mockConfigService.prototype.getRedirectUri.mockReturnValueOnce(redirectUri);
-                mockConfigService.prototype.getJwtAudience.mockResolvedValueOnce("audience")
-                mockJwtVerifier.prototype.verify.mockResolvedValueOnce({jti: "something"});
+                mockConfigService.prototype.getJwtAudience.mockResolvedValueOnce("audience");
+                mockJwtVerifier.prototype.verify.mockResolvedValueOnce({ jti: "something" });
                 const event = {
                     body: {
                         code,
@@ -72,13 +75,16 @@ describe("App.ts", () => {
         });
 
         describe("Fail paths", () => {
-
             beforeEach(() => {
                 jest.resetAllMocks();
 
                 configService.init = () => Promise.resolve([]);
 
-                accessTokenLambda = new AccessTokenLambda(accessTokenService, sessionService, accessTokenRequestValidator);
+                accessTokenLambda = new AccessTokenLambda(
+                    accessTokenService,
+                    sessionService,
+                    accessTokenRequestValidator,
+                );
             });
 
             it("should fail when no body is passed in the request", async () => {
@@ -121,7 +127,7 @@ describe("App.ts", () => {
                 expect(output.statusCode).toBe(403);
                 expect(output.body).not.toBeNull;
                 const body = JSON.parse(output.body);
-                expect(body.message).toContain("Access token expired")
+                expect(body.message).toContain("Access token expired");
             });
 
             it("should fail when authorization code is not found", async () => {
@@ -147,14 +153,14 @@ describe("App.ts", () => {
                 };
 
                 mockConfigService.prototype.getRedirectUri.mockReturnValueOnce(redirectUri);
-                mockConfigService.prototype.getJwtAudience.mockResolvedValueOnce("audience")
-                mockJwtVerifier.prototype.verify.mockResolvedValueOnce({jti: "something"});
+                mockConfigService.prototype.getJwtAudience.mockResolvedValueOnce("audience");
+                mockJwtVerifier.prototype.verify.mockResolvedValueOnce({ jti: "something" });
 
                 mockDynamoDbClient.query.mockReturnValueOnce(mockDynamoDbClientQueryResult);
                 const output = await accessTokenLambda.handler(event, null);
                 expect(output.statusCode).toBe(403);
                 const body = JSON.parse(output.body);
-                expect(body.code).toBe(1026)
+                expect(body.code).toBe(1026);
                 expect(body.message).toContain("Access token expired");
                 expect(body.errorSummary).toBe("1026: Access token expired");
             });
@@ -182,8 +188,8 @@ describe("App.ts", () => {
                 };
 
                 mockConfigService.prototype.getRedirectUri.mockReturnValueOnce("http://DOES_NOT_MATCH");
-                mockConfigService.prototype.getJwtAudience.mockResolvedValueOnce("audience")
-                mockJwtVerifier.prototype.verify.mockResolvedValueOnce({jti: "something"});
+                mockConfigService.prototype.getJwtAudience.mockResolvedValueOnce("audience");
+                mockJwtVerifier.prototype.verify.mockResolvedValueOnce({ jti: "something" });
 
                 mockDynamoDbClient.query.mockReturnValueOnce(mockDynamoDbClientQueryResult);
                 const output = await accessTokenLambda.handler(event, null);
@@ -245,10 +251,9 @@ describe("App.ts", () => {
                     ],
                 };
 
-                mockConfigService.prototype.getJwtAudience.mockResolvedValueOnce("audience")
+                mockConfigService.prototype.getJwtAudience.mockResolvedValueOnce("audience");
                 mockJwtVerifier.prototype.verify.mockResolvedValueOnce({});
                 mockConfigService.prototype.getRedirectUri.mockReturnValueOnce(redirectUri);
-
 
                 mockDynamoDbClient.query.mockReturnValueOnce(mockDynamoDbClientQueryResult);
                 const output = await accessTokenLambda.handler(event, null);
@@ -262,4 +267,4 @@ describe("App.ts", () => {
             it.todo("should fail when SSM is not available");
         });
     });
-})
+});
