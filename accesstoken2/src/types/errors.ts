@@ -1,5 +1,5 @@
 // Implementation of ErrorResponse.java in di-ipv-cri-lib
-class BaseError extends Error {
+abstract class BaseError extends Error {
     statusCode: number | undefined;
     code: number | undefined;
 
@@ -27,9 +27,17 @@ export class InvalidRequestError extends BaseError {
     }
 }
 
-export class ServerError extends BaseError {
+
+export class InvalidPayloadError extends BaseError {
     constructor(m: string) {
         super(m);
+        this.statusCode = 400;
+    }
+}
+
+export class ServerError extends BaseError {
+    constructor(m: string) {
+        super("Server error");
         this.statusCode = 500;
     }
 }
@@ -41,3 +49,5 @@ export class JwtSignatureValidationError extends BaseError {
         this.code = 1013;
     }
 }
+
+
