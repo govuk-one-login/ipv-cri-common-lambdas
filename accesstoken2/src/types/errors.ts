@@ -1,6 +1,6 @@
 // Implementation of ErrorResponse.java in di-ipv-cri-lib
 export abstract class BaseError extends Error {
-    constructor(m: string, public statusCode?: number, public code?:number) {
+    constructor(m: string, public statusCode?: number, public code?: number) {
         super(m);
     }
 
@@ -24,7 +24,6 @@ export class InvalidRequestError extends BaseError {
     }
 }
 
-
 export class InvalidPayloadError extends BaseError {
     constructor(m: string) {
         super(m);
@@ -42,7 +41,7 @@ export class ServerError extends BaseError {
 export class JwtSignatureValidationError extends BaseError {
     constructor() {
         super("Signature of the shared attribute JWT is invalid");
-        this.statusCode = 403 // Check!!!
+        this.statusCode = 403; // Check!!!
         this.code = 1013;
     }
 }
@@ -50,7 +49,7 @@ export class JwtSignatureValidationError extends BaseError {
 export class SessionNotFoundError extends BaseError {
     constructor(id: string) {
         super(`Could not find session item with id: ${id}`);
-        this.statusCode = 400 // check
+        this.statusCode = 400; // check
         this.code = 1029;
     }
 }
