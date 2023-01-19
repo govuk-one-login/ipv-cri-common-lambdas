@@ -51,7 +51,6 @@ If you have not installed `pre-commit` then please do so [here](https://pre-comm
 
 ## Run Cucumber tests
 
-`STACK_NAME=di-ipv-cri-common-api-your-stack-name ENVIRONMENT=dev API_GATEWAY_ID_PRIVATE=xxxx IPV_CORE_STUB_BASIC_AUTH_USER=xxxx IPV_CORE_STUB_BASIC_AUTH_PASSWORD=xxxx IPV_CORE_STUB_URL="https://di-ipv-core-stub.london.cloudapps.digital" PUBLIC_API_KEY=xxxx gradle integration-tests:cucumber
+`STACK_NAME=di-ipv-cri-common-api-your-stack-name ENVIRONMENT=dev API_GATEWAY_ID_PRIVATE=xxxx IPV_CORE_STUB_BASIC_AUTH_USER=xxxx IPV_CORE_STUB_BASIC_AUTH_PASSWORD=xxxx IPV_CORE_STUB_URL="https://di-ipv-core-stub.london.cloudapps.digital" gradle integration-tests:cucumber
 `
 
-Please note that PUBLIC_API_KEY is not needed for common lambda API but it is currently required with any random value for the command above to work.
