@@ -144,7 +144,6 @@ public class IpvCoreStubUtil {
                 HttpRequest.newBuilder()
                         .uri(new URIBuilder(getPrivateApiEndpoint()).setPath("/dev/token").build())
                         .header("Content-Type", "application/x-www-form-urlencoded")
-                        .header("x-api-key", getPublicAPIKey())
                         .POST(HttpRequest.BodyPublishers.ofString(privateKeyJWT))
                         .build();
 
@@ -168,13 +167,5 @@ public class IpvCoreStubUtil {
 
         HttpRequest request = HttpRequest.newBuilder().uri(url).GET().build();
         return sendHttpRequest(request).body();
-    }
-
-    private static String getPublicAPIKey() {
-        return Optional.ofNullable(System.getenv("PUBLIC_API_KEY"))
-                .orElseThrow(
-                        () ->
-                                new IllegalArgumentException(
-                                        "PUBLIC_API_KEY environment variable is not assigned"));
     }
 }
