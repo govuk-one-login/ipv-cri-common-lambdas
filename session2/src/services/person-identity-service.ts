@@ -1,18 +1,19 @@
 import { DynamoDBDocument, PutCommand } from "@aws-sdk/lib-dynamodb";
-import { ConfigService } from "./config-service";
-import { Address, BirthDate, Name, PersonIdentity } from "./person-identity";
+import { ConfigService } from "../common/config/config-service";
+import { CommonConfigKey } from "../common/config/config-keys";
+import { Address, BirthDate, Name, PersonIdentity } from "../common/services/models/person-identity";
 import {
     PersonIdentityAddress,
     PersonIdentityDateOfBirth,
     PersonIdentityItem,
     PersonIdentityName,
-} from "../persistence/item/person-identity-item";
+} from "./models/person-identity-item";
 
 export class PersonIdentityService {
     constructor(private dynamoDbClient: DynamoDBDocument, private configService: ConfigService) {}
 
     public async savePersonIdentity(sharedClaims: PersonIdentity, sessionId: string): Promise<string> {
-        const tableName = this.configService.getPersonIdentityTableName();
+        const tableName = this.configService.getConfigEntry(CommonConfigKey.PERSON_IDENTITY_TABLE_NAME);
         const sessionExpirationEpoch = this.configService.getSessionExpirationEpoch();
         const personIdentityItem = this.createPersonIdentityItem(sharedClaims, sessionId, sessionExpirationEpoch);
         const putSessionCommand = new PutCommand({
