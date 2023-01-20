@@ -1,22 +1,20 @@
 import { importJWK, JWTPayload, jwtVerify } from "jose";
-import { ConfigService } from "./config-service";
 import { JWTVerifyOptions } from "jose/dist/types/jwt/verify";
 import { Logger } from "@aws-lambda-powertools/logger";
+import { JwtVerificationConfig } from "../config/jwt-verification-config";
 
 export class JwtVerifier {
-    constructor(private configService: ConfigService, private logger: Logger) {}
+    constructor(private jwtVerifierConfig: JwtVerificationConfig, private logger: Logger) {}
 
     public async verify(
         encodedJwt: Buffer,
-        clientId: string,
         mandatoryClaims: Set<string>,
         expectedClaimValues: Map<string, string>,
     ): Promise<JWTPayload | null> {
-        let jwtPayload: JWTPayload;
         try {
-            const signingPublicJwkBase64 = await this.configService.getPublicSigningJwk(clientId);
+            const signingPublicJwkBase64 = this.jwtVerifierConfig.publicSigningJwk;
+            const signingAlgorithm = this.jwtVerifierConfig.jwtSigningAlgorithm;
             const signingPublicJwk = JSON.parse(Buffer.from(signingPublicJwkBase64, "base64").toString("utf8"));
-            const signingAlgorithm = await this.configService.getJwtSigningAlgorithm(clientId);
             const publicKey = await importJWK(signingPublicJwk, signingPublicJwk.alg);
 
             const jwtVerifyOptions = this.createJwtVerifyOptions(signingAlgorithm, expectedClaimValues);
@@ -29,13 +27,11 @@ export class JwtVerifier {
                     }
                 });
             }
-            jwtPayload = payload;
+            return payload;
         } catch (error) {
             this.logger.error("JWT verification failed", error as Error);
             return null;
         }
-
-        return jwtPayload;
     }
 
     private createJwtVerifyOptions(
