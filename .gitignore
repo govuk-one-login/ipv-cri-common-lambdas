@@ -38,3 +38,4 @@ build
 # intellij project dir
 .idea
 *.env
+integration-tests/target
