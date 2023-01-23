@@ -1,8 +1,12 @@
 # Compiled class file
 *.class
 
+bin/*
+
 # Log file
 *.log
+
+coverage/
 
 # BlueJ files
 *.ctxt
