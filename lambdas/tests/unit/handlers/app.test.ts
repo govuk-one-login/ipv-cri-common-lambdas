@@ -1,18 +1,18 @@
-jest.mock("../../src/services/config-service");
-jest.mock("../../src/lib/dynamo-db-client");
-jest.mock("../../src/services/jwt-verifier");
+jest.mock("../../../src/services/config-service");
+jest.mock("../../../src/lib/dynamo-db-client");
+jest.mock("../../../src/services/jwt-verifier");
 jest.mock("@aws-lambda-powertools/metrics");
 jest.mock("@aws-lambda-powertools/logger");
 
-import { AccessTokenLambda } from "../../src/app";
-import { ConfigService } from "../../src/services/config-service";
-import { AccessTokenService } from "../../src/services/access-token-service";
-import { AccessTokenRequestValidator } from "../../src/services/token-request-validator";
-import { SessionService } from "../../src/services/session-service";
-import { DynamoDbClient } from "../../src/lib/dynamo-db-client";
+import { AccessTokenLambda } from "../../../src/handlers/access-token-handler";
+import { ConfigService } from "../../../src/services/config-service";
+import { AccessTokenService } from "../../../src/services/access-token-service";
+import { AccessTokenRequestValidator } from "../../../src/services/token-request-validator";
+import { SessionService } from "../../../src/services/session-service";
+import { DynamoDbClient } from "../../../src/lib/dynamo-db-client";
 import { APIGatewayProxyEvent } from "aws-lambda/trigger/api-gateway-proxy";
 import { SSMClient } from "@aws-sdk/client-ssm";
-import { JwtVerifier } from "../../src/services/jwt-verifier";
+import { JwtVerifier } from "../../../src/services/jwt-verifier";
 
 describe("App.ts", () => {
     describe("Handler", () => {
