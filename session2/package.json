@@ -21,7 +21,8 @@
         "unit": "jest --config=jest.config.ts",
         "lint": "prettier --check src tests && eslint .",
         "compile": "tsc",
-        "test": "npm run compile && npm run unit"
+        "test": "npm run compile && npm run unit",
+        "prettier": "prettier --write src/"
     },
     "devDependencies": {
         "@types/aws-lambda": "8.10.92",

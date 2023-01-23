@@ -2,6 +2,8 @@ import { ValidationResult } from "../common/services/models/validation-result";
 import { JwtVerifier } from "../common/security/jwt-verifier";
 import { JWTPayload } from "jose";
 import { SessionRequestValidationConfig } from "./session-request-validation-config";
+import { ClientConfigKey } from "../common/config/config-keys";
+import { Logger } from "@aws-lambda-powertools/logger";
 
 export class SessionRequestValidator {
     constructor(private validationConfig: SessionRequestValidationConfig, private jwtVerifier: JwtVerifier) {}
@@ -35,6 +37,26 @@ export class SessionRequestValidator {
                 [JwtVerifier.ClaimNames.AUDIENCE, expectedAudience],
                 [JwtVerifier.ClaimNames.ISSUER, expectedIssuer],
             ]),
+        );
+    }
+}
+
+export class SessionRequestValidatorFactory {
+    constructor(private readonly logger: Logger) {}
+    public create(criClientConfig: Map<string, string>): SessionRequestValidator {
+        return new SessionRequestValidator(
+            {
+                expectedJwtRedirectUri: criClientConfig.get(ClientConfigKey.JWT_REDIRECT_URI)!,
+                expectedJwtIssuer: criClientConfig.get(ClientConfigKey.JWT_ISSUER)!,
+                expectedJwtAudience: criClientConfig.get(ClientConfigKey.JWT_AUDIENCE)!,
+            },
+            new JwtVerifier(
+                {
+                    jwtSigningAlgorithm: criClientConfig.get(ClientConfigKey.JWT_SIGNING_ALGORITHM)!,
+                    publicSigningJwk: criClientConfig.get(ClientConfigKey.JWT_PUBLIC_SIGNING_KEY)!,
+                },
+                this.logger,
+            ),
         );
     }
 }

@@ -6,11 +6,10 @@ import { Logger } from "@aws-lambda-powertools/logger";
 import { ConfigService } from "./common/config/config-service";
 import { ClientConfigKey, CommonConfigKey } from "./common/config/config-keys";
 import { SessionService } from "./services/session-service";
-import { JwtVerifier } from "./common/security/jwt-verifier";
 import { JweDecrypter } from "./services/security/jwe-decrypter";
 import { PersonIdentityService } from "./services/person-identity-service";
 import { PersonIdentity } from "./common/services/models/person-identity";
-import { SessionRequestValidator } from "./services/session-request-validator";
+import { SessionRequestValidatorFactory } from "./services/session-request-validator";
 import { AuditService } from "./common/services/audit-service";
 import { AuditEventType } from "./common/services/models/audit-event";
 import { SessionRequestSummary } from "./services/models/session-request-summary";
@@ -19,6 +18,7 @@ import { DynamoDBDocument } from "@aws-sdk/lib-dynamodb";
 import { SSMClient } from "@aws-sdk/client-ssm";
 import { SQSClient } from "@aws-sdk/client-sqs";
 import { AwsClientType, createClient } from "./common/aws-client-factory";
+import { getClientIpAddress } from "./common/utils/request-utils";
 
 const dynamoDbClient = createClient(AwsClientType.DYNAMO) as DynamoDBDocument;
 const ssmClient = createClient(AwsClientType.SSM) as SSMClient;
@@ -38,6 +38,12 @@ const configInitPromise = configService.init([
 const SESSION_CREATED_METRIC = "session_created";
 
 class SessionLambda implements LambdaInterface {
+    constructor(
+        private readonly sessionService: SessionService,
+        private readonly personIdentityService: PersonIdentityService,
+        private readonly sessionRequestValidatorFactory: SessionRequestValidatorFactory,
+    ) {}
+
     @tracer.captureLambdaHandler({ captureResponse: false })
     @logger.injectLambdaContext({ clearState: true })
     @metrics.logMetrics({ throwOnEmptyMetrics: false, captureColdStartMetric: true })
@@ -59,30 +65,11 @@ class SessionLambda implements LambdaInterface {
             }
 
             if (!configService.hasClientConfig(requestBodyClientId)) {
-                await configService.initClientConfig(requestBodyClientId, [
-                    ClientConfigKey.JWT_AUDIENCE,
-                    ClientConfigKey.JWT_ISSUER,
-                    ClientConfigKey.JWT_PUBLIC_SIGNING_KEY,
-                    ClientConfigKey.JWT_REDIRECT_URI,
-                    ClientConfigKey.JWT_SIGNING_ALGORITHM,
-                ]);
+                await this.initClientConfig(requestBodyClientId);
             }
             const criClientConfig = configService.getClientConfig(requestBodyClientId)!;
 
-            const sessionRequestValidator = new SessionRequestValidator(
-                {
-                    expectedJwtRedirectUri: criClientConfig.get(ClientConfigKey.JWT_REDIRECT_URI)!,
-                    expectedJwtIssuer: criClientConfig.get(ClientConfigKey.JWT_ISSUER)!,
-                    expectedJwtAudience: criClientConfig.get(ClientConfigKey.JWT_AUDIENCE)!,
-                },
-                new JwtVerifier(
-                    {
-                        jwtSigningAlgorithm: criClientConfig.get(ClientConfigKey.JWT_SIGNING_ALGORITHM)!,
-                        publicSigningJwk: criClientConfig.get(ClientConfigKey.JWT_PUBLIC_SIGNING_KEY)!,
-                    },
-                    logger,
-                ),
-            );
+            const sessionRequestValidator = this.sessionRequestValidatorFactory.create(criClientConfig);
             const jwtValidationResult = await sessionRequestValidator.validateJwt(decryptedJwt, requestBodyClientId);
             if (!jwtValidationResult.isValid) {
                 return {
@@ -92,18 +79,17 @@ class SessionLambda implements LambdaInterface {
             }
 
             const jwtPayload = jwtValidationResult.validatedObject;
-            const sessionService = new SessionService(dynamoDbClient, configService);
-            const clientIpAddress = this.getClientIpAddress(event);
+            const clientIpAddress = getClientIpAddress(event);
             metrics.addDimension("issuer", requestBodyClientId);
 
             const sessionRequestSummary = this.createSessionRequestSummary(jwtPayload, clientIpAddress);
-            const sessionId: string = await sessionService.saveSession(sessionRequestSummary);
+            const sessionId: string = await this.sessionService.saveSession(sessionRequestSummary);
 
             logger.appendKeys({ govuk_signin_journey_id: sessionId });
             logger.info("created session");
 
             if (jwtPayload.shared_claims) {
-                await new PersonIdentityService(dynamoDbClient, configService).savePersonIdentity(
+                await this.personIdentityService.savePersonIdentity(
                     jwtPayload.shared_claims as PersonIdentity,
                     sessionId,
                 );
@@ -130,6 +116,15 @@ class SessionLambda implements LambdaInterface {
             };
         }
     }
+    private async initClientConfig(clientId: string): Promise<void> {
+        await configService.initClientConfig(clientId, [
+            ClientConfigKey.JWT_AUDIENCE,
+            ClientConfigKey.JWT_ISSUER,
+            ClientConfigKey.JWT_PUBLIC_SIGNING_KEY,
+            ClientConfigKey.JWT_REDIRECT_URI,
+            ClientConfigKey.JWT_SIGNING_ALGORITHM,
+        ]);
+    }
     private createSessionRequestSummary(
         jwtPayload: JWTPayload,
         clientIpAddress: string | undefined,
@@ -143,19 +138,6 @@ class SessionLambda implements LambdaInterface {
             state: jwtPayload["state"] as string,
             subject: jwtPayload.sub as string,
         };
-    }
-    private getClientIpAddress(event: APIGatewayProxyEvent): string | undefined {
-        if (event.headers) {
-            const ipAddressHeader = "x-forwarded-for";
-            const ipAddressHeaders: string[] = Object.keys(event.headers).filter(
-                (header) => header.toLowerCase().trim() === ipAddressHeader,
-            );
-            if (ipAddressHeaders.length === 1) {
-                return event.headers[ipAddressHeaders[0]];
-            }
-            logger.warn(`Unexpected quantity of ${ipAddressHeader} headers encountered: ${ipAddressHeaders.length}`);
-        }
-        return undefined;
     }
     private async sendAuditEvent(
         sessionId: string,
@@ -174,5 +156,9 @@ class SessionLambda implements LambdaInterface {
     }
 }
 
-const handlerClass = new SessionLambda();
+const handlerClass = new SessionLambda(
+    new SessionService(dynamoDbClient, configService),
+    new PersonIdentityService(dynamoDbClient, configService),
+    new SessionRequestValidatorFactory(logger),
+);
 export const lambdaHandler = handlerClass.handler.bind(handlerClass);
