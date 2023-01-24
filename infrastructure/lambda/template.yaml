@@ -403,7 +403,7 @@ Resources:
   AccessTokenFunctionTwo:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: app.lambdaHandler
+      Handler: access-token-handler.lambdaHandler
       CodeUri: ../../lambdas
       Runtime: nodejs18.x
       FunctionName: !Sub "${AWS::StackName}-AccessTokenFunctionTwo"
