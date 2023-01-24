@@ -1,4 +1,10 @@
-# Access Token
+# NodeJS Lambdas
+
+## Project structure
+
+The NodeJS lambdas are stores inside the Lambdas directory. Each individual `handlers` file is one Lambda. For the Cloudformation config, the ESBuild will point to the handler file and build from that.
+
+## AccessToken Lambda
 
 This endpoint takes grant_type, code, client_assertion_type, client_assertion and redirect_uri with content type application/x-www-form-urlencoded and returns Access Token
 

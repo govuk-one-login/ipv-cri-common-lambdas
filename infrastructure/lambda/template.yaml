@@ -403,8 +403,8 @@ Resources:
   AccessTokenFunctionTwo:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: app.lambdaHandler
-      CodeUri: ../../accesstoken2
+      Handler: access-token-handler.lambdaHandler
+      CodeUri: ../../lambdas
       Runtime: nodejs18.x
       FunctionName: !Sub "${AWS::StackName}-AccessTokenFunctionTwo"
       Layers:
@@ -434,7 +434,7 @@ Resources:
         Target: "es2020"
         Sourcemap: true # Enabling source maps will create the required NODE_OPTIONS environment variables on your lambda function during sam build
         EntryPoints:
-          - src/app.ts
+          - src/handlers/access-token-handler.ts
         External:
           - '@aws-lambda-powertools/commons'
           - '@aws-lambda-powertools/logger'
