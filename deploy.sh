@@ -33,7 +33,7 @@ echo -e "\tCriIdentifier SSM key ${GREEN}$cri_identifier${NOCOLOR}"
 
 ./gradlew clean
 sam validate -t infrastructure/lambda/template.yaml
-sam build -t infrastructure/lambda/template.yaml --beta-features
+sam build -t infrastructure/lambda/template.yaml
 sam deploy --stack-name "$stack_name" \
    --no-fail-on-empty-changeset \
    --no-confirm-changeset \
