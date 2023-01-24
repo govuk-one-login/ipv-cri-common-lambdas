@@ -1,5 +1,5 @@
 import { DynamoDBDocument, PutCommand } from "@aws-sdk/lib-dynamodb";
-import { v4 as uuidv4 } from "uuid";
+import { randomUUID } from "crypto";
 import { ConfigService } from "../common/config/config-service";
 import { CommonConfigKey } from "../common/config/config-keys";
 import { SessionRequestSummary } from "./models/session-request-summary";
@@ -13,7 +13,7 @@ export class SessionService {
         const putSessionCommand = new PutCommand({
             TableName: tableName,
             Item: {
-                sessionId: uuidv4(),
+                sessionId: randomUUID(),
                 createdDate: Date.now(),
                 expiryDate: sessionExpirationEpoch,
                 state: sessionRequest.state,
