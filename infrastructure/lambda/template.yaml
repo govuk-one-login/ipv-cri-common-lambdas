@@ -331,7 +331,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Handler: app.lambdaHandler
-      Runtime: nodejs16.x
+      Runtime: nodejs18.x
       CodeUri: ../../session2
       FunctionName: !Sub "${AWS::StackName}-SessionFunctionTwo"
       Layers:
@@ -376,7 +376,7 @@ Resources:
       BuildMethod: esbuild
       BuildProperties:
         Minify: true
-        Target: "es2020"
+        Target: "esnext"
         Sourcemap: true # Enabling source maps will create the required NODE_OPTIONS environment variables on your lambda function during sam build
         EntryPoints:
           - src/app.ts
@@ -385,6 +385,7 @@ Resources:
           - '@aws-lambda-powertools/logger'
           - '@aws-lambda-powertools/metrics'
           - '@aws-lambda-powertools/tracer'
+          - '@aws-sdk/*'
 
   SessionFunctionTwoLogGroup:
     Type: AWS::Logs::LogGroup
@@ -432,7 +433,7 @@ Resources:
     Properties:
       Handler: app.lambdaHandler
       CodeUri: ../../authorization2
-      Runtime: nodejs16.x
+      Runtime: nodejs18.x
       FunctionName: !Sub "${AWS::StackName}-AuthorizationFunctionTwo"
       Layers:
         - !Sub arn:aws:lambda:${AWS::Region}:094274105915:layer:AWSLambdaPowertoolsTypeScript:6
@@ -458,7 +459,7 @@ Resources:
       BuildMethod: esbuild
       BuildProperties:
         Minify: true
-        Target: "es2020"
+        Target: "esnext"
         Sourcemap: true # Enabling source maps will create the required NODE_OPTIONS environment variables on your lambda function during sam build
         EntryPoints:
           - src/app.ts
@@ -467,6 +468,7 @@ Resources:
           - '@aws-lambda-powertools/logger'
           - '@aws-lambda-powertools/metrics'
           - '@aws-lambda-powertools/tracer'
+          - '@aws-sdk/*'
 
   AuthorizationFunctionTwoLogGroup:
     Type: AWS::Logs::LogGroup

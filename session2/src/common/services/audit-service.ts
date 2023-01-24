@@ -3,9 +3,13 @@ import { AuditEvent, AuditEventContext, AuditEventSession, AuditEventType, Audit
 import { CriAuditConfig } from "../config/cri-audit-config";
 
 export class AuditService {
-    constructor(private readonly auditConfig: CriAuditConfig, private readonly sqsClient: SQSClient) {}
+    private auditConfig: CriAuditConfig | undefined;
+    constructor(private readonly getAuditConfig: () => CriAuditConfig, private readonly sqsClient: SQSClient) {}
 
     public async sendAuditEvent(eventType: AuditEventType, context: AuditEventContext) {
+        if (!this.auditConfig) {
+            this.auditConfig = this.getAuditConfig();
+        }
         const auditEvent = this.createAuditEvent(eventType, context);
         await this.sendAuditEventToQueue(auditEvent);
     }
@@ -16,8 +20,8 @@ export class AuditService {
         }
         const auditEventUser: AuditEventUser = this.createAuditEventUser(context.sessionItem, context.clientIpAddress);
         return {
-            component_id: this.auditConfig.issuer,
-            event_name: `${this.auditConfig.auditEventNamePrefix}_${eventType}`,
+            component_id: this.auditConfig!.issuer,
+            event_name: `${this.auditConfig!.auditEventNamePrefix}_${eventType}`,
             extensions: context?.extensions ?? undefined,
             restricted: context?.personIdentity ?? undefined,
             timestamp: Date.now(),
@@ -38,7 +42,7 @@ export class AuditService {
     private async sendAuditEventToQueue(auditEvent: AuditEvent) {
         const sendMsgCommand = new SendMessageCommand({
             MessageBody: JSON.stringify(auditEvent),
-            QueueUrl: this.auditConfig.queueUrl,
+            QueueUrl: this.auditConfig!.queueUrl,
         });
         await this.sqsClient.send(sendMsgCommand);
     }
