@@ -42,6 +42,8 @@ class SessionLambda implements LambdaInterface {
         private readonly sessionService: SessionService,
         private readonly personIdentityService: PersonIdentityService,
         private readonly sessionRequestValidatorFactory: SessionRequestValidatorFactory,
+        private readonly jweDecrypter: JweDecrypter,
+        private readonly auditService: AuditService,
     ) {}
 
     @tracer.captureLambdaHandler({ captureResponse: false })
@@ -54,8 +56,7 @@ class SessionLambda implements LambdaInterface {
             const requestBodyClientId = deserialisedRequestBody.client_id;
             let decryptedJwt = null;
             try {
-                const decryptionKeyId = configService.getConfigEntry(CommonConfigKey.DECRYPTION_KEY_ID);
-                decryptedJwt = await new JweDecrypter(decryptionKeyId).decryptJwe(deserialisedRequestBody.request);
+                decryptedJwt = await this.jweDecrypter.decryptJwe(deserialisedRequestBody.request);
             } catch (e) {
                 logger.error("Invalid request - JWE decryption failed", e as Error);
                 return {
@@ -80,6 +81,7 @@ class SessionLambda implements LambdaInterface {
 
             const jwtPayload = jwtValidationResult.validatedObject;
             const clientIpAddress = getClientIpAddress(event);
+
             metrics.addDimension("issuer", requestBodyClientId);
 
             const sessionRequestSummary = this.createSessionRequestSummary(jwtPayload, clientIpAddress);
@@ -144,7 +146,7 @@ class SessionLambda implements LambdaInterface {
         sessionRequest: SessionRequestSummary,
         clientIpAddress: string | undefined,
     ) {
-        await new AuditService(configService.getAuditConfig(), sqsClient).sendAuditEvent(AuditEventType.START, {
+        await this.auditService.sendAuditEvent(AuditEventType.START, {
             clientIpAddress: clientIpAddress,
             sessionItem: {
                 sessionId,
@@ -160,5 +162,7 @@ const handlerClass = new SessionLambda(
     new SessionService(dynamoDbClient, configService),
     new PersonIdentityService(dynamoDbClient, configService),
     new SessionRequestValidatorFactory(logger),
+    new JweDecrypter(() => configService.getConfigEntry(CommonConfigKey.DECRYPTION_KEY_ID)),
+    new AuditService(() => configService.getAuditConfig(), sqsClient),
 );
 export const lambdaHandler = handlerClass.handler.bind(handlerClass);
