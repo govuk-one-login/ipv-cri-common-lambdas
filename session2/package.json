@@ -14,8 +14,7 @@
         "@aws-sdk/credential-providers": "3.245.0",
         "@aws-sdk/lib-dynamodb": "3.150.0",
         "esbuild": "0.14.14",
-        "jose": "4.11.1",
-        "uuid": "^9.0.0"
+        "jose": "4.11.1"
     },
     "scripts": {
         "unit": "jest --config=jest.config.ts",
