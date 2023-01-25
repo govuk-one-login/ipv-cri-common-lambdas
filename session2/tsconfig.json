@@ -1,0 +1,19 @@
+{
+    "compilerOptions": {
+        "experimentalDecorators": true,
+        "target": "esnext",
+        "strict": true,
+        "preserveConstEnums": true,
+        // "noEmit": true, // emit for debugger testing purposes.
+        "module": "esnext",
+        "moduleResolution": "node",
+        "esModuleInterop": true,
+        "skipLibCheck": true,
+        "forceConsistentCasingInFileNames": true,
+        "types": ["jest", "node", "aws-lambda"],
+        "outDir": "./build/",
+        "noImplicitAny": true
+    },
+    "exclude": ["node_modules"],
+    "include": ["./src/", "./tests/"]
+}
