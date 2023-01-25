@@ -2,13 +2,13 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { LambdaInterface } from "@aws-lambda-powertools/commons";
 import { Metrics } from "@aws-lambda-powertools/metrics";
 import { Logger } from "@aws-lambda-powertools/logger";
-import { SessionService } from "../services/session-service";
+import { SessionService } from "../services/common/session-service";
 import { DynamoDbClient } from "../lib/dynamo-db-client";
 import { SsmClient } from "../lib/param-store-client";
-import { ConfigService } from "../services/config-service";
-import { AccessTokenRequestValidator } from "../services/token-request-validator";
-import { AccessTokenService } from "../services/access-token-service";
-import { JwtVerifier } from "../services/jwt-verifier";
+import { ConfigService } from "../services/common/config-service";
+import { AccessTokenRequestValidator } from "../services/access-token/request-validator-service";
+import { AccessTokenService } from "../services/access-token/access-token-service";
+import { JwtVerifier } from "../services/common/jwt-verifier-service";
 
 const logger = new Logger();
 const metrics = new Metrics();

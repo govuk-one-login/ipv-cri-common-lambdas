@@ -330,9 +330,9 @@ Resources:
   SessionFunctionTwo:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: app.lambdaHandler
+      Handler: session-handler.lambdaHandler
       Runtime: nodejs18.x
-      CodeUri: ../../session2
+      CodeUri: ../../lambdas
       FunctionName: !Sub "${AWS::StackName}-SessionFunctionTwo"
       Layers:
         - !Sub arn:aws:lambda:${AWS::Region}:094274105915:layer:AWSLambdaPowertoolsTypeScript:6
@@ -379,7 +379,7 @@ Resources:
         Target: "esnext"
         Sourcemap: true # Enabling source maps will create the required NODE_OPTIONS environment variables on your lambda function during sam build
         EntryPoints:
-          - src/app.ts
+          - src/handlers/session-handler.ts
         External:
           - '@aws-lambda-powertools/commons'
           - '@aws-lambda-powertools/logger'
