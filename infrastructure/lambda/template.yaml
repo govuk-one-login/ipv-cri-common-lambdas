@@ -431,8 +431,8 @@ Resources:
   AuthorizationFunctionTwo:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: app.lambdaHandler
-      CodeUri: ../../authorization2
+      Handler: authorization-handler.lambdaHandler
+      CodeUri: ../../lambdas
       Runtime: nodejs18.x
       FunctionName: !Sub "${AWS::StackName}-AuthorizationFunctionTwo"
       Layers:
@@ -462,7 +462,7 @@ Resources:
         Target: "esnext"
         Sourcemap: true # Enabling source maps will create the required NODE_OPTIONS environment variables on your lambda function during sam build
         EntryPoints:
-          - src/app.ts
+          - src/handlers/authorization-handler.ts
         External:
           - '@aws-lambda-powertools/commons'
           - '@aws-lambda-powertools/logger'
