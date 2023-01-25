@@ -2,12 +2,13 @@ import { DynamoDBDocument, GetCommand, UpdateCommand, QueryCommandInput } from "
 import { SessionItem } from "../types/session-item";
 import { BearerAccessToken } from "../types/bearer-access-token";
 import { ConfigService } from "./config-service";
+import { randomUUID } from "crypto";
 import { InvalidAccessTokenError, SessionNotFoundError } from "../types/errors";
 
 export class SessionService {
     constructor(private dynamoDbClient: DynamoDBDocument, private configService: ConfigService) {}
-
-    public async getSession(sessionId: string): Promise<SessionItem> {
+    
+    public async getSession(sessionId: string | undefined): Promise<SessionItem> {
         const tableName = await this.configService.getSessionTableName();
         const getSessionCommand = new GetCommand({
             TableName: tableName,
@@ -24,13 +25,13 @@ export class SessionService {
 
     public async createAuthorizationCode(sessionItem: SessionItem) {
         const tableName = await this.configService.getSessionTableName();
-        sessionItem.authorizationCode = "uuidv4()";
+        sessionItem.authorizationCode = randomUUID();
         sessionItem.authorizationCodeExpiryDate = this.configService.getAuthorizationCodeExpirationEpoch();
 
         const updateSessionCommand = new UpdateCommand({
             TableName: tableName,
             Key: { sessionId: sessionItem.sessionId },
-            UpdateExpression: "SET authorizationCode=1:authCode, authorizationCodeExpiryDate=:authCodeExpiry",
+            UpdateExpression: "SET authorizationCode=:authCode, authorizationCodeExpiryDate=:authCodeExpiry",
             ExpressionAttributeValues: {
                 ":authCode": sessionItem.authorizationCode,
                 ":authCodeExpiry": sessionItem.authorizationCodeExpiryDate,
@@ -62,12 +63,6 @@ export class SessionService {
 
     public async createAccessTokenCode(sessionItem: SessionItem, accessToken: BearerAccessToken) {
         const tableName = await this.configService.getSessionTableName();
-        //     // Expire the authorization code immediately, as it can only be used once
-        //     sessionItem.authorizationCode = '';
-        //     // Set the access token
-        //   sessionItem.accessToken = accessToken.access_token;
-        //      // Set the access token expiry
-        //   sessionItem.accessTokenExpiryDate = this.configService.getBearerAccessTokenExpirationEpoch();
         console.log(`sessionItem ${sessionItem}, accessToken ${JSON.stringify(accessToken)}`);
         const updateSessionCommand = new UpdateCommand({
             TableName: tableName,
