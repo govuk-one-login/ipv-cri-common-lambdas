@@ -11,8 +11,8 @@ jest.mock("../../../src/lib/dynamo-db-client");
 jest.mock("../../../src/services/config-service");
 
 import { DynamoDbClient } from "../../../src/lib/dynamo-db-client";
-import { SessionService } from "../../../src/services/session-service";
-import { ConfigService } from "../../../src/services/config-service";
+import { SessionService } from "../../../src/services/common/session-service";
+import { ConfigService } from "../../../src/services/common/config-service";
 import { SSMClient } from "@aws-sdk/client-ssm";
 import { GetCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import { InvalidAccessTokenError, SessionNotFoundError } from "../../../src/types/errors";

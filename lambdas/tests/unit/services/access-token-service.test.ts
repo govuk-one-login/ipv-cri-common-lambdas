@@ -1,4 +1,4 @@
-import { AccessTokenService } from "../../../src/services/access-token-service";
+import { AccessTokenService } from "../../../src/services/access-token/access-token-service";
 
 describe("access-token-service", () => {
     let accessTokenService: AccessTokenService;
