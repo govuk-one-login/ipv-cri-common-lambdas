@@ -159,10 +159,8 @@ class SessionLambda implements LambdaInterface {
 }
 
 const handlerClass = new SessionLambda(
-    new SessionService(dynamoDbClient, [configService.getConfigEntry(CommonConfigKey.SESSION_TABLE_NAME),
-        +configService.getConfigEntry(CommonConfigKey.SESSION_TTL)]),
-    new PersonIdentityService(dynamoDbClient, [configService.getConfigEntry(CommonConfigKey.PERSON_IDENTITY_TABLE_NAME),
-        +configService.getConfigEntry(CommonConfigKey.SESSION_TTL)]),
+    new SessionService(dynamoDbClient, configService),
+    new PersonIdentityService(dynamoDbClient, configService),
     new SessionRequestValidatorFactory(logger),
     new JweDecrypter(() => configService.getConfigEntry(CommonConfigKey.DECRYPTION_KEY_ID)),
     new AuditService(() => configService.getAuditConfig(), sqsClient),
