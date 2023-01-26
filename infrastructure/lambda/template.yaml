@@ -330,7 +330,7 @@ Resources:
   SessionFunctionTwo:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: app.lambdaHandler
+      Handler: session-handler.lambdaHandler
       Runtime: nodejs18.x
       CodeUri: ../../lambdas
       FunctionName: !Sub "${AWS::StackName}-SessionFunctionTwo"
