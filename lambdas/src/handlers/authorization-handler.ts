@@ -1,12 +1,12 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
-import { SessionService } from "./services/session-service";
-import { DynamoDbClient } from "./lib/dynamo-db-client";
+import { SessionService } from "../services/session-service";
+import { DynamoDbClient } from "../lib/dynamo-db-client";
 import { LambdaInterface } from "@aws-lambda-powertools/commons";
 import { Metrics, MetricUnits } from "@aws-lambda-powertools/metrics";
 import { Logger } from "@aws-lambda-powertools/logger";
-import { SsmClient } from "./lib/param-store-client";
-import { ConfigService } from "./services/config-service";
-import { AuthorizationRequestValidator } from "./services/auth-request-validator";
+import { SsmClient } from "../lib/param-store-client";
+import { ConfigService } from "../services/config-service";
+import { AuthorizationRequestValidator } from "../services/auth-request-validator";
 
 const logger = new Logger();
 const metrics = new Metrics();
@@ -36,9 +36,15 @@ class AuthorizationLambda implements LambdaInterface {
                 sessionItem.clientId,
             );
             if (!validationResult.isValid) {
+                const code = 1019;
+                const message = "Session Validation Exception";
                 return {
                     statusCode: 400,
-                    body: `Invalid request: ${validationResult.errorMsg}`,
+                    body: JSON.stringify({
+                        code,
+                        message,
+                        errorSummary: `${code}: ${message}`
+                    })
                 };
             }
 

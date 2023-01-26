@@ -1,6 +1,6 @@
 import { APIGatewayProxyEventQueryStringParameters } from "aws-lambda/trigger/api-gateway-proxy";
 import { ValidationResult } from "../types/validation-result";
-import { ConfigService } from "./config-service";
+import { ConfigService } from "../services/config-service";
 
 export class AuthorizationRequestValidator {
     constructor(private configService: ConfigService) {}
