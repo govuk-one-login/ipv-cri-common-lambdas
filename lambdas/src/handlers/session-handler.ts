@@ -3,22 +3,22 @@ import { LambdaInterface } from "@aws-lambda-powertools/commons";
 import { Metrics, MetricUnits } from "@aws-lambda-powertools/metrics";
 import { Tracer } from "@aws-lambda-powertools/tracer";
 import { Logger } from "@aws-lambda-powertools/logger";
-import { ConfigService } from "./common/config/config-service";
-import { ClientConfigKey, CommonConfigKey } from "./common/config/config-keys";
-import { SessionService } from "./services/session-service";
-import { JweDecrypter } from "./services/security/jwe-decrypter";
-import { PersonIdentityService } from "./services/person-identity-service";
-import { PersonIdentity } from "./common/services/models/person-identity";
-import { SessionRequestValidatorFactory } from "./services/session-request-validator";
-import { AuditService } from "./common/services/audit-service";
-import { AuditEventType } from "./common/services/models/audit-event";
-import { SessionRequestSummary } from "./services/models/session-request-summary";
+import { ConfigService } from "../common/config/config-service";
+import { ClientConfigKey, CommonConfigKey } from "../common/config/config-keys";
+import { SessionService } from '../session-service';
+import { JweDecrypter } from "../services/security/jwe-decrypter";
+import { PersonIdentityService } from "../services/person-identity-service";
+import { PersonIdentity } from "../common/services/models/person-identity";
+import { SessionRequestValidatorFactory } from "../services/session-request-validator";
+import { AuditService } from "../common/services/audit-service";
+import { AuditEventType } from "../common/services/models/audit-event";
+import { SessionRequestSummary } from "../services/models/session-request-summary";
 import { JWTPayload } from "jose";
 import { DynamoDBDocument } from "@aws-sdk/lib-dynamodb";
 import { SSMClient } from "@aws-sdk/client-ssm";
 import { SQSClient } from "@aws-sdk/client-sqs";
-import { AwsClientType, createClient } from "./common/aws-client-factory";
-import { getClientIpAddress } from "./common/utils/request-utils";
+import { AwsClientType, createClient } from "../common/aws-client-factory";
+import { getClientIpAddress } from "../common/utils/request-utils";
 
 const dynamoDbClient = createClient(AwsClientType.DYNAMO) as DynamoDBDocument;
 const ssmClient = createClient(AwsClientType.SSM) as SSMClient;
@@ -159,8 +159,10 @@ class SessionLambda implements LambdaInterface {
 }
 
 const handlerClass = new SessionLambda(
-    new SessionService(dynamoDbClient, configService),
-    new PersonIdentityService(dynamoDbClient, configService),
+    new SessionService(dynamoDbClient, [configService.getConfigEntry(CommonConfigKey.SESSION_TABLE_NAME),
+        +configService.getConfigEntry(CommonConfigKey.SESSION_TTL)]),
+    new PersonIdentityService(dynamoDbClient, [configService.getConfigEntry(CommonConfigKey.PERSON_IDENTITY_TABLE_NAME),
+        +configService.getConfigEntry(CommonConfigKey.SESSION_TTL)]),
     new SessionRequestValidatorFactory(logger),
     new JweDecrypter(() => configService.getConfigEntry(CommonConfigKey.DECRYPTION_KEY_ID)),
     new AuditService(() => configService.getAuditConfig(), sqsClient),

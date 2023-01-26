@@ -1,17 +1,17 @@
 import { DynamoDBDocument, PutCommand } from "@aws-sdk/lib-dynamodb";
 import { randomUUID } from "crypto";
-import { ConfigService } from "../common/config/config-service";
-import { CommonConfigKey } from "../common/config/config-keys";
-import { SessionRequestSummary } from "./models/session-request-summary";
+import { ConfigService } from "./common/config/config-service";
+import { CommonConfigKey } from "./common/config/config-keys";
+import { SessionRequestSummary } from "./services/models/session-request-summary";
 
 export class SessionService {
-    constructor(private dynamoDbClient: DynamoDBDocument, private configService: ConfigService) {}
+    constructor(private dynamoDbClient: DynamoDBDocument, private config: Array<string|number>) {}
 
     public async saveSession(sessionRequest: SessionRequestSummary): Promise<string> {
-        const tableName = this.configService.getConfigEntry(CommonConfigKey.SESSION_TABLE_NAME);
-        const sessionExpirationEpoch = this.configService.getSessionExpirationEpoch();
+        const [tableName, sessionExpirationEpoch] = this.config;
+        //const sessionExpirationEpoch = this.configService.getSessionExpirationEpoch();
         const putSessionCommand = new PutCommand({
-            TableName: tableName,
+            TableName: tableName as string,
             Item: {
                 sessionId: randomUUID(),
                 createdDate: Date.now(),
