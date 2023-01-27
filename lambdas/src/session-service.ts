@@ -5,13 +5,12 @@ import { CommonConfigKey } from "./common/config/config-keys";
 import { SessionRequestSummary } from "./services/models/session-request-summary";
 
 export class SessionService {
-    constructor(private dynamoDbClient: DynamoDBDocument, private config: Array<string|number>) {}
+    constructor(private dynamoDbClient: DynamoDBDocument, private configService: ConfigService) {}
 
     public async saveSession(sessionRequest: SessionRequestSummary): Promise<string> {
-        const [tableName, sessionExpirationEpoch] = this.config;
-        //const sessionExpirationEpoch = this.configService.getSessionExpirationEpoch();
+        const sessionExpirationEpoch = this.configService.getSessionExpirationEpoch();
         const putSessionCommand = new PutCommand({
-            TableName: tableName as string,
+            TableName: this.configService.getConfigEntry(CommonConfigKey.SESSION_TABLE_NAME),
             Item: {
                 sessionId: randomUUID(),
                 createdDate: Date.now(),
