@@ -2,7 +2,7 @@ import { DynamoDBDocument, PutCommand } from "@aws-sdk/lib-dynamodb";
 import { randomUUID } from "crypto";
 import { ConfigService } from "./common/config/config-service";
 import { CommonConfigKey } from "./common/config/config-keys";
-import { SessionRequestSummary } from "./services/models/session-request-summary";
+import { SessionRequestSummary } from "./types/session-request-summary";
 
 export class SessionService {
     constructor(private dynamoDbClient: DynamoDBDocument, private config: Array<string|number>) {}

@@ -1,13 +1,13 @@
 import { DynamoDBDocument, PutCommand } from "@aws-sdk/lib-dynamodb";
 import { ConfigService } from "../common/config/config-service";
 import { CommonConfigKey } from "../common/config/config-keys";
-import { Address, BirthDate, Name, PersonIdentity } from "../common/services/models/person-identity";
+import { Address, BirthDate, Name, PersonIdentity } from "../types/person-identity";
 import {
     PersonIdentityAddress,
     PersonIdentityDateOfBirth,
     PersonIdentityItem,
     PersonIdentityName,
-} from "./models/person-identity-item";
+} from "../types/person-identity-item";
 
 export class PersonIdentityService {
     constructor(private dynamoDbClient: DynamoDBDocument, private config: Array<string|number>) {}
