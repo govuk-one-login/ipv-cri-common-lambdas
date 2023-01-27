@@ -1,4 +1,4 @@
-export type SessionItem = {
+export interface SessionItem {
     sessionId: string;
     clientId: string;
     clientSessionId: string;
@@ -7,4 +7,4 @@ export type SessionItem = {
     redirectUri: string;
     accessToken: string;
     accessTokenExpiryDate: number;
-};
+}

@@ -1,5 +1,5 @@
 import { DynamoDBDocument, GetCommand } from "@aws-sdk/lib-dynamodb";
-import { SessionItem } from "./session-item";
+import { SessionItem } from "../../types/session-item";
 
 export class SessionService {
     constructor(private dynamoDbClient: DynamoDBDocument, private sessionTableName: string) {}
