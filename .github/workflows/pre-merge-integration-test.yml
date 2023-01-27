@@ -73,6 +73,40 @@ jobs:
           export API_GATEWAY_ID_PRIVATE=$API_GATEWAY_ID_PRIVATE
           gradle integration-tests:cucumber
 
+      - name: Get Allure history
+        uses: actions/checkout@v2
+        if: always()
+        continue-on-error: true
+        with:
+          ref: gh-pages
+          path: gh-pages
+                  - name: Deploy report to Github Pages
+                  if: always()
+                  uses: peaceiris/actions-gh-pages@v2
+                  with:
+                    deploy_key: ${{ secrets.RH_GITHUB_TOKEN }}
+                  env:
+                    PERSONAL_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                    PUBLISH_BRANCH: gh-pages
+                    PUBLISH_DIR: target/allure-history
+      - name: Allure Report action
+        uses: simple-elf/allure-report-action@master
+        if: always()
+        with:
+          allure_results: target/allure-results
+          allure_history: target/allure-history
+          keep_reports: 5
+
+      - name: Deploy report to Github Pages
+        if: always()
+        uses: peaceiris/actions-gh-pages@v2
+        with:
+          deploy_key: ${{ secrets.RH_GITHUB_TOKEN }}
+        env:
+          PERSONAL_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PUBLISH_BRANCH: gh-pages
+          PUBLISH_DIR: target/allure-history
+
       - name: Delete integration test stack
         if: success()
         run: |
