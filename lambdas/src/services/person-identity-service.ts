@@ -10,13 +10,16 @@ import {
 } from "./models/person-identity-item";
 
 export class PersonIdentityService {
-    constructor(private dynamoDbClient: DynamoDBDocument, private config: Array<string|number>) {}
+    constructor(private dynamoDbClient: DynamoDBDocument, private configService: ConfigService) { }
 
     public async savePersonIdentity(sharedClaims: PersonIdentity, sessionId: string): Promise<string> {
-        const [ tableName, sessionExpirationEpoch] = this.config;
-        const personIdentityItem = this.createPersonIdentityItem(sharedClaims, sessionId, sessionExpirationEpoch as number);
+        const personIdentityItem = this.createPersonIdentityItem(
+            sharedClaims,
+            sessionId,
+            +this.configService.getConfigEntry(CommonConfigKey.SESSION_TTL));
+
         const putSessionCommand = new PutCommand({
-            TableName: tableName as string,
+            TableName: this.configService.getConfigEntry(CommonConfigKey.PERSON_IDENTITY_TABLE_NAME),
             Item: personIdentityItem,
         });
         await this.dynamoDbClient.send(putSessionCommand);
@@ -36,7 +39,7 @@ export class PersonIdentityService {
         };
     }
     private mapAddresses(addresses: Address[]): PersonIdentityAddress[] {
-        if (addresses && addresses.length) {
+        if (addresses?.length) {
             return addresses.map((address) => {
                 return {
                     uprn: address.uprn,
@@ -60,7 +63,7 @@ export class PersonIdentityService {
         return [];
     }
     private mapBirthDates(birthDates: BirthDate[]): PersonIdentityDateOfBirth[] {
-        if (birthDates && birthDates.length) {
+        if (birthDates?.length) {
             return birthDates.map((bd) => {
                 return { value: bd.value };
             });
@@ -68,10 +71,10 @@ export class PersonIdentityService {
         return [];
     }
     private mapNames(names: Name[]): PersonIdentityName[] {
-        if (names && names.length) {
+        if (names?.length) {
             return names.map((name) => {
                 let personIdentityName: PersonIdentityName = { nameParts: [] };
-                if (name.nameParts && name.nameParts.length) {
+                if (name?.nameParts?.length) {
                     personIdentityName.nameParts = name.nameParts.map((namePart) => {
                         return { type: namePart.type, value: namePart.value };
                     });
