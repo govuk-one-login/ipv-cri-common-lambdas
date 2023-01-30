@@ -90,14 +90,12 @@ jobs:
           keep_reports: 5
 
       - name: Deploy report to Github Pages
+        uses: peaceiris/actions-gh-pages@v3
         if: always()
-        uses: peaceiris/actions-gh-pages@v2
         with:
-          deploy_key: ${{ secrets.RH_GITHUB_TOKEN }}
-        env:
-          PERSONAL_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PUBLISH_BRANCH: gh-pages
-          PUBLISH_DIR: target/allure-history
+          publish_branch: 'gh-pages'
+          github_token: ${{ secrets.RH_GITHUB_TOKEN }}
+          publish_dir: 'target/allure-history'
 
       - name: Delete integration test stack
         if: success()
