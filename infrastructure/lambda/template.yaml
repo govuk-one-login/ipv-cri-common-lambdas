@@ -334,8 +334,8 @@ Resources:
       Runtime: nodejs18.x
       CodeUri: ../../lambdas
       FunctionName: !Sub "${AWS::StackName}-SessionFunctionTwo"
-      Layers:
-        - !Sub arn:aws:lambda:${AWS::Region}:094274105915:layer:AWSLambdaPowertoolsTypeScript:6
+      # Layers:
+      #   - !Sub arn:aws:lambda:${AWS::Region}:094274105915:layer:AWSLambdaPowertoolsTypeScript:6
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-sessionTwo"
@@ -381,10 +381,10 @@ Resources:
         EntryPoints:
           - src/handlers/session-handler.ts
         External:
-          - '@aws-lambda-powertools/commons'
-          - '@aws-lambda-powertools/logger'
-          - '@aws-lambda-powertools/metrics'
-          - '@aws-lambda-powertools/tracer'
+          # - '@aws-lambda-powertools/commons'
+          # - '@aws-lambda-powertools/logger'
+          # - '@aws-lambda-powertools/metrics'
+          # - '@aws-lambda-powertools/tracer'
           - '@aws-sdk/*'
 
   SessionFunctionTwoLogGroup:
@@ -435,8 +435,8 @@ Resources:
       CodeUri: ../../lambdas
       Runtime: nodejs18.x
       FunctionName: !Sub "${AWS::StackName}-AuthorizationFunctionTwo"
-      Layers:
-        - !Sub arn:aws:lambda:${AWS::Region}:094274105915:layer:AWSLambdaPowertoolsTypeScript:6
+      # Layers:
+        # - !Sub arn:aws:lambda:${AWS::Region}:094274105915:layer:AWSLambdaPowertoolsTypeScript:6
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-authorizationTwo"
@@ -464,10 +464,10 @@ Resources:
         EntryPoints:
           - src/handlers/authorization-handler.ts
         External:
-          - '@aws-lambda-powertools/commons'
-          - '@aws-lambda-powertools/logger'
-          - '@aws-lambda-powertools/metrics'
-          - '@aws-lambda-powertools/tracer'
+        #   - '@aws-lambda-powertools/commons'
+        #   - '@aws-lambda-powertools/logger'
+        #   - '@aws-lambda-powertools/metrics'
+        #   - '@aws-lambda-powertools/tracer'
           - '@aws-sdk/*'
 
   AuthorizationFunctionTwoLogGroup:
@@ -521,8 +521,8 @@ Resources:
       CodeUri: ../../lambdas
       Runtime: nodejs18.x
       FunctionName: !Sub "${AWS::StackName}-AccessTokenFunctionTwo"
-      Layers:
-        - !Sub arn:aws:lambda:${AWS::Region}:094274105915:layer:AWSLambdaPowertoolsTypeScript:6
+      # Layers:
+        # - !Sub arn:aws:lambda:${AWS::Region}:094274105915:layer:AWSLambdaPowertoolsTypeScript:6
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-access-token-2"
@@ -550,10 +550,11 @@ Resources:
         EntryPoints:
           - src/handlers/access-token-handler.ts
         External:
-          - '@aws-lambda-powertools/commons'
-          - '@aws-lambda-powertools/logger'
-          - '@aws-lambda-powertools/metrics'
-          - '@aws-lambda-powertools/tracer'
+          # - '@aws-lambda-powertools/commons'
+          # - '@aws-lambda-powertools/logger'
+          # - '@aws-lambda-powertools/metrics'
+          # - '@aws-lambda-powertools/tracer'
+          - '@aws-sdk/*'
 
   AccessTokenTwoFunctionLogGroup:
     Type: AWS::Logs::LogGroup
