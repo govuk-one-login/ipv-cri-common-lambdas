@@ -85,8 +85,8 @@ jobs:
         uses: simple-elf/allure-report-action@master
         if: always()
         with:
-          allure_results: target/allure-results
-          allure_history: target/allure-history
+          allure_results: integration-tests/target/allure-results
+          allure_history: integration-tests/target/allure-history
           keep_reports: 5
 
       - name: Deploy report to Github Pages
@@ -95,7 +95,7 @@ jobs:
         with:
           publish_branch: 'gh-pages'
           github_token: ${{ secrets.RH_GITHUB_TOKEN }}
-          publish_dir: 'target/allure-history'
+          publish_dir: 'integration-tests/target/allure-history'
 
       - name: Delete integration test stack
         if: success()
