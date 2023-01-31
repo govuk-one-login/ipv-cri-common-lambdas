@@ -5,6 +5,7 @@ import { ClientConfigKey, CommonConfigKey } from "./config-keys";
 
 const DEFAULT_AUTHORIZATION_CODE_TTL_IN_SECS = 600;
 const PARAMETER_PREFIX = process.env.AWS_STACK_NAME || "";
+const ACCESS_TOKEN_TTL = process.env.ACCESS_TOKEN_TTL_IN_SECS || 3600;
 
 export class ConfigService {
     private readonly authorizationCodeTtlInMillis: number;
@@ -86,6 +87,14 @@ export class ConfigService {
     public getSessionExpirationEpoch() {
         const sessionTtl = this.getConfigEntry(CommonConfigKey.SESSION_TTL);
         return Date.now() + parseInt(sessionTtl, 10) * 1000;
+    }
+
+    public getBearerAccessTokenTtl(): number {
+        return Number(ACCESS_TOKEN_TTL);
+    }
+
+    public getBearerAccessTokenExpirationEpoch(): number {
+        return Math.floor((new Date().getTime() + this.getBearerAccessTokenTtl() * 1000) / 1000);
     }
 
     private getParameterName(parameterNameSuffix: string) {

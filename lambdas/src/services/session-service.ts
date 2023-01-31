@@ -1,17 +1,18 @@
-import { DynamoDBDocument, GetCommand, UpdateCommand, QueryCommandInput } from "@aws-sdk/lib-dynamodb";
-import { SessionItem } from "../types/session-item";
-import { BearerAccessToken } from "../types/bearer-access-token";
-import { ConfigService } from "./config-service";
-import { randomUUID } from "crypto";
-import { InvalidAccessTokenError, SessionNotFoundError } from "../types/errors";
+import {DynamoDBDocument, GetCommand, PutCommand, QueryCommandInput, UpdateCommand} from "@aws-sdk/lib-dynamodb";
+import {SessionItem} from "../types/session-item";
+import {BearerAccessToken} from "../types/bearer-access-token";
+import {ConfigService} from "../common/config/config-service";
+import {randomUUID} from "crypto";
+import {InvalidAccessTokenError, SessionNotFoundError} from "../types/errors";
+import {SessionRequestSummary} from "./models/session-request-summary";
+import {CommonConfigKey} from "../common/config/config-keys";
 
 export class SessionService {
     constructor(private dynamoDbClient: DynamoDBDocument, private configService: ConfigService) {}
     
     public async getSession(sessionId: string | undefined): Promise<SessionItem> {
-        const tableName = await this.configService.getSessionTableName();
         const getSessionCommand = new GetCommand({
-            TableName: tableName,
+            TableName: this.getSessionTableName(),
             Key: {
                 sessionId: sessionId,
             },
@@ -24,12 +25,11 @@ export class SessionService {
     }
 
     public async createAuthorizationCode(sessionItem: SessionItem) {
-        const tableName = await this.configService.getSessionTableName();
         sessionItem.authorizationCode = randomUUID();
         sessionItem.authorizationCodeExpiryDate = this.configService.getAuthorizationCodeExpirationEpoch();
 
         const updateSessionCommand = new UpdateCommand({
-            TableName: tableName,
+            TableName: this.getSessionTableName(),
             Key: { sessionId: sessionItem.sessionId },
             UpdateExpression: "SET authorizationCode=:authCode, authorizationCodeExpiryDate=:authCodeExpiry",
             ExpressionAttributeValues: {
@@ -41,10 +41,8 @@ export class SessionService {
     }
 
     public async getSessionByAuthorizationCode(code: string | undefined): Promise<SessionItem> {
-        const tableName = await this.configService.getSessionTableName();
-
         const params: QueryCommandInput = {
-            TableName: tableName,
+            TableName: this.getSessionTableName(),
             IndexName: "authorizationCode-index",
             KeyConditionExpression: "authorizationCode = :authorizationCode",
             ExpressionAttributeValues: {
@@ -62,10 +60,8 @@ export class SessionService {
     }
 
     public async createAccessTokenCode(sessionItem: SessionItem, accessToken: BearerAccessToken) {
-        const tableName = await this.configService.getSessionTableName();
-        console.log(`sessionItem ${sessionItem}, accessToken ${JSON.stringify(accessToken)}`);
         const updateSessionCommand = new UpdateCommand({
-            TableName: tableName,
+            TableName: this.getSessionTableName(),
             Key: { sessionId: sessionItem.sessionId },
             UpdateExpression:
                 "SET accessToken=:accessTokenCode, accessTokenExpiryDate=:accessTokenExpiry REMOVE authorizationCode",
@@ -74,7 +70,32 @@ export class SessionService {
                 ":accessTokenExpiry": this.configService.getBearerAccessTokenExpirationEpoch(),
             },
         });
-        console.log(`updateSessionCommand ${updateSessionCommand}`);
         await this.dynamoDbClient.send(updateSessionCommand);
+    }
+
+    public async saveSession(sessionRequest: SessionRequestSummary): Promise<string> {
+        const sessionExpirationEpoch = this.configService.getSessionExpirationEpoch();
+        const putSessionCommand = new PutCommand({
+            TableName: this.configService.getConfigEntry(CommonConfigKey.SESSION_TABLE_NAME),
+            Item: {
+                sessionId: randomUUID(),
+                createdDate: Date.now(),
+                expiryDate: sessionExpirationEpoch,
+                state: sessionRequest.state,
+                clientId: sessionRequest.clientId,
+                redirectUri: sessionRequest.redirectUri,
+                subject: sessionRequest.subject,
+                persistentSessionId: sessionRequest.persistentSessionId,
+                clientSessionId: sessionRequest.clientSessionId,
+                clientIpAddress: sessionRequest.clientIpAddress,
+                attemptCount: 0,
+            },
+        });
+        await this.dynamoDbClient.send(putSessionCommand);
+        return putSessionCommand.input.Item!.sessionId;
+    }
+
+    private getSessionTableName(): string {
+        return this.configService.getConfigEntry(CommonConfigKey.SESSION_TABLE_NAME);
     }
 }
