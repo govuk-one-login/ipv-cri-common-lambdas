@@ -59,3 +59,16 @@ export namespace JwtVerifier {
         REDIRECT_URI = "redirect_uri",
     }
 }
+
+export class JwtVerifierFactory {
+    public constructor(private readonly logger: Logger) {}
+    public create(jwtSigningAlgo: string, jwtPublicSigningKey: string): JwtVerifier {
+        return new JwtVerifier(
+                {
+                    jwtSigningAlgorithm: jwtSigningAlgo,
+                    publicSigningJwk: jwtPublicSigningKey,
+                },
+                this.logger,
+            );
+    }
+}
