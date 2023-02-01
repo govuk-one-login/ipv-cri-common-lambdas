@@ -20,13 +20,14 @@ export class JwtVerifier {
             const jwtVerifyOptions = this.createJwtVerifyOptions(signingAlgorithm, expectedClaimValues);
             const { payload } = await jwtVerify(encodedJwt, publicKey, jwtVerifyOptions);
 
-            if (mandatoryClaims && mandatoryClaims.size) {
-                mandatoryClaims.forEach((mandatoryClaim) => {
-                    if (!payload[mandatoryClaim]) {
-                        throw new Error(`Claims-set missing mandatory claim: ${mandatoryClaim}`);
-                    }
-                });
-            }
+            if (!mandatoryClaims || mandatoryClaims?.size === 0) throw new Error("No mandatory claims provided");
+
+            mandatoryClaims?.forEach((mandatoryClaim) => {
+                if (!payload[mandatoryClaim]) {
+                    throw new Error(`Claims-set missing mandatory claim: ${mandatoryClaim}`);
+                }
+            });
+            
             return payload;
         } catch (error) {
             this.logger.error("JWT verification failed", error as Error);
