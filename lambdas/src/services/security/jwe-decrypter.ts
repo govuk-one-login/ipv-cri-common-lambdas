@@ -4,7 +4,7 @@ import { DecryptCommand, EncryptionAlgorithmSpec, KMSClient } from "@aws-sdk/cli
 
 export class JweDecrypter {
     private kmsEncryptionKeyId: string | undefined;
-    constructor(private readonly getEncryptionKeyId: () => string) {}
+    constructor(private readonly kmsClient: KMSClient, private readonly getEncryptionKeyId: () => string) {}
 
     public async decryptJwe(compactJwe: string): Promise<Buffer> {
         const { 0: jweProtectedHeader, 1: encryptedKey, 2: iv, 3: ciphertext, 4: tag, length } = compactJwe.split(".");
@@ -57,7 +57,6 @@ export class JweDecrypter {
         if (!this.kmsEncryptionKeyId) {
             this.kmsEncryptionKeyId = this.getEncryptionKeyId();
         }
-        const client = new KMSClient({ region: process.env.AWS_REGION });
         const kmsDecryptionKeyId = this.kmsEncryptionKeyId;
         const jweEncryptedKeyAsBytes = base64url.decode(encryptedKey);
         const decryptCommand = new DecryptCommand({
@@ -65,7 +64,7 @@ export class JweDecrypter {
             KeyId: kmsDecryptionKeyId,
             EncryptionAlgorithm: EncryptionAlgorithmSpec.RSAES_OAEP_SHA_256,
         });
-        const response = await client.send(decryptCommand);
+        const response = await this.kmsClient.send(decryptCommand);
         return response.Plaintext!;
     }
 }

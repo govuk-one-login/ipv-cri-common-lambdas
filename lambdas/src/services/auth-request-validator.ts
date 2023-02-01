@@ -1,12 +1,11 @@
 import { APIGatewayProxyEventQueryStringParameters } from "aws-lambda/trigger/api-gateway-proxy";
 import { ValidationResult } from "../types/validation-result";
-import { ConfigService } from "../services/config-service";
 
 export class AuthorizationRequestValidator {
-    constructor(private configService: ConfigService) {}
     async validate(
         queryStringParams: APIGatewayProxyEventQueryStringParameters | null,
         sessionClientId: string,
+        expectedRedirectUri: string,
     ): Promise<ValidationResult> {
         if (!queryStringParams) {
             return { isValid: false, errorMsg: "Missing querystring parameters" };
@@ -28,8 +27,6 @@ export class AuthorizationRequestValidator {
         if (clientId !== sessionClientId) {
             errorMsg = "Invalid client_id parameter";
         }
-
-        const expectedRedirectUri = await this.configService.getRedirectUri(clientId as string);
         if (redirectUri !== expectedRedirectUri) {
             errorMsg = "Invalid redirect_uri parameter";
         }

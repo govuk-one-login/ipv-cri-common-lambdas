@@ -1,14 +1,12 @@
-import { ConfigService } from "./config-service";
 import { SessionItem } from "../types/session-item";
-import { Logger } from "@aws-lambda-powertools/logger";
-import { JwtVerifier } from "./jwt-verifier";
 import { InvalidAccessTokenError, InvalidPayloadError, InvalidRequestError } from "../types/errors";
 import { RequestPayload } from "../types/request_payload";
-
-const logger = new Logger();
+import {JwtVerifier, JwtVerifierFactory} from "../common/security/jwt-verifier";
+import {ClientConfigKey} from "../common/config/config-keys";
 
 export class AccessTokenRequestValidator {
-    constructor(private configService: ConfigService, private jwtVerifier: JwtVerifier) {}
+
+    public constructor(private readonly jwtVerifierFactory: JwtVerifierFactory) {}
 
     public validatePayload(tokenRequestBody: string | null): RequestPayload {
         if (!tokenRequestBody) throw new InvalidRequestError("Invalid request: missing body");
@@ -37,24 +35,23 @@ export class AccessTokenRequestValidator {
         return { grant_type, code, redirectUri, client_assertion_type, client_assertion };
     }
 
-    public validateTokenRequestToRecord(authCode: string, sessionItem: SessionItem) {
+    public validateTokenRequestToRecord(authCode: string, sessionItem: SessionItem, expectedRedirectUri: string) {
         if (!sessionItem) return new InvalidPayloadError("Invalid sessionItem");
         if (authCode !== sessionItem.authorizationCode) throw new InvalidAccessTokenError();
 
-        const configRedirectUri = this.configService.getRedirectUri(sessionItem.clientId);
-        if (configRedirectUri !== sessionItem.redirectUri) {
+        if (expectedRedirectUri !== sessionItem.redirectUri) {
             throw new InvalidRequestError(
-                `Invalid request: redirect uri ${sessionItem.redirectUri} does not match configuration uri ${configRedirectUri}`,
+                `Invalid request: redirect uri ${sessionItem.redirectUri} does not match configuration uri ${expectedRedirectUri}`,
             );
         }
     }
+    public async verifyJwtSignature(jwt: string, clientId: string, clientConfig: Map<string,string>): Promise<void> {
+        const jwtVerifier = this.jwtVerifierFactory.create(
+            clientConfig.get(ClientConfigKey.JWT_SIGNING_ALGORITHM)!,
+            clientConfig.get(ClientConfigKey.JWT_PUBLIC_SIGNING_KEY)!);
 
-    public async verifyJwtSignature(jwt: Buffer, clientId: string, audience: string): Promise<void> {
-        if (!audience) throw new InvalidRequestError("audience is missing");
-
-        const jwtPayload = await this.jwtVerifier.verify(
-            jwt,
-            clientId,
+        const jwtPayload = await jwtVerifier.verify(
+            Buffer.from(jwt, "utf-8"),
             new Set([
                 JwtVerifier.ClaimNames.EXPIRATION_TIME,
                 JwtVerifier.ClaimNames.SUBJECT,
@@ -63,12 +60,13 @@ export class AccessTokenRequestValidator {
                 JwtVerifier.ClaimNames.JWT_ID,
             ]),
             new Map([
-                [JwtVerifier.ClaimNames.AUDIENCE, audience],
+                [JwtVerifier.ClaimNames.AUDIENCE, clientConfig.get(ClientConfigKey.JWT_AUDIENCE)!],
                 [JwtVerifier.ClaimNames.SUBJECT, clientId],
                 [JwtVerifier.ClaimNames.ISSUER, clientId],
             ]),
         );
-
-        if (!jwtPayload.jti) throw new InvalidRequestError("jti is missing");
+        if (!jwtPayload) {
+            throw new InvalidRequestError("JWT signature verification failed");
+        }
     }
 }
