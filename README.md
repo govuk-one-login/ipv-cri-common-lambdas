@@ -53,11 +53,3 @@ If you have not installed `pre-commit` then please do so [here](https://pre-comm
 
 `STACK_NAME=di-ipv-cri-common-api-your-stack-name ENVIRONMENT=dev API_GATEWAY_ID_PRIVATE=xxxx IPV_CORE_STUB_BASIC_AUTH_USER=xxxx IPV_CORE_STUB_BASIC_AUTH_PASSWORD=xxxx IPV_CORE_STUB_URL="https://di-ipv-core-stub.london.cloudapps.digital" gradle integration-tests:cucumber
 `
-
-## Allure reporting
-
-First run the integration tests as shown above.
-Then, run the command below to generate Allure report.
-
-`allure serve integration-tests/target/allure-results`
-
