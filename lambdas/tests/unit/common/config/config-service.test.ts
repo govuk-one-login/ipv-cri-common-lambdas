@@ -221,4 +221,12 @@ describe("ConfigService", () => {
             expect(epoch).toEqual(1675382500000);
         });
     });
+
+    describe("getBearerAccessTokenExpirationEpoch", () => {
+        jest.spyOn(Date.prototype, "getTime").mockReturnValueOnce(1675382400000);
+        it("should return the ttl of the access token", () => {
+            const output = configService.getBearerAccessTokenExpirationEpoch();
+            expect(output).toEqual(1675382500);
+        });
+    });
 });
