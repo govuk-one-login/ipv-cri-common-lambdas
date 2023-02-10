@@ -68,9 +68,6 @@ export class ConfigService {
             throw new Error("Missing environment variable: SQS_AUDIT_EVENT_QUEUE_URL");
         }
         const issuer = this.getConfigEntry(CommonConfigKey.VC_ISSUER);
-        if (!issuer) {
-            throw new Error(`${CommonConfigKey.VC_ISSUER} config entry not present`);
-        }
         return {
             auditEventNamePrefix,
             issuer,
