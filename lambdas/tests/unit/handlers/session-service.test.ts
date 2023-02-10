@@ -5,6 +5,7 @@ import { DynamoDBDocument, GetCommand, UpdateCommand } from "@aws-sdk/lib-dynamo
 import { InvalidAccessTokenError, SessionNotFoundError } from "../../../src/types/errors";
 import { SessionItem } from "../../../src/types/session-item";
 
+
 jest.mock("@aws-sdk/lib-dynamodb", () => {
     return {
         __esModule: true,
