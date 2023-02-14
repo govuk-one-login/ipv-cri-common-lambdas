@@ -21,7 +21,7 @@ const configService = new ConfigService(ssmClient);
 const initPromise = configService.init([CommonConfigKey.SESSION_TABLE_NAME]);
 const AUTHORIZATION_SENT_METRIC = "authorization_sent";
 
-class AuthorizationLambda implements LambdaInterface {
+export class AuthorizationLambda implements LambdaInterface {
 
     constructor(private readonly sessionService: SessionService,
                 private readonly authorizationRequestValidator: AuthorizationRequestValidator) {}
