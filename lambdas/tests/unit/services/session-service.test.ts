@@ -1,6 +1,6 @@
 import { SessionService } from "../../../src/services/session-service";
 import { ConfigService } from "../../../src/common/config/config-service";
-import { SSMClient} from "@aws-sdk/client-ssm";
+import { SSMClient } from "@aws-sdk/client-ssm";
 import { DynamoDBDocument, GetCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import { InvalidAccessTokenError, SessionNotFoundError } from "../../../src/types/errors";
 import { SessionItem } from "../../../src/types/session-item";
@@ -35,7 +35,7 @@ describe("session-service", () => {
             return jest.fn().mockImplementation(() => {
                 return mockPromise;
             });
-        }
+        };
         mockDynamoDbClient.prototype.send = impl();
         mockDynamoDbClient.prototype.query = impl();
     });
@@ -45,16 +45,16 @@ describe("session-service", () => {
             const tableName = "sessionTable";
             const sessionVal = "myItem";
             const sessionId = "1";
-            jest.spyOn(mockDynamoDbClient.prototype, 'send').mockImplementation(() => {
+            jest.spyOn(mockDynamoDbClient.prototype, "send").mockImplementation(() => {
                 return Promise.resolve({
-                    Item: sessionVal
+                    Item: sessionVal,
                 });
-            })
-            jest.spyOn(mockConfigService.prototype, 'getConfigEntry').mockReturnValue(tableName);
+            });
+            jest.spyOn(mockConfigService.prototype, "getConfigEntry").mockReturnValue(tableName);
             const output = await sessionService.getSession(sessionId);
             expect(output).toBe("myItem");
             expect(mockGetCommand).toHaveBeenCalled();
-            expect(mockGetCommand).toHaveBeenCalledWith({TableName: tableName, Key: {sessionId: sessionId}});
+            expect(mockGetCommand).toHaveBeenCalledWith({ TableName: tableName, Key: { sessionId: sessionId } });
             expect(mockDynamoDbClient.prototype.send).toHaveBeenCalled();
         });
 
@@ -63,10 +63,10 @@ describe("session-service", () => {
             try {
                 const tableName = "sessionTable";
                 const sessionId = "1";
-                jest.spyOn(mockDynamoDbClient.prototype, 'send').mockImplementation(() => {
+                jest.spyOn(mockDynamoDbClient.prototype, "send").mockImplementation(() => {
                     return Promise.resolve({});
-                })
-                jest.spyOn(mockConfigService.prototype, 'getConfigEntry').mockReturnValue(tableName);
+                });
+                jest.spyOn(mockConfigService.prototype, "getConfigEntry").mockReturnValue(tableName);
                 await sessionService.getSession(sessionId);
             } catch (err) {
                 expect(mockGetCommand).toHaveBeenCalled();
@@ -88,7 +88,7 @@ describe("session-service", () => {
                 accessToken: "",
                 accessTokenExpiryDate: 0,
             };
-            jest.spyOn(mockConfigService.prototype, 'getConfigEntry').mockReturnValue(tableName);
+            jest.spyOn(mockConfigService.prototype, "getConfigEntry").mockReturnValue(tableName);
             expect.assertions(2);
             await sessionService.createAuthorizationCode(sessionItem);
             expect(mockUpdateCommand).toHaveBeenCalled();
@@ -108,10 +108,10 @@ describe("session-service", () => {
         it("should call dynamodb with the authorization code and tablename", async () => {
             const tableName = "sessionTable";
             const authCode = "123";
-            jest.spyOn(mockConfigService.prototype, 'getConfigEntry').mockReturnValue(tableName);
-            jest.spyOn(mockDynamoDbClient.prototype, 'query').mockImplementation(() => {
+            jest.spyOn(mockConfigService.prototype, "getConfigEntry").mockReturnValue(tableName);
+            jest.spyOn(mockDynamoDbClient.prototype, "query").mockImplementation(() => {
                 return Promise.resolve({ Items: ["1"] } as never);
-            })
+            });
             expect.assertions(3);
             const output = await sessionService.getSessionByAuthorizationCode(authCode);
             expect(mockDynamoDbClient.prototype.query).toHaveBeenCalled();
@@ -127,10 +127,10 @@ describe("session-service", () => {
         it("should throw a Invalid Access token Error when Session not found", async () => {
             const tableName = "sessionTable";
             const authCode = "123";
-            jest.spyOn(mockConfigService.prototype, 'getConfigEntry').mockReturnValue(tableName);
-            jest.spyOn(mockDynamoDbClient.prototype, 'query').mockImplementation(() => {
+            jest.spyOn(mockConfigService.prototype, "getConfigEntry").mockReturnValue(tableName);
+            jest.spyOn(mockDynamoDbClient.prototype, "query").mockImplementation(() => {
                 return Promise.resolve({} as never);
-            })
+            });
             expect.assertions(1);
             try {
                 await sessionService.getSessionByAuthorizationCode(authCode);
