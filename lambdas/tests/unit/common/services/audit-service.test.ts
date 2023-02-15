@@ -1,6 +1,6 @@
 import { SendMessageCommand, SQSClient } from "@aws-sdk/client-sqs";
 import { AuditService } from "../../../../src/common/services/audit-service";
-import { AuditEventContext, AuditEventType } from "../../../../src/common/services/models/audit-event";
+import { AuditEventContext, AuditEventType } from "../../../../src/types/audit-event";
 
 jest.mock("@aws-sdk/client-sqs", () => {
     return {

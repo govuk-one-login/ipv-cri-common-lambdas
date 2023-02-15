@@ -5,7 +5,7 @@ import {
     SessionRequestValidator,
     SessionRequestValidatorFactory,
 } from "../../../src/services/session-request-validator";
-import { ClientConfigKey } from "../../../src/common/config/config-keys";
+import { ClientConfigKey } from "../../../src/types/config-keys";
 
 describe("session-request-validator.ts", () => {
     const logger = new Logger();

@@ -1,8 +1,8 @@
-import { ValidationResult } from "../common/services/models/validation-result";
+import { ValidationResult } from "../types/validation-result";
 import { JwtVerifier } from "../common/security/jwt-verifier";
 import { JWTPayload } from "jose";
-import { SessionRequestValidationConfig } from "./session-request-validation-config";
-import { ClientConfigKey } from "../common/config/config-keys";
+import { SessionRequestValidationConfig } from "../types/session-request-validation-config";
+import { ClientConfigKey } from "../types/config-keys";
 import { Logger } from "@aws-lambda-powertools/logger";
 
 export class SessionRequestValidator {

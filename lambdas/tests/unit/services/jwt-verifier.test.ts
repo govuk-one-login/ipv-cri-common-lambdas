@@ -1,5 +1,5 @@
 import { Logger } from "@aws-lambda-powertools/logger";
-import { JwtVerificationConfig } from "../../../src/common/config/jwt-verification-config";
+import { JwtVerificationConfig } from "../../../src/types/jwt-verification-config";
 import { JwtVerifier } from "../../../src/common/security/jwt-verifier";
 import * as jose from 'jose'
 import { importJWK, JWTHeaderParameters, jwtVerify } from "jose";

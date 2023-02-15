@@ -9,7 +9,7 @@ import {getSessionId} from "../common/utils/request-utils";
 import {AwsClientType, createClient} from "../common/aws-client-factory";
 import {DynamoDBDocument} from "@aws-sdk/lib-dynamodb";
 import {SSMClient} from "@aws-sdk/client-ssm";
-import {ClientConfigKey, CommonConfigKey} from "../common/config/config-keys";
+import {ClientConfigKey, CommonConfigKey} from "../types/config-keys";
 import {Tracer} from "@aws-lambda-powertools/tracer";
 
 const dynamoDbClient = createClient(AwsClientType.DYNAMO) as DynamoDBDocument;
