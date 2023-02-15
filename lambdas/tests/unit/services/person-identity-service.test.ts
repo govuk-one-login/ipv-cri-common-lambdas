@@ -1,10 +1,8 @@
-import { SSMClient } from "@aws-sdk/client-ssm";
 import { DynamoDBDocument, PutCommand } from "@aws-sdk/lib-dynamodb";
 import { CommonConfigKey } from "../../../src/common/config/config-keys";
 import { ConfigService } from "../../../src/common/config/config-service";
 import { PersonIdentity } from "../../../src/common/services/models/person-identity";
 import { PersonIdentityService } from "../../../src/services/person-identity-service";
-import { Config } from "../../../src/types/config";
 
 jest.mock("@aws-sdk/lib-dynamodb", () => {
     const mockPut = jest.fn();
@@ -110,6 +108,26 @@ describe("PersonIdentityService", () => {
             }
         });
     });
+
+    it("should avoid formatting blank identities", async () => {
+        const newMockPerson: PersonIdentity = {
+            name: [],
+            birthDate: [],
+            address: []
+        }
+        await personIdentityService.savePersonIdentity(newMockPerson, sessionId);
+
+        expect(mockPutCommand).toHaveBeenCalledWith({
+            TableName: "PersonIdentityTable",
+            Item: {
+                sessionId: "test-session-id",
+                addresses: [],
+                birthDates: [],
+                expiryDate: 1675382400,
+                names: []
+            }
+        });
+    })
 
     it("should save the person identity to dynamo db", async () => {
         await personIdentityService.savePersonIdentity(mockPerson, sessionId);

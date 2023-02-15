@@ -18,7 +18,7 @@ export class SessionRequestValidator {
         } else if (!expectedRedirectUri) {
             errorMsg = `Unable to retrieve redirect URI for client_id: ${requestBodyClientId}`;
         } else if (expectedRedirectUri !== payload.redirect_uri) {
-            errorMsg = `redirect uri ${payload.redirect_uri} does not match configuration uri ${expectedRedirectUri}`;
+            errorMsg = `Redirect uri ${payload.redirect_uri} does not match configuration uri ${expectedRedirectUri}`;
         }
 
         return { isValid: !errorMsg, errorMsg: errorMsg, validatedObject: payload };

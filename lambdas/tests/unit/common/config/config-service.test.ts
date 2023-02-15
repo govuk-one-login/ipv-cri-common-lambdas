@@ -202,14 +202,6 @@ describe("ConfigService", () => {
         });
     });
 
-    describe("getAuthorizationCodeExpirationEpoch", () => {
-        jest.spyOn(global.Date, 'now').mockReturnValueOnce(1675382400000);
-        it("should get the authorization expiration", () => {
-            const epoch = configService.getAuthorizationCodeExpirationEpoch();
-            expect(epoch).toEqual(1675382500000);
-        });
-    });
-
     describe("getSessionExpirationEpoch", () => {
         jest.spyOn(global.Date, 'now').mockReturnValueOnce(1675382400000);
         it("should get the session expiration", async () => {
@@ -227,6 +219,22 @@ describe("ConfigService", () => {
         it("should return the ttl of the access token", () => {
             const output = configService.getBearerAccessTokenExpirationEpoch();
             expect(output).toEqual(1675382500);
+        });
+    });
+
+    describe("getAuthorizationCodeExpirationEpoch", () => {
+        it("should get the authorization expiration", () => {
+            jest.spyOn(global.Date, 'now').mockReturnValueOnce(1675382400000);
+            const epoch = configService.getAuthorizationCodeExpirationEpoch();
+            expect(epoch).toEqual(1675382500000);
+        });
+
+        it("should use the default expiration if not available", () => {
+            jest.spyOn(global.Date, 'now').mockReturnValueOnce(1675382400000);
+            process.env.AUTHORIZATION_CODE_TTL = undefined;
+            configService = new ConfigService(mockSsmClient.prototype);
+            const epoch = configService.getAuthorizationCodeExpirationEpoch();
+            expect(epoch).toEqual(1675383000000);
         });
     });
 });
