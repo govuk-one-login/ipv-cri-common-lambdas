@@ -103,23 +103,22 @@ describe("token-request-validator.ts", () => {
             ).toThrow("Access token expired");
         });
 
-        it("should throw exception the authorizationCode within the sessionItem does not match the authCode", async () => {
+        it("should pass when the authorizationCode within the sessionItem does matches the authCode", async () => {
             const authCode = "1234";
             const expectedRedirectUri = "http://abc123.com";
             const sessionItem: SessionItem = {
                 sessionId: "1",
                 clientId: "1",
                 clientSessionId: "1",
-                authorizationCode: "test",
+                authorizationCode: authCode,
                 authorizationCodeExpiryDate: 0,
-                redirectUri: "http://abc123.com",
+                redirectUri: expectedRedirectUri,
                 accessToken: "test",
                 accessTokenExpiryDate: 0,
             };
-
             expect(() =>
                 accessTokenRequestValidator.validateTokenRequestToRecord(authCode, sessionItem, expectedRedirectUri),
-            ).toThrow("Access token expired");
+            ).not.toThrow();
         });
 
         it("should fail when the expectedRedirectUri does not match", async () => {
