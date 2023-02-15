@@ -1,15 +1,15 @@
-import {DynamoDBDocument, GetCommand, PutCommand, QueryCommandInput, UpdateCommand} from "@aws-sdk/lib-dynamodb";
-import {SessionItem} from "../types/session-item";
-import {BearerAccessToken} from "../types/bearer-access-token";
-import {ConfigService} from "../common/config/config-service";
-import {randomUUID} from "crypto";
-import {InvalidAccessTokenError, SessionNotFoundError} from "../types/errors";
-import {SessionRequestSummary} from "../types/session-request-summary";
-import {CommonConfigKey} from "../types/config-keys";
+import { DynamoDBDocument, GetCommand, PutCommand, QueryCommandInput, UpdateCommand } from "@aws-sdk/lib-dynamodb";
+import { SessionItem } from "../types/session-item";
+import { BearerAccessToken } from "../types/bearer-access-token";
+import { ConfigService } from "../common/config/config-service";
+import { randomUUID } from "crypto";
+import { InvalidAccessTokenError, SessionNotFoundError } from "../types/errors";
+import { SessionRequestSummary } from "../types/session-request-summary";
+import { CommonConfigKey } from "../types/config-keys";
 
 export class SessionService {
     constructor(private dynamoDbClient: DynamoDBDocument, private configService: ConfigService) {}
-    
+
     public async getSession(sessionId: string | undefined): Promise<SessionItem> {
         const getSessionCommand = new GetCommand({
             TableName: this.getSessionTableName(),

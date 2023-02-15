@@ -28,7 +28,7 @@ export const enum AwsClientType {
     DYNAMO,
     SQS,
     SSM,
-    KMS
+    KMS,
 }
 export const createClient = (clientType: AwsClientType) => {
     switch (clientType) {
