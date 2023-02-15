@@ -1,4 +1,4 @@
-import { JwtVerificationConfig } from "../../../src/common/config/jwt-verification-config";
+import { JwtVerificationConfig } from "../../../src/types/jwt-verification-config";
 import { AccessTokenLambda } from "../../../src/handlers/access-token-handler";
 import { ConfigService } from "../../../src/common/config/config-service";
 import { AccessTokenService } from "../../../src/services/access-token-service";
