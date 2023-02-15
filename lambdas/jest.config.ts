@@ -9,6 +9,11 @@ export default {
     },
     clearMocks: true,
     collectCoverage: true,
+    collectCoverageFrom: [
+        'src/**/*.{js,ts}',
+        '!**/tests/**',
+        "!src/types/**"
+    ],
     coverageDirectory: "coverage",
     coverageProvider: "v8",
     coveragePathIgnorePatterns: ["config.ts", "node_modules/"],
