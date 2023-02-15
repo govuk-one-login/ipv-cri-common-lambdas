@@ -4,4 +4,4 @@ export interface RequestPayload {
     redirectUri: string;
     client_assertion_type: string;
     client_assertion: string;
-};
+}

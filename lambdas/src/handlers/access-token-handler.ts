@@ -1,25 +1,23 @@
-import {APIGatewayProxyEvent, APIGatewayProxyResult} from "aws-lambda";
-import {LambdaInterface} from "@aws-lambda-powertools/commons";
-import {Metrics} from "@aws-lambda-powertools/metrics";
-import {Logger} from "@aws-lambda-powertools/logger";
-import {SessionService} from "../services/session-service";
-import {ConfigService} from "../common/config/config-service";
-import {AccessTokenRequestValidator } from "../services/token-request-validator";
-import {AccessTokenService} from "../services/access-token-service";
-import {JwtVerifierFactory} from "../common/security/jwt-verifier";
-import {AwsClientType, createClient} from "../common/aws-client-factory";
-import {DynamoDBDocument} from "@aws-sdk/lib-dynamodb";
-import {SSMClient} from "@aws-sdk/client-ssm";
-import {ClientConfigKey, CommonConfigKey} from "../types/config-keys";
+import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
+import { LambdaInterface } from "@aws-lambda-powertools/commons";
+import { Metrics } from "@aws-lambda-powertools/metrics";
+import { Logger } from "@aws-lambda-powertools/logger";
+import { SessionService } from "../services/session-service";
+import { ConfigService } from "../common/config/config-service";
+import { AccessTokenRequestValidator } from "../services/token-request-validator";
+import { AccessTokenService } from "../services/access-token-service";
+import { JwtVerifierFactory } from "../common/security/jwt-verifier";
+import { AwsClientType, createClient } from "../common/aws-client-factory";
+import { DynamoDBDocument } from "@aws-sdk/lib-dynamodb";
+import { SSMClient } from "@aws-sdk/client-ssm";
+import { ClientConfigKey, CommonConfigKey } from "../types/config-keys";
 
 const logger = new Logger();
 const metrics = new Metrics();
 const dynamoDbClient = createClient(AwsClientType.DYNAMO) as DynamoDBDocument;
 const ssmClient = createClient(AwsClientType.SSM) as SSMClient;
 const configService = new ConfigService(ssmClient);
-const initPromise = configService.init([
-    CommonConfigKey.SESSION_TABLE_NAME,
-    CommonConfigKey.SESSION_TTL]);
+const initPromise = configService.init([CommonConfigKey.SESSION_TABLE_NAME, CommonConfigKey.SESSION_TTL]);
 
 export class AccessTokenLambda implements LambdaInterface {
     constructor(
@@ -46,12 +44,14 @@ export class AccessTokenLambda implements LambdaInterface {
             this.requestValidator.validateTokenRequestToRecord(
                 requestPayload.code,
                 sessionItem,
-                clientConfig!.get(ClientConfigKey.JWT_REDIRECT_URI)!);
+                clientConfig!.get(ClientConfigKey.JWT_REDIRECT_URI)!,
+            );
 
             await this.requestValidator.verifyJwtSignature(
                 requestPayload.client_assertion,
                 sessionItem.clientId,
-                clientConfig!);
+                clientConfig!,
+            );
 
             const bearerAccessTokenTTL = configService.getBearerAccessTokenTtl();
             const accessTokenResponse = await this.accessTokenService.createBearerAccessToken(bearerAccessTokenTTL);
@@ -91,5 +91,6 @@ export class AccessTokenLambda implements LambdaInterface {
 const handlerClass = new AccessTokenLambda(
     new AccessTokenService(),
     new SessionService(dynamoDbClient, configService),
-    new AccessTokenRequestValidator(new JwtVerifierFactory(logger)));
+    new AccessTokenRequestValidator(new JwtVerifierFactory(logger)),
+);
 export const lambdaHandler = handlerClass.handler.bind(handlerClass);

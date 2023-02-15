@@ -7,4 +7,4 @@ export interface SessionItem {
     redirectUri: string;
     accessToken: string;
     accessTokenExpiryDate: number;
-};
+}

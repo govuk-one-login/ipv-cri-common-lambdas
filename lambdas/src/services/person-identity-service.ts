@@ -10,13 +10,14 @@ import {
 } from "../types/person-identity-item";
 
 export class PersonIdentityService {
-    constructor(private dynamoDbClient: DynamoDBDocument, private configService: ConfigService) { }
+    constructor(private dynamoDbClient: DynamoDBDocument, private configService: ConfigService) {}
 
     public async savePersonIdentity(sharedClaims: PersonIdentity, sessionId: string): Promise<string> {
         const personIdentityItem = this.createPersonIdentityItem(
             sharedClaims,
             sessionId,
-            +this.configService.getConfigEntry(CommonConfigKey.SESSION_TTL));
+            +this.configService.getConfigEntry(CommonConfigKey.SESSION_TTL),
+        );
 
         const putSessionCommand = new PutCommand({
             TableName: this.configService.getConfigEntry(CommonConfigKey.PERSON_IDENTITY_TABLE_NAME),
