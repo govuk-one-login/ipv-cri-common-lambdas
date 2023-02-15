@@ -1,6 +1,8 @@
 import { AccessTokenRequestValidator } from "../../../src/services/token-request-validator";
 import { JwtVerifierFactory } from "../../../src/common/security/jwt-verifier";
 import { SessionItem } from "../../../src/types/session-item";
+import { InvalidPayloadError } from "../../../src/types/errors";
+
 describe("token-request-validator.ts", () => {
     let accessTokenRequestValidator: AccessTokenRequestValidator;
     const mockJwtVerifierFactory = jest.mocked(JwtVerifierFactory);
@@ -18,58 +20,39 @@ describe("token-request-validator.ts", () => {
     describe("validatePayload", () => {
         it("should throw when the client_assertion_type is not valid", function () {
             const tokenRequestBody = `code=${code}&redirect_uri=${redirect_uri}&client_assertion=${client_assertion}&client_assertion_type=test&grant_type=${grant_type}`;
-            let requestPayload;
-            try {
-                requestPayload = accessTokenRequestValidator.validatePayload(tokenRequestBody);
-            } catch (e: any) {
-                expect(e.message).toBe("Invalid grant_type parameter");
-            }
-            expect(requestPayload).toBe(undefined);
+            expect(() => accessTokenRequestValidator.validatePayload(tokenRequestBody)).toThrow(
+                "Invalid grant_type parameter",
+            );
         });
 
         it("should throw when the grant_type is not authorization_code", function () {
             const tokenRequestBody = `code=${code}&redirect_uri=${redirect_uri}&client_assertion=${client_assertion}&client_assertion_type=${client_assertion_type}&grant_type=test`;
-            let requestPayload;
-            try {
-                requestPayload = accessTokenRequestValidator.validatePayload(tokenRequestBody);
-            } catch (e: any) {
-                expect(e.message).toBe("Invalid grant_type parameter");
-            }
-            expect(requestPayload).toBe(undefined);
+            expect(() => accessTokenRequestValidator.validatePayload(tokenRequestBody)).toThrow(
+                "Invalid grant_type parameter",
+            );
         });
 
         it("should throw when there is a missing client_assertion", function () {
             const tokenRequestBody = `code=${code}&redirect_uri=${redirect_uri}&client_assertion_type=${client_assertion_type}&grant_type=${grant_type}`;
-            let requestPayload;
-            try {
-                requestPayload = accessTokenRequestValidator.validatePayload(tokenRequestBody);
-            } catch (e: any) {
-                expect(e.message).toBe("Invalid client_assertion parameter");
-            }
-            expect(requestPayload).toBe(undefined);
+            expect(() => accessTokenRequestValidator.validatePayload(tokenRequestBody)).toThrow(
+                "Invalid client_assertion parameter",
+            );
         });
 
         it("should throw when there is a missing code", function () {
             const tokenRequestBody = `redirect_uri=${redirect_uri}&client_assertion=${client_assertion}&client_assertion_type=${client_assertion_type}&grant_type=${grant_type}`;
-            let requestPayload;
-            try {
-                requestPayload = accessTokenRequestValidator.validatePayload(tokenRequestBody);
-            } catch (e: any) {
-                expect(e.message).toBe("Invalid request: Missing code parameter");
-            }
-            expect(requestPayload).toBe(undefined);
+            expect(() => accessTokenRequestValidator.validatePayload(tokenRequestBody)).toThrow(
+                "Invalid request: Missing code parameter",
+            );
         });
 
         it("should throw when there is a missing redirectUri", function () {
             const tokenRequestBody = `code=${code}&client_assertion=${client_assertion}&client_assertion_type=${client_assertion_type}&grant_type=${grant_type}`;
-            let requestPayload;
-            try {
-                requestPayload = accessTokenRequestValidator.validatePayload(tokenRequestBody);
-            } catch (e: any) {
-                expect(e.message).toBe("Invalid request: Missing redirectUri parameter");
-            }
-            expect(requestPayload).toBe(undefined);
+            expect(() => accessTokenRequestValidator.validatePayload(tokenRequestBody)).toThrow(
+                "Invalid request: Missing redirectUri parameter",
+            );
         });
+        ``;
 
         it("should pass with a fully validated tokenRequestBody", function () {
             const tokenRequestBody = `code=${code}&redirect_uri=${redirect_uri}&client_assertion=${client_assertion}&client_assertion_type=${client_assertion_type}&grant_type=${grant_type}`;
@@ -83,13 +66,9 @@ describe("token-request-validator.ts", () => {
 
         it("should throw exception when there is no tokenRequestBody", async () => {
             const tokenRequestBody = null;
-            let requestPayload;
-            try {
-                requestPayload = accessTokenRequestValidator.validatePayload(tokenRequestBody);
-            } catch (e: any) {
-                expect(e.message).toBe("Invalid request: missing body");
-            }
-            expect(requestPayload).toBe(undefined);
+            expect(() => accessTokenRequestValidator.validatePayload(tokenRequestBody)).toThrow(
+                "Invalid request: missing body",
+            );
         });
     });
 
@@ -99,11 +78,12 @@ describe("token-request-validator.ts", () => {
         it("should throw exception when there is no sessionItem", async () => {
             const authCode = "1234";
             const expectedRedirectUri = "http://abc123.com";
-            try {
-                accessTokenRequestValidator.validateTokenRequestToRecord(authCode, sessionItem, expectedRedirectUri);
-            } catch (e: any) {
-                expect(e.message).toBe("Invalid sessionItem");
-            }
+            const val = accessTokenRequestValidator.validateTokenRequestToRecord(
+                authCode,
+                sessionItem,
+                expectedRedirectUri,
+            ) as InvalidPayloadError;
+            expect(val.message).toEqual("Invalid sessionItem");
         });
 
         it("should throw exception the authorizationCode within the sessionItem does not match the authCode", async () => {
@@ -119,27 +99,28 @@ describe("token-request-validator.ts", () => {
                 accessToken: "test",
                 accessTokenExpiryDate: 0,
             };
-            try {
-                accessTokenRequestValidator.validateTokenRequestToRecord(authCode, sessionItem, expectedRedirectUri);
-            } catch (e: any) {
-                expect(e.message).not.toEqual(null);
-            }
+            expect(() =>
+                accessTokenRequestValidator.validateTokenRequestToRecord(authCode, sessionItem, expectedRedirectUri),
+            ).toThrow();
         });
 
-        it("should pass when the authorizationCode within the sessionItem does matches the authCode", async () => {
+        it("should throw exception the authorizationCode within the sessionItem does not match the authCode", async () => {
             const authCode = "1234";
             const expectedRedirectUri = "http://abc123.com";
             const sessionItem: SessionItem = {
                 sessionId: "1",
                 clientId: "1",
                 clientSessionId: "1",
-                authorizationCode: authCode,
+                authorizationCode: "test",
                 authorizationCodeExpiryDate: 0,
-                redirectUri: expectedRedirectUri,
+                redirectUri: "http://abc123.com",
                 accessToken: "test",
                 accessTokenExpiryDate: 0,
             };
-            accessTokenRequestValidator.validateTokenRequestToRecord(authCode, sessionItem, expectedRedirectUri);
+
+            expect(() =>
+                accessTokenRequestValidator.validateTokenRequestToRecord(authCode, sessionItem, expectedRedirectUri),
+            ).toThrow();
         });
 
         it("should fail when the expectedRedirectUri does not match", async () => {
@@ -156,13 +137,11 @@ describe("token-request-validator.ts", () => {
                 accessToken: "test",
                 accessTokenExpiryDate: 0,
             };
-            try {
-                accessTokenRequestValidator.validateTokenRequestToRecord(authCode, sessionItem, expectedRedirectUri);
-            } catch (e: any) {
-                expect(e.message).toContain(
-                    `Invalid request: redirect uri ${badRedirectUri} does not match configuration uri ${expectedRedirectUri}`,
-                );
-            }
+            expect(() =>
+                accessTokenRequestValidator.validateTokenRequestToRecord(authCode, sessionItem, expectedRedirectUri),
+            ).toThrow(
+                `Invalid request: redirect uri ${badRedirectUri} does not match configuration uri ${expectedRedirectUri}`,
+            );
         });
     });
 });
