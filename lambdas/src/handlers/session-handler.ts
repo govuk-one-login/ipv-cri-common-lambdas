@@ -39,7 +39,7 @@ const configInitPromise = configService.init([
 ]);
 const SESSION_CREATED_METRIC = "session_created";
 
-class SessionLambda implements LambdaInterface {
+export class SessionLambda implements LambdaInterface {
     constructor(
         private readonly sessionService: SessionService,
         private readonly personIdentityService: PersonIdentityService,
@@ -112,11 +112,11 @@ class SessionLambda implements LambdaInterface {
                 }),
             };
         } catch (err) {
-            logger.error("session lambda error occurred.", err as Error);
+            logger.error("session lambda error occurred", err as Error);
             metrics.addMetric(SESSION_CREATED_METRIC, MetricUnits.Count, 0);
             return {
                 statusCode: 500,
-                body: `An error has occurred. ${JSON.stringify(err)}`,
+                body: `An error has occurred: ${JSON.stringify(err) == "{}" ? err : JSON.stringify(err)}`,
             };
         }
     }
