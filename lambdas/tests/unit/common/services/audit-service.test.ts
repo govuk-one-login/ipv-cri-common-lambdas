@@ -82,4 +82,32 @@ describe("AuditService", () => {
 
         expect(mockSqsClient.prototype.send).toBeCalledTimes(1);
     });
+
+    it("should handle missing session configuration", async () => {
+        const newMockContext = {
+            sessionItem: {},
+            clientIpAddress: undefined
+        } as AuditEventContext;
+        await auditService.sendAuditEvent(mockEventType, newMockContext);
+
+        expect(mockSendMessageCommand).toBeCalledWith({
+                MessageBody: JSON.stringify({
+                component_id: "test-issuer",
+                event_name: `TEST_PREFIX_START`,
+                extensions: undefined,
+                restricted: undefined,
+                timestamp: 1675382400,
+                user: {
+                    govuk_signin_journey_id: undefined,
+                    ip_address: undefined,
+                    persistent_session_id: undefined,
+                    session_id: undefined,
+                    user_id: undefined,
+                }
+            }),
+            QueueUrl: "test-url",
+        });
+
+        expect(mockSqsClient.prototype.send).toBeCalledTimes(1);
+    })
 })
