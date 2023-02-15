@@ -1,7 +1,7 @@
 import { importJWK, JWTPayload, jwtVerify } from "jose";
 import { JWTVerifyOptions } from "jose/dist/types/jwt/verify";
 import { Logger } from "@aws-lambda-powertools/logger";
-import { JwtVerificationConfig } from "../config/jwt-verification-config";
+import { JwtVerificationConfig } from "../../types/jwt-verification-config";
 
 export class JwtVerifier {
     constructor(private jwtVerifierConfig: JwtVerificationConfig, private logger: Logger) {}

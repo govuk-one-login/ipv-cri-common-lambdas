@@ -1,5 +1,5 @@
 import { GetParametersCommand, ParameterType, SSMClient } from "@aws-sdk/client-ssm";
-import { ClientConfigKey, CommonConfigKey } from "../../../../src/common/config/config-keys";
+import { ClientConfigKey, CommonConfigKey } from "../../../../src/types/config-keys";
 import { ConfigService } from "../../../../src/common/config/config-service";
 
 const getMockSend = (key: CommonConfigKey, value?: string) => {

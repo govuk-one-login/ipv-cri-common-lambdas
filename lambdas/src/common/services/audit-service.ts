@@ -1,6 +1,6 @@
 import { SQSClient, SendMessageCommand } from "@aws-sdk/client-sqs";
-import { AuditEvent, AuditEventContext, AuditEventSession, AuditEventType, AuditEventUser } from "./models/audit-event";
-import { CriAuditConfig } from "../config/cri-audit-config";
+import { AuditEvent, AuditEventContext, AuditEventSession, AuditEventType, AuditEventUser } from "../../types/audit-event";
+import { CriAuditConfig } from "../../types/cri-audit-config";
 
 export class AuditService {
     private auditConfig: CriAuditConfig | undefined;

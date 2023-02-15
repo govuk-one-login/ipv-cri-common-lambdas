@@ -1,7 +1,7 @@
 import { DynamoDBDocument, PutCommand } from "@aws-sdk/lib-dynamodb";
-import { CommonConfigKey } from "../../../src/common/config/config-keys";
+import { CommonConfigKey } from "../../../src/types/config-keys";
 import { ConfigService } from "../../../src/common/config/config-service";
-import { PersonIdentity } from "../../../src/common/services/models/person-identity";
+import { PersonIdentity } from "../../../src/types/person-identity";
 import { PersonIdentityService } from "../../../src/services/person-identity-service";
 
 jest.mock("@aws-sdk/lib-dynamodb", () => {

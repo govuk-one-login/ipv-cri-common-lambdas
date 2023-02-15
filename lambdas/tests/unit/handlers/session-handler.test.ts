@@ -1,11 +1,11 @@
 import { Logger } from "@aws-lambda-powertools/logger";
 import { Metrics, MetricUnits } from "@aws-lambda-powertools/metrics";
 import { APIGatewayProxyEvent, APIGatewayProxyEventHeaders } from "aws-lambda";
-import { ClientConfigKey } from "../../../src/common/config/config-keys";
+import { ClientConfigKey } from "../../../src/types/config-keys";
 import { ConfigService } from "../../../src/common/config/config-service";
 import { AuditService } from "../../../src/common/services/audit-service";
-import { AuditEventType } from "../../../src/common/services/models/audit-event";
-import { PersonIdentity } from "../../../src/common/services/models/person-identity";
+import { AuditEventType } from "../../../src/types/audit-event";
+import { PersonIdentity } from "../../../src/types/person-identity";
 import { SessionLambda } from "../../../src/handlers/session-handler";
 import { PersonIdentityService } from "../../../src/services/person-identity-service";
 import { JweDecrypter } from "../../../src/services/security/jwe-decrypter";

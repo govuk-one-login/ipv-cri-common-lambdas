@@ -1,4 +1,4 @@
-export type RequestPayload = {
+export interface RequestPayload {
     grant_type: string;
     code: string;
     redirectUri: string;

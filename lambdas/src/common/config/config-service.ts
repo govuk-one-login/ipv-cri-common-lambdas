@@ -1,7 +1,7 @@
 import { SSMClient, GetParametersCommand } from "@aws-sdk/client-ssm";
 import { Parameter } from "aws-sdk/clients/ssm";
-import { CriAuditConfig } from "./cri-audit-config";
-import { ClientConfigKey, CommonConfigKey } from "./config-keys";
+import { CriAuditConfig } from "../../types/cri-audit-config";
+import { ClientConfigKey, CommonConfigKey } from "../../types/config-keys";
 
 const DEFAULT_AUTHORIZATION_CODE_TTL_IN_SECS = 600;
 const PARAMETER_PREFIX = process.env.AWS_STACK_NAME || "";
