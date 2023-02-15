@@ -1,6 +1,5 @@
 plugins {
 	id 'java'
-	id "io.qameta.allure" version "2.10.0"
 }
 
 version 'unspecified'
@@ -18,17 +17,9 @@ ext {
 	junitJupiterapi = '5.9.0'
 	jacksonDatabind = '2.9.5'
 	apacheHttpClient = '4.5.13'
-	allureMaven = '2.11.2'
-	allureCucumber = '2.18.1'
-	allureEnvironment = '1.0.0'
 }
 
 dependencies {
-
-	implementation "io.qameta.allure:allure-maven:$allureMaven"
-	implementation "io.qameta.allure:allure-cucumber7-jvm:$allureCucumber"
-	implementation "com.github.automatedowl:allure-environment-writer:$allureEnvironment"
-
 	testImplementation "io.cucumber:cucumber-java:$cucumberVersion"
 	testImplementation "io.cucumber:cucumber-junit:$cucumberVersion"
 	testImplementation "org.apache.httpcomponents:httpclient:$apacheHttpClient"
@@ -57,8 +48,6 @@ task cucumber() {
 			main = "io.cucumber.core.cli.Main"
 			classpath = configurations.cucumberRuntime + sourceSets.main.output + sourceSets.test.output
 			args = [
-				'--plugin',
-				'io.qameta.allure.cucumber7jvm.AllureCucumber7Jvm',
 				'--plugin',
 				'pretty',
 				'--tags',
