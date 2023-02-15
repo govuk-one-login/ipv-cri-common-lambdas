@@ -52,7 +52,6 @@ describe("token-request-validator.ts", () => {
                 "Invalid request: Missing redirectUri parameter",
             );
         });
-        ``;
 
         it("should pass with a fully validated tokenRequestBody", function () {
             const tokenRequestBody = `code=${code}&redirect_uri=${redirect_uri}&client_assertion=${client_assertion}&client_assertion_type=${client_assertion_type}&grant_type=${grant_type}`;
@@ -101,7 +100,7 @@ describe("token-request-validator.ts", () => {
             };
             expect(() =>
                 accessTokenRequestValidator.validateTokenRequestToRecord(authCode, sessionItem, expectedRedirectUri),
-            ).toThrow();
+            ).toThrow("Access token expired");
         });
 
         it("should throw exception the authorizationCode within the sessionItem does not match the authCode", async () => {
@@ -120,7 +119,7 @@ describe("token-request-validator.ts", () => {
 
             expect(() =>
                 accessTokenRequestValidator.validateTokenRequestToRecord(authCode, sessionItem, expectedRedirectUri),
-            ).toThrow();
+            ).toThrow("Access token expired");
         });
 
         it("should fail when the expectedRedirectUri does not match", async () => {
