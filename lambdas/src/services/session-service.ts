@@ -4,8 +4,8 @@ import {BearerAccessToken} from "../types/bearer-access-token";
 import {ConfigService} from "../common/config/config-service";
 import {randomUUID} from "crypto";
 import {InvalidAccessTokenError, SessionNotFoundError} from "../types/errors";
-import {SessionRequestSummary} from "./models/session-request-summary";
-import {CommonConfigKey} from "../common/config/config-keys";
+import {SessionRequestSummary} from "../types/session-request-summary";
+import {CommonConfigKey} from "../types/config-keys";
 
 export class SessionService {
     constructor(private dynamoDbClient: DynamoDBDocument, private configService: ConfigService) {}

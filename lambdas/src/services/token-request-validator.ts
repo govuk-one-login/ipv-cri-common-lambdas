@@ -2,7 +2,7 @@ import { SessionItem } from "../types/session-item";
 import { InvalidAccessTokenError, InvalidPayloadError, InvalidRequestError } from "../types/errors";
 import { RequestPayload } from "../types/request_payload";
 import {JwtVerifier, JwtVerifierFactory} from "../common/security/jwt-verifier";
-import {ClientConfigKey} from "../common/config/config-keys";
+import {ClientConfigKey} from "../types/config-keys";
 
 export class AccessTokenRequestValidator {
 

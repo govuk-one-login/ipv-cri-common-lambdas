@@ -10,7 +10,7 @@ import {JwtVerifierFactory} from "../common/security/jwt-verifier";
 import {AwsClientType, createClient} from "../common/aws-client-factory";
 import {DynamoDBDocument} from "@aws-sdk/lib-dynamodb";
 import {SSMClient} from "@aws-sdk/client-ssm";
-import {ClientConfigKey, CommonConfigKey} from "../common/config/config-keys";
+import {ClientConfigKey, CommonConfigKey} from "../types/config-keys";
 
 const logger = new Logger();
 const metrics = new Metrics();
