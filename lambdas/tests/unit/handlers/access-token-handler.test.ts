@@ -73,7 +73,7 @@ describe("access-token-handler.ts", () => {
                 );
             });
 
-            it("should pass when payload matches session - TEMP mocked verify function", async () => {
+            it("should pass when payload matches session", async () => {
                 const redirectUri = "http://123.abc.com";
                 const code = "123abc";
                 const clientSessionId = "1";
