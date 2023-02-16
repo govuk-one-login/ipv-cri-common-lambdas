@@ -18,7 +18,9 @@
   },
   "scripts": {
       "unit": "jest --config=jest.config.ts",
-      "lint": "prettier --check src tests && eslint .",
+      "lint:prettier": "prettier --check src tests",
+      "lint:eslint": "eslint .",
+      "lint": "npm run lint:prettier && npm run lint:eslint",
       "compile": "tsc",
       "test": "npm run compile && npm run unit"
   },
