@@ -27,7 +27,7 @@ export class JwtVerifier {
                     throw new Error(`Claims-set missing mandatory claim: ${mandatoryClaim}`);
                 }
             });
-            
+
             return payload;
         } catch (error) {
             this.logger.error("JWT verification failed", error as Error);
@@ -65,11 +65,11 @@ export class JwtVerifierFactory {
     public constructor(private readonly logger: Logger) {}
     public create(jwtSigningAlgo: string, jwtPublicSigningKey: string): JwtVerifier {
         return new JwtVerifier(
-                {
-                    jwtSigningAlgorithm: jwtSigningAlgo,
-                    publicSigningJwk: jwtPublicSigningKey,
-                },
-                this.logger,
-            );
+            {
+                jwtSigningAlgorithm: jwtSigningAlgo,
+                publicSigningJwk: jwtPublicSigningKey,
+            },
+            this.logger,
+        );
     }
 }
