@@ -9,9 +9,9 @@ jest.mock("@aws-sdk/client-sqs", () => {
         SendMessageCommand: jest.fn(),
         SQSClient: {
             prototype: {
-                send: jest.fn()
-            }
-        }
+                send: jest.fn(),
+            },
+        },
     };
 }); //  this is so we only mock out the SendMessageCommand
 
@@ -28,9 +28,9 @@ describe("AuditService", () => {
             sessionId: "test-session-id",
             subject: "test-subject",
             persistentSessionId: "test-client-session-id",
-            clientSessionId: "test-client-session-id"
+            clientSessionId: "test-client-session-id",
         },
-        clientIpAddress: undefined
+        clientIpAddress: undefined,
     } as AuditEventContext;
 
     beforeEach(() => {
@@ -40,13 +40,13 @@ describe("AuditService", () => {
             return {
                 queueUrl: "test-url",
                 auditEventNamePrefix: "TEST_PREFIX",
-                issuer: "test-issuer"
-            }
+                issuer: "test-issuer",
+            };
         });
-        
-        jest.spyOn(global.Date, 'now').mockReturnValueOnce(1675382400);
-        
-        auditService = new AuditService(mockGetAuditConfig, mockSqsClient.prototype);    
+
+        jest.spyOn(global.Date, "now").mockReturnValueOnce(1675382400);
+
+        auditService = new AuditService(mockGetAuditConfig, mockSqsClient.prototype);
     });
 
     it("should request the audit config if necessary", async () => {
@@ -56,14 +56,16 @@ describe("AuditService", () => {
 
     it("should error without an event type", async () => {
         // @ts-ignore to allow an incorrect value to be entered
-        await expect(auditService.sendAuditEvent(undefined, mockContext)).rejects.toThrow("Audit event type not specified");
+        await expect(auditService.sendAuditEvent(undefined, mockContext)).rejects.toThrow(
+            "Audit event type not specified",
+        );
     });
 
     it("should successfully send the audit event", async () => {
         await auditService.sendAuditEvent(mockEventType, mockContext);
 
         expect(mockSendMessageCommand).toBeCalledWith({
-                MessageBody: JSON.stringify({
+            MessageBody: JSON.stringify({
                 component_id: "test-issuer",
                 event_name: `TEST_PREFIX_START`,
                 extensions: undefined,
@@ -75,7 +77,7 @@ describe("AuditService", () => {
                     persistent_session_id: "test-client-session-id",
                     session_id: "test-session-id",
                     user_id: "test-subject",
-                }
+                },
             }),
             QueueUrl: "test-url",
         });
@@ -86,12 +88,12 @@ describe("AuditService", () => {
     it("should handle missing session configuration", async () => {
         const newMockContext = {
             sessionItem: {},
-            clientIpAddress: undefined
+            clientIpAddress: undefined,
         } as AuditEventContext;
         await auditService.sendAuditEvent(mockEventType, newMockContext);
 
         expect(mockSendMessageCommand).toBeCalledWith({
-                MessageBody: JSON.stringify({
+            MessageBody: JSON.stringify({
                 component_id: "test-issuer",
                 event_name: `TEST_PREFIX_START`,
                 extensions: undefined,
@@ -103,11 +105,11 @@ describe("AuditService", () => {
                     persistent_session_id: undefined,
                     session_id: undefined,
                     user_id: undefined,
-                }
+                },
             }),
             QueueUrl: "test-url",
         });
 
         expect(mockSqsClient.prototype.send).toBeCalledTimes(1);
-    })
-})
+    });
+});

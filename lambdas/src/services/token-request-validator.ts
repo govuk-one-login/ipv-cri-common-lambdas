@@ -1,11 +1,10 @@
 import { SessionItem } from "../types/session-item";
 import { InvalidAccessTokenError, InvalidPayloadError, InvalidRequestError } from "../types/errors";
 import { RequestPayload } from "../types/request_payload";
-import {JwtVerifier, JwtVerifierFactory} from "../common/security/jwt-verifier";
-import {ClientConfigKey} from "../types/config-keys";
+import { JwtVerifier, JwtVerifierFactory } from "../common/security/jwt-verifier";
+import { ClientConfigKey } from "../types/config-keys";
 
 export class AccessTokenRequestValidator {
-
     public constructor(private readonly jwtVerifierFactory: JwtVerifierFactory) {}
 
     public validatePayload(tokenRequestBody: string | null): RequestPayload {
@@ -45,10 +44,11 @@ export class AccessTokenRequestValidator {
             );
         }
     }
-    public async verifyJwtSignature(jwt: string, clientId: string, clientConfig: Map<string,string>): Promise<void> {
+    public async verifyJwtSignature(jwt: string, clientId: string, clientConfig: Map<string, string>): Promise<void> {
         const jwtVerifier = this.jwtVerifierFactory.create(
             clientConfig.get(ClientConfigKey.JWT_SIGNING_ALGORITHM)!,
-            clientConfig.get(ClientConfigKey.JWT_PUBLIC_SIGNING_KEY)!);
+            clientConfig.get(ClientConfigKey.JWT_PUBLIC_SIGNING_KEY)!,
+        );
 
         const jwtPayload = await jwtVerifier.verify(
             Buffer.from(jwt, "utf-8"),
