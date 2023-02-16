@@ -12,6 +12,8 @@ import java.net.http.HttpResponse;
 import java.util.Objects;
 import java.util.Optional;
 
+import static gov.uk.di.ipv.cri.common.api.stepDefinitions.APISteps.DEV_AcessToken_URI;
+
 public class IpvCoreStubUtil {
 
     private static final String ADDRESS_CRI_DEV = "address-cri-dev";
@@ -142,7 +144,7 @@ public class IpvCoreStubUtil {
 
         var request =
                 HttpRequest.newBuilder()
-                        .uri(new URIBuilder(getPrivateApiEndpoint()).setPath("/dev/token").build())
+                        .uri(new URIBuilder(getPrivateApiEndpoint()).setPath(DEV_AcessToken_URI).build())
                         .header("Content-Type", "application/x-www-form-urlencoded")
                         .POST(HttpRequest.BodyPublishers.ofString(privateKeyJWT))
                         .build();
