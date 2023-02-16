@@ -10,20 +10,20 @@ jest.mock("@aws-sdk/lib-dynamodb", () => {
         return {
             input: {
                 Item: {
-                    sessionId: "test-session-id"
-                }
-            }
-        }
-    })
+                    sessionId: "test-session-id",
+                },
+            },
+        };
+    });
     return {
         __esModule: true,
         ...jest.requireActual("@aws-sdk/lib-dynamodb"),
         PutCommand: mockPut,
         DynamoDBDocument: {
             prototype: {
-                send: jest.fn()
-            }
-        }
+                send: jest.fn(),
+            },
+        },
     };
 }); //  this is so we only mock out the PutCommand
 
@@ -39,25 +39,29 @@ describe("PersonIdentityService", () => {
         } else {
             return "1675382400";
         }
-    })
-    
+    });
+
     const sessionId = "test-session-id";
 
     const mockPerson: PersonIdentity = {
-        name: [{nameParts: [
+        name: [
             {
-                type: "firstName",
-                value: "Jane"
+                nameParts: [
+                    {
+                        type: "firstName",
+                        value: "Jane",
+                    },
+                    {
+                        type: "lastName",
+                        value: "Doe",
+                    },
+                ],
             },
-            {
-                type: "lastName",
-                value: "Doe"
-            }
-        ]}],
+        ],
         birthDate: [
             {
-                value: "2023-01-01"
-            }
+                value: "2023-01-01",
+            },
         ],
         address: [
             {
@@ -75,15 +79,15 @@ describe("PersonIdentityService", () => {
                 postalCode: "AA1 1AA",
                 addressCountry: "UK",
                 validFrom: "2022-01",
-                validUntil: "2023-01"
-            }
-        ]
-    }
+                validUntil: "2023-01",
+            },
+        ],
+    };
 
     beforeEach(() => {
         jest.clearAllMocks();
-                
-        personIdentityService = new PersonIdentityService(mockDynamoDb.prototype, mockConfigService.prototype);    
+
+        personIdentityService = new PersonIdentityService(mockDynamoDb.prototype, mockConfigService.prototype);
     });
 
     it("should call the config service to obtain configuration", async () => {
@@ -91,9 +95,11 @@ describe("PersonIdentityService", () => {
 
         expect(mockConfigService.prototype.getConfigEntry).toHaveBeenCalledTimes(2);
         expect(mockConfigService.prototype.getConfigEntry).toHaveBeenCalledWith(CommonConfigKey.SESSION_TTL);
-        expect(mockConfigService.prototype.getConfigEntry).toHaveBeenCalledWith(CommonConfigKey.PERSON_IDENTITY_TABLE_NAME);
+        expect(mockConfigService.prototype.getConfigEntry).toHaveBeenCalledWith(
+            CommonConfigKey.PERSON_IDENTITY_TABLE_NAME,
+        );
     });
-    
+
     it("should correctly format personal identity information", async () => {
         await personIdentityService.savePersonIdentity(mockPerson, sessionId);
 
@@ -104,8 +110,8 @@ describe("PersonIdentityService", () => {
                 addresses: mockPerson.address,
                 birthDates: mockPerson.birthDate,
                 expiryDate: 1675382400,
-                names: mockPerson.name
-            }
+                names: mockPerson.name,
+            },
         });
     });
 
@@ -113,8 +119,8 @@ describe("PersonIdentityService", () => {
         const newMockPerson: PersonIdentity = {
             name: [],
             birthDate: [],
-            address: []
-        }
+            address: [],
+        };
         await personIdentityService.savePersonIdentity(newMockPerson, sessionId);
 
         expect(mockPutCommand).toHaveBeenCalledWith({
@@ -124,10 +130,10 @@ describe("PersonIdentityService", () => {
                 addresses: [],
                 birthDates: [],
                 expiryDate: 1675382400,
-                names: []
-            }
+                names: [],
+            },
         });
-    })
+    });
 
     it("should save the person identity to dynamo db", async () => {
         await personIdentityService.savePersonIdentity(mockPerson, sessionId);

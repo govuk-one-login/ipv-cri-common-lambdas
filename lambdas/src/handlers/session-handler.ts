@@ -5,7 +5,7 @@ import { Tracer } from "@aws-lambda-powertools/tracer";
 import { Logger } from "@aws-lambda-powertools/logger";
 import { ConfigService } from "../common/config/config-service";
 import { ClientConfigKey, CommonConfigKey } from "../types/config-keys";
-import { SessionService } from '../services/session-service';
+import { SessionService } from "../services/session-service";
 import { JweDecrypter } from "../services/security/jwe-decrypter";
 import { PersonIdentityService } from "../services/person-identity-service";
 import { PersonIdentity } from "../types/person-identity";
@@ -19,7 +19,7 @@ import { SSMClient } from "@aws-sdk/client-ssm";
 import { SQSClient } from "@aws-sdk/client-sqs";
 import { AwsClientType, createClient } from "../common/aws-client-factory";
 import { getClientIpAddress } from "../common/utils/request-utils";
-import {KMSClient} from "@aws-sdk/client-kms";
+import { KMSClient } from "@aws-sdk/client-kms";
 
 const dynamoDbClient = createClient(AwsClientType.DYNAMO) as DynamoDBDocument;
 const ssmClient = createClient(AwsClientType.SSM) as SSMClient;
