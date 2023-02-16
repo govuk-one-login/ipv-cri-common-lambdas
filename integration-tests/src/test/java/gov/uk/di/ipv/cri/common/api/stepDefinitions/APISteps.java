@@ -21,8 +21,10 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 public class APISteps {
 
     private static final String ENVIRONMENT = "/dev"; // dev, build, staging, integration
-    private static final String DEV_SESSION_URI = ENVIRONMENT + "/session";
-    private static final String DEV_AUTHORIZATION_URI = ENVIRONMENT + "/authorization";
+    private static String DEV_SESSION_URI = ENVIRONMENT + "/session";
+
+    private static String DEV_AUTHORIZATION_URI = ENVIRONMENT + "/authorization";
+    public static String DEV_AcessToken_URI = ENVIRONMENT + "/token";
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final String DEFAULT_REDIRECT_URI =
             "https://di-ipv-core-stub.london.cloudapps.digital/callback";
@@ -38,6 +40,27 @@ public class APISteps {
             throws URISyntaxException, IOException, InterruptedException {
         String userIdentityJson = IpvCoreStubUtil.getClaimsForUser(rowNumber);
         sessionRequestBody = IpvCoreStubUtil.sendCreateSessionRequest(userIdentityJson);
+    }
+
+    @Given("Session lambda implementation is in {string}")
+    public void setSessionEndpoint(String endPoint)
+    {
+        if(endPoint.equals("TS"))
+         DEV_SESSION_URI = ENVIRONMENT + "/session-two";
+    }
+
+    @Given("Authorisation lambda implementation is in {string}")
+    public void setAuthorizationEndpoint(String endPoint)
+    {
+        if(endPoint.equals("TS"))
+            DEV_AUTHORIZATION_URI = ENVIRONMENT + "/authorization-two";
+    }
+
+    @Given("AccessToken lambda implementation is in {string}")
+    public void setAccessTokenEndpoint(String endPoint)
+    {
+        if(endPoint.equals("TS"))
+            DEV_AcessToken_URI = ENVIRONMENT + "/token-two";
     }
 
     @When("user sends a request to session API")
