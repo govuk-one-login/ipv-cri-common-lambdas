@@ -91,11 +91,11 @@ export class AuthorizationLambda implements LambdaInterface {
                 body: JSON.stringify(authorizationResponse),
             };
         } catch (err: any) {
-            logger.error("authorization lambda error occurred.", err as Error);
+            logger.error("authorization lambda error occurred", err as Error);
             metrics.addMetric(AUTHORIZATION_SENT_METRIC, MetricUnits.Count, 0);
             return {
                 statusCode: 500,
-                body: `An error has occurred. ${JSON.stringify(err)}`,
+                body: `An error has occurred: ${JSON.stringify(err) == "{}" ? err : JSON.stringify(err)}`,
             };
         }
     }
