@@ -10,6 +10,7 @@ import {
     APIGatewayProxyEventHeaders,
     APIGatewayProxyEventQueryStringParameters,
 } from "aws-lambda/trigger/api-gateway-proxy";
+import { Logger } from "@aws-lambda-powertools/logger";
 
 jest.mock("../../../src/common/config/config-service");
 jest.mock("@aws-lambda-powertools/metrics");
@@ -46,6 +47,7 @@ describe("authorization-handler.ts", () => {
         const sessionService = new SessionService(mockDynamoDbClient.prototype, configService);
         const authorizationRequestValidator = new AuthorizationRequestValidator();
         const mockConfigService = jest.mocked(ConfigService);
+        const logger = jest.mocked(Logger);
 
         beforeEach(() => {
             jest.resetAllMocks();
@@ -212,6 +214,87 @@ describe("authorization-handler.ts", () => {
             );
             expect(output.statusCode).toBe(400);
             expect(output.body).toContain("Invalid request: Missing session-id header");
+        });
+
+        it("should create an auth code if not available", async () => {
+            const body = {
+                code: "",
+                grant_type: "authorization_code",
+                redirect_uri: "",
+                client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+                client_assertion: "2",
+            };
+            const headers = {
+                "session-id": "1",
+            } as APIGatewayProxyEventHeaders;
+
+            const queryString = {
+                client_id: "1",
+                redirect_uri: "http://123.com",
+                response_type: "test",
+            } as APIGatewayProxyEventQueryStringParameters;
+
+            const sessionItem: SessionItem = {
+                sessionId: "abc",
+                authorizationCodeExpiryDate: 1,
+                clientId: "1",
+                clientSessionId: "1",
+                redirectUri: "http://123.com",
+                accessToken: "",
+                accessTokenExpiryDate: 0,
+                authorizationCode: undefined,
+            };
+            jest.spyOn(sessionService, "getSession").mockReturnValue(
+                new Promise<any>((resolve) => {
+                    resolve(sessionItem);
+                }),
+            );
+            const createSpy = jest.spyOn(sessionService, "createAuthorizationCode");
+
+            await authorizationHandlerLambda.handler(
+                {
+                    body: body,
+                    headers: headers,
+                    queryStringParameters: queryString,
+                } as unknown as APIGatewayProxyEvent,
+                null,
+            )
+
+            expect(createSpy).toHaveBeenCalledWith(sessionItem);
+        });
+
+        it("should catch and return any errors", async () => {
+            jest.spyOn(logger.prototype, "appendKeys").mockImplementation(() => {
+                throw Error("Unable to perform task");
+            });
+            const errorSpy = jest.spyOn(logger.prototype, "error");
+
+            const output = await authorizationHandlerLambda.handler(
+                {
+                    body: {
+                        code: "",
+                        grant_type: "authorization_code",
+                        redirect_uri: "",
+                        client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+                        client_assertion: "2",
+                    },
+                    headers: {
+                        "session-id": "1",
+                    },
+                    queryStringParameters: {
+                        client_id: "1",
+                        redirect_uri: "http://123.com",
+                        response_type: "test",
+                    }
+                } as unknown as APIGatewayProxyEvent,
+                null,
+            );
+
+            expect(output).toEqual({
+                statusCode: 500,
+                body: "An error has occurred: Error: Unable to perform task"
+            });
+            expect(errorSpy).toHaveBeenCalledWith("authorization lambda error occurred", Error("Unable to perform task"))
         });
     });
 });
