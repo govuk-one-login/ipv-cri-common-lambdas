@@ -144,7 +144,10 @@ public class IpvCoreStubUtil {
 
         var request =
                 HttpRequest.newBuilder()
-                        .uri(new URIBuilder(getPrivateApiEndpoint()).setPath(DEV_AcessToken_URI).build())
+                        .uri(
+                                new URIBuilder(getPrivateApiEndpoint())
+                                        .setPath(DEV_AcessToken_URI)
+                                        .build())
                         .header("Content-Type", "application/x-www-form-urlencoded")
                         .POST(HttpRequest.BodyPublishers.ofString(privateKeyJWT))
                         .build();
