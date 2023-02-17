@@ -35,12 +35,6 @@ export class AuthorizationLambda implements LambdaInterface {
             await initPromise;
 
             const sessionId = getSessionId(event);
-            if (!sessionId) {
-                return {
-                    statusCode: 400,
-                    body: "Invalid request: Missing session-id header",
-                };
-            }
             const sessionItem = await this.sessionService.getSession(sessionId);
 
             if (!configService.hasClientConfig(sessionItem.clientId)) {
@@ -48,23 +42,11 @@ export class AuthorizationLambda implements LambdaInterface {
             }
             const clientConfig = configService.getClientConfig(sessionItem.clientId);
 
-            const validationResult = await this.authorizationRequestValidator.validate(
+            this.authorizationRequestValidator.validate(
                 event.queryStringParameters,
                 sessionItem.clientId,
                 clientConfig!.get(ClientConfigKey.JWT_REDIRECT_URI)!,
             );
-            if (!validationResult.isValid) {
-                const code = 1019;
-                const message = "Session Validation Exception";
-                return {
-                    statusCode: 400,
-                    body: JSON.stringify({
-                        code,
-                        message,
-                        errorSummary: `${code}: ${message}`,
-                    }),
-                };
-            }
 
             logger.appendKeys({ govuk_signin_journey_id: sessionItem.clientSessionId });
             logger.info("found session");
@@ -76,12 +58,12 @@ export class AuthorizationLambda implements LambdaInterface {
 
             const authorizationResponse = {
                 state: {
-                    value: event.queryStringParameters!["state"],
+                    value: event.queryStringParameters?.["state"],
                 },
                 authorizationCode: {
                     value: sessionItem.authorizationCode,
                 },
-                redirectionURI: event.queryStringParameters!["redirect_uri"],
+                redirectionURI: event.queryStringParameters?.["redirect_uri"],
             };
 
             metrics.addMetric(AUTHORIZATION_SENT_METRIC, MetricUnits.Count, 1);
@@ -94,8 +76,12 @@ export class AuthorizationLambda implements LambdaInterface {
             logger.error("authorization lambda error occurred", err as Error);
             metrics.addMetric(AUTHORIZATION_SENT_METRIC, MetricUnits.Count, 0);
             return {
-                statusCode: 500,
-                body: `An error has occurred: ${JSON.stringify(err) == "{}" ? err : JSON.stringify(err)}`,
+                statusCode: err.statusCode ?? 500,
+                body: JSON.stringify({
+                    message: err?.statusCode >= 500 ? "Server Error" : err.message,
+                    code: err.code || null,
+                    errorSummary: err.getErrorSummary(),
+                }),
             };
         }
     }
