@@ -1,4 +1,5 @@
 import { APIGatewayProxyEvent } from "aws-lambda";
+import { InvalidRequestError } from "../../types/errors";
 
 const getHeaderValue = (event: APIGatewayProxyEvent, desiredHeader: string) => {
     const matchingHeaders: string[] = Object.keys(event?.headers ?? {}).filter(
@@ -16,5 +17,9 @@ export const getClientIpAddress = (event: APIGatewayProxyEvent) => {
     return getHeaderValue(event, "x-forwarded-for");
 };
 export const getSessionId = (event: APIGatewayProxyEvent) => {
-    return getHeaderValue(event, "session-id");
+    const sessionIdHeader = getHeaderValue(event, "session-id");
+    if (!sessionIdHeader) {
+        throw new InvalidRequestError("Invalid request: Missing session-id header");
+    }
+    return sessionIdHeader;
 };

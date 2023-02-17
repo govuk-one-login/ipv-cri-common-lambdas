@@ -26,7 +26,7 @@ describe("request-utils", () => {
             expect(result).toBeUndefined;
         });
         test("returns undefined, if another header is present instead of x-forwarded-for", () => {
-            const result = getSessionId({
+            const result = getClientIpAddress({
                 headers: {
                     forwarded: "12345",
                 },
@@ -56,23 +56,22 @@ describe("request-utils", () => {
                 headers: {
                     "session-id": "12345",
                 },
-            } as any);
+            } as unknown as APIGatewayProxyEvent);
             expect(result).toBeUndefined;
         });
         test("returns undefined, if another header is present instead of session-id", () => {
-            const result = getSessionId({
+            expect(()=> getSessionId({
                 headers: {
                     session: "18345",
                 },
-            } as unknown as APIGatewayProxyEvent);
-            expect(result).toBeUndefined;
+            } as unknown as APIGatewayProxyEvent)).toThrow("Invalid request: Missing session-id header");
         });
     });
     describe("matching headers", () => {
         test("throws if there are multiple session-id headers", () => {
             jest.spyOn(global.Object, "keys").mockReturnValueOnce(["session-id", "session-id"]);
             const event = {
-                headers: {} as any,
+                headers: {} as unknown,
             } as unknown as APIGatewayProxyEvent;
             expect(() => getSessionId(event)).toThrow;
         });
