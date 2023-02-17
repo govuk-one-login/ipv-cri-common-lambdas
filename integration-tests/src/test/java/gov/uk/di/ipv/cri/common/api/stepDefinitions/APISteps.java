@@ -43,24 +43,18 @@ public class APISteps {
     }
 
     @Given("Session lambda implementation is in {string}")
-    public void setSessionEndpoint(String endPoint)
-    {
-        if(endPoint.equals("TS"))
-         DEV_SESSION_URI = ENVIRONMENT + "/session-two";
+    public void setSessionEndpoint(String endPoint) {
+        if (endPoint.equals("TS")) DEV_SESSION_URI = ENVIRONMENT + "/session-two";
     }
 
     @Given("Authorisation lambda implementation is in {string}")
-    public void setAuthorizationEndpoint(String endPoint)
-    {
-        if(endPoint.equals("TS"))
-            DEV_AUTHORIZATION_URI = ENVIRONMENT + "/authorization-two";
+    public void setAuthorizationEndpoint(String endPoint) {
+        if (endPoint.equals("TS")) DEV_AUTHORIZATION_URI = ENVIRONMENT + "/authorization-two";
     }
 
     @Given("AccessToken lambda implementation is in {string}")
-    public void setAccessTokenEndpoint(String endPoint)
-    {
-        if(endPoint.equals("TS"))
-            DEV_AcessToken_URI = ENVIRONMENT + "/token-two";
+    public void setAccessTokenEndpoint(String endPoint) {
+        if (endPoint.equals("TS")) DEV_AcessToken_URI = ENVIRONMENT + "/token-two";
     }
 
     @When("user sends a request to session API")
