@@ -16,6 +16,7 @@ Required GitHub secrets:
 
 Common CRI secrets for dev environments:
 
+
 | Secret                                             | Description            |
 |----------------------------------------------------|------------------------|
 | ADDRESS_DEV_COMMON_CRI_ARTIFACT_SOURCE_BUCKET_NAME | Upload artifact bucket |
