@@ -31,6 +31,11 @@ jobs:
           java-version: 11
           distribution: zulu
 
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@v2
+        with:
+          gradle-version: 7.4.2
+
       - name: Setup SAM
         uses: aws-actions/setup-sam@v2
 
@@ -71,7 +76,7 @@ jobs:
           STACK_NAME=${{ env.STACK_NAME_PREFIX }}-${{ steps.vars.outputs.sha_short }}
           API_GATEWAY_ID_PRIVATE=$(aws cloudformation describe-stacks --stack-name $STACK_NAME | jq -r '.Stacks[].Outputs[] | select(.OutputKey == "PreMergeDevOnlyApiId").OutputValue')
           export API_GATEWAY_ID_PRIVATE=$API_GATEWAY_ID_PRIVATE
-          gradle integration-tests:cucumber
+          ./gradlew integration-tests:cucumber
 
       - name: Delete integration test stack
         if: success()
