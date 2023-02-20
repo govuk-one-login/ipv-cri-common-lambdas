@@ -2,15 +2,22 @@ import { APIGatewayProxyEvent } from "aws-lambda";
 import { InvalidRequestError } from "../../types/errors";
 
 const getHeaderValue = (event: APIGatewayProxyEvent, desiredHeader: string) => {
-    const matchingHeaders: string[] = Object.keys(event?.headers ?? {}).filter(
+    // https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-develop-integrations-lambda.html
+    const matchingHeaders: string[] = Object.keys(event?.multiValueHeaders ?? {}).filter(
         (header) => header.toLowerCase().trim() === desiredHeader,
     );
-    if (matchingHeaders.length > 1) {
-        throw new Error(`Unexpected quantity of ${desiredHeader} headers encountered: ${matchingHeaders.length}`);
-    } else if (matchingHeaders.length === 1) {
-        return event.headers[matchingHeaders[0]];
+    const matchingHeadersLength =
+        matchingHeaders[0] && (event?.multiValueHeaders[matchingHeaders[0]]?.length as number);
+    if (matchingHeadersLength > 1) {
+        throw new InvalidRequestError(
+            `Unexpected quantity of ${desiredHeader} headers encountered: ${matchingHeadersLength}`,
+        );
+    } else {
+        const matchingHeader: string = Object.keys(event?.headers ?? {}).find(
+            (header) => header.toLowerCase().trim() === desiredHeader,
+        ) as string;
+        return matchingHeader && event.headers[matchingHeader];
     }
-    return undefined;
 };
 
 export const getClientIpAddress = (event: APIGatewayProxyEvent) => {

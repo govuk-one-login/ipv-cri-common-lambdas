@@ -1,6 +1,7 @@
-import { jest } from "@jest/globals";
-import { APIGatewayProxyEvent } from "aws-lambda";
+import { APIGatewayProxyEvent, APIGatewayProxyEventHeaders } from "aws-lambda";
 import { getClientIpAddress, getSessionId } from "../../../../src/common/utils/request-utils";
+import { InvalidRequestError } from "../../../../src/types/errors";
+
 describe("request-utils", () => {
     describe("getClientIpAddress", () => {
         test("returns the value of x-forwarded-for header", () => {
@@ -60,20 +61,26 @@ describe("request-utils", () => {
             expect(result).toBeUndefined;
         });
         test("returns undefined, if another header is present instead of session-id", () => {
-            expect(()=> getSessionId({
-                headers: {
-                    session: "18345",
-                },
-            } as unknown as APIGatewayProxyEvent)).toThrow("Invalid request: Missing session-id header");
+            expect(() =>
+                getSessionId({
+                    headers: {
+                        session: "18345",
+                    },
+                } as unknown as APIGatewayProxyEvent),
+            ).toThrow("Invalid request: Missing session-id header");
         });
     });
     describe("matching headers", () => {
-        test("throws if there are multiple session-id headers", () => {
-            jest.spyOn(global.Object, "keys").mockReturnValueOnce(["session-id", "session-id"]);
-            const event = {
-                headers: {} as unknown,
-            } as unknown as APIGatewayProxyEvent;
-            expect(() => getSessionId(event)).toThrow;
+        test("getSessionId throws an error if there are multiple session-id headers", () => {
+            const event: Partial<APIGatewayProxyEvent> = {
+                multiValueHeaders: {
+                    "session-id": ["123", "456"],
+                },
+            } as unknown as APIGatewayProxyEventHeaders;
+
+            expect(() => getSessionId(event as APIGatewayProxyEvent)).toThrow(
+                new InvalidRequestError("Unexpected quantity of session-id headers encountered: 2"),
+            );
         });
     });
 });
