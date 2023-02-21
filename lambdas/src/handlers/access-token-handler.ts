@@ -36,6 +36,7 @@ export class AccessTokenLambda implements LambdaInterface {
             const requestPayload = this.requestValidator.validatePayload(event.body);
             const sessionItem = await this.sessionService.getSessionByAuthorizationCode(requestPayload.code);
             logger.appendKeys({ govuk_signin_journey_id: sessionItem.clientSessionId });
+            logger.info("found session")
 
             if (!configService.hasClientConfig(sessionItem.clientId)) {
                 await this.initClientConfig(sessionItem.clientId);
@@ -67,11 +68,7 @@ export class AccessTokenLambda implements LambdaInterface {
         } catch (err: any) {
             metrics.addMetric(ACCESS_TOKEN, MetricUnits.Count, 0);
             //Todo dont want any
-            logger.error({
-                statusCode: err.statusCode ?? 500,
-                message: err?.message,
-                err: err,
-            });
+            logger.error("access token lambda error occurred", err as Error);
             return {
                 statusCode: err.statusCode ?? 500,
                 body: JSON.stringify({
