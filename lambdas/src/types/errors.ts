@@ -1,9 +1,8 @@
 // Implementation of ErrorResponse.java in di-ipv-cri-lib
 export abstract class BaseError extends Error {
-    constructor(m: string, public statusCode?: number, public code?: number) {
-        super(m);
+    constructor(public readonly message: string, public statusCode?: number, public code?: number, public readonly details?: string) {
+        super(message);
     }
-
     getErrorSummary() {
         return this.code + ": " + this.message;
     }
@@ -18,21 +17,21 @@ export class InvalidAccessTokenError extends BaseError {
 }
 
 export class InvalidRequestError extends BaseError {
-    constructor(m: string) {
-        super(m);
+    constructor(public readonly message: string) {
+        super(message);
         this.statusCode = 400;
     }
 }
 
 export class InvalidPayloadError extends BaseError {
-    constructor(m: string) {
-        super(m);
+    constructor(public readonly message: string) {
+        super(message);
         this.statusCode = 400;
     }
 }
 
 export class ServerError extends BaseError {
-    constructor(m: string) {
+    constructor() {
         super("Server error");
         this.statusCode = 500;
     }
@@ -47,9 +46,22 @@ export class JwtSignatureValidationError extends BaseError {
 }
 
 export class SessionNotFoundError extends BaseError {
-    constructor(id: string) {
+    constructor(public readonly id: string) {
         super(`Could not find session item with id: ${id}`);
         this.statusCode = 400; // check
         this.code = 1029;
     }
 }
+
+export class SessionValidationError extends BaseError {
+
+    constructor(public readonly message: string, public readonly details?: string) {
+      super(message);
+      this.statusCode = 400;
+      this.code = 1019;
+      Object.setPrototypeOf(this, SessionValidationError.prototype);
+    }
+    getErrorSummary() {
+        return `${this.code}: ${this?.details}`;
+    }
+  }
