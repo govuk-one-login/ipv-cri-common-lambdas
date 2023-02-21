@@ -12,12 +12,13 @@ describe("auth-request-validator", () => {
         });
         describe("no queryStringParams", () => {
             it("should return missing querystring parameters", () => {
-                const sessionValidationError = new SessionValidationError("Session Validation Exception", "Missing querystring parameters");
-                expect(() => authRequestValidator.validate(
-                    null,
-                    existingClientId,
-                    configuredRedirectUri,
-                )).toThrow("Session Validation Exception");
+                const sessionValidationError = new SessionValidationError(
+                    "Session Validation Exception",
+                    "Missing querystring parameters",
+                );
+                expect(() => authRequestValidator.validate(null, existingClientId, configuredRedirectUri)).toThrow(
+                    "Session Validation Exception",
+                );
                 expect(sessionValidationError.details).toBe("Missing querystring parameters");
             });
         });
@@ -33,51 +34,51 @@ describe("auth-request-validator", () => {
 
             describe("with an existing client id and the configured redirect_uri", () => {
                 it("should return object true isValid attribute and null errorMsg", () => {
-                    expect(() => authRequestValidator.validate(
-                        queryStringParams,
-                        existingClientId,
-                        configuredRedirectUri,
-                    )).not.toThrow();
-
+                    expect(() =>
+                        authRequestValidator.validate(queryStringParams, existingClientId, configuredRedirectUri),
+                    ).not.toThrow();
                 });
             });
             describe("with a mismatched client id", () => {
                 it("should return invalid client id parameter error", () => {
                     queryStringParams["client_id"] = "an-unexpected-clientId-in-the-request";
-                    const sessionValidationError = new SessionValidationError("Session Validation Exception", "Missing client_id parameter");
+                    const sessionValidationError = new SessionValidationError(
+                        "Session Validation Exception",
+                        "Missing client_id parameter",
+                    );
 
-                    expect(() => authRequestValidator.validate(
-                        queryStringParams,
-                        existingClientId,
-                        configuredRedirectUri,
-                    )).toThrow("Session Validation Exception");
+                    expect(() =>
+                        authRequestValidator.validate(queryStringParams, existingClientId, configuredRedirectUri),
+                    ).toThrow("Session Validation Exception");
                     expect(sessionValidationError.details).toBe("Missing client_id parameter");
                 });
             });
             describe("with mismatching configured redirect_uri", () => {
                 it("should return invalid redirect uri parameter error", () => {
                     queryStringParams["redirect_uri"] = "an-unexpected-redirect-uri-in-the-request";
-                    const sessionValidationError = new SessionValidationError("Session Validation Exception", "Invalid redirect_uri parameter");
+                    const sessionValidationError = new SessionValidationError(
+                        "Session Validation Exception",
+                        "Invalid redirect_uri parameter",
+                    );
 
-                    expect(() => authRequestValidator.validate(
-                        queryStringParams,
-                        existingClientId,
-                        configuredRedirectUri,
-                    )).toThrow("Session Validation Exception");
-                    expect(sessionValidationError.details).toBe("Invalid redirect_uri parameter")
+                    expect(() =>
+                        authRequestValidator.validate(queryStringParams, existingClientId, configuredRedirectUri),
+                    ).toThrow("Session Validation Exception");
+                    expect(sessionValidationError.details).toBe("Invalid redirect_uri parameter");
                 });
             });
             describe("client id and redirect_uri not matching", () => {
                 it("first invalid returned i.e. client_id uri parameter error", () => {
                     queryStringParams["client_id"] = "an-unexpected-redirect-uri-in-the-request";
                     queryStringParams["redirect_uri"] = "an-unexpected-redirect-uri-in-the-request";
-                    const sessionValidationError = new SessionValidationError("Session Validation Exception", "Invalid client_id parameter");
+                    const sessionValidationError = new SessionValidationError(
+                        "Session Validation Exception",
+                        "Invalid client_id parameter",
+                    );
 
-                    expect(() => authRequestValidator.validate(
-                        queryStringParams,
-                        existingClientId,
-                        configuredRedirectUri,
-                    )).toThrow("Session Validation Exception");
+                    expect(() =>
+                        authRequestValidator.validate(queryStringParams, existingClientId, configuredRedirectUri),
+                    ).toThrow("Session Validation Exception");
                     expect(sessionValidationError.details).toBe("Invalid client_id parameter");
                 });
             });
@@ -91,37 +92,41 @@ describe("auth-request-validator", () => {
                 it("should return missing client id parameter error", () => {
                     (queryStringParams["redirect_uri"] = "a-valid-redirect-uri"),
                         (queryStringParams["response_type"] = "a-valid-response-type");
-                    const sessionValidationError = new SessionValidationError("Session Validation Exception", "Missing client_id parameter");
+                    const sessionValidationError = new SessionValidationError(
+                        "Session Validation Exception",
+                        "Missing client_id parameter",
+                    );
 
-                    expect(() => authRequestValidator.validate(
-                        queryStringParams,
-                        existingClientId,
-                        configuredRedirectUri,
-                    )).toThrow("Session Validation Exception");
+                    expect(() =>
+                        authRequestValidator.validate(queryStringParams, existingClientId, configuredRedirectUri),
+                    ).toThrow("Session Validation Exception");
                     expect(sessionValidationError.details).toBe("Missing client_id parameter");
                 });
                 it("should return missing redirect uri parameter error", () => {
                     queryStringParams["client_id"] = "a-valid-clientId";
                     queryStringParams["response_type"] = "a-valid-response-type";
-                    const sessionValidationError = new SessionValidationError("Session Validation Exception", "Missing redirect_uri parameter");
+                    const sessionValidationError = new SessionValidationError(
+                        "Session Validation Exception",
+                        "Missing redirect_uri parameter",
+                    );
 
-                    expect(() => authRequestValidator.validate(
-                        queryStringParams,
-                        existingClientId,
-                        configuredRedirectUri,
-                    )).toThrow("Session Validation Exception");
+                    expect(() =>
+                        authRequestValidator.validate(queryStringParams, existingClientId, configuredRedirectUri),
+                    ).toThrow("Session Validation Exception");
                     expect(sessionValidationError.details).toBe("Missing redirect_uri parameter");
                 });
                 it("should return missing response type parameter error", () => {
                     queryStringParams["client_id"] = "a-valid-clientId";
                     queryStringParams["redirect_uri"] = "a-valid-redirect-uri";
-                    const sessionValidationError = new SessionValidationError("Session Validation Exception", "Missing response_type parameter");
+                    const sessionValidationError = new SessionValidationError(
+                        "Session Validation Exception",
+                        "Missing response_type parameter",
+                    );
 
-                    expect(() => authRequestValidator.validate(queryStringParams,
-                        existingClientId,
-                        configuredRedirectUri,
-                    )).toThrow("Session Validation Exception");
-                    
+                    expect(() =>
+                        authRequestValidator.validate(queryStringParams, existingClientId, configuredRedirectUri),
+                    ).toThrow("Session Validation Exception");
+
                     expect(sessionValidationError.details).toBe("Missing response_type parameter");
                 });
             });
