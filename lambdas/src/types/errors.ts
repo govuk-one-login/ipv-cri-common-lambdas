@@ -1,6 +1,11 @@
 // Implementation of ErrorResponse.java in di-ipv-cri-lib
 export abstract class BaseError extends Error {
-    constructor(public readonly message: string, public statusCode?: number, public code?: number, public readonly details?: string) {
+    constructor(
+        public readonly message: string,
+        public statusCode?: number,
+        public code?: number,
+        public readonly details?: string,
+    ) {
         super(message);
     }
     getErrorSummary() {
@@ -54,14 +59,13 @@ export class SessionNotFoundError extends BaseError {
 }
 
 export class SessionValidationError extends BaseError {
-
     constructor(public readonly message: string, public readonly details?: string) {
-      super(message);
-      this.statusCode = 400;
-      this.code = 1019;
-      Object.setPrototypeOf(this, SessionValidationError.prototype);
+        super(message);
+        this.statusCode = 400;
+        this.code = 1019;
+        Object.setPrototypeOf(this, SessionValidationError.prototype);
     }
     getErrorSummary() {
         return `${this.code}: ${this?.details}`;
     }
-  }
+}

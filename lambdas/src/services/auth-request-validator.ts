@@ -25,6 +25,5 @@ export class AuthorizationRequestValidator {
         } else if (redirectUri !== expectedRedirectUri) {
             throw new SessionValidationError("Session Validation Exception", "Invalid redirect_uri parameter");
         }
-
     }
 }
