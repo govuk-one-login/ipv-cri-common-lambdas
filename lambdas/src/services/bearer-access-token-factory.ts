@@ -1,7 +1,8 @@
 import { BearerAccessToken } from "../types/bearer-access-token";
 
-export class AccessTokenService {
-    public async createBearerAccessToken(expires_in: number): Promise<BearerAccessToken> {
+export class BearerAccessTokenFactory {
+    constructor(private bearerAccessTokenTtl: number) {}
+    public async create(): Promise<BearerAccessToken> {
         const { randomBytes } = await import("node:crypto");
 
         const token_type = "Bearer";
@@ -10,7 +11,7 @@ export class AccessTokenService {
         return {
             access_token,
             token_type,
-            expires_in,
+            expires_in: this.bearerAccessTokenTtl,
         };
     }
 }
