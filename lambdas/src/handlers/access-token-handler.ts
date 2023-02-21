@@ -36,7 +36,7 @@ export class AccessTokenLambda implements LambdaInterface {
             const requestPayload = this.requestValidator.validatePayload(event.body);
             const sessionItem = await this.sessionService.getSessionByAuthorizationCode(requestPayload.code);
             logger.appendKeys({ govuk_signin_journey_id: sessionItem.clientSessionId });
-            logger.info("found session")
+            logger.info("found session");
 
             if (!configService.hasClientConfig(sessionItem.clientId)) {
                 await this.initClientConfig(sessionItem.clientId);

@@ -154,7 +154,10 @@ describe("access-token-handler.ts", () => {
                 expect(output.statusCode).toBe(400);
                 expect(output.body).not.toBeNull;
                 expect(body.message).toContain("missing body");
-                expect(loggerSpy).toHaveBeenCalledWith("access token lambda error occurred", Error("Invalid request: missing body"));
+                expect(loggerSpy).toHaveBeenCalledWith(
+                    "access token lambda error occurred",
+                    Error("Invalid request: missing body"),
+                );
                 expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnits.Count, 0);
             });
 
@@ -165,7 +168,10 @@ describe("access-token-handler.ts", () => {
                 expect(output.statusCode).toBe(400);
                 expect(output.body).not.toBeNull;
                 expect(body.message).toContain("Invalid request");
-                expect(loggerSpy).toHaveBeenCalledWith("access token lambda error occurred", Error("Invalid request: Missing redirectUri parameter"));
+                expect(loggerSpy).toHaveBeenCalledWith(
+                    "access token lambda error occurred",
+                    Error("Invalid request: Missing redirectUri parameter"),
+                );
                 expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnits.Count, 0);
             });
 
@@ -191,7 +197,10 @@ describe("access-token-handler.ts", () => {
                 expect(output.statusCode).toBe(403);
                 expect(output.body).not.toBeNull;
                 expect(body.message).toContain("Access token expired");
-                expect(loggerSpy).toHaveBeenCalledWith("access token lambda error occurred", Error("Access token expired"));
+                expect(loggerSpy).toHaveBeenCalledWith(
+                    "access token lambda error occurred",
+                    Error("Access token expired"),
+                );
                 expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnits.Count, 0);
             });
 
@@ -240,7 +249,10 @@ describe("access-token-handler.ts", () => {
                 expect(output.statusCode).toBe(403);
                 expect(body.code).toBe(1026);
                 expect(body.message).toContain("Access token expired");
-                expect(loggerSpy).toHaveBeenCalledWith("access token lambda error occurred", Error("Access token expired"));
+                expect(loggerSpy).toHaveBeenCalledWith(
+                    "access token lambda error occurred",
+                    Error("Access token expired"),
+                );
                 expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnits.Count, 0);
             });
 
@@ -347,7 +359,10 @@ describe("access-token-handler.ts", () => {
                 const body = JSON.parse(output.body);
                 expect(output.statusCode).toBe(400);
                 expect(body.message).toContain(`JWT signature verification failed`);
-                expect(loggerSpy).toHaveBeenCalledWith("access token lambda error occurred", Error("JWT signature verification failed"));
+                expect(loggerSpy).toHaveBeenCalledWith(
+                    "access token lambda error occurred",
+                    Error("JWT signature verification failed"),
+                );
                 expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnits.Count, 0);
             });
 
@@ -364,7 +379,7 @@ describe("access-token-handler.ts", () => {
                 );
 
                 jest.spyOn(sessionService, "getSessionByAuthorizationCode").mockReturnValue(
-                    Promise.reject(new ServerError())
+                    Promise.reject(new ServerError()),
                 );
 
                 const clientConfig = new Map<string, string>();
