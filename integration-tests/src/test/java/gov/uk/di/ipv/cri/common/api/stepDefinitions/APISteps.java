@@ -13,7 +13,6 @@ import io.cucumber.java.en.When;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.http.HttpResponse;
-import java.sql.SQLOutput;
 import java.util.Map;
 import java.util.UUID;
 
@@ -23,9 +22,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 public class APISteps {
 
     private static final String ENVIRONMENT = "/dev"; // dev, build, staging, integration
-    private static String DEV_SESSION_URI ;
-    private static String DEV_AUTHORIZATION_URI ;
-    public static String DEV_ACCESS_TOKEN_URI ;
+    private static String DEV_SESSION_URI;
+    private static String DEV_AUTHORIZATION_URI;
+    public static String DEV_ACCESS_TOKEN_URI;
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final String DEFAULT_REDIRECT_URI =
             "https://di-ipv-core-stub.london.cloudapps.digital/callback";
@@ -37,11 +36,10 @@ public class APISteps {
     private Map<String, String> responseBodyMap;
 
     @Before
-    public void setUp()
-    {
-       DEV_SESSION_URI = "";
-       DEV_AUTHORIZATION_URI = "";
-       DEV_ACCESS_TOKEN_URI = "";
+    public void setUp() {
+        DEV_SESSION_URI = "";
+        DEV_AUTHORIZATION_URI = "";
+        DEV_ACCESS_TOKEN_URI = "";
     }
 
     @Given("authorization JAR for test user {int}")
