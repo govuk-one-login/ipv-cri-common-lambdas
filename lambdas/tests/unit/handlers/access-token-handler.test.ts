@@ -364,7 +364,7 @@ describe("access-token-handler.ts", () => {
                 );
 
                 jest.spyOn(sessionService, "getSessionByAuthorizationCode").mockReturnValue(
-                    Promise.reject(new ServerError(""))
+                    Promise.reject(new ServerError())
                 );
 
                 const clientConfig = new Map<string, string>();
