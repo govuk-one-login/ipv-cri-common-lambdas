@@ -5,12 +5,12 @@ import { Logger } from "@aws-lambda-powertools/logger";
 import { SessionService } from "../services/session-service";
 import { ConfigService } from "../common/config/config-service";
 import { AccessTokenRequestValidator } from "../services/token-request-validator";
-import { AccessTokenService } from "../services/access-token-service";
 import { JwtVerifierFactory } from "../common/security/jwt-verifier";
 import { AwsClientType, createClient } from "../common/aws-client-factory";
 import { DynamoDBDocument } from "@aws-sdk/lib-dynamodb";
 import { SSMClient } from "@aws-sdk/client-ssm";
 import { ClientConfigKey, CommonConfigKey } from "../types/config-keys";
+import { BearerAccessTokenFactory } from "../services/bearer-access-token-factory";
 
 const logger = new Logger();
 const metrics = new Metrics();
@@ -21,7 +21,7 @@ const initPromise = configService.init([CommonConfigKey.SESSION_TABLE_NAME, Comm
 
 export class AccessTokenLambda implements LambdaInterface {
     constructor(
-        private readonly accessTokenService: AccessTokenService,
+        private readonly bearerAccessTokenFactory: BearerAccessTokenFactory,
         private readonly sessionService: SessionService,
         private readonly requestValidator: AccessTokenRequestValidator,
     ) {}
@@ -53,8 +53,7 @@ export class AccessTokenLambda implements LambdaInterface {
                 clientConfig!,
             );
 
-            const bearerAccessTokenTTL = configService.getBearerAccessTokenTtl();
-            const accessTokenResponse = await this.accessTokenService.createBearerAccessToken(bearerAccessTokenTTL);
+            const accessTokenResponse = await this.bearerAccessTokenFactory.create();
             await this.sessionService.createAccessTokenCode(sessionItem, accessTokenResponse);
 
             return {
@@ -89,7 +88,7 @@ export class AccessTokenLambda implements LambdaInterface {
 }
 
 const handlerClass = new AccessTokenLambda(
-    new AccessTokenService(),
+    new BearerAccessTokenFactory(configService.getBearerAccessTokenTtl()),
     new SessionService(dynamoDbClient, configService),
     new AccessTokenRequestValidator(new JwtVerifierFactory(logger)),
 );
