@@ -1,7 +1,6 @@
 import { JwtVerificationConfig } from "../../../src/types/jwt-verification-config";
 import { AccessTokenLambda } from "../../../src/handlers/access-token-handler";
 import { ConfigService } from "../../../src/common/config/config-service";
-import { AccessTokenService } from "../../../src/services/access-token-service";
 import { AccessTokenRequestValidator } from "../../../src/services/token-request-validator";
 import { SessionService } from "../../../src/services/session-service";
 import { APIGatewayProxyEvent } from "aws-lambda/trigger/api-gateway-proxy";
@@ -10,6 +9,7 @@ import { JwtVerifier, JwtVerifierFactory } from "../../../src/common/security/jw
 import { Logger } from "@aws-lambda-powertools/logger";
 import { DynamoDBDocument } from "@aws-sdk/lib-dynamodb";
 import { SessionItem } from "../../../src/types/session-item";
+import { BearerAccessTokenFactory } from "../../../src/services/bearer-access-token-factory";
 
 jest.mock("../../../src/common/config/config-service");
 jest.mock("../../../src/common/security/jwt-verifier");
@@ -52,7 +52,7 @@ describe("access-token-handler.ts", () => {
         const jwtVerifier = new JwtVerifier(jwtVerificationConfig, logger);
         const mockJwtVerifierFactory = jest.mocked(JwtVerifierFactory);
         const mockConfigService = jest.mocked(ConfigService);
-        const accessTokenService = new AccessTokenService();
+        const accessTokenService = new BearerAccessTokenFactory(10);
         const sessionService = new SessionService(mockDynamoDbClient.prototype, configService);
         const accessTokenRequestValidator = new AccessTokenRequestValidator(mockJwtVerifierFactory.prototype);
 
