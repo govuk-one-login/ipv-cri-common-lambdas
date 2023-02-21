@@ -12,7 +12,7 @@ import java.net.http.HttpResponse;
 import java.util.Objects;
 import java.util.Optional;
 
-import static gov.uk.di.ipv.cri.common.api.stepDefinitions.APISteps.DEV_AcessToken_URI;
+import static gov.uk.di.ipv.cri.common.api.stepDefinitions.APISteps.DEV_ACCESS_TOKEN_URI;
 
 public class IpvCoreStubUtil {
 
@@ -141,12 +141,12 @@ public class IpvCoreStubUtil {
             throws URISyntaxException, IOException, InterruptedException {
 
         String privateKeyJWT = getPrivateKeyJWT(authorizationCode.trim());
-
+        System.out.println("DEV_ACCESS_TOKEN_URI is --------" + DEV_ACCESS_TOKEN_URI);
         var request =
                 HttpRequest.newBuilder()
                         .uri(
                                 new URIBuilder(getPrivateApiEndpoint())
-                                        .setPath(DEV_AcessToken_URI)
+                                        .setPath(DEV_ACCESS_TOKEN_URI)
                                         .build())
                         .header("Content-Type", "application/x-www-form-urlencoded")
                         .POST(HttpRequest.BodyPublishers.ofString(privateKeyJWT))

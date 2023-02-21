@@ -1,8 +1,8 @@
 Feature: Authorization API
 
-  Scenario Outline: a valid authorization code is returned
+  Scenario Outline: a valid authorization code is returned with Session Lambda in '<SessionLambdaImplementation>' and Auth Lambda is in '<AuthLambdaImplementation>'
     Given authorization JAR for test user 681
-    And AccessToken lambda implementation is in '<SessionLambdaImplementation>'
+    And Session lambda implementation is in '<SessionLambdaImplementation>'
     When user sends a request to session API
     Then user gets a session id
     And Authorisation lambda implementation is in '<AuthLambdaImplementation>'
@@ -12,11 +12,13 @@ Feature: Authorization API
     Examples:
       |SessionLambdaImplementation|AuthLambdaImplementation|
       |Java                       |Java                    |
+      |Java                       |TS                      |
       |TS                         |TS                      |
+      |TS                         |Java                    |
 
-  Scenario Outline: no authorization code is returned when client id does not match
+  Scenario Outline: no authorization code is returned when client id does not match with Session Lambda in '<SessionLambdaImplementation>' and Auth Lambda is in '<AuthLambdaImplementation>'
     Given authorization JAR for test user 681
-    And AccessToken lambda implementation is in '<SessionLambdaImplementation>'
+    And Session lambda implementation is in '<SessionLambdaImplementation>'
     When user sends a request to session API
     Then user gets a session id
     And Authorisation lambda implementation is in '<AuthLambdaImplementation>'
@@ -26,11 +28,13 @@ Feature: Authorization API
     Examples:
       |SessionLambdaImplementation|AuthLambdaImplementation|
       |Java                       |Java                    |
+      |Java                       |TS                      |
       |TS                         |TS                      |
+      |TS                         |Java                    |
 
-  Scenario Outline: no authorization code is returned when redirect uri does not match
+  Scenario Outline: no authorization code is returned when redirect uri does not match with with Session Lambda in '<SessionLambdaImplementation>' and Auth Lambda is in '<AuthLambdaImplementation>'
     Given authorization JAR for test user 681
-    And AccessToken lambda implementation is in '<SessionLambdaImplementation>'
+    And Session lambda implementation is in '<SessionLambdaImplementation>'
     When user sends a request to session API
     Then user gets a session id
     And Authorisation lambda implementation is in '<AuthLambdaImplementation>'
@@ -40,4 +44,6 @@ Feature: Authorization API
     Examples:
       |SessionLambdaImplementation|AuthLambdaImplementation|
       |Java                       |Java                    |
+      |Java                       |TS                      |
       |TS                         |TS                      |
+      |TS                         |Java                    |
