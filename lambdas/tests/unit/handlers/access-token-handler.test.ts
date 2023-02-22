@@ -95,22 +95,30 @@ describe("access-token-handler.ts", () => {
                 clientConfig.set("redirectUri", redirectUri);
                 jest.spyOn(mockConfigService.prototype, "getClientConfig").mockReturnValue(clientConfig);
 
-                const sessionItem: SessionItem = {
-                    sessionId: code,
-                    authorizationCodeExpiryDate: 1,
-                    clientId: "1",
-                    clientSessionId: clientSessionId,
-                    redirectUri: redirectUri,
-                    accessToken: "",
-                    accessTokenExpiryDate: 0,
-                    authorizationCode: code,
-                };
+                const sessionItem = {
+                    Items: [
+                        {
+                            sessionId: code,
+                            authorizationCodeExpiryDate: new Date().getDate() + 10000000,
+                            clientId: "1",
+                            clientSessionId: clientSessionId,
+                            redirectUri: redirectUri,
+                            accessToken: "",
+                            accessTokenExpiryDate: new Date().getDate() + 10000000,
+                            authorizationCode: code,
+                        } as SessionItem,
+                    ],
+                } as unknown as QueryCommandInput;
 
-                jest.spyOn(sessionService, "getSessionByAuthorizationCode").mockReturnValue(
-                    new Promise<any>((resolve) => {
+                const impl = () => {
+                    const mockPromise = new Promise<any>((resolve) => {
                         resolve(sessionItem);
-                    }),
-                );
+                    });
+                    return jest.fn().mockImplementation(() => {
+                        return mockPromise;
+                    });
+                };
+                mockDynamoDbClient.prototype.query = impl();
 
                 const event = {
                     body: {
@@ -231,6 +239,7 @@ describe("access-token-handler.ts", () => {
             const sessionService = new SessionService(mockDynamoDbClient.prototype, configService);
 
             beforeEach(() => {
+                jest.clearAllMocks();
                 jest.resetAllMocks();
                 configService.init = () => Promise.resolve();
                 accessTokenLambda = new AccessTokenLambda(
@@ -361,21 +370,31 @@ describe("access-token-handler.ts", () => {
                 };
 
                 jest.spyOn(mockDynamoDbClient.prototype, "query").mockReturnValue(mockDynamoDbClientQueryResult);
-                jest.spyOn(sessionService, "getSessionByAuthorizationCode").mockReturnValue(
-                    new Promise<SessionItem>((resolve) => {
-                        const sessionItem: SessionItem = {
-                            sessionId: "123abc",
-                            authorizationCodeExpiryDate: 1,
+
+                const sessionItem = {
+                    Items: [
+                        {
+                            sessionId: code,
+                            authorizationCodeExpiryDate: new Date().getDate() + 10000000,
                             clientId: "1",
                             clientSessionId: "1",
-                            redirectUri: badUrl,
+                            redirectUri: "http://does-not-match",
                             accessToken: "",
-                            accessTokenExpiryDate: 0,
+                            accessTokenExpiryDate: new Date().getDate() + 10000000,
                             authorizationCode: code,
-                        };
+                        } as SessionItem,
+                    ],
+                } as unknown as QueryCommandInput;
+
+                const impl = () => {
+                    const mockPromise = new Promise<any>((resolve) => {
                         resolve(sessionItem);
-                    }),
-                );
+                    });
+                    return jest.fn().mockImplementation(() => {
+                        return mockPromise;
+                    });
+                };
+                mockDynamoDbClient.prototype.query = impl();
 
                 const output = await accessTokenLambda.handler(event, null);
                 const body = JSON.parse(output.body);
@@ -407,21 +426,32 @@ describe("access-token-handler.ts", () => {
                 clientConfig.set("code", "123abc");
                 clientConfig.set("redirectUri", redirectUri);
                 jest.spyOn(mockConfigService.prototype, "getClientConfig").mockReturnValue(clientConfig);
-                jest.spyOn(sessionService, "getSessionByAuthorizationCode").mockReturnValue(
-                    new Promise<SessionItem>((resolve) => {
-                        const sessionItem: SessionItem = {
-                            sessionId: "123abc",
-                            authorizationCodeExpiryDate: 1,
+
+                const sessionItem = {
+                    Items: [
+                        {
+                            sessionId: "1",
+                            authorizationCodeExpiryDate: new Date().getDate() + 10000000,
                             clientId: "1",
                             clientSessionId: "1",
                             redirectUri: redirectUri,
                             accessToken: "",
-                            accessTokenExpiryDate: 0,
-                            authorizationCode: "123abc",
-                        };
+                            accessTokenExpiryDate: new Date().getDate() + 10000000,
+                            authorizationCode: "1",
+                        } as SessionItem,
+                    ],
+                } as unknown as QueryCommandInput;
+
+                const impl = () => {
+                    const mockPromise = new Promise<any>((resolve) => {
                         resolve(sessionItem);
-                    }),
-                );
+                    });
+                    return jest.fn().mockImplementation(() => {
+                        return mockPromise;
+                    });
+                };
+                mockDynamoDbClient.prototype.query = impl();
+
                 jest.spyOn(mockDynamoDbClient.prototype, "query").mockReturnValue(mockDynamoDbClientQueryResult);
                 jest.spyOn(jwtVerifier, "verify").mockReturnValue(
                     new Promise<any>((resolve) => {
@@ -437,7 +467,6 @@ describe("access-token-handler.ts", () => {
             it("should fail when dynamoDb is not available", async () => {
                 const redirectUri = "http://123.abc.com";
                 const code = "123abc";
-                const clientSessionId = "1";
 
                 jest.spyOn(mockJwtVerifierFactory.prototype, "create").mockReturnValue(jwtVerifier);
                 jest.spyOn(jwtVerifier, "verify").mockReturnValue(
@@ -455,22 +484,30 @@ describe("access-token-handler.ts", () => {
                 clientConfig.set("redirectUri", redirectUri);
                 jest.spyOn(mockConfigService.prototype, "getClientConfig").mockReturnValue(clientConfig);
 
-                const sessionItem: SessionItem = {
-                    sessionId: code,
-                    authorizationCodeExpiryDate: 1,
-                    clientId: "1",
-                    clientSessionId: clientSessionId,
-                    redirectUri: redirectUri,
-                    accessToken: "",
-                    accessTokenExpiryDate: 0,
-                    authorizationCode: code,
-                };
+                const sessionItem = {
+                    Items: [
+                        {
+                            sessionId: code,
+                            authorizationCodeExpiryDate: new Date().getDate() + 10000000,
+                            clientId: "1",
+                            clientSessionId: "1",
+                            redirectUri: redirectUri,
+                            accessToken: "",
+                            accessTokenExpiryDate: new Date().getDate() + 10000000,
+                            authorizationCode: code,
+                        } as SessionItem,
+                    ],
+                } as unknown as QueryCommandInput;
 
-                jest.spyOn(sessionService, "getSessionByAuthorizationCode").mockReturnValue(
-                    new Promise<any>((resolve) => {
+                const impl = () => {
+                    const mockPromise = new Promise<any>((resolve) => {
                         resolve(sessionItem);
-                    }),
-                );
+                    });
+                    return jest.fn().mockImplementation(() => {
+                        return mockPromise;
+                    });
+                };
+                mockDynamoDbClient.prototype.query = impl();
 
                 const event = {
                     body: {
@@ -485,7 +522,7 @@ describe("access-token-handler.ts", () => {
                 expect(output.statusCode).toBe(200);
             });
 
-            it("should return http 403 when access token has expired", async () => {
+            it("should return http 403 when the session item is invalid", async () => {
                 const redirectUri = "http://123.abc.com";
                 const code = "123abc";
 
@@ -500,6 +537,20 @@ describe("access-token-handler.ts", () => {
                 clientConfig.set("code", code);
                 clientConfig.set("redirectUri", redirectUri);
                 jest.spyOn(mockConfigService.prototype, "getClientConfig").mockReturnValue(clientConfig);
+
+                const sessionItem = {
+                    Items: [],
+                } as unknown as QueryCommandInput;
+
+                const impl = () => {
+                    const mockPromise = new Promise<any>((resolve) => {
+                        resolve(sessionItem);
+                    });
+                    return jest.fn().mockImplementation(() => {
+                        return mockPromise;
+                    });
+                };
+                mockDynamoDbClient.prototype.query = impl();
 
                 const output = await accessTokenLambda.handler(
                     {
