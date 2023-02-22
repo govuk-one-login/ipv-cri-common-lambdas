@@ -69,3 +69,19 @@ export class SessionValidationError extends BaseError {
         return `${this.code}: ${this?.details}`;
     }
 }
+
+export class AuthorizationCodeExpiredError extends BaseError {
+    constructor() {
+        super("Authorization code expired");
+        this.statusCode = 403;
+        this.code = 1026;
+    }
+}
+
+export class AccessCodeExpiredError extends BaseError {
+    constructor() {
+        super("Access code expired");
+        this.statusCode = 403;
+        this.code = 1026;
+    }
+}
