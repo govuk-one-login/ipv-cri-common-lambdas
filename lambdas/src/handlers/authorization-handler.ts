@@ -45,7 +45,7 @@ export class AuthorizationLambda implements LambdaInterface {
             this.authorizationRequestValidator.validate(
                 event.queryStringParameters,
                 sessionItem.clientId,
-                clientConfig!.get(ClientConfigKey.JWT_REDIRECT_URI)!,
+                clientConfig?.get(ClientConfigKey.JWT_REDIRECT_URI) as string,
             );
 
             logger.appendKeys({ govuk_signin_journey_id: sessionItem.clientSessionId });

@@ -45,15 +45,11 @@ describe("JweDecrypter", () => {
         kmsClient = new KMSClient({});
         jweDecrypter = new JweDecrypter(kmsClient, getEncryptionKeyId.mockReturnValueOnce("test-key-id"));
         jest.spyOn(JSON, "parse").mockReturnValueOnce(jweProtectedHeader);
+        jest.clearAllMocks();
     });
 
     it("decrypts JWE", async () => {
         const decoded_iv = new Uint8Array([1, 2, 3, 4]);
-        const response = {
-            Plaintext: "decryptedContentEncKey",
-        };
-        const kmsClientMock = <jest.Mock>kmsClient.send;
-        kmsClientMock.mockResolvedValue(response);
         const result = await jweDecrypter.decryptJwe(compactJwe);
 
         expect(getEncryptionKeyId).toHaveBeenCalled();
@@ -63,16 +59,27 @@ describe("JweDecrypter", () => {
         expect(result).toEqual(Buffer.from("decrypted content"));
     });
 
+    it("throws error when decrypts JWE fails", async () => {
+        createDecipheriv("aes-256-gcm", decryptedContentEncKey, expect.any(Uint8Array), {});
+
+        await expect(jweDecrypter.decryptJwe(compactJwe)).rejects.toThrowError(
+            expect.objectContaining({
+                statusCode: 403,
+                message:
+                    "Session Validation Error\", \"Invalid request - JWE decryption failed :TypeError: Cannot read properties of undefined (reading 'setAuthTag')",
+            }),
+        );
+    });
     it("throws an error if number of JWE parts is not 5", async () => {
         await expect(jweDecrypter.decryptJwe("header.encrypted-key.iv.ciphertext")).rejects.toThrowError(
             "Invalid number of JWE parts encountered: 4",
         );
     });
 
-    it("should throw an error if the decryption process fails", async () => {
+    it("should throw an error on KmsClient send operation", async () => {
         const kmsClientMock = <jest.Mock>kmsClient.send;
-        kmsClientMock.mockRejectedValue(new Error("Decryption failed"));
+        kmsClientMock.mockRejectedValue(new Error("Some KMS client error"));
 
-        await expect(jweDecrypter.decryptJwe(compactJwe)).rejects.toThrowError("Decryption failed");
+        await expect(jweDecrypter.decryptJwe(compactJwe)).rejects.toThrowError("Some KMS client error");
     });
 });

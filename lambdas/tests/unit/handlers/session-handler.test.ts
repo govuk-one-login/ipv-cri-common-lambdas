@@ -14,7 +14,8 @@ import {
     SessionRequestValidatorFactory,
 } from "../../../src/services/session-request-validator";
 import { SessionService } from "../../../src/services/session-service";
-import { ValidationResult } from "../../../src/types/validation-result";
+import { GenericServerError, SessionValidationError } from "../../../src/types/errors";
+import { JWTPayload } from "jose";
 
 jest.mock("@aws-sdk/lib-dynamodb");
 jest.mock("@aws-sdk/client-ssm");
@@ -105,9 +106,7 @@ describe("SessionLambda", () => {
             auditService.prototype,
         );
 
-        jest.spyOn(jweDecrypter.prototype, "decryptJwe").mockImplementation(() => {
-            return new Promise<Buffer>((res) => res(Buffer.from("test-data")));
-        });
+        jest.spyOn(jweDecrypter.prototype, "decryptJwe").mockResolvedValue(Buffer.from("test-data"));
         jest.spyOn(personIdentityService.prototype, "savePersonIdentity").mockImplementation();
         jest.spyOn(auditService.prototype, "sendAuditEvent").mockImplementation();
         jest.spyOn(configService.prototype, "init").mockImplementation(() => new Promise<void>((res) => res()));
@@ -116,20 +115,16 @@ describe("SessionLambda", () => {
             new Promise<string>((res) => res("test-session-id")),
         );
         jest.spyOn(sessionRequestValidator.prototype, "validateJwt").mockReturnValue(
-            new Promise<ValidationResult>((res) =>
+            new Promise<JWTPayload>((res) =>
                 res({
-                    isValid: true,
-                    validatedObject: {
-                        client_id: "test-jwt-client-id",
-                        govuk_signin_journey_id: "test-journey-id",
-                        persistent_session_id: "test-persistent-session-id",
-                        redirect_uri: "test-redirect-uri",
-                        state: "test-state",
-                        sub: "test-sub",
-                        shared_claims: mockPerson,
-                    },
-                    errorMsg: "",
-                } as ValidationResult),
+                    client_id: "test-jwt-client-id",
+                    govuk_signin_journey_id: "test-journey-id",
+                    persistent_session_id: "test-persistent-session-id",
+                    redirect_uri: "test-redirect-uri",
+                    state: "test-state",
+                    sub: "test-sub",
+                    shared_claims: mockPerson,
+                } as JWTPayload),
             ),
         );
         jest.spyOn(sessionRequestValidatorFactory.prototype, "create").mockReturnValue(
@@ -144,15 +139,18 @@ describe("SessionLambda", () => {
     });
 
     it("should error on JWE decryption fail", async () => {
-        jest.spyOn(jweDecrypter.prototype, "decryptJwe").mockImplementation(() => {
-            return new Promise<Buffer>((res, rej) => rej(Error("test error")));
-        });
+        jest.spyOn(jweDecrypter.prototype, "decryptJwe").mockRejectedValueOnce(
+            new SessionValidationError(
+                "Session Validation Exception",
+                "Invalid request: JWT validation/verification failed: failure",
+            ),
+        );
         const result = await sessionLambda.handler(mockEvent, {});
-        expect(result).toEqual({
-            statusCode: 400,
-            body: "Invalid request: JWE decryption failed",
-        });
-        expect(errorSpy).toHaveBeenCalledWith("Invalid request - JWE decryption failed", Error("test error"));
+
+        expect(result.statusCode).toBe(400);
+        expect(result.body).toContain("1019: Session Validation Exception");
+
+        expect(errorSpy).toHaveBeenCalledWith("session lambda error occurred", expect.any(SessionValidationError));
     });
 
     it("should initialise the client config if unavailable", async () => {
@@ -186,19 +184,16 @@ describe("SessionLambda", () => {
     });
 
     it("should error on JWT validation fail", async () => {
-        jest.spyOn(sessionRequestValidator.prototype, "validateJwt").mockReturnValue(
-            new Promise<ValidationResult>((res) =>
-                res({
-                    isValid: false,
-                    errorMsg: "Failure",
-                }),
+        jest.spyOn(sessionRequestValidator.prototype, "validateJwt").mockRejectedValueOnce(
+            new SessionValidationError(
+                "Session Validation Exception",
+                "Invalid request: JWT validation/verification failed: failure",
             ),
         );
+
         const result = await sessionLambda.handler(mockEvent, {});
-        expect(result).toEqual({
-            statusCode: 400,
-            body: "Invalid request: JWT validation/verification failed: Failure",
-        });
+        expect(result.statusCode).toBe(400);
+        expect(result.body).toContain("1019: Session Validation Exception");
     });
 
     it("should save the session details", async () => {
@@ -258,14 +253,11 @@ describe("SessionLambda", () => {
     });
 
     it("should catch and return any errors", async () => {
-        jest.spyOn(sessionRequestValidator.prototype, "validateJwt").mockImplementation(() => {
-            return new Promise<ValidationResult>((res, rej) => rej(Error("Unable to perform task")));
-        });
+        jest.spyOn(sessionRequestValidator.prototype, "validateJwt").mockRejectedValue(new GenericServerError());
+
         const result = await sessionLambda.handler(mockEvent, {});
-        expect(errorSpy).toHaveBeenCalledWith("session lambda error occurred", Error("Unable to perform task"));
-        expect(result).toEqual({
-            statusCode: 500,
-            body: "An error has occurred: Error: Unable to perform task",
-        });
+        expect(errorSpy).toHaveBeenCalledWith("session lambda error occurred", new GenericServerError());
+        expect(result.statusCode).toBe(500);
+        expect(result.body).toContain("1025: Request failed due to a server error");
     });
 });
