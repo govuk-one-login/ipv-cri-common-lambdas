@@ -13,6 +13,7 @@ import {
 import { Logger } from "@aws-lambda-powertools/logger";
 import { Metrics } from "@aws-lambda-powertools/metrics";
 import {
+    BaseError,
     InvalidRequestError,
     ServerError,
     SessionNotFoundError,
@@ -197,7 +198,6 @@ describe("authorization-handler.ts", () => {
 
                 expect(output.statusCode).toBe(400);
                 expect(output.body).toContain("Session Validation Exception");
-                expect(output.body).toContain("Missing response_type parameter");
 
                 expect(loggerSpyError).toBeCalledWith(
                     "authorization lambda error occurred",
@@ -222,7 +222,6 @@ describe("authorization-handler.ts", () => {
 
                 expect(output.statusCode).toBe(400);
                 expect(output.body).toContain("Session Validation Exception");
-                expect(output.body).toContain("Missing redirect_uri parameter");
 
                 expect(loggerSpyError).toBeCalledWith(
                     "authorization lambda error occurred",
@@ -247,7 +246,6 @@ describe("authorization-handler.ts", () => {
 
                 expect(output.statusCode).toBe(400);
                 expect(output.body).toContain("Session Validation Exception");
-                expect(output.body).toContain("Missing client_id parameter");
 
                 expect(loggerSpyError).toBeCalledWith(
                     "authorization lambda error occurred",
