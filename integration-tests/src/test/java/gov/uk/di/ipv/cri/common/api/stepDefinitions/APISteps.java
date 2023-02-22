@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.uk.di.ipv.cri.common.api.util.IpvCoreStubUtil;
+import io.cucumber.java.Before;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -21,8 +22,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 public class APISteps {
 
     private static final String ENVIRONMENT = "/dev"; // dev, build, staging, integration
-    private static final String DEV_SESSION_URI = ENVIRONMENT + "/session";
-    private static final String DEV_AUTHORIZATION_URI = ENVIRONMENT + "/authorization";
+    private static String DEV_SESSION_URI;
+    private static String DEV_AUTHORIZATION_URI;
+    public static String DEV_ACCESS_TOKEN_URI;
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final String DEFAULT_REDIRECT_URI =
             "https://di-ipv-core-stub.london.cloudapps.digital/callback";
@@ -33,6 +35,13 @@ public class APISteps {
     private HttpResponse<String> response;
     private Map<String, String> responseBodyMap;
 
+    @Before
+    public void setUp() {
+        DEV_SESSION_URI = "";
+        DEV_AUTHORIZATION_URI = "";
+        DEV_ACCESS_TOKEN_URI = "";
+    }
+
     @Given("authorization JAR for test user {int}")
     public void setAuthorizationJARForTestUser(int rowNumber)
             throws URISyntaxException, IOException, InterruptedException {
@@ -40,9 +49,28 @@ public class APISteps {
         sessionRequestBody = IpvCoreStubUtil.sendCreateSessionRequest(userIdentityJson);
     }
 
+    @Given("Session lambda implementation is in {string}")
+    public void setSessionEndpoint(String endPoint) {
+        if (endPoint.equals("TS")) DEV_SESSION_URI = ENVIRONMENT + "/session-two";
+        else DEV_SESSION_URI = ENVIRONMENT + "/session";
+    }
+
+    @Given("Authorisation lambda implementation is in {string}")
+    public void setAuthorizationEndpoint(String endPoint) {
+        if (endPoint.equals("TS")) DEV_AUTHORIZATION_URI = ENVIRONMENT + "/authorization-two";
+        else DEV_AUTHORIZATION_URI = ENVIRONMENT + "/authorization";
+    }
+
+    @Given("AccessToken lambda implementation is in {string}")
+    public void setAccessTokenEndpoint(String endPoint) {
+        if (endPoint.equals("TS")) DEV_ACCESS_TOKEN_URI = ENVIRONMENT + "/token-two";
+        else DEV_ACCESS_TOKEN_URI = ENVIRONMENT + "/token";
+    }
+
     @When("user sends a request to session API")
     public void user_sends_a_request_to_session_api()
             throws URISyntaxException, IOException, InterruptedException {
+        System.out.println("DEV_SESSION_URI is --------" + DEV_SESSION_URI);
         response = IpvCoreStubUtil.sendSessionRequest(DEV_SESSION_URI, sessionRequestBody);
         responseBodyMap = objectMapper.readValue(response.body(), new TypeReference<>() {});
     }
@@ -77,6 +105,7 @@ public class APISteps {
     @When("user sends a valid request to authorization end point")
     public void user_sends_a_valid_request_to_authorization_end_point()
             throws IOException, InterruptedException, URISyntaxException {
+        System.out.println("DEV_AUTHORIZATION_URI is --------" + DEV_AUTHORIZATION_URI);
         response =
                 IpvCoreStubUtil.sendAuthorizationRequest(
                         DEV_AUTHORIZATION_URI,
