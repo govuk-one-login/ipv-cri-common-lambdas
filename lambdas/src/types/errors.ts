@@ -65,7 +65,4 @@ export class SessionValidationError extends BaseError {
         this.code = 1019;
         Object.setPrototypeOf(this, SessionValidationError.prototype);
     }
-    getErrorSummary() {
-        return `${this.code}: ${this?.details}`;
-    }
 }
