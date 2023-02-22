@@ -9,6 +9,8 @@ import { JwtVerifier, JwtVerifierFactory } from "../../../src/common/security/jw
 import { Logger } from "@aws-lambda-powertools/logger";
 import { DynamoDBDocument } from "@aws-sdk/lib-dynamodb";
 import { SessionItem } from "../../../src/types/session-item";
+import { Metrics, MetricUnits } from "@aws-lambda-powertools/metrics";
+import { ServerError } from "../../../src/types/errors";
 import { BearerAccessTokenFactory } from "../../../src/services/bearer-access-token-factory";
 
 jest.mock("../../../src/common/config/config-service");
@@ -55,6 +57,10 @@ describe("access-token-handler.ts", () => {
         const accessTokenService = new BearerAccessTokenFactory(10);
         const sessionService = new SessionService(mockDynamoDbClient.prototype, configService);
         const accessTokenRequestValidator = new AccessTokenRequestValidator(mockJwtVerifierFactory.prototype);
+
+        const mockLogger = jest.mocked(Logger);
+        const mockMetrics = jest.mocked(Metrics);
+        const metricsSpy = jest.spyOn(mockMetrics.prototype, "addMetric");
 
         describe("success paths", () => {
             beforeEach(() => {
@@ -123,12 +129,13 @@ describe("access-token-handler.ts", () => {
                 } as unknown as APIGatewayProxyEvent;
                 const output = await accessTokenLambda.handler(event, null);
                 expect(output.statusCode).toBe(200);
+                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnits.Count, 1);
             });
         });
 
         describe("Fail paths", () => {
             const sessionService = new SessionService(mockDynamoDbClient.prototype, configService);
-
+            const loggerSpy = jest.spyOn(mockLogger.prototype, "error");
             beforeEach(() => {
                 jest.resetAllMocks();
                 configService.init = () => Promise.resolve();
@@ -147,6 +154,11 @@ describe("access-token-handler.ts", () => {
                 expect(output.statusCode).toBe(400);
                 expect(output.body).not.toBeNull;
                 expect(body.message).toContain("missing body");
+                expect(loggerSpy).toHaveBeenCalledWith(
+                    "access token lambda error occurred",
+                    Error("Invalid request: missing body"),
+                );
+                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnits.Count, 0);
             });
 
             it("should fail when request payload is not valid", async () => {
@@ -156,6 +168,11 @@ describe("access-token-handler.ts", () => {
                 expect(output.statusCode).toBe(400);
                 expect(output.body).not.toBeNull;
                 expect(body.message).toContain("Invalid request");
+                expect(loggerSpy).toHaveBeenCalledWith(
+                    "access token lambda error occurred",
+                    Error("Invalid request: Missing redirectUri parameter"),
+                );
+                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnits.Count, 0);
             });
 
             it("should fail when session is not found", async () => {
@@ -180,6 +197,11 @@ describe("access-token-handler.ts", () => {
                 expect(output.statusCode).toBe(403);
                 expect(output.body).not.toBeNull;
                 expect(body.message).toContain("Access token expired");
+                expect(loggerSpy).toHaveBeenCalledWith(
+                    "access token lambda error occurred",
+                    Error("Access token expired"),
+                );
+                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnits.Count, 0);
             });
 
             it("should fail when authorization code is not found", async () => {
@@ -227,6 +249,11 @@ describe("access-token-handler.ts", () => {
                 expect(output.statusCode).toBe(403);
                 expect(body.code).toBe(1026);
                 expect(body.message).toContain("Access token expired");
+                expect(loggerSpy).toHaveBeenCalledWith(
+                    "access token lambda error occurred",
+                    Error("Access token expired"),
+                );
+                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnits.Count, 0);
             });
 
             it("should fail when redirect URIs do not match", async () => {
@@ -280,6 +307,7 @@ describe("access-token-handler.ts", () => {
                 const body = JSON.parse(output.body);
                 expect(output.statusCode).toBe(400);
                 expect(body.message).toContain(`redirect uri ${badUrl} does not match`);
+                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnits.Count, 0);
             });
 
             it("should error when jwt verify fails", async () => {
@@ -331,6 +359,11 @@ describe("access-token-handler.ts", () => {
                 const body = JSON.parse(output.body);
                 expect(output.statusCode).toBe(400);
                 expect(body.message).toContain(`JWT signature verification failed`);
+                expect(loggerSpy).toHaveBeenCalledWith(
+                    "access token lambda error occurred",
+                    Error("JWT signature verification failed"),
+                );
+                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnits.Count, 0);
             });
 
             it("should fail when dynamoDb is not available", async () => {
@@ -345,9 +378,9 @@ describe("access-token-handler.ts", () => {
                     }),
                 );
 
-                jest.spyOn(mockDynamoDbClient.prototype, "query").mockImplementation(() => {
-                    return Promise.reject();
-                });
+                jest.spyOn(sessionService, "getSessionByAuthorizationCode").mockReturnValue(
+                    Promise.reject(new ServerError()),
+                );
 
                 const clientConfig = new Map<string, string>();
                 clientConfig.set("code", code);
@@ -365,12 +398,6 @@ describe("access-token-handler.ts", () => {
                     authorizationCode: code,
                 };
 
-                jest.spyOn(sessionService, "getSessionByAuthorizationCode").mockReturnValue(
-                    new Promise<any>((resolve) => {
-                        resolve(sessionItem);
-                    }),
-                );
-
                 const event = {
                     body: {
                         code,
@@ -381,7 +408,9 @@ describe("access-token-handler.ts", () => {
                     },
                 } as unknown as APIGatewayProxyEvent;
                 const output = await accessTokenLambda.handler(event, null);
-                expect(output.statusCode).toBe(200);
+                expect(output.statusCode).toBe(500);
+                expect(loggerSpy).toHaveBeenCalledWith("access token lambda error occurred", Error("Server error"));
+                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnits.Count, 0);
             });
         });
     });

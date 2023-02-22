@@ -1,6 +1,6 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { LambdaInterface } from "@aws-lambda-powertools/commons";
-import { Metrics } from "@aws-lambda-powertools/metrics";
+import { Metrics, MetricUnits } from "@aws-lambda-powertools/metrics";
 import { Logger } from "@aws-lambda-powertools/logger";
 import { SessionService } from "../services/session-service";
 import { ConfigService } from "../common/config/config-service";
@@ -18,6 +18,7 @@ const dynamoDbClient = createClient(AwsClientType.DYNAMO) as DynamoDBDocument;
 const ssmClient = createClient(AwsClientType.SSM) as SSMClient;
 const configService = new ConfigService(ssmClient);
 const initPromise = configService.init([CommonConfigKey.SESSION_TABLE_NAME, CommonConfigKey.SESSION_TTL]);
+const ACCESS_TOKEN = "accesstoken";
 
 export class AccessTokenLambda implements LambdaInterface {
     constructor(
@@ -35,6 +36,7 @@ export class AccessTokenLambda implements LambdaInterface {
             const requestPayload = this.requestValidator.validatePayload(event.body);
             const sessionItem = await this.sessionService.getSessionByAuthorizationCode(requestPayload.code);
             logger.appendKeys({ govuk_signin_journey_id: sessionItem.clientSessionId });
+            logger.info("found session");
 
             if (!configService.hasClientConfig(sessionItem.clientId)) {
                 await this.initClientConfig(sessionItem.clientId);
@@ -56,17 +58,16 @@ export class AccessTokenLambda implements LambdaInterface {
             const accessTokenResponse = await this.bearerAccessTokenFactory.create();
             await this.sessionService.createAccessTokenCode(sessionItem, accessTokenResponse);
 
+            metrics.addMetric(ACCESS_TOKEN, MetricUnits.Count, 1);
+
             return {
                 statusCode: 200,
                 body: JSON.stringify(accessTokenResponse),
             };
         } catch (err: any) {
+            metrics.addMetric(ACCESS_TOKEN, MetricUnits.Count, 0);
             //Todo dont want any
-            logger.error({
-                statusCode: err.statusCode ?? 500,
-                message: err?.message,
-                err: err,
-            });
+            logger.error("access token lambda error occurred", err as Error);
             return {
                 statusCode: err.statusCode ?? 500,
                 body: JSON.stringify({
