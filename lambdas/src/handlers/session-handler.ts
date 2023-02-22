@@ -53,55 +53,29 @@ export class SessionLambda implements LambdaInterface {
     @metrics.logMetrics({ throwOnEmptyMetrics: false, captureColdStartMetric: true })
     public async handler(event: APIGatewayProxyEvent, context: any): Promise<APIGatewayProxyResult> {
         try {
-            await configInitPromise;
-            const deserialisedRequestBody = JSON.parse(event.body!);
+            const deserialisedRequestBody = JSON.parse(event.body as string);
             const requestBodyClientId = deserialisedRequestBody.client_id;
-            let decryptedJwt = null;
-            try {
-                decryptedJwt = await this.jweDecrypter.decryptJwe(deserialisedRequestBody.request);
-            } catch (e) {
-                logger.error("Invalid request - JWE decryption failed", e as Error);
-                return {
-                    statusCode: 400,
-                    body: "Invalid request: JWE decryption failed",
-                };
-            }
+            const clientIpAddress = getClientIpAddress(event);
 
+            await configInitPromise;
             if (!configService.hasClientConfig(requestBodyClientId)) {
                 await this.initClientConfig(requestBodyClientId);
             }
-            const criClientConfig = configService.getClientConfig(requestBodyClientId)!;
 
+            const criClientConfig = configService.getClientConfig(requestBodyClientId) as Map<string, string>;
             const sessionRequestValidator = this.sessionRequestValidatorFactory.create(criClientConfig);
-            const jwtValidationResult = await sessionRequestValidator.validateJwt(decryptedJwt, requestBodyClientId);
-            if (!jwtValidationResult.isValid) {
-                return {
-                    statusCode: 400,
-                    body: `Invalid request: JWT validation/verification failed: ${jwtValidationResult.errorMsg}`,
-                };
-            }
 
-            const jwtPayload = jwtValidationResult.validatedObject;
-            const clientIpAddress = getClientIpAddress(event);
-
-            metrics.addDimension("issuer", requestBodyClientId);
-
+            const decryptedJwt = await this.jweDecrypter.decryptJwe(deserialisedRequestBody.request);
+            const jwtPayload = await sessionRequestValidator.validateJwt(decryptedJwt, requestBodyClientId);
             const sessionRequestSummary = this.createSessionRequestSummary(jwtPayload, clientIpAddress);
             const sessionId: string = await this.sessionService.saveSession(sessionRequestSummary);
+            await this.personIdentityService.savePersonIdentity(jwtPayload.shared_claims as PersonIdentity, sessionId);
+            await this.sendAuditEvent(sessionId, sessionRequestSummary, clientIpAddress);
 
+            metrics.addDimension("issuer", requestBodyClientId);
+            metrics.addMetric(SESSION_CREATED_METRIC, MetricUnits.Count, 1);
             logger.appendKeys({ govuk_signin_journey_id: sessionId });
             logger.info("created session");
-
-            if (jwtPayload.shared_claims) {
-                await this.personIdentityService.savePersonIdentity(
-                    jwtPayload.shared_claims as PersonIdentity,
-                    sessionId,
-                );
-            }
-
-            metrics.addMetric(SESSION_CREATED_METRIC, MetricUnits.Count, 1);
-
-            await this.sendAuditEvent(sessionId, sessionRequestSummary, clientIpAddress);
 
             return {
                 statusCode: 201,
@@ -111,12 +85,16 @@ export class SessionLambda implements LambdaInterface {
                     redirect_uri: jwtPayload.redirect_uri,
                 }),
             };
-        } catch (err) {
+        } catch (err: any) {
             logger.error("session lambda error occurred", err as Error);
             metrics.addMetric(SESSION_CREATED_METRIC, MetricUnits.Count, 0);
             return {
-                statusCode: 500,
-                body: `An error has occurred: ${JSON.stringify(err) == "{}" ? err : JSON.stringify(err)}`,
+                statusCode: err?.statusCode ?? 500,
+                body: JSON.stringify({
+                    message: err?.statusCode >= 500 ? "Server Error" : err.message,
+                    code: err?.code,
+                    errorSummary: err?.getErrorSummary(),
+                }),
             };
         }
     }
@@ -135,7 +113,7 @@ export class SessionLambda implements LambdaInterface {
     ): SessionRequestSummary {
         return {
             clientId: jwtPayload["client_id"] as string,
-            clientIpAddress: clientIpAddress ?? null,
+            clientIpAddress: clientIpAddress as string,
             clientSessionId: jwtPayload["govuk_signin_journey_id"] as string,
             persistentSessionId: jwtPayload["persistent_session_id"] as string,
             redirectUri: jwtPayload["redirect_uri"] as string,
