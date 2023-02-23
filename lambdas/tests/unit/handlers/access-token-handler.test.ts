@@ -83,6 +83,10 @@ describe("access-token-handler.ts", () => {
                 const redirectUri = "http://123.abc.com";
                 const code = "123abc";
                 const clientSessionId = "1";
+                const today = new Date();
+                const nextWeek = new Date();
+                nextWeek.setDate(today.getDate() + 7);
+                const expiry = nextWeek.getTime();
 
                 jest.spyOn(mockDynamoDbClient.prototype, "query").mockImplementation(() => {
                     return Promise.resolve({
@@ -105,12 +109,12 @@ describe("access-token-handler.ts", () => {
                     Items: [
                         {
                             sessionId: code,
-                            authorizationCodeExpiryDate: new Date().getDate() + 10000000,
+                            authorizationCodeExpiryDate: expiry,
                             clientId: "1",
                             clientSessionId: clientSessionId,
                             redirectUri: redirectUri,
                             accessToken: "",
-                            accessTokenExpiryDate: new Date().getDate() + 10000000,
+                            accessTokenExpiryDate: expiry,
                             authorizationCode: code,
                         } as SessionItem,
                     ],
@@ -143,7 +147,10 @@ describe("access-token-handler.ts", () => {
             it("should return http 200 if the authorizationCodeExpiryDate is within date", async () => {
                 const redirectUri = "http://123.abc.com";
                 const code = "123abc";
-                const expiry = new Date().getDate() + 10000000;
+                const today = new Date();
+                const nextWeek = new Date();
+                nextWeek.setDate(today.getDate() + 7);
+                const expiry = nextWeek.getTime();
 
                 const clientConfig = new Map<string, string>();
                 clientConfig.set("code", code);
@@ -164,57 +171,6 @@ describe("access-token-handler.ts", () => {
                         } as SessionItem,
                     ],
                 } as unknown as QueryCommandInput;
-
-                const impl = () => {
-                    const mockPromise = new Promise<any>((resolve) => {
-                        resolve(sessionItem);
-                    });
-                    return jest.fn().mockImplementation(() => {
-                        return mockPromise;
-                    });
-                };
-                mockDynamoDbClient.prototype.query = impl();
-
-                const output = await accessTokenLambda.handler(
-                    {
-                        body: {
-                            code,
-                            grant_type: "authorization_code",
-                            redirect_uri: redirectUri,
-                            client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
-                            client_assertion: "2",
-                        },
-                    } as unknown as APIGatewayProxyEvent,
-                    null,
-                );
-
-                expect(output.statusCode).toBe(200);
-                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnits.Count, 1);
-            });
-
-            it("should return http 200 if the accessTokenExpiryDate has not expired", async () => {
-                const redirectUri = "http://123.abc.com";
-                const code = "123abc";
-                const expiryDate = new Date().getTime() + 100000;
-                const clientConfig = new Map<string, string>();
-                clientConfig.set("code", code);
-                clientConfig.set("redirectUri", redirectUri);
-                jest.spyOn(mockConfigService.prototype, "getClientConfig").mockReturnValue(clientConfig);
-
-                const sessionItem = {
-                    Items: [
-                        {
-                            sessionId: code,
-                            authorizationCodeExpiryDate: expiryDate,
-                            clientId: "1",
-                            clientSessionId: "1",
-                            redirectUri: redirectUri,
-                            accessToken: "",
-                            accessTokenExpiryDate: expiryDate,
-                            authorizationCode: code,
-                        } as SessionItem,
-                    ],
-                } as unknown as QueryCommandOutput;
 
                 const impl = () => {
                     const mockPromise = new Promise<any>((resolve) => {
@@ -371,6 +327,10 @@ describe("access-token-handler.ts", () => {
                 const redirectUri = "http://123.abc.com";
                 const badUrl = "http://does-not-match";
                 const code = "DOES_NOT_MATCH";
+                const today = new Date();
+                const nextWeek = new Date();
+                nextWeek.setDate(today.getDate() + 7);
+                const expiry = nextWeek.getTime();
                 const event = {
                     body: {
                         code: code,
@@ -403,12 +363,12 @@ describe("access-token-handler.ts", () => {
                     Items: [
                         {
                             sessionId: code,
-                            authorizationCodeExpiryDate: new Date().getDate() + 10000000,
+                            authorizationCodeExpiryDate: expiry,
                             clientId: "1",
                             clientSessionId: "1",
                             redirectUri: "http://does-not-match",
                             accessToken: "",
-                            accessTokenExpiryDate: new Date().getDate() + 10000000,
+                            accessTokenExpiryDate: expiry,
                             authorizationCode: code,
                         } as SessionItem,
                     ],
@@ -433,6 +393,10 @@ describe("access-token-handler.ts", () => {
 
             it("should error when jwt verify fails", async () => {
                 const redirectUri = "http://123.abc.com";
+                const today = new Date();
+                const nextWeek = new Date();
+                nextWeek.setDate(today.getDate() + 7);
+                const expiry = nextWeek.getTime();
                 const event = {
                     body: {
                         code: "123abc",
@@ -460,12 +424,12 @@ describe("access-token-handler.ts", () => {
                     Items: [
                         {
                             sessionId: "1",
-                            authorizationCodeExpiryDate: new Date().getDate() + 10000000,
+                            authorizationCodeExpiryDate: expiry,
                             clientId: "1",
                             clientSessionId: "1",
                             redirectUri: redirectUri,
                             accessToken: "",
-                            accessTokenExpiryDate: new Date().getDate() + 10000000,
+                            accessTokenExpiryDate: expiry,
                             authorizationCode: "1",
                         } as SessionItem,
                     ],
@@ -591,54 +555,6 @@ describe("access-token-handler.ts", () => {
 
                 expect(output.statusCode).toBe(403);
                 expect(output.body).toContain("Authorization code expired");
-                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnits.Count, 0);
-            });
-
-            it("should return http 403 if the accessTokenExpiryDate has expired", async () => {
-                const redirectUri = "http://123.abc.com";
-                const code = "123abc";
-                const expiryDate = new Date().getTime() + 10000000;
-                const clientConfig = new Map<string, string>();
-                clientConfig.set("code", code);
-                clientConfig.set("redirectUri", redirectUri);
-                jest.spyOn(mockConfigService.prototype, "getClientConfig").mockReturnValue(clientConfig);
-
-                const sessionItem = {
-                    Items: [
-                        {
-                            sessionId: code,
-                            authorizationCodeExpiryDate: expiryDate,
-                            clientId: "1",
-                            clientSessionId: "1",
-                            redirectUri: redirectUri,
-                            accessToken: "",
-                            accessTokenExpiryDate: 0,
-                            authorizationCode: code,
-                        } as SessionItem,
-                    ],
-                } as unknown as QueryCommandOutput;
-
-                mockDynamoDbClient.prototype.query.mockImplementation(() => {
-                    return new Promise<any>((resolve) => {
-                        resolve(sessionItem);
-                    });
-                });
-
-                const output = await accessTokenLambda.handler(
-                    {
-                        body: {
-                            code,
-                            grant_type: "authorization_code",
-                            redirect_uri: redirectUri,
-                            client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
-                            client_assertion: "2",
-                        },
-                    } as unknown as APIGatewayProxyEvent,
-                    null,
-                );
-
-                expect(output.statusCode).toBe(403);
-                expect(output.body).toContain("Access code expired");
                 expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnits.Count, 0);
             });
 

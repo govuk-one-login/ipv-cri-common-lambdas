@@ -77,11 +77,3 @@ export class AuthorizationCodeExpiredError extends BaseError {
         this.code = 1027;
     }
 }
-
-export class AccessCodeExpiredError extends BaseError {
-    constructor() {
-        super("Access code expired");
-        this.statusCode = 403;
-        this.code = 1027;
-    }
-}
