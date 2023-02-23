@@ -510,6 +510,54 @@ describe("access-token-handler.ts", () => {
                 expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnits.Count, 0);
             });
 
+            it("should return http 403 when there is more than 1 session item", async () => {
+                const redirectUri = "http://123.abc.com";
+                const code = "123abc";
+
+                jest.spyOn(mockJwtVerifierFactory.prototype, "create").mockReturnValue(jwtVerifier);
+                jest.spyOn(jwtVerifier, "verify").mockReturnValue(
+                    new Promise<any>((resolve) => {
+                        resolve(true);
+                    }),
+                );
+
+                const clientConfig = new Map<string, string>();
+                clientConfig.set("code", code);
+                clientConfig.set("redirectUri", redirectUri);
+                jest.spyOn(mockConfigService.prototype, "getClientConfig").mockReturnValue(clientConfig);
+
+                const sessionItem = {
+                    Items: [{}, {}],
+                } as unknown as QueryCommandInput;
+
+                const impl = () => {
+                    const mockPromise = new Promise<any>((resolve) => {
+                        resolve(sessionItem);
+                    });
+                    return jest.fn().mockImplementation(() => {
+                        return mockPromise;
+                    });
+                };
+                mockDynamoDbClient.prototype.query = impl();
+
+                const output = await accessTokenLambda.handler(
+                    {
+                        body: {
+                            code,
+                            grant_type: "authorization_code",
+                            redirect_uri: redirectUri,
+                            client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+                            client_assertion: "2",
+                        },
+                    } as unknown as APIGatewayProxyEvent,
+                    null,
+                );
+
+                expect(output.statusCode).toBe(403);
+                expect(output.body).toContain("Access token expired");
+                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnits.Count, 0);
+            });
+
             it("should return http 403 if the authorizationCodeExpiryDate has expired", async () => {
                 const redirectUri = "http://123.abc.com";
                 const code = "123abc";
