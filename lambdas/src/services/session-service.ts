@@ -56,11 +56,15 @@ export class SessionService {
             throw new InvalidAccessTokenError();
         }
 
-        if (sessionItem.Items[0].authorizationCodeExpiryDate < new Date().getTime()) {
+        if (this.hasAuthCodeExpired(sessionItem.Items[0].authorizationCodeExpiryDate)) {
             throw new AuthorizationCodeExpiredError();
         }
 
         return sessionItem.Items[0] as SessionItem;
+    }
+
+    private hasAuthCodeExpired(authorizationCodeExpiryDate: number): boolean {
+        return authorizationCodeExpiryDate < Math.floor(Date.now() / 1000);
     }
 
     public async createAccessTokenCode(sessionItem: SessionItem, accessToken: BearerAccessToken) {
