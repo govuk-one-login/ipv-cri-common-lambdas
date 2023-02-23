@@ -3,12 +3,7 @@ import { SessionItem } from "../types/session-item";
 import { BearerAccessToken } from "../types/bearer-access-token";
 import { ConfigService } from "../common/config/config-service";
 import { randomUUID } from "crypto";
-import {
-    AccessCodeExpiredError,
-    AuthorizationCodeExpiredError,
-    InvalidAccessTokenError,
-    SessionNotFoundError,
-} from "../types/errors";
+import { AuthorizationCodeExpiredError, InvalidAccessTokenError, SessionNotFoundError } from "../types/errors";
 import { SessionRequestSummary } from "../types/session-request-summary";
 import { CommonConfigKey } from "../types/config-keys";
 
@@ -61,12 +56,8 @@ export class SessionService {
             throw new InvalidAccessTokenError();
         }
 
-        if (sessionItem.Items[0].authorizationCodeExpiryDate < new Date().getDate()) {
+        if (sessionItem.Items[0].authorizationCodeExpiryDate < new Date().getTime()) {
             throw new AuthorizationCodeExpiredError();
-        }
-
-        if (sessionItem.Items[0].accessTokenExpiryDate < new Date().getDate()) {
-            throw new AccessCodeExpiredError();
         }
 
         return sessionItem.Items[0] as SessionItem;
