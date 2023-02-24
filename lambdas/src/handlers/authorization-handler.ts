@@ -16,7 +16,7 @@ const dynamoDbClient = createClient(AwsClientType.DYNAMO) as DynamoDBDocument;
 const ssmClient = createClient(AwsClientType.SSM) as SSMClient;
 const logger = new Logger();
 const metrics = new Metrics();
-const tracer = new Tracer({ captureHTTPsRequests: false });
+const _tracer = new Tracer({ captureHTTPsRequests: false });
 const configService = new ConfigService(ssmClient);
 const initPromise = configService.init([CommonConfigKey.SESSION_TABLE_NAME]);
 const AUTHORIZATION_SENT_METRIC = "authorization_sent";
@@ -29,8 +29,8 @@ export class AuthorizationLambda implements LambdaInterface {
 
     @logger.injectLambdaContext({ clearState: true })
     @metrics.logMetrics({ throwOnEmptyMetrics: false, captureColdStartMetric: true })
-    @tracer.captureLambdaHandler({ captureResponse: false })
-    public async handler(event: APIGatewayProxyEvent, context: any): Promise<APIGatewayProxyResult> {
+    @_tracer.captureLambdaHandler({ captureResponse: false })
+    public async handler(event: APIGatewayProxyEvent, _context: any): Promise<APIGatewayProxyResult> {
         try {
             await initPromise;
 
