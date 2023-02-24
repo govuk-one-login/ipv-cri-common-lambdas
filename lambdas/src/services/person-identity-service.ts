@@ -74,7 +74,7 @@ export class PersonIdentityService {
     private mapNames(names: Name[]): PersonIdentityName[] {
         if (names?.length) {
             return names.map((name) => {
-                let personIdentityName: PersonIdentityName = { nameParts: [] };
+                const personIdentityName: PersonIdentityName = { nameParts: [] };
                 if (name?.nameParts?.length) {
                     personIdentityName.nameParts = name.nameParts.map((namePart) => {
                         return { type: namePart.type, value: namePart.value };
