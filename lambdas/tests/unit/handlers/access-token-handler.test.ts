@@ -7,7 +7,7 @@ import { APIGatewayProxyEvent } from "aws-lambda/trigger/api-gateway-proxy";
 import { SSMClient } from "@aws-sdk/client-ssm";
 import { JwtVerifier, JwtVerifierFactory } from "../../../src/common/security/jwt-verifier";
 import { Logger } from "@aws-lambda-powertools/logger";
-import { DynamoDBDocument } from "@aws-sdk/lib-dynamodb";
+import { DynamoDBDocument, QueryCommandInput, QueryCommandOutput } from "@aws-sdk/lib-dynamodb";
 import { SessionItem } from "../../../src/types/session-item";
 import { Metrics, MetricUnits } from "@aws-lambda-powertools/metrics";
 import { ServerError } from "../../../src/types/errors";
@@ -84,6 +84,11 @@ describe("access-token-handler.ts", () => {
                 const code = "123abc";
                 const clientSessionId = "1";
 
+                const twentyFourthOfFeb2023InMs = 1677249836658;
+                jest.spyOn(Date, "now").mockReturnValue(twentyFourthOfFeb2023InMs);
+                const sevenDaysInMilliseconds = 7 * 24 * 60 * 60 * 1000;
+                const expiry = Math.floor((twentyFourthOfFeb2023InMs + sevenDaysInMilliseconds) / 1000);
+
                 jest.spyOn(mockDynamoDbClient.prototype, "query").mockImplementation(() => {
                     return Promise.resolve({
                         Items: [
@@ -101,22 +106,30 @@ describe("access-token-handler.ts", () => {
                 clientConfig.set("redirectUri", redirectUri);
                 jest.spyOn(mockConfigService.prototype, "getClientConfig").mockReturnValue(clientConfig);
 
-                const sessionItem: SessionItem = {
-                    sessionId: code,
-                    authorizationCodeExpiryDate: 1,
-                    clientId: "1",
-                    clientSessionId: clientSessionId,
-                    redirectUri: redirectUri,
-                    accessToken: "",
-                    accessTokenExpiryDate: 0,
-                    authorizationCode: code,
-                };
+                const sessionItem = {
+                    Items: [
+                        {
+                            sessionId: code,
+                            authorizationCodeExpiryDate: expiry,
+                            clientId: "1",
+                            clientSessionId: clientSessionId,
+                            redirectUri: redirectUri,
+                            accessToken: "",
+                            accessTokenExpiryDate: expiry,
+                            authorizationCode: code,
+                        } as SessionItem,
+                    ],
+                } as unknown as QueryCommandInput;
 
-                jest.spyOn(sessionService, "getSessionByAuthorizationCode").mockReturnValue(
-                    new Promise<any>((resolve) => {
+                const impl = () => {
+                    const mockPromise = new Promise<any>((resolve) => {
                         resolve(sessionItem);
-                    }),
-                );
+                    });
+                    return jest.fn().mockImplementation(() => {
+                        return mockPromise;
+                    });
+                };
+                mockDynamoDbClient.prototype.query = impl();
 
                 const event = {
                     body: {
@@ -128,6 +141,62 @@ describe("access-token-handler.ts", () => {
                     },
                 } as unknown as APIGatewayProxyEvent;
                 const output = await accessTokenLambda.handler(event, null);
+                expect(output.statusCode).toBe(200);
+                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnits.Count, 1);
+            });
+
+            it("should return http 200 if the authorizationCodeExpiryDate is within date", async () => {
+                const redirectUri = "http://123.abc.com";
+                const code = "123abc";
+
+                const twentyFourthOfFeb2023InMs = 1677249836658;
+                jest.spyOn(Date, "now").mockReturnValue(twentyFourthOfFeb2023InMs);
+                const sevenDaysInMilliseconds = 7 * 24 * 60 * 60 * 1000;
+                const expiry = Math.floor((twentyFourthOfFeb2023InMs + sevenDaysInMilliseconds) / 1000);
+
+                const clientConfig = new Map<string, string>();
+                clientConfig.set("code", code);
+                clientConfig.set("redirectUri", redirectUri);
+                jest.spyOn(mockConfigService.prototype, "getClientConfig").mockReturnValue(clientConfig);
+
+                const sessionItem = {
+                    Items: [
+                        {
+                            sessionId: code,
+                            authorizationCodeExpiryDate: expiry,
+                            clientId: "1",
+                            clientSessionId: "1",
+                            redirectUri: redirectUri,
+                            accessToken: "",
+                            accessTokenExpiryDate: expiry,
+                            authorizationCode: code,
+                        } as SessionItem,
+                    ],
+                } as unknown as QueryCommandInput;
+
+                const impl = () => {
+                    const mockPromise = new Promise<any>((resolve) => {
+                        resolve(sessionItem);
+                    });
+                    return jest.fn().mockImplementation(() => {
+                        return mockPromise;
+                    });
+                };
+                mockDynamoDbClient.prototype.query = impl();
+
+                const output = await accessTokenLambda.handler(
+                    {
+                        body: {
+                            code,
+                            grant_type: "authorization_code",
+                            redirect_uri: redirectUri,
+                            client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+                            client_assertion: "2",
+                        },
+                    } as unknown as APIGatewayProxyEvent,
+                    null,
+                );
+
                 expect(output.statusCode).toBe(200);
                 expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnits.Count, 1);
             });
@@ -260,6 +329,12 @@ describe("access-token-handler.ts", () => {
                 const redirectUri = "http://123.abc.com";
                 const badUrl = "http://does-not-match";
                 const code = "DOES_NOT_MATCH";
+
+                const twentyFourthOfFeb2023InMs = 1677249836658;
+                jest.spyOn(Date, "now").mockReturnValue(twentyFourthOfFeb2023InMs);
+                const sevenDaysInMilliseconds = 7 * 24 * 60 * 60 * 1000;
+                const expiry = Math.floor((twentyFourthOfFeb2023InMs + sevenDaysInMilliseconds) / 1000);
+
                 const event = {
                     body: {
                         code: code,
@@ -287,21 +362,31 @@ describe("access-token-handler.ts", () => {
                 };
 
                 jest.spyOn(mockDynamoDbClient.prototype, "query").mockReturnValue(mockDynamoDbClientQueryResult);
-                jest.spyOn(sessionService, "getSessionByAuthorizationCode").mockReturnValue(
-                    new Promise<SessionItem>((resolve) => {
-                        const sessionItem: SessionItem = {
-                            sessionId: "123abc",
-                            authorizationCodeExpiryDate: 1,
+
+                const sessionItem = {
+                    Items: [
+                        {
+                            sessionId: code,
+                            authorizationCodeExpiryDate: expiry,
                             clientId: "1",
                             clientSessionId: "1",
-                            redirectUri: badUrl,
+                            redirectUri: "http://does-not-match",
                             accessToken: "",
-                            accessTokenExpiryDate: 0,
+                            accessTokenExpiryDate: expiry,
                             authorizationCode: code,
-                        };
+                        } as SessionItem,
+                    ],
+                } as unknown as QueryCommandInput;
+
+                const impl = () => {
+                    const mockPromise = new Promise<any>((resolve) => {
                         resolve(sessionItem);
-                    }),
-                );
+                    });
+                    return jest.fn().mockImplementation(() => {
+                        return mockPromise;
+                    });
+                };
+                mockDynamoDbClient.prototype.query = impl();
 
                 const output = await accessTokenLambda.handler(event, null);
                 const body = JSON.parse(output.body);
@@ -312,6 +397,12 @@ describe("access-token-handler.ts", () => {
 
             it("should error when jwt verify fails", async () => {
                 const redirectUri = "http://123.abc.com";
+
+                const twentyFourthOfFeb2023InMs = 1677249836658;
+                jest.spyOn(Date, "now").mockReturnValue(twentyFourthOfFeb2023InMs);
+                const sevenDaysInMilliseconds = 7 * 24 * 60 * 60 * 1000;
+                const expiry = Math.floor((twentyFourthOfFeb2023InMs + sevenDaysInMilliseconds) / 1000);
+
                 const event = {
                     body: {
                         code: "123abc",
@@ -334,21 +425,32 @@ describe("access-token-handler.ts", () => {
                 clientConfig.set("code", "123abc");
                 clientConfig.set("redirectUri", redirectUri);
                 jest.spyOn(mockConfigService.prototype, "getClientConfig").mockReturnValue(clientConfig);
-                jest.spyOn(sessionService, "getSessionByAuthorizationCode").mockReturnValue(
-                    new Promise<SessionItem>((resolve) => {
-                        const sessionItem: SessionItem = {
-                            sessionId: "123abc",
-                            authorizationCodeExpiryDate: 1,
+
+                const sessionItem = {
+                    Items: [
+                        {
+                            sessionId: "1",
+                            authorizationCodeExpiryDate: expiry,
                             clientId: "1",
                             clientSessionId: "1",
                             redirectUri: redirectUri,
                             accessToken: "",
-                            accessTokenExpiryDate: 0,
-                            authorizationCode: "123abc",
-                        };
+                            accessTokenExpiryDate: expiry,
+                            authorizationCode: "1",
+                        } as SessionItem,
+                    ],
+                } as unknown as QueryCommandInput;
+
+                const impl = () => {
+                    const mockPromise = new Promise<any>((resolve) => {
                         resolve(sessionItem);
-                    }),
-                );
+                    });
+                    return jest.fn().mockImplementation(() => {
+                        return mockPromise;
+                    });
+                };
+                mockDynamoDbClient.prototype.query = impl();
+
                 jest.spyOn(mockDynamoDbClient.prototype, "query").mockReturnValue(mockDynamoDbClientQueryResult);
                 jest.spyOn(jwtVerifier, "verify").mockReturnValue(
                     new Promise<any>((resolve) => {
@@ -363,6 +465,155 @@ describe("access-token-handler.ts", () => {
                     "access token lambda error occurred",
                     Error("JWT signature verification failed"),
                 );
+                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnits.Count, 0);
+            });
+
+            it("should return http 403 when the session item is invalid", async () => {
+                const redirectUri = "http://123.abc.com";
+                const code = "123abc";
+
+                jest.spyOn(mockJwtVerifierFactory.prototype, "create").mockReturnValue(jwtVerifier);
+                jest.spyOn(jwtVerifier, "verify").mockReturnValue(
+                    new Promise<any>((resolve) => {
+                        resolve(true);
+                    }),
+                );
+
+                const clientConfig = new Map<string, string>();
+                clientConfig.set("code", code);
+                clientConfig.set("redirectUri", redirectUri);
+                jest.spyOn(mockConfigService.prototype, "getClientConfig").mockReturnValue(clientConfig);
+
+                const sessionItem = {
+                    Items: [],
+                } as unknown as QueryCommandInput;
+
+                const impl = () => {
+                    const mockPromise = new Promise<any>((resolve) => {
+                        resolve(sessionItem);
+                    });
+                    return jest.fn().mockImplementation(() => {
+                        return mockPromise;
+                    });
+                };
+                mockDynamoDbClient.prototype.query = impl();
+
+                const output = await accessTokenLambda.handler(
+                    {
+                        body: {
+                            code,
+                            grant_type: "authorization_code",
+                            redirect_uri: redirectUri,
+                            client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+                            client_assertion: "2",
+                        },
+                    } as unknown as APIGatewayProxyEvent,
+                    null,
+                );
+
+                expect(output.statusCode).toBe(403);
+                expect(output.body).toContain("Access token expired");
+                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnits.Count, 0);
+            });
+
+            it("should return http 403 if the authorizationCodeExpiryDate has expired", async () => {
+                const redirectUri = "http://123.abc.com";
+                const code = "123abc";
+
+                const clientConfig = new Map<string, string>();
+                clientConfig.set("code", code);
+                clientConfig.set("redirectUri", redirectUri);
+                jest.spyOn(mockConfigService.prototype, "getClientConfig").mockReturnValue(clientConfig);
+
+                const twentyFourthOfFeb2023InMs = 1677249836658;
+                jest.spyOn(Date, "now").mockReturnValue(twentyFourthOfFeb2023InMs);
+                const sevenDaysInMilliseconds = 7 * 24 * 60 * 60 * 1000;
+                const expiry = Math.floor((twentyFourthOfFeb2023InMs - sevenDaysInMilliseconds) / 1000);
+
+                const sessionItem = {
+                    Items: [
+                        {
+                            sessionId: code,
+                            authorizationCodeExpiryDate: expiry,
+                            clientId: "1",
+                            clientSessionId: "1",
+                            redirectUri: redirectUri,
+                            accessToken: "",
+                            accessTokenExpiryDate: expiry,
+                            authorizationCode: code,
+                        } as SessionItem,
+                    ],
+                } as unknown as QueryCommandOutput;
+
+                mockDynamoDbClient.prototype.query.mockImplementation(() => {
+                    return new Promise<any>((resolve) => {
+                        resolve(sessionItem);
+                    });
+                });
+
+                const output = await accessTokenLambda.handler(
+                    {
+                        body: {
+                            code,
+                            grant_type: "authorization_code",
+                            redirect_uri: redirectUri,
+                            client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+                            client_assertion: "2",
+                        },
+                    } as unknown as APIGatewayProxyEvent,
+                    null,
+                );
+
+                expect(output.statusCode).toBe(403);
+                expect(output.body).toContain("Authorization code expired");
+                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnits.Count, 0);
+            });
+
+            it("should return http 403 when there is more than 1 session item", async () => {
+                const redirectUri = "http://123.abc.com";
+                const code = "123abc";
+
+                jest.spyOn(mockJwtVerifierFactory.prototype, "create").mockReturnValue(jwtVerifier);
+                jest.spyOn(jwtVerifier, "verify").mockReturnValue(
+                    new Promise<any>((resolve) => {
+                        resolve(true);
+                    }),
+                );
+
+                const clientConfig = new Map<string, string>();
+                clientConfig.set("code", code);
+                clientConfig.set("redirectUri", redirectUri);
+                jest.spyOn(mockConfigService.prototype, "getClientConfig").mockReturnValue(clientConfig);
+
+                const sessionItem = {
+                    Items: [{}, {}],
+                } as unknown as QueryCommandInput;
+
+                const impl = () => {
+                    const mockPromise = new Promise<any>((resolve) => {
+                        resolve(sessionItem);
+                    });
+                    return jest.fn().mockImplementation(() => {
+                        return mockPromise;
+                    });
+                };
+                mockDynamoDbClient.prototype.query = impl();
+
+                const output = await accessTokenLambda.handler(
+                    {
+                        body: {
+                            code,
+                            grant_type: "authorization_code",
+                            redirect_uri: redirectUri,
+                            client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+                            client_assertion: "2",
+                        },
+                    } as unknown as APIGatewayProxyEvent,
+                    null,
+                );
+
+                expect(output.statusCode).toBe(403);
+                expect(output.body).toContain("Access token expired");
                 expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnits.Count, 0);
             });
 
