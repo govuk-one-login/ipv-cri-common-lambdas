@@ -18,5 +18,6 @@ module.exports = {
     rules: {
         "no-console": 2,
         "padding-line-between-statements": ["error", { blankLine: "any", prev: "*", next: "*" }],
+        '@typescript-eslint/no-unused-vars': ['error', { varsIgnorePattern: '^_', "argsIgnorePattern": "^_" }],
     },
 };
