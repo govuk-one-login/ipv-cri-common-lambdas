@@ -17,7 +17,7 @@ jest.mock("@aws-sdk/client-sqs", () => {
 
 describe("AuditService", () => {
     let auditService: AuditService;
-    let mockGetAuditConfig = jest.fn();
+    const mockGetAuditConfig = jest.fn();
 
     const mockSqsClient = jest.mocked(SQSClient);
     const mockSendMessageCommand = jest.mocked(SendMessageCommand);
