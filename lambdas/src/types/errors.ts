@@ -42,6 +42,26 @@ export class ServerError extends BaseError {
     }
 }
 
+export class JweDecrypterError extends BaseError {
+    constructor(public readonly err: Error) {
+        super(`Session Validation Error", "Invalid request - JWE decryption failed :${err}`);
+        this.statusCode = 403;
+        Object.setPrototypeOf(this, JweDecrypterError.prototype);
+    }
+}
+
+export class GenericServerError extends BaseError {
+    constructor(public readonly details?: string) {
+        super("Request failed due to a server error");
+        this.statusCode = 500;
+        this.code = 1025;
+        Object.setPrototypeOf(this, GenericServerError.prototype);
+    }
+    getErrorSummary() {
+        return `${this.code}: ${this?.message}`;
+    }
+}
+
 export class JwtSignatureValidationError extends BaseError {
     constructor() {
         super("Signature of the shared attribute JWT is invalid");
