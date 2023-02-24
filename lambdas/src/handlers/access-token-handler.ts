@@ -33,7 +33,7 @@ export class AccessTokenLambda implements LambdaInterface {
         try {
             await initPromise;
 
-            logger.info("Access Token Lambda triggered with event", JSON.stringify(event));
+            logger.info("Access Token Lambda triggered with event body", event.body as string);
 
             const requestPayload = this.requestValidator.validatePayload(event.body);
             const sessionItem = await this.sessionService.getSessionByAuthorizationCode(requestPayload.code);
