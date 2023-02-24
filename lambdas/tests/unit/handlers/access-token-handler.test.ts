@@ -369,7 +369,6 @@ describe("access-token-handler.ts", () => {
             it("should fail when dynamoDb is not available", async () => {
                 const redirectUri = "http://123.abc.com";
                 const code = "123abc";
-                const clientSessionId = "1";
 
                 jest.spyOn(mockJwtVerifierFactory.prototype, "create").mockReturnValue(jwtVerifier);
                 jest.spyOn(jwtVerifier, "verify").mockReturnValue(
@@ -386,17 +385,6 @@ describe("access-token-handler.ts", () => {
                 clientConfig.set("code", code);
                 clientConfig.set("redirectUri", redirectUri);
                 jest.spyOn(mockConfigService.prototype, "getClientConfig").mockReturnValue(clientConfig);
-
-                const sessionItem: SessionItem = {
-                    sessionId: code,
-                    authorizationCodeExpiryDate: 1,
-                    clientId: "1",
-                    clientSessionId: clientSessionId,
-                    redirectUri: redirectUri,
-                    accessToken: "",
-                    accessTokenExpiryDate: 0,
-                    authorizationCode: code,
-                };
 
                 const event = {
                     body: {
