@@ -64,7 +64,7 @@ export class AccessTokenLambda implements LambdaInterface {
             const accessTokenResponse = await this.bearerAccessTokenFactory.create();
             await this.sessionService.createAccessTokenCode(sessionItem, accessTokenResponse);
 
-            logger.info("Access token created")
+            logger.info("Access token created");
 
             metrics.addMetric(ACCESS_TOKEN, MetricUnits.Count, 1);
 

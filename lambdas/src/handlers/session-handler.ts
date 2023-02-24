@@ -55,7 +55,7 @@ export class SessionLambda implements LambdaInterface {
         try {
             const deserialisedRequestBody = JSON.parse(event.body as string);
             logger.info("Session lambda triggered with event", deserialisedRequestBody);
-            
+
             const requestBodyClientId = deserialisedRequestBody.client_id;
             const clientIpAddress = getClientIpAddress(event);
 
@@ -66,26 +66,25 @@ export class SessionLambda implements LambdaInterface {
 
             const criClientConfig = configService.getClientConfig(requestBodyClientId) as Map<string, string>;
             const sessionRequestValidator = this.sessionRequestValidatorFactory.create(criClientConfig);
-            
+
             const decryptedJwt = await this.jweDecrypter.decryptJwe(deserialisedRequestBody.request);
             logger.info("JWE decrypted");
 
             const jwtPayload = await sessionRequestValidator.validateJwt(decryptedJwt, requestBodyClientId);
             logger.info("JWT validated");
-            
+
             const sessionRequestSummary = this.createSessionRequestSummary(jwtPayload, clientIpAddress);
             const sessionId: string = await this.sessionService.saveSession(sessionRequestSummary);
             logger.info("Session created");
 
             await this.personIdentityService.savePersonIdentity(jwtPayload.shared_claims as PersonIdentity, sessionId);
-            logger.info("Personal identity created")
-            
+            logger.info("Personal identity created");
+
             await this.sendAuditEvent(sessionId, sessionRequestSummary, clientIpAddress);
 
             metrics.addDimension("issuer", requestBodyClientId);
             metrics.addMetric(SESSION_CREATED_METRIC, MetricUnits.Count, 1);
             logger.appendKeys({ govuk_signin_journey_id: sessionId });
-            
 
             return {
                 statusCode: 201,

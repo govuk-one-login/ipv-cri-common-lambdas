@@ -38,7 +38,7 @@ export class AuthorizationLambda implements LambdaInterface {
             const sessionId = getSessionId(event);
             const sessionItem = await this.sessionService.getSession(sessionId);
 
-            logger.info("Session found")
+            logger.info("Session found");
 
             if (!configService.hasClientConfig(sessionItem.clientId)) {
                 await configService.initClientConfig(sessionItem.clientId, [ClientConfigKey.JWT_REDIRECT_URI]);
@@ -51,7 +51,7 @@ export class AuthorizationLambda implements LambdaInterface {
                 clientConfig?.get(ClientConfigKey.JWT_REDIRECT_URI) as string,
             );
 
-            logger.info("Session validated")
+            logger.info("Session validated");
 
             logger.appendKeys({ govuk_signin_journey_id: sessionItem.clientSessionId });
 
