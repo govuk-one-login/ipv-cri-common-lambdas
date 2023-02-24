@@ -87,7 +87,7 @@ describe("access-token-handler.ts", () => {
                 const twentyFourthOfFeb2023InMs = 1677249836658;
                 jest.spyOn(Date, "now").mockReturnValue(twentyFourthOfFeb2023InMs);
                 const sevenDaysInMilliseconds = 7 * 24 * 60 * 60 * 1000;
-                const expiry = (twentyFourthOfFeb2023InMs + sevenDaysInMilliseconds) / 1000;
+                const expiry = Math.floor((twentyFourthOfFeb2023InMs + sevenDaysInMilliseconds) / 1000);
 
                 jest.spyOn(mockDynamoDbClient.prototype, "query").mockImplementation(() => {
                     return Promise.resolve({
@@ -152,7 +152,7 @@ describe("access-token-handler.ts", () => {
                 const twentyFourthOfFeb2023InMs = 1677249836658;
                 jest.spyOn(Date, "now").mockReturnValue(twentyFourthOfFeb2023InMs);
                 const sevenDaysInMilliseconds = 7 * 24 * 60 * 60 * 1000;
-                const expiry = (twentyFourthOfFeb2023InMs + sevenDaysInMilliseconds) / 1000;
+                const expiry = Math.floor((twentyFourthOfFeb2023InMs + sevenDaysInMilliseconds) / 1000);
 
                 const clientConfig = new Map<string, string>();
                 clientConfig.set("code", code);
@@ -333,7 +333,7 @@ describe("access-token-handler.ts", () => {
                 const twentyFourthOfFeb2023InMs = 1677249836658;
                 jest.spyOn(Date, "now").mockReturnValue(twentyFourthOfFeb2023InMs);
                 const sevenDaysInMilliseconds = 7 * 24 * 60 * 60 * 1000;
-                const expiry = (twentyFourthOfFeb2023InMs + sevenDaysInMilliseconds) / 1000;
+                const expiry = Math.floor((twentyFourthOfFeb2023InMs + sevenDaysInMilliseconds) / 1000);
 
                 const event = {
                     body: {
@@ -401,7 +401,7 @@ describe("access-token-handler.ts", () => {
                 const twentyFourthOfFeb2023InMs = 1677249836658;
                 jest.spyOn(Date, "now").mockReturnValue(twentyFourthOfFeb2023InMs);
                 const sevenDaysInMilliseconds = 7 * 24 * 60 * 60 * 1000;
-                const expiry = (twentyFourthOfFeb2023InMs + sevenDaysInMilliseconds) / 1000;
+                const expiry = Math.floor((twentyFourthOfFeb2023InMs + sevenDaysInMilliseconds) / 1000);
 
                 const event = {
                     body: {
@@ -528,7 +528,7 @@ describe("access-token-handler.ts", () => {
                 const twentyFourthOfFeb2023InMs = 1677249836658;
                 jest.spyOn(Date, "now").mockReturnValue(twentyFourthOfFeb2023InMs);
                 const sevenDaysInMilliseconds = 7 * 24 * 60 * 60 * 1000;
-                const expiry = (twentyFourthOfFeb2023InMs - sevenDaysInMilliseconds) / 1000;
+                const expiry = Math.floor((twentyFourthOfFeb2023InMs + sevenDaysInMilliseconds) / 1000);
 
                 const sessionItem = {
                     Items: [
