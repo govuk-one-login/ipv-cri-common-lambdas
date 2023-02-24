@@ -6,11 +6,14 @@ import {
     SessionRequestValidatorFactory,
 } from "../../../src/services/session-request-validator";
 import { ClientConfigKey } from "../../../src/types/config-keys";
+import { SessionValidationError } from "../../../src/types/errors";
+import { PersonIdentity } from "../../../src/types/person-identity";
 
 describe("session-request-validator.ts", () => {
     const logger = new Logger();
     const mockMap = new Map<string, string>();
     mockMap.set("session-id", "test-session-id");
+    const personIdentity = jest.mocked({} as PersonIdentity);
 
     describe("SessionRequestValidator", () => {
         let sessionRequestValidatorFactory: SessionRequestValidatorFactory;
@@ -26,9 +29,27 @@ describe("session-request-validator.ts", () => {
             jest.spyOn(jwtVerifier.prototype, "verify").mockReturnValue(
                 new Promise<JWTPayload | null>((res) => res(null)),
             );
-            const response = await sessionRequestValidator.validateJwt(Buffer.from("test-jwt"), "request-client-id");
-            expect(response.isValid).toEqual(false);
-            expect(response.errorMsg).toEqual("JWT verification failure");
+            try {
+                await sessionRequestValidator.validateJwt(Buffer.from("test-jwt"), "request-client-id");
+            } catch (error) {
+                expect((error as SessionValidationError).message).toBe("Session Validation Exception");
+                expect((error as SessionValidationError).details).toBe(
+                    "Invalid request: JWT validation/verification failed: JWT verification failure",
+                );
+            }
+        });
+
+        it("should return an error on JWT verification failure", async () => {
+            const jwtPayload = jest.mocked({} as JWTPayload);
+            jest.spyOn(jwtVerifier.prototype, "verify").mockResolvedValueOnce(jwtPayload);
+            try {
+                await sessionRequestValidator.validateJwt(Buffer.from("test-jwt"), "request-client-id");
+            } catch (error) {
+                expect((error as SessionValidationError).message).toBe("Session Validation Exception");
+                expect((error as SessionValidationError).details).toBe(
+                    "Invalid request: JWT validation/verification failed: JWT payload missing shared claims",
+                );
+            }
         });
 
         it("should return anerror on mismatched client ID", async () => {
@@ -36,14 +57,18 @@ describe("session-request-validator.ts", () => {
                 new Promise<JWTPayload | null>((res) =>
                     res({
                         client_id: "payload-client-id",
+                        shared_claims: personIdentity,
                     } as JWTPayload),
                 ),
             );
-            const response = await sessionRequestValidator.validateJwt(Buffer.from("test-jwt"), "request-client-id");
-            expect(response.isValid).toEqual(false);
-            expect(response.errorMsg).toEqual(
-                "Mismatched client_id in request body (request-client-id) & jwt (payload-client-id)",
-            );
+            try {
+                await sessionRequestValidator.validateJwt(Buffer.from("test-jwt"), "request-client-id");
+            } catch (error) {
+                expect((error as SessionValidationError).message).toBe("Session Validation Exception");
+                expect((error as SessionValidationError).details).toBe(
+                    "Invalid request: JWT validation/verification failed: Mismatched client_id in request body (request-client-id) & jwt (payload-client-id)",
+                );
+            }
         });
 
         it("should return an error on failure to retrieve redirect URI", async () => {
@@ -51,12 +76,18 @@ describe("session-request-validator.ts", () => {
                 new Promise<JWTPayload | null>((res) =>
                     res({
                         client_id: "request-client-id",
+                        shared_claims: personIdentity,
                     } as JWTPayload),
                 ),
             );
-            const response = await sessionRequestValidator.validateJwt(Buffer.from("test-jwt"), "request-client-id");
-            expect(response.isValid).toEqual(false);
-            expect(response.errorMsg).toEqual("Unable to retrieve redirect URI for client_id: request-client-id");
+            try {
+                await sessionRequestValidator.validateJwt(Buffer.from("test-jwt"), "request-client-id");
+            } catch (error) {
+                expect((error as SessionValidationError).message).toBe("Session Validation Exception");
+                expect((error as SessionValidationError).details).toBe(
+                    "Invalid request: JWT validation/verification failed: Unable to retrieve redirect URI for client_id: request-client-id",
+                );
+            }
         });
 
         it("should return an error on mismatched redirect URI", async () => {
@@ -65,17 +96,20 @@ describe("session-request-validator.ts", () => {
                     res({
                         client_id: "request-client-id",
                         redirect_uri: "wrong-redirect-uri",
+                        shared_claims: personIdentity,
                     } as JWTPayload),
                 ),
             );
             mockMap.set(ClientConfigKey.JWT_REDIRECT_URI, "redirect-uri");
             sessionRequestValidator = sessionRequestValidatorFactory.create(mockMap);
-
-            const response = await sessionRequestValidator.validateJwt(Buffer.from("test-jwt"), "request-client-id");
-            expect(response.isValid).toEqual(false);
-            expect(response.errorMsg).toEqual(
-                "Redirect uri wrong-redirect-uri does not match configuration uri redirect-uri",
-            );
+            try {
+                await sessionRequestValidator.validateJwt(Buffer.from("test-jwt"), "request-client-id");
+            } catch (error) {
+                expect((error as SessionValidationError).message).toBe("Session Validation Exception");
+                expect((error as SessionValidationError).details).toBe(
+                    "Invalid request: JWT validation/verification failed: Redirect uri wrong-redirect-uri does not match configuration uri redirect-uri",
+                );
+            }
         });
 
         it("should successfully validate the jwt", async () => {
@@ -84,6 +118,7 @@ describe("session-request-validator.ts", () => {
                     res({
                         client_id: "request-client-id",
                         redirect_uri: "redirect-uri",
+                        shared_claims: personIdentity,
                     } as JWTPayload),
                 ),
             );
@@ -91,10 +126,10 @@ describe("session-request-validator.ts", () => {
             sessionRequestValidator = sessionRequestValidatorFactory.create(mockMap);
 
             const response = await sessionRequestValidator.validateJwt(Buffer.from("test-jwt"), "request-client-id");
-            expect(response.isValid).toEqual(true);
-            expect(response.validatedObject).toEqual({
+            expect(response).toEqual({
                 client_id: "request-client-id",
                 redirect_uri: "redirect-uri",
+                shared_claims: personIdentity,
             });
         });
     });
