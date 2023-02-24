@@ -3,7 +3,19 @@ import { JWTVerifyOptions } from "jose/dist/types/jwt/verify";
 import { Logger } from "@aws-lambda-powertools/logger";
 import { JwtVerificationConfig } from "../../types/jwt-verification-config";
 
+export enum ClaimNames {
+    ISSUER = "iss",
+    SUBJECT = "sub",
+    AUDIENCE = "aud",
+    EXPIRATION_TIME = "exp",
+    NOT_BEFORE = "nbf",
+    ISSUED_AT = "iat",
+    JWT_ID = "jti",
+    REDIRECT_URI = "redirect_uri",
+}
+
 export class JwtVerifier {
+    static ClaimNames = ClaimNames;
     constructor(private jwtVerifierConfig: JwtVerificationConfig, private logger: Logger) {}
 
     public async verify(
@@ -45,19 +57,6 @@ export class JwtVerifier {
             issuer: expectedClaimValues.get(JwtVerifier.ClaimNames.ISSUER),
             subject: expectedClaimValues.get(JwtVerifier.ClaimNames.SUBJECT),
         };
-    }
-}
-
-export namespace JwtVerifier {
-    export enum ClaimNames {
-        ISSUER = "iss",
-        SUBJECT = "sub",
-        AUDIENCE = "aud",
-        EXPIRATION_TIME = "exp",
-        NOT_BEFORE = "nbf",
-        ISSUED_AT = "iat",
-        JWT_ID = "jti",
-        REDIRECT_URI = "redirect_uri",
     }
 }
 

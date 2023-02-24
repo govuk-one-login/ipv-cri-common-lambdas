@@ -63,8 +63,7 @@ describe("ConfigService", () => {
     describe("initClientConfig", () => {
         it("should throw an error with no client ID", async () => {
             await expect(
-                // @ts-ignore to allow an incorrect value to be entered
-                configService.initClientConfig(undefined, ClientConfigKey.JWT_ISSUER),
+                configService.initClientConfig(undefined as unknown as string, [ClientConfigKey.JWT_ISSUER]),
             ).rejects.toThrowError("Undefined clientId supplied");
         });
 
