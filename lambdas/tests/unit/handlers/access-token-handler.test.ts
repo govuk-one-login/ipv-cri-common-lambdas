@@ -155,7 +155,7 @@ describe("access-token-handler.ts", () => {
                 expect(output.body).not.toBeNull;
                 expect(body.message).toContain("missing body");
                 expect(loggerSpy).toHaveBeenCalledWith(
-                    "access token lambda error occurred",
+                    "Access Token Lambda error occurred",
                     Error("Invalid request: missing body"),
                 );
                 expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnits.Count, 0);
@@ -169,7 +169,7 @@ describe("access-token-handler.ts", () => {
                 expect(output.body).not.toBeNull;
                 expect(body.message).toContain("Invalid request");
                 expect(loggerSpy).toHaveBeenCalledWith(
-                    "access token lambda error occurred",
+                    "Access Token Lambda error occurred",
                     Error("Invalid request: Missing redirectUri parameter"),
                 );
                 expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnits.Count, 0);
@@ -198,7 +198,7 @@ describe("access-token-handler.ts", () => {
                 expect(output.body).not.toBeNull;
                 expect(body.message).toContain("Access token expired");
                 expect(loggerSpy).toHaveBeenCalledWith(
-                    "access token lambda error occurred",
+                    "Access Token Lambda error occurred",
                     Error("Access token expired"),
                 );
                 expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnits.Count, 0);
@@ -250,7 +250,7 @@ describe("access-token-handler.ts", () => {
                 expect(body.code).toBe(1026);
                 expect(body.message).toContain("Access token expired");
                 expect(loggerSpy).toHaveBeenCalledWith(
-                    "access token lambda error occurred",
+                    "Access Token Lambda error occurred",
                     Error("Access token expired"),
                 );
                 expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnits.Count, 0);
@@ -360,7 +360,7 @@ describe("access-token-handler.ts", () => {
                 expect(output.statusCode).toBe(400);
                 expect(body.message).toContain(`JWT signature verification failed`);
                 expect(loggerSpy).toHaveBeenCalledWith(
-                    "access token lambda error occurred",
+                    "Access Token Lambda error occurred",
                     Error("JWT signature verification failed"),
                 );
                 expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnits.Count, 0);
@@ -409,7 +409,7 @@ describe("access-token-handler.ts", () => {
                 } as unknown as APIGatewayProxyEvent;
                 const output = await accessTokenLambda.handler(event, null);
                 expect(output.statusCode).toBe(500);
-                expect(loggerSpy).toHaveBeenCalledWith("access token lambda error occurred", Error("Server error"));
+                expect(loggerSpy).toHaveBeenCalledWith("Access Token Lambda error occurred", Error("Server error"));
                 expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnits.Count, 0);
             });
         });

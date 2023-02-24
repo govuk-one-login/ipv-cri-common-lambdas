@@ -33,9 +33,12 @@ export class AuthorizationLambda implements LambdaInterface {
     public async handler(event: APIGatewayProxyEvent, context: any): Promise<APIGatewayProxyResult> {
         try {
             await initPromise;
+            logger.info("Authorisation Lambda triggered with event", JSON.stringify(event));
 
             const sessionId = getSessionId(event);
             const sessionItem = await this.sessionService.getSession(sessionId);
+
+            logger.info("Session found")
 
             if (!configService.hasClientConfig(sessionItem.clientId)) {
                 await configService.initClientConfig(sessionItem.clientId, [ClientConfigKey.JWT_REDIRECT_URI]);
@@ -48,8 +51,9 @@ export class AuthorizationLambda implements LambdaInterface {
                 clientConfig!.get(ClientConfigKey.JWT_REDIRECT_URI)!,
             );
 
+            logger.info("Session validated")
+
             logger.appendKeys({ govuk_signin_journey_id: sessionItem.clientSessionId });
-            logger.info("found session");
 
             if (!sessionItem.authorizationCode) {
                 await this.sessionService.createAuthorizationCode(sessionItem);
@@ -66,6 +70,8 @@ export class AuthorizationLambda implements LambdaInterface {
                 redirectionURI: event.queryStringParameters?.["redirect_uri"],
             };
 
+            logger.info("Authorisation response created");
+
             metrics.addMetric(AUTHORIZATION_SENT_METRIC, MetricUnits.Count, 1);
 
             return {
@@ -73,7 +79,7 @@ export class AuthorizationLambda implements LambdaInterface {
                 body: JSON.stringify(authorizationResponse),
             };
         } catch (err: any) {
-            logger.error("authorization lambda error occurred", err as Error);
+            logger.error("Authorization Lambda error occurred", err as Error);
             metrics.addMetric(AUTHORIZATION_SENT_METRIC, MetricUnits.Count, 0);
             return {
                 statusCode: err.statusCode ?? 500,

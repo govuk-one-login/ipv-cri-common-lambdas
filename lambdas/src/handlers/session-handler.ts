@@ -55,10 +55,12 @@ export class SessionLambda implements LambdaInterface {
         try {
             await configInitPromise;
             const deserialisedRequestBody = JSON.parse(event.body!);
+            logger.info("Session lambda triggered with event", deserialisedRequestBody);
             const requestBodyClientId = deserialisedRequestBody.client_id;
             let decryptedJwt = null;
             try {
                 decryptedJwt = await this.jweDecrypter.decryptJwe(deserialisedRequestBody.request);
+                logger.info("JWE decrypted");
             } catch (e) {
                 logger.error("Invalid request - JWE decryption failed", e as Error);
                 return {
@@ -80,6 +82,7 @@ export class SessionLambda implements LambdaInterface {
                     body: `Invalid request: JWT validation/verification failed: ${jwtValidationResult.errorMsg}`,
                 };
             }
+            logger.info("JWT validated");
 
             const jwtPayload = jwtValidationResult.validatedObject;
             const clientIpAddress = getClientIpAddress(event);
@@ -90,7 +93,7 @@ export class SessionLambda implements LambdaInterface {
             const sessionId: string = await this.sessionService.saveSession(sessionRequestSummary);
 
             logger.appendKeys({ govuk_signin_journey_id: sessionId });
-            logger.info("created session");
+            logger.info("Session created");
 
             if (jwtPayload.shared_claims) {
                 await this.personIdentityService.savePersonIdentity(
@@ -98,6 +101,8 @@ export class SessionLambda implements LambdaInterface {
                     sessionId,
                 );
             }
+
+            logger.info("Personal identity created")
 
             metrics.addMetric(SESSION_CREATED_METRIC, MetricUnits.Count, 1);
 
@@ -112,7 +117,7 @@ export class SessionLambda implements LambdaInterface {
                 }),
             };
         } catch (err) {
-            logger.error("session lambda error occurred", err as Error);
+            logger.error("Session Lambda error occurred", err as Error);
             metrics.addMetric(SESSION_CREATED_METRIC, MetricUnits.Count, 0);
             return {
                 statusCode: 500,

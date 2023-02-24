@@ -262,7 +262,7 @@ describe("SessionLambda", () => {
             return new Promise<ValidationResult>((res, rej) => rej(Error("Unable to perform task")));
         });
         const result = await sessionLambda.handler(mockEvent, {});
-        expect(errorSpy).toHaveBeenCalledWith("session lambda error occurred", Error("Unable to perform task"));
+        expect(errorSpy).toHaveBeenCalledWith("Session Lambda error occurred", Error("Unable to perform task"));
         expect(result).toEqual({
             statusCode: 500,
             body: "An error has occurred: Error: Unable to perform task",
