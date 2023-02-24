@@ -55,8 +55,7 @@ describe("AuditService", () => {
     });
 
     it("should error without an event type", async () => {
-        // @ts-ignore to allow an incorrect value to be entered
-        await expect(auditService.sendAuditEvent(undefined, mockContext)).rejects.toThrow(
+        await expect(auditService.sendAuditEvent(undefined as unknown as AuditEventType, mockContext)).rejects.toThrow(
             "Audit event type not specified",
         );
     });
