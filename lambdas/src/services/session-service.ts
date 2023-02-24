@@ -92,7 +92,7 @@ export class SessionService {
             },
         });
         await this.dynamoDbClient.send(putSessionCommand);
-        return putSessionCommand.input.Item!.sessionId;
+        return putSessionCommand?.input?.Item?.sessionId;
     }
 
     private getSessionTableName(): string {

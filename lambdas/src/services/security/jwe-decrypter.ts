@@ -1,6 +1,7 @@
 import { base64url } from "jose";
 import { CipherGCMTypes, createDecipheriv, KeyObject } from "crypto";
 import { DecryptCommand, EncryptionAlgorithmSpec, KMSClient } from "@aws-sdk/client-kms";
+import { JweDecrypterError } from "../../types/errors";
 
 export class JweDecrypter {
     private kmsEncryptionKeyId: string | undefined;
@@ -13,21 +14,25 @@ export class JweDecrypter {
             throw new Error(`Invalid number of JWE parts encountered: ${length}`);
         }
 
-        const decryptedContentEncKey = await this.getKey(encryptedKey);
+        const decryptedContentEncKey = (await this.getKey(encryptedKey)) as Uint8Array;
 
-        let buff = Buffer.from(jweProtectedHeader, "base64");
+        const buff = Buffer.from(jweProtectedHeader, "base64");
         const jweHeader = JSON.parse(buff.toString("utf8"));
 
         const protectedHeaderArray: Uint8Array = new TextEncoder().encode(jweProtectedHeader);
 
-        return this.gcmDecrypt(
-            jweHeader.enc,
-            decryptedContentEncKey,
-            base64url.decode(ciphertext),
-            base64url.decode(iv),
-            base64url.decode(tag),
-            protectedHeaderArray,
-        );
+        try {
+            return this.gcmDecrypt(
+                jweHeader.enc,
+                decryptedContentEncKey,
+                base64url.decode(ciphertext),
+                base64url.decode(iv),
+                base64url.decode(tag),
+                protectedHeaderArray,
+            );
+        } catch (error) {
+            throw new JweDecrypterError(error as Error);
+        }
     }
 
     // TODO: check if we can import this from the jose package
@@ -53,7 +58,7 @@ export class JweDecrypter {
         return plainText;
     }
 
-    private async getKey(encryptedKey: string): Promise<Uint8Array> {
+    private async getKey(encryptedKey: string): Promise<Uint8Array | undefined> {
         if (!this.kmsEncryptionKeyId) {
             this.kmsEncryptionKeyId = this.getEncryptionKeyId();
         }
@@ -65,6 +70,6 @@ export class JweDecrypter {
             EncryptionAlgorithm: EncryptionAlgorithmSpec.RSAES_OAEP_SHA_256,
         });
         const response = await this.kmsClient.send(decryptCommand);
-        return response.Plaintext!;
+        return response.Plaintext;
     }
 }
