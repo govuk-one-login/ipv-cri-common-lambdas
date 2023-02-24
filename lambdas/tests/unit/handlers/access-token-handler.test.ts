@@ -84,7 +84,7 @@ describe("access-token-handler.ts", () => {
                 const code = "123abc";
                 const clientSessionId = "1";
 
-                jest.spyOn(global.Date, "now").mockReturnValue(1675382400);
+                jest.spyOn(global.Date, "now").mockReturnValue(1675382400000);
                 const sevenDaysInMilliseconds = 7 * 24 * 60 * 60 * 1000;
                 const expiry = new Date(Date.now() + sevenDaysInMilliseconds).getTime() / 1000;
 
@@ -148,7 +148,7 @@ describe("access-token-handler.ts", () => {
                 const redirectUri = "http://123.abc.com";
                 const code = "123abc";
 
-                jest.spyOn(global.Date, "now").mockReturnValue(1675382400);
+                jest.spyOn(global.Date, "now").mockReturnValue(1675382400000);
                 const sevenDaysInMilliseconds = 7 * 24 * 60 * 60 * 1000;
                 const expiry = new Date(Date.now() + sevenDaysInMilliseconds).getTime() / 1000;
 
@@ -328,7 +328,7 @@ describe("access-token-handler.ts", () => {
                 const badUrl = "http://does-not-match";
                 const code = "DOES_NOT_MATCH";
 
-                jest.spyOn(global.Date, "now").mockReturnValue(1675382400);
+                jest.spyOn(global.Date, "now").mockReturnValue(1675382400000);
                 const sevenDaysInMilliseconds = 7 * 24 * 60 * 60 * 1000;
                 const expiry = new Date(Date.now() + sevenDaysInMilliseconds).getTime() / 1000;
 
@@ -395,7 +395,7 @@ describe("access-token-handler.ts", () => {
             it("should error when jwt verify fails", async () => {
                 const redirectUri = "http://123.abc.com";
 
-                jest.spyOn(global.Date, "now").mockReturnValue(1675382400);
+                jest.spyOn(global.Date, "now").mockReturnValue(1675382400000);
                 const sevenDaysInMilliseconds = 7 * 24 * 60 * 60 * 1000;
                 const expiry = new Date(Date.now() - sevenDaysInMilliseconds).getTime() / 1000;
 
@@ -521,7 +521,7 @@ describe("access-token-handler.ts", () => {
                 clientConfig.set("redirectUri", redirectUri);
                 jest.spyOn(mockConfigService.prototype, "getClientConfig").mockReturnValue(clientConfig);
 
-                jest.spyOn(global.Date, "now").mockReturnValue(1675382400);
+                jest.spyOn(global.Date, "now").mockReturnValue(1675382400000);
                 const sevenDaysInMilliseconds = 7 * 24 * 60 * 60 * 1000;
                 const expiry = new Date(Date.now() - sevenDaysInMilliseconds).getTime() / 1000;
 
