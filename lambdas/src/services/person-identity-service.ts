@@ -24,7 +24,7 @@ export class PersonIdentityService {
             Item: personIdentityItem,
         });
         await this.dynamoDbClient.send(putSessionCommand);
-        return putSessionCommand.input.Item!.sessionId;
+        return putSessionCommand?.input?.Item?.sessionId;
     }
     private createPersonIdentityItem(
         sharedClaims: PersonIdentity,
@@ -40,49 +40,33 @@ export class PersonIdentityService {
         };
     }
     private mapAddresses(addresses: Address[]): PersonIdentityAddress[] {
-        if (addresses?.length) {
-            return addresses.map((address) => {
-                return {
-                    uprn: address.uprn,
-                    organisationName: address.organisationName,
-                    departmentName: address.departmentName,
-                    subBuildingName: address.subBuildingName,
-                    buildingNumber: address.buildingNumber,
-                    buildingName: address.buildingName,
-                    dependentStreetName: address.dependentStreetName,
-                    streetName: address.streetName,
-                    addressCountry: address.addressCountry,
-                    postalCode: address.postalCode,
-                    addressLocality: address.addressLocality,
-                    dependentAddressLocality: address.dependentAddressLocality,
-                    doubleDependentAddressLocality: address.doubleDependentAddressLocality,
-                    validFrom: address.validFrom,
-                    validUntil: address.validUntil,
-                };
-            });
-        }
-        return [];
+        return addresses?.map((address) => ({
+            uprn: address.uprn,
+            organisationName: address.organisationName,
+            departmentName: address.departmentName,
+            subBuildingName: address.subBuildingName,
+            buildingNumber: address.buildingNumber,
+            buildingName: address.buildingName,
+            dependentStreetName: address.dependentStreetName,
+            streetName: address.streetName,
+            addressCountry: address.addressCountry,
+            postalCode: address.postalCode,
+            addressLocality: address.addressLocality,
+            dependentAddressLocality: address.dependentAddressLocality,
+            doubleDependentAddressLocality: address.doubleDependentAddressLocality,
+            validFrom: address.validFrom,
+            validUntil: address.validUntil,
+        }));
     }
     private mapBirthDates(birthDates: BirthDate[]): PersonIdentityDateOfBirth[] {
-        if (birthDates?.length) {
-            return birthDates.map((bd) => {
-                return { value: bd.value };
-            });
-        }
-        return [];
+        return birthDates?.map((bd) => ({ value: bd.value }));
     }
     private mapNames(names: Name[]): PersonIdentityName[] {
-        if (names?.length) {
-            return names.map((name) => {
-                const personIdentityName: PersonIdentityName = { nameParts: [] };
-                if (name?.nameParts?.length) {
-                    personIdentityName.nameParts = name.nameParts.map((namePart) => {
-                        return { type: namePart.type, value: namePart.value };
-                    });
-                }
-                return personIdentityName;
-            });
-        }
-        return [];
+        return names?.map((name) => ({
+            nameParts: name?.nameParts?.map((namePart) => ({
+                type: namePart.type,
+                value: namePart.value,
+            })),
+        }));
     }
 }
