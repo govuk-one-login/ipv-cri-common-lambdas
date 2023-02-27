@@ -51,7 +51,7 @@ export class SessionLambda implements LambdaInterface {
     @_tracer.captureLambdaHandler({ captureResponse: false })
     @logger.injectLambdaContext({ clearState: true })
     @metrics.logMetrics({ throwOnEmptyMetrics: false, captureColdStartMetric: true })
-    public async handler(event: APIGatewayProxyEvent, _context: any): Promise<APIGatewayProxyResult> {
+    public async handler(event: APIGatewayProxyEvent, _context: unknown): Promise<APIGatewayProxyResult> {
         try {
             const deserialisedRequestBody = JSON.parse(event.body as string);
             const requestBodyClientId = deserialisedRequestBody.client_id;

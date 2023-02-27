@@ -19,7 +19,7 @@ export interface AuditEventSession {
 export interface AuditEventContext {
     sessionItem: AuditEventSession;
     personIdentity?: PersonIdentity;
-    extensions?: any;
+    extensions?: unknown;
     clientIpAddress: string | undefined;
 }
 
@@ -37,5 +37,5 @@ export interface AuditEvent {
     component_id: string;
     restricted?: PersonIdentity;
     user: AuditEventUser;
-    extensions?: any;
+    extensions?: unknown;
 }
