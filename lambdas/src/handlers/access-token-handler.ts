@@ -33,7 +33,7 @@ export class AccessTokenLambda implements LambdaInterface {
         try {
             await initPromise;
 
-            logger.info("Access Token Lambda triggered with event body", event.body as string);
+            logger.info("Access Token Lambda triggered");
 
             const requestPayload = this.requestValidator.validatePayload(event.body);
             const sessionItem = await this.sessionService.getSessionByAuthorizationCode(requestPayload.code);
@@ -75,7 +75,7 @@ export class AccessTokenLambda implements LambdaInterface {
         } catch (err: any) {
             metrics.addMetric(ACCESS_TOKEN, MetricUnits.Count, 0);
             //Todo dont want any
-            logger.error("Access Token Lambda error occurred", err as Error);
+            logger.error(`Access Token Lambda error occurred: ${err.getErrorSummary()}`, err as Error);
             return {
                 statusCode: err.statusCode ?? 500,
                 body: JSON.stringify({

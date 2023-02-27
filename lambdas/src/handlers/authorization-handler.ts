@@ -33,7 +33,7 @@ export class AuthorizationLambda implements LambdaInterface {
     public async handler(event: APIGatewayProxyEvent, context: any): Promise<APIGatewayProxyResult> {
         try {
             await initPromise;
-            logger.info("Authorisation Lambda triggered with event headers", event.headers);
+            logger.info("Authorisation Lambda triggered");
 
             const sessionId = getSessionId(event);
             const sessionItem = await this.sessionService.getSession(sessionId);
@@ -45,7 +45,7 @@ export class AuthorizationLambda implements LambdaInterface {
             }
             const clientConfig = configService.getClientConfig(sessionItem.clientId);
 
-            logger.info("Validating session with parameters", JSON.stringify(event.queryStringParameters))
+            logger.info("Validating session with parameters", JSON.stringify(event.queryStringParameters));
             this.authorizationRequestValidator.validate(
                 event.queryStringParameters,
                 sessionItem.clientId,
@@ -80,7 +80,7 @@ export class AuthorizationLambda implements LambdaInterface {
                 body: JSON.stringify(authorizationResponse),
             };
         } catch (err: any) {
-            logger.error("Authorization Lambda error occurred", err as Error);
+            logger.error(`Authorization Lambda error occurred: ${err.getErrorSummary()}`, err as Error);
             metrics.addMetric(AUTHORIZATION_SENT_METRIC, MetricUnits.Count, 0);
             return {
                 statusCode: err.statusCode ?? 500,

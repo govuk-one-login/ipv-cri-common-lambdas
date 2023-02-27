@@ -54,7 +54,7 @@ export class SessionLambda implements LambdaInterface {
     public async handler(event: APIGatewayProxyEvent, context: any): Promise<APIGatewayProxyResult> {
         try {
             const deserialisedRequestBody = JSON.parse(event.body as string);
-            logger.info("Session lambda triggered with event", deserialisedRequestBody);
+            logger.info("Session lambda triggered");
 
             const requestBodyClientId = deserialisedRequestBody.client_id;
             const clientIpAddress = getClientIpAddress(event);
@@ -95,7 +95,7 @@ export class SessionLambda implements LambdaInterface {
                 }),
             };
         } catch (err: any) {
-            logger.error("Session Lambda error occurred", err as Error);
+            logger.error(`Session Lambda error occurred: ${err.getErrorSummary()}`, err as Error);
             metrics.addMetric(SESSION_CREATED_METRIC, MetricUnits.Count, 0);
             return {
                 statusCode: err?.statusCode ?? 500,

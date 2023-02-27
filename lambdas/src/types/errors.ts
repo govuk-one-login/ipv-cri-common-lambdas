@@ -9,7 +9,14 @@ export abstract class BaseError extends Error {
         super(message);
     }
     getErrorSummary() {
-        return this.code + ": " + this.message;
+        let error = this.message;
+        if (this.code) {
+            error = this.code + ": " + error;
+        }
+        if (this.details) {
+            error = error + " - " + this.details;
+        }
+        return error;
     }
 }
 
@@ -55,10 +62,8 @@ export class GenericServerError extends BaseError {
         super("Request failed due to a server error");
         this.statusCode = 500;
         this.code = 1025;
+        this.details = details;
         Object.setPrototypeOf(this, GenericServerError.prototype);
-    }
-    getErrorSummary() {
-        return `${this.code}: ${this?.message}`;
     }
 }
 
@@ -83,6 +88,7 @@ export class SessionValidationError extends BaseError {
         super(message);
         this.statusCode = 400;
         this.code = 1019;
+        this.details = details;
         Object.setPrototypeOf(this, SessionValidationError.prototype);
     }
 }
