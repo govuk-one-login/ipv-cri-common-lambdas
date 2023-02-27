@@ -29,7 +29,7 @@ describe("session-service", () => {
         jest.resetAllMocks();
         sessionService = new SessionService(mockDynamoDbClient.prototype, configService);
         const impl = () => {
-            const mockPromise = new Promise<any>((resolve) => {
+            const mockPromise = new Promise<unknown>((resolve) => {
                 resolve({ Parameters: [] });
             });
             return jest.fn().mockImplementation(() => {
