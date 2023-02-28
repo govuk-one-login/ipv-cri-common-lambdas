@@ -30,7 +30,7 @@ export class AuthorizationLambda implements LambdaInterface {
     @logger.injectLambdaContext({ clearState: true })
     @metrics.logMetrics({ throwOnEmptyMetrics: false, captureColdStartMetric: true })
     @_tracer.captureLambdaHandler({ captureResponse: false })
-    public async handler(event: APIGatewayProxyEvent, _context: any): Promise<APIGatewayProxyResult> {
+    public async handler(event: APIGatewayProxyEvent, _context: unknown): Promise<APIGatewayProxyResult> {
         try {
             await initPromise;
 

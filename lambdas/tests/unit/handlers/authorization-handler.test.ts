@@ -37,7 +37,7 @@ describe("authorization-handler.ts", () => {
     beforeEach(() => {
         jest.resetAllMocks();
         const impl = () => {
-            const mockPromise = new Promise<any>((resolve) => {
+            const mockPromise = new Promise<unknown>((resolve) => {
                 resolve({ Parameters: [] });
             });
             return jest.fn().mockImplementation(() => {
@@ -84,7 +84,7 @@ describe("authorization-handler.ts", () => {
                 authorizationCode: "abc",
             };
             jest.spyOn(sessionService, "getSession").mockReturnValue(
-                new Promise<any>((resolve) => {
+                new Promise<SessionItem>((resolve) => {
                     resolve(sessionItem);
                 }),
             );
@@ -155,7 +155,7 @@ describe("authorization-handler.ts", () => {
                     authorizationCode: undefined,
                 };
                 jest.spyOn(sessionService, "getSession").mockReturnValue(
-                    new Promise<any>((resolve) => {
+                    new Promise<SessionItem>((resolve) => {
                         resolve(sessionItem);
                     }),
                 );

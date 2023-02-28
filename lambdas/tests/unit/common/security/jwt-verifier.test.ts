@@ -45,7 +45,7 @@ describe("jwt-verifier.ts", () => {
                     error: jest.fn(),
                 } as unknown as Logger;
                 publicKey = new Uint8Array([3, 101, 120, 26, 14, 184, 5, 99, 172, 149]);
-                jwtVerifier = new JwtVerifier(jwtVerifierConfig, logger as any);
+                jwtVerifier = new JwtVerifier(jwtVerifierConfig, logger as Logger);
             });
 
             afterEach(() => {
@@ -70,12 +70,11 @@ describe("jwt-verifier.ts", () => {
                     sub: "some-subject",
                     aud: "some-audience",
                 };
-
                 importJWKMock.mockResolvedValueOnce(publicKey);
                 jwtVerifyMock.mockResolvedValueOnce({
                     payload: jwtPayload,
                     protectedHeader: {} as JWTHeaderParameters,
-                } as any);
+                } as unknown as Promise<jose.JWTVerifyResult & jose.ResolvedKey>);
 
                 const payload = await jwtVerifier.verify(encodedJwt, mandatoryClaims, expectedClaimValues);
 
@@ -113,7 +112,7 @@ describe("jwt-verifier.ts", () => {
                 jwtVerifyMock.mockResolvedValueOnce({
                     payload: jwtPayload,
                     protectedHeader: {} as JWTHeaderParameters,
-                } as any);
+                } as unknown as Promise<jose.JWTVerifyResult & jose.ResolvedKey>);
 
                 const payload = await jwtVerifier.verify(encodedJwt, mandatoryClaims, expectedClaimValues);
 
@@ -225,7 +224,7 @@ describe("jwt-verifier.ts", () => {
                 jwtVerifyMock.mockResolvedValueOnce({
                     payload: jwtPayload,
                     protectedHeader: {} as JWTHeaderParameters,
-                } as any);
+                } as unknown as Promise<jose.JWTVerifyResult & jose.ResolvedKey>);
 
                 const payload = await jwtVerifier.verify(encodedJwt, mandatoryClaims, expectedClaimValues);
 
@@ -262,9 +261,13 @@ describe("jwt-verifier.ts", () => {
                 jwtVerifyMock.mockResolvedValueOnce({
                     payload: jwtPayload,
                     protectedHeader: {} as JWTHeaderParameters,
-                } as any);
+                } as unknown as Promise<jose.JWTVerifyResult & jose.ResolvedKey>);
 
-                const payload = await jwtVerifier.verify(encodedJwt, undefined as any, expectedClaimValues);
+                const payload = await jwtVerifier.verify(
+                    encodedJwt,
+                    undefined as unknown as Set<string>,
+                    expectedClaimValues,
+                );
 
                 expect(payload).toBeNull;
                 expect(Buffer.from).toHaveBeenCalledWith("publicSigningJwk", "base64");
