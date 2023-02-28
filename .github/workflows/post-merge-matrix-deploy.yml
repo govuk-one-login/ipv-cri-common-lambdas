@@ -8,29 +8,40 @@ on:
 jobs:
   publish_common_cri_to_matrix_dev:
     strategy:
+      fail-fast: false
       matrix:
-        target: [ ADDRESS_DEV, FRAUD_DEV, KBV_DEV, KBV_POC, CIC_DEV ]
+        target: [ ADDRESS_DEV, FRAUD_DEV, KBV_DEV, KBV_POC, CIC_DEV, DL_DEV ]
         include:
           - target: ADDRESS_DEV
+            ENABLED: "${{ vars.ADDRESS_DEV_ENABLED }}"
             ARTIFACT_SOURCE_BUCKET_NAME_SECRET: ADDRESS_DEV_COMMON_CRI_ARTIFACT_SOURCE_BUCKET_NAME
             GH_ACTIONS_ROLE_ARN_SECRET: ADDRESS_DEV_COMMON_CRI_GH_ACTIONS_ROLE_ARN
             SIGNING_PROFILE_NAME: ADDRESS_DEV_SIGNING_PROFILE_NAME
           - target: FRAUD_DEV
+            ENABLED: "${{ vars.FRAUD_DEV_ENABLED }}"
             ARTIFACT_SOURCE_BUCKET_NAME_SECRET: FRAUD_DEV_COMMON_CRI_ARTIFACT_SOURCE_BUCKET_NAME
             GH_ACTIONS_ROLE_ARN_SECRET: FRAUD_DEV_COMMON_CRI_GH_ACTIONS_ROLE_ARN
             SIGNING_PROFILE_NAME: FRAUD_DEV_SIGNING_PROFILE_NAME
           - target: KBV_DEV
+            ENABLED: "${{ vars.KBV_DEV_ENABLED }}"
             ARTIFACT_SOURCE_BUCKET_NAME_SECRET: KBV_DEV_COMMON_CRI_ARTIFACT_SOURCE_BUCKET_NAME
             GH_ACTIONS_ROLE_ARN_SECRET: KBV_DEV_COMMON_CRI_GH_ACTIONS_ROLE_ARN
             SIGNING_PROFILE_NAME: KBV_DEV_SIGNING_PROFILE_NAME
           - target: KBV_POC
+            ENABLED: "${{ vars.KBV_POC_ENABLED }}"
             ARTIFACT_SOURCE_BUCKET_NAME_SECRET: KBV_POC_COMMON_CRI_ARTIFACT_SOURCE_BUCKET_NAME
             GH_ACTIONS_ROLE_ARN_SECRET: KBV_POC_COMMON_CRI_GH_ACTIONS_ROLE_ARN
             SIGNING_PROFILE_NAME: KBV_POC_SIGNING_PROFILE_NAME
           - target: CIC_DEV
+            ENABLED: "${{ vars.CIC_DEV_ENABLED }}"
             ARTIFACT_SOURCE_BUCKET_NAME_SECRET: CIC_DEV_COMMON_CRI_ARTIFACT_SOURCE_BUCKET_NAME
             GH_ACTIONS_ROLE_ARN_SECRET: CIC_DEV_COMMON_CRI_GH_ACTIONS_ROLE_ARN
             SIGNING_PROFILE_NAME: CIC_DEV_SIGNING_PROFILE_NAME
+          - target: DL_DEV
+            ENABLED: "${{ vars.DL_DEV_ENABLED }}"
+            ARTIFACT_SOURCE_BUCKET_NAME_SECRET: DL_DEV_COMMON_CRI_ARTIFACT_SOURCE_BUCKET_NAME
+            GH_ACTIONS_ROLE_ARN_SECRET: DL_DEV_COMMON_CRI_GH_ACTIONS_ROLE_ARN
+            SIGNING_PROFILE_NAME: DL_DEV_SIGNING_PROFILE_NAME
       max-parallel: 2
     name: Publish common_cri infrastructure to dev
     runs-on: ubuntu-latest
@@ -41,32 +52,40 @@ jobs:
       id-token: write
       contents: read
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout code
+        if: matrix.ENABLED == 'true'
+        uses: actions/checkout@v3
 
       - name: Set up JDK 11
+        if: matrix.ENABLED == 'true'
         uses: actions/setup-java@v3
         with:
           java-version: 11
           distribution: zulu
 
       - name: Setup Gradle
+        if: matrix.ENABLED == 'true'
         uses: gradle/gradle-build-action@v2
         with:
           gradle-version: 7.4.2
 
       - name: Setup SAM
+        if: matrix.ENABLED == 'true'
         uses: aws-actions/setup-sam@v2
 
       - name: Assume temporary AWS role
+        if: matrix.ENABLED == 'true'
         uses: aws-actions/configure-aws-credentials@v1-node16
         with:
           role-to-assume: ${{ secrets[matrix.GH_ACTIONS_ROLE_ARN_SECRET] }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: SAM Validate
+        if: matrix.ENABLED == 'true'
         run: sam validate --region ${{ env.AWS_REGION }} -t infrastructure/lambda/template.yaml
 
       - name: Generate code signing config
+        if: matrix.ENABLED == 'true'
         id: signing
         uses: rusty-actions/sam-code-signing-config@1c9d03c875b42b34b5ecc68a9d219f583782bbfc
         with:
@@ -74,9 +93,11 @@ jobs:
           profile: ${{ secrets[matrix.SIGNING_PROFILE_NAME] }}
 
       - name: SAM build
+        if: matrix.ENABLED == 'true'
         run: sam build -t infrastructure/lambda/template.yaml
 
       - name: SAM package
+        if: matrix.ENABLED == 'true'
         run: |
           sam package \
             ${{ steps.signing.outputs.signing_config }} \
@@ -84,9 +105,11 @@ jobs:
             --region ${{ env.AWS_REGION }} --output-template-file=cf-template.yaml
 
       - name: Zip the CloudFormation template
+        if: matrix.ENABLED == 'true'
         run: zip template.zip cf-template.yaml
 
       - name: Upload zipped CloudFormation artifact to S3
+        if: matrix.ENABLED == 'true'
         env:
           ARTIFACT_SOURCE_BUCKET_NAME: ${{ secrets[matrix.ARTIFACT_SOURCE_BUCKET_NAME_SECRET] }}
         run: aws s3 cp template.zip "s3://${{ env.ARTIFACT_SOURCE_BUCKET_NAME }}/template.zip"
@@ -95,26 +118,32 @@ jobs:
   publish_common_cri_to_matrix_build:
     needs: publish_common_cri_to_matrix_dev
     strategy:
+      fail-fast: false
       matrix:
         target: [ ADDRESS_BUILD, FRAUD_BUILD, KBV_BUILD, CIC_BUILD, DL_BUILD ]
         include:
           - target: ADDRESS_BUILD
+            ENABLED: "${{ vars.ADDRESS_BUILD_ENABLED }}"
             ARTIFACT_SOURCE_BUCKET_NAME_SECRET: ADDRESS_BUILD_COMMON_CRI_ARTIFACT_SOURCE_BUCKET_NAME
             GH_ACTIONS_ROLE_ARN_SECRET:    ADDRESS_BUILD_COMMON_CRI_GH_ACTIONS_ROLE_ARN
             SIGNING_PROFILE_NAME: ADDRESS_BUILD_SIGNING_PROFILE_NAME
           - target: FRAUD_BUILD
+            ENABLED: "${{ vars.ADDRESS_BUILD_ENABLED }}"
             ARTIFACT_SOURCE_BUCKET_NAME_SECRET: FRAUD_BUILD_COMMON_CRI_ARTIFACT_SOURCE_BUCKET_NAME
             GH_ACTIONS_ROLE_ARN_SECRET:    FRAUD_BUILD_COMMON_CRI_GH_ACTIONS_ROLE_ARN
             SIGNING_PROFILE_NAME: FRAUD_BUILD_SIGNING_PROFILE_NAME
           - target: KBV_BUILD
+            ENABLED: "${{ vars.KBV_BUILD_ENABLED }}"
             ARTIFACT_SOURCE_BUCKET_NAME_SECRET: KBV_BUILD_COMMON_CRI_ARTIFACT_SOURCE_BUCKET_NAME
             GH_ACTIONS_ROLE_ARN_SECRET:    KBV_BUILD_COMMON_CRI_GH_ACTIONS_ROLE_ARN
             SIGNING_PROFILE_NAME: KBV_BUILD_SIGNING_PROFILE_NAME
           - target: CIC_BUILD
+            ENABLED: "${{ vars.CIC_BUILD_ENABLED }}"
             ARTIFACT_SOURCE_BUCKET_NAME_SECRET: CIC_BUILD_COMMON_CRI_ARTIFACT_SOURCE_BUCKET_NAME
             GH_ACTIONS_ROLE_ARN_SECRET:    CIC_BUILD_COMMON_CRI_GH_ACTIONS_ROLE_ARN
             SIGNING_PROFILE_NAME: CIC_BUILD_SIGNING_PROFILE_NAME
           - target: DL_BUILD
+            ENABLED: "${{ vars.DL_BUILD_ENABLED }}"
             ARTIFACT_SOURCE_BUCKET_NAME_SECRET: DL_BUILD_COMMON_CRI_ARTIFACT_SOURCE_BUCKET_NAME
             GH_ACTIONS_ROLE_ARN_SECRET: DL_BUILD_COMMON_CRI_GH_ACTIONS_ROLE_ARN
             SIGNING_PROFILE_NAME: DL_BUILD_SIGNING_PROFILE_NAME
@@ -128,32 +157,40 @@ jobs:
       id-token: write
       contents: read
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout code
+        if: matrix.ENABLED == 'true'
+        uses: actions/checkout@v3
 
       - name: Set up JDK 11
+        if: matrix.ENABLED == 'true'
         uses: actions/setup-java@v3
         with:
           java-version: 11
           distribution: zulu
 
       - name: Setup Gradle
+        if: matrix.ENABLED == 'true'
         uses: gradle/gradle-build-action@v2
         with:
           gradle-version: 7.4.2
 
       - name: Setup SAM
+        if: matrix.ENABLED == 'true'
         uses: aws-actions/setup-sam@v2
 
       - name: Assume temporary AWS role
+        if: matrix.ENABLED == 'true'
         uses: aws-actions/configure-aws-credentials@v1-node16
         with:
           role-to-assume: ${{ secrets[matrix.GH_ACTIONS_ROLE_ARN_SECRET] }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: SAM Validate
+        if: matrix.ENABLED == 'true'
         run: sam validate --region ${{ env.AWS_REGION }} -t infrastructure/lambda/template.yaml
 
       - name: Generate code signing config
+        if: matrix.ENABLED == 'true'
         id: signing
         uses: rusty-actions/sam-code-signing-config@1c9d03c875b42b34b5ecc68a9d219f583782bbfc
         with:
@@ -161,9 +198,11 @@ jobs:
           profile: ${{ secrets[matrix.SIGNING_PROFILE_NAME] }}
 
       - name: SAM build
+        if: matrix.ENABLED == 'true'
         run: sam build -t infrastructure/lambda/template.yaml
 
       - name: SAM package
+        if: matrix.ENABLED == 'true'
         run: |
           sam package \
             ${{ steps.signing.outputs.signing_config }} \
@@ -171,9 +210,11 @@ jobs:
             --region ${{ env.AWS_REGION }} --output-template-file=cf-template.yaml
 
       - name: Zip the CloudFormation template
+        if: matrix.ENABLED == 'true'
         run: zip template.zip cf-template.yaml
 
       - name: Upload zipped CloudFormation artifact to S3
+        if: matrix.ENABLED == 'true'
         env:
           ARTIFACT_SOURCE_BUCKET_NAME: ${{ secrets[matrix.ARTIFACT_SOURCE_BUCKET_NAME_SECRET] }}
         run: aws s3 cp template.zip "s3://${{ env.ARTIFACT_SOURCE_BUCKET_NAME }}/template.zip"
