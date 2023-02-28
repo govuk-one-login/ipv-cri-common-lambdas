@@ -176,7 +176,9 @@ public class APISteps {
         assertEquals(errorCode, jsonNode.get("code").asInt());
         assertEquals(errorMessage, jsonNode.get("message").asText());
         assertEquals(errorDetails, jsonNode.get("details").asText());
-        assertEquals(errorCode + ": " + errorMessage + " - " + errorDetails, jsonNode.get("errorSummary").asText());
+        assertEquals(
+                errorCode + ": " + errorMessage + " - " + errorDetails,
+                jsonNode.get("errorSummary").asText());
     }
 
     @When("user sends a request to access token end point with incorrect authorization code")
