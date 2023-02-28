@@ -92,3 +92,11 @@ export class SessionValidationError extends BaseError {
         Object.setPrototypeOf(this, SessionValidationError.prototype);
     }
 }
+
+export class AuthorizationCodeExpiredError extends BaseError {
+    constructor() {
+        super("Authorization code expired");
+        this.statusCode = 403;
+        this.code = 1027;
+    }
+}

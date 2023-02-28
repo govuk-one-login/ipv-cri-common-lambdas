@@ -29,7 +29,7 @@ export class AccessTokenLambda implements LambdaInterface {
 
     @logger.injectLambdaContext({ clearState: true })
     @metrics.logMetrics({ throwOnEmptyMetrics: false, captureColdStartMetric: true })
-    public async handler(event: APIGatewayProxyEvent, context: any): Promise<APIGatewayProxyResult> {
+    public async handler(event: APIGatewayProxyEvent, _context: any): Promise<APIGatewayProxyResult> {
         try {
             await initPromise;
 

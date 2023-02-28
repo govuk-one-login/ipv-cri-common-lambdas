@@ -28,7 +28,7 @@ const kmsClient = createClient(AwsClientType.KMS) as KMSClient;
 
 const logger = new Logger();
 const metrics = new Metrics();
-const tracer = new Tracer({ captureHTTPsRequests: false });
+const _tracer = new Tracer({ captureHTTPsRequests: false });
 const configService = new ConfigService(ssmClient);
 const configInitPromise = configService.init([
     CommonConfigKey.SESSION_TABLE_NAME,
@@ -48,10 +48,10 @@ export class SessionLambda implements LambdaInterface {
         private readonly auditService: AuditService,
     ) {}
 
-    @tracer.captureLambdaHandler({ captureResponse: false })
+    @_tracer.captureLambdaHandler({ captureResponse: false })
     @logger.injectLambdaContext({ clearState: true })
     @metrics.logMetrics({ throwOnEmptyMetrics: false, captureColdStartMetric: true })
-    public async handler(event: APIGatewayProxyEvent, context: any): Promise<APIGatewayProxyResult> {
+    public async handler(event: APIGatewayProxyEvent, _context: any): Promise<APIGatewayProxyResult> {
         try {
             const deserialisedRequestBody = JSON.parse(event.body as string);
             logger.info("Session lambda triggered");

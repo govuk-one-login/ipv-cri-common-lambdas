@@ -13,7 +13,6 @@ import {
 import { Logger } from "@aws-lambda-powertools/logger";
 import { Metrics } from "@aws-lambda-powertools/metrics";
 import {
-    BaseError,
     InvalidRequestError,
     ServerError,
     SessionNotFoundError,

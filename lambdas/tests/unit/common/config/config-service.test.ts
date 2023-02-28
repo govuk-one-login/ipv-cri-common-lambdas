@@ -3,7 +3,7 @@ import { ClientConfigKey, CommonConfigKey } from "../../../../src/types/config-k
 import { ConfigService } from "../../../../src/common/config/config-service";
 
 const getMockSend = (key: CommonConfigKey, value?: string) => {
-    const mockPromise = new Promise<any>((resolve, reject) => {
+    const mockPromise = new Promise<any>((resolve) => {
         resolve({
             Parameters: [
                 {
@@ -63,13 +63,12 @@ describe("ConfigService", () => {
     describe("initClientConfig", () => {
         it("should throw an error with no client ID", async () => {
             await expect(
-                // @ts-ignore to allow an incorrect value to be entered
-                configService.initClientConfig(undefined, ClientConfigKey.JWT_ISSUER),
+                configService.initClientConfig(undefined as unknown as string, [ClientConfigKey.JWT_ISSUER]),
             ).rejects.toThrowError("Undefined clientId supplied");
         });
 
         it("should throw an error for an invalid client ID", async () => {
-            const mockPromise = new Promise<any>((resolve, reject) => {
+            const mockPromise = new Promise<any>((resolve) => {
                 resolve({
                     Parameters: [],
                 });
@@ -87,7 +86,7 @@ describe("ConfigService", () => {
         });
 
         it("should throw an error for invalid parameters", async () => {
-            const mockPromise = new Promise<any>((resolve, reject) => {
+            const mockPromise = new Promise<any>((resolve) => {
                 resolve({
                     Parameters: [],
                     InvalidParameters: ["invalid-param"],
