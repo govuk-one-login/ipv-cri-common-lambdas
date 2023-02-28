@@ -175,7 +175,7 @@ public class APISteps {
         JsonNode jsonNode = objectMapper.readTree(response.body());
         assertEquals(errorCode, jsonNode.get("code").asInt());
         assertEquals(errorMessage, jsonNode.get("message").asText());
-        assertEquals(errorDetails, jsonNode.get("details".asText()));
+        assertEquals(errorDetails, jsonNode.get("details").asText());
         assertEquals(errorCode + ": " + errorMessage, jsonNode.get("errorSummary").asText());
     }
 
