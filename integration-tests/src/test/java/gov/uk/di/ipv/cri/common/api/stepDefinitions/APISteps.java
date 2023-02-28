@@ -170,13 +170,13 @@ public class APISteps {
     }
 
     @And("a {string} error with code {int} and detail {string} is sent in the response")
-    public void aErrorWithCodeAndDetailIsSentInTheResponse(String errorMessage, int errorCode, String errorDetails)
-            throws IOException {
+    public void aErrorWithCodeAndDetailIsSentInTheResponse(
+            String errorMessage, int errorCode, String errorDetails) throws IOException {
         JsonNode jsonNode = objectMapper.readTree(response.body());
         assertEquals(errorCode, jsonNode.get("code").asInt());
         assertEquals(errorMessage, jsonNode.get("message").asText());
         assertEquals(errorDetails, jsonNode.get("details").asText());
-        assertEquals(errorCode + ": " + errorMessage, jsonNode.get("errorSummary").asText());
+        assertEquals(errorCode + ": " + errorMessage + " - " + errorDetails, jsonNode.get("errorSummary").asText());
     }
 
     @When("user sends a request to access token end point with incorrect authorization code")
