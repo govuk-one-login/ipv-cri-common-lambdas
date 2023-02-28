@@ -33,23 +33,28 @@ export class AuthorizationLambda implements LambdaInterface {
     public async handler(event: APIGatewayProxyEvent, _context: unknown): Promise<APIGatewayProxyResult> {
         try {
             await initPromise;
+            logger.info("Authorisation Lambda triggered");
 
             const sessionId = getSessionId(event);
             const sessionItem = await this.sessionService.getSession(sessionId);
+
+            logger.info("Session found");
 
             if (!configService.hasClientConfig(sessionItem.clientId)) {
                 await configService.initClientConfig(sessionItem.clientId, [ClientConfigKey.JWT_REDIRECT_URI]);
             }
             const clientConfig = configService.getClientConfig(sessionItem.clientId);
 
+            logger.info("Validating session");
             this.authorizationRequestValidator.validate(
                 event.queryStringParameters,
                 sessionItem.clientId,
                 clientConfig?.get(ClientConfigKey.JWT_REDIRECT_URI) as string,
             );
 
+            logger.info("Session validated");
+
             logger.appendKeys({ govuk_signin_journey_id: sessionItem.clientSessionId });
-            logger.info("found session");
 
             if (!sessionItem.authorizationCode) {
                 await this.sessionService.createAuthorizationCode(sessionItem);
@@ -66,6 +71,8 @@ export class AuthorizationLambda implements LambdaInterface {
                 redirectionURI: event.queryStringParameters?.["redirect_uri"],
             };
 
+            logger.info("Authorisation response created");
+
             metrics.addMetric(AUTHORIZATION_SENT_METRIC, MetricUnits.Count, 1);
 
             return {
@@ -73,7 +80,7 @@ export class AuthorizationLambda implements LambdaInterface {
                 body: JSON.stringify(authorizationResponse),
             };
         } catch (err: any) {
-            logger.error("authorization lambda error occurred", err as Error);
+            logger.error(`Authorization Lambda error occurred: ${err.getErrorDetails()}`, err as Error);
             metrics.addMetric(AUTHORIZATION_SENT_METRIC, MetricUnits.Count, 0);
             return {
                 statusCode: err.statusCode ?? 500,

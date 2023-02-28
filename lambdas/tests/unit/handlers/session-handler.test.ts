@@ -150,7 +150,10 @@ describe("SessionLambda", () => {
         expect(result.statusCode).toBe(400);
         expect(result.body).toContain("1019: Session Validation Exception");
 
-        expect(errorSpy).toHaveBeenCalledWith("session lambda error occurred", expect.any(SessionValidationError));
+        expect(errorSpy).toHaveBeenCalledWith(
+            "Session Lambda error occurred: 1019: Session Validation Exception - Invalid request: JWT validation/verification failed: failure",
+            expect.any(SessionValidationError),
+        );
     });
 
     it("should initialise the client config if unavailable", async () => {
@@ -256,7 +259,10 @@ describe("SessionLambda", () => {
         jest.spyOn(sessionRequestValidator.prototype, "validateJwt").mockRejectedValue(new GenericServerError());
 
         const result = await sessionLambda.handler(mockEvent, {});
-        expect(errorSpy).toHaveBeenCalledWith("session lambda error occurred", new GenericServerError());
+        expect(errorSpy).toHaveBeenCalledWith(
+            "Session Lambda error occurred: 1025: Request failed due to a server error",
+            new GenericServerError(),
+        );
         expect(result.statusCode).toBe(500);
         expect(result.body).toContain("1025: Request failed due to a server error");
     });
