@@ -169,7 +169,7 @@ public class APISteps {
         assertEquals(errorCode + ": " + errorMessage, jsonNode.get("errorSummary").asText());
     }
 
-    @And("a {string} error with code {int} and detail {detail} is sent in the response")
+    @And("a {string} error with code {int} and detail {string} is sent in the response")
     public void aErrorWithCodeIsSentInTheResponse(String errorMessage, int errorCode, String errorDetails)
             throws IOException {
         JsonNode jsonNode = objectMapper.readTree(response.body());
