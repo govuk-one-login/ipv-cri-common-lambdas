@@ -9,14 +9,20 @@ export abstract class BaseError extends Error {
         super(message);
     }
     getErrorSummary() {
-        let error = this.message;
         if (this.code) {
-            error = this.code + ": " + error;
+            return this.code + ": " + this.message;
+        } else {
+            return this.message;
         }
+    }
+
+    getErrorDetails() {
+        let error = this.getErrorSummary();
         if (this.details) {
-            error = error + " - " + this.details;
+            return error + " - " + this.details;
+        } else {
+            return error;
         }
-        return error;
     }
 }
 

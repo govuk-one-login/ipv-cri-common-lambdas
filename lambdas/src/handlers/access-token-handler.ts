@@ -75,7 +75,7 @@ export class AccessTokenLambda implements LambdaInterface {
         } catch (err: any) {
             metrics.addMetric(ACCESS_TOKEN, MetricUnits.Count, 0);
             //Todo dont want any
-            logger.error(`Access Token Lambda error occurred: ${err.getErrorSummary()}`, err as Error);
+            logger.error(`Access Token Lambda error occurred: ${err.getErrorDetails()}`, err as Error);
             return {
                 statusCode: err.statusCode ?? 500,
                 body: JSON.stringify({

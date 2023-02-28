@@ -95,7 +95,7 @@ export class SessionLambda implements LambdaInterface {
                 }),
             };
         } catch (err: any) {
-            logger.error(`Session Lambda error occurred: ${err.getErrorSummary()}`, err as Error);
+            logger.error(`Session Lambda error occurred: ${err.getErrorDetails()}`, err as Error);
             metrics.addMetric(SESSION_CREATED_METRIC, MetricUnits.Count, 0);
             return {
                 statusCode: err?.statusCode ?? 500,
