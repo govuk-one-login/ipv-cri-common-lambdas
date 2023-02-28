@@ -3,7 +3,7 @@ import { ClientConfigKey, CommonConfigKey } from "../../../../src/types/config-k
 import { ConfigService } from "../../../../src/common/config/config-service";
 
 const getMockSend = (key: CommonConfigKey, value?: string) => {
-    const mockPromise = new Promise<any>((resolve) => {
+    const mockPromise = new Promise<unknown>((resolve) => {
         resolve({
             Parameters: [
                 {
@@ -68,7 +68,7 @@ describe("ConfigService", () => {
         });
 
         it("should throw an error for an invalid client ID", async () => {
-            const mockPromise = new Promise<any>((resolve) => {
+            const mockPromise = new Promise<unknown>((resolve) => {
                 resolve({
                     Parameters: [],
                 });
@@ -86,7 +86,7 @@ describe("ConfigService", () => {
         });
 
         it("should throw an error for invalid parameters", async () => {
-            const mockPromise = new Promise<any>((resolve) => {
+            const mockPromise = new Promise<unknown>((resolve) => {
                 resolve({
                     Parameters: [],
                     InvalidParameters: ["invalid-param"],

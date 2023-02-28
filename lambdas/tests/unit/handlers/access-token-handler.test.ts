@@ -12,6 +12,7 @@ import { SessionItem } from "../../../src/types/session-item";
 import { Metrics, MetricUnits } from "@aws-lambda-powertools/metrics";
 import { ServerError } from "../../../src/types/errors";
 import { BearerAccessTokenFactory } from "../../../src/services/bearer-access-token-factory";
+import { JWTPayload } from "jose";
 
 jest.mock("../../../src/common/config/config-service");
 jest.mock("../../../src/common/security/jwt-verifier");
@@ -32,7 +33,7 @@ describe("access-token-handler.ts", () => {
     beforeEach(() => {
         jest.resetAllMocks();
         const impl = () => {
-            const mockPromise = new Promise<any>((resolve) => {
+            const mockPromise = new Promise<unknown>((resolve) => {
                 resolve({ Parameters: [] });
             });
             return jest.fn().mockImplementation(() => {
@@ -73,8 +74,8 @@ describe("access-token-handler.ts", () => {
                 );
                 jest.spyOn(mockJwtVerifierFactory.prototype, "create").mockReturnValue(jwtVerifier);
                 jest.spyOn(jwtVerifier, "verify").mockReturnValue(
-                    new Promise<any>((resolve) => {
-                        resolve(true);
+                    new Promise<JWTPayload>((resolve) => {
+                        resolve(expect.anything());
                     }),
                 );
             });
@@ -122,7 +123,7 @@ describe("access-token-handler.ts", () => {
                 } as unknown as QueryCommandInput;
 
                 const impl = () => {
-                    const mockPromise = new Promise<any>((resolve) => {
+                    const mockPromise = new Promise<unknown>((resolve) => {
                         resolve(sessionItem);
                     });
                     return jest.fn().mockImplementation(() => {
@@ -175,7 +176,7 @@ describe("access-token-handler.ts", () => {
                 } as unknown as QueryCommandInput;
 
                 const impl = () => {
-                    const mockPromise = new Promise<any>((resolve) => {
+                    const mockPromise = new Promise<unknown>((resolve) => {
                         resolve(sessionItem);
                     });
                     return jest.fn().mockImplementation(() => {
@@ -246,8 +247,8 @@ describe("access-token-handler.ts", () => {
 
             it("should fail when session is not found", async () => {
                 jest.spyOn(jwtVerifier, "verify").mockReturnValue(
-                    new Promise<any>((resolve) => {
-                        resolve(true);
+                    new Promise<JWTPayload>((resolve) => {
+                        resolve(expect.anything());
                     }),
                 );
                 const redirectUri = "http://123.abc.com";
@@ -275,8 +276,8 @@ describe("access-token-handler.ts", () => {
 
             it("should fail when authorization code is not found", async () => {
                 jest.spyOn(jwtVerifier, "verify").mockReturnValue(
-                    new Promise<any>((resolve) => {
-                        resolve(true);
+                    new Promise<JWTPayload>((resolve) => {
+                        resolve(expect.anything());
                     }),
                 );
                 const redirectUri = "http://123.abc.com";
@@ -290,7 +291,7 @@ describe("access-token-handler.ts", () => {
                         client_assertion: "2",
                     },
                 } as unknown as APIGatewayProxyEvent;
-                const mockDynamoDbClientQueryResult: any = {
+                const mockDynamoDbClientQueryResult: unknown = {
                     Items: [
                         {
                             clientSessionId: "1",
@@ -304,11 +305,13 @@ describe("access-token-handler.ts", () => {
                 clientConfig.set("redirectUri", redirectUri);
 
                 jest.spyOn(mockConfigService.prototype, "getClientConfig").mockReturnValue(clientConfig);
-                jest.spyOn(mockDynamoDbClient.prototype, "query").mockReturnValue(mockDynamoDbClientQueryResult);
+                jest.spyOn(mockDynamoDbClient.prototype, "query").mockReturnValue(
+                    mockDynamoDbClientQueryResult as void,
+                );
 
                 jest.spyOn(jwtVerifier, "verify").mockReturnValue(
-                    new Promise<any>((resolve) => {
-                        resolve(true);
+                    new Promise<JWTPayload>((resolve) => {
+                        resolve(expect.anything());
                     }),
                 );
 
@@ -351,7 +354,7 @@ describe("access-token-handler.ts", () => {
 
                 jest.spyOn(mockConfigService.prototype, "getClientConfig").mockReturnValue(clientConfig);
 
-                const mockDynamoDbClientQueryResult: any = {
+                const mockDynamoDbClientQueryResult: unknown = {
                     Items: [
                         {
                             clientSessionId: "1",
@@ -361,7 +364,9 @@ describe("access-token-handler.ts", () => {
                     ],
                 };
 
-                jest.spyOn(mockDynamoDbClient.prototype, "query").mockReturnValue(mockDynamoDbClientQueryResult);
+                jest.spyOn(mockDynamoDbClient.prototype, "query").mockReturnValue(
+                    mockDynamoDbClientQueryResult as void,
+                );
 
                 const sessionItem = {
                     Items: [
@@ -379,7 +384,7 @@ describe("access-token-handler.ts", () => {
                 } as unknown as QueryCommandInput;
 
                 const impl = () => {
-                    const mockPromise = new Promise<any>((resolve) => {
+                    const mockPromise = new Promise<unknown>((resolve) => {
                         resolve(sessionItem);
                     });
                     return jest.fn().mockImplementation(() => {
@@ -412,7 +417,7 @@ describe("access-token-handler.ts", () => {
                         client_assertion: "2",
                     },
                 } as unknown as APIGatewayProxyEvent;
-                const mockDynamoDbClientQueryResult: any = {
+                const mockDynamoDbClientQueryResult: unknown = {
                     Items: [
                         {
                             clientSessionId: "1",
@@ -442,7 +447,7 @@ describe("access-token-handler.ts", () => {
                 } as unknown as QueryCommandInput;
 
                 const impl = () => {
-                    const mockPromise = new Promise<any>((resolve) => {
+                    const mockPromise = new Promise<unknown>((resolve) => {
                         resolve(sessionItem);
                     });
                     return jest.fn().mockImplementation(() => {
@@ -451,10 +456,12 @@ describe("access-token-handler.ts", () => {
                 };
                 mockDynamoDbClient.prototype.query = impl();
 
-                jest.spyOn(mockDynamoDbClient.prototype, "query").mockReturnValue(mockDynamoDbClientQueryResult);
+                jest.spyOn(mockDynamoDbClient.prototype, "query").mockReturnValue(
+                    mockDynamoDbClientQueryResult as void,
+                );
                 jest.spyOn(jwtVerifier, "verify").mockReturnValue(
-                    new Promise<any>((resolve) => {
-                        resolve(false);
+                    new Promise<null>((resolve) => {
+                        resolve(null);
                     }),
                 );
                 const output = await accessTokenLambda.handler(event, null);
@@ -474,8 +481,8 @@ describe("access-token-handler.ts", () => {
 
                 jest.spyOn(mockJwtVerifierFactory.prototype, "create").mockReturnValue(jwtVerifier);
                 jest.spyOn(jwtVerifier, "verify").mockReturnValue(
-                    new Promise<any>((resolve) => {
-                        resolve(true);
+                    new Promise<JWTPayload>((resolve) => {
+                        resolve(expect.anything());
                     }),
                 );
 
@@ -489,7 +496,7 @@ describe("access-token-handler.ts", () => {
                 } as unknown as QueryCommandInput;
 
                 const impl = () => {
-                    const mockPromise = new Promise<any>((resolve) => {
+                    const mockPromise = new Promise<unknown>((resolve) => {
                         resolve(sessionItem);
                     });
                     return jest.fn().mockImplementation(() => {
@@ -546,7 +553,7 @@ describe("access-token-handler.ts", () => {
                 } as unknown as QueryCommandOutput;
 
                 mockDynamoDbClient.prototype.query.mockImplementation(() => {
-                    return new Promise<any>((resolve) => {
+                    return new Promise<JWTPayload>((resolve) => {
                         resolve(sessionItem);
                     });
                 });
@@ -575,8 +582,8 @@ describe("access-token-handler.ts", () => {
 
                 jest.spyOn(mockJwtVerifierFactory.prototype, "create").mockReturnValue(jwtVerifier);
                 jest.spyOn(jwtVerifier, "verify").mockReturnValue(
-                    new Promise<any>((resolve) => {
-                        resolve(true);
+                    new Promise<JWTPayload>((resolve) => {
+                        resolve(expect.anything());
                     }),
                 );
 
@@ -590,7 +597,7 @@ describe("access-token-handler.ts", () => {
                 } as unknown as QueryCommandInput;
 
                 const impl = () => {
-                    const mockPromise = new Promise<any>((resolve) => {
+                    const mockPromise = new Promise<unknown>((resolve) => {
                         resolve(sessionItem);
                     });
                     return jest.fn().mockImplementation(() => {
@@ -623,8 +630,8 @@ describe("access-token-handler.ts", () => {
 
                 jest.spyOn(mockJwtVerifierFactory.prototype, "create").mockReturnValue(jwtVerifier);
                 jest.spyOn(jwtVerifier, "verify").mockReturnValue(
-                    new Promise<any>((resolve) => {
-                        resolve(true);
+                    new Promise<JWTPayload>((resolve) => {
+                        resolve(expect.anything());
                     }),
                 );
 
