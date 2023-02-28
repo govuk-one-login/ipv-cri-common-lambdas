@@ -44,6 +44,11 @@ Common CRI secrets for Build environments:
 | KBV_BUILD_COMMON_CRI_GH_ACTIONS_ROLE_ARN             | Assumed role IAM ARN   |
 | KBV_BUILD_SIGNING_PROFILE_NAME                       | Signing profile name   |
 
+## Repository variables
+
+Each deployment requires a repository variable in the form CRINAME_DEST_ENABLED
+with the value set to true i.e. FRAUD_DEV_ENABLED KBV_BUILD_ENABLED
+
 ## Hooks
 
 **important:** One you've cloned the repo, run `pre-commit install` to install the pre-commit hooks.
