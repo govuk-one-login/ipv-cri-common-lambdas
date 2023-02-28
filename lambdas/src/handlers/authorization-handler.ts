@@ -45,7 +45,7 @@ export class AuthorizationLambda implements LambdaInterface {
             }
             const clientConfig = configService.getClientConfig(sessionItem.clientId);
 
-            logger.info("Validating session with parameters", JSON.stringify(event.queryStringParameters));
+            logger.info("Validating session");
             this.authorizationRequestValidator.validate(
                 event.queryStringParameters,
                 sessionItem.clientId,
