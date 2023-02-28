@@ -33,10 +33,12 @@ export class AccessTokenLambda implements LambdaInterface {
         try {
             await initPromise;
 
+            logger.info("Access Token Lambda triggered");
+
             const requestPayload = this.requestValidator.validatePayload(event.body);
             const sessionItem = await this.sessionService.getSessionByAuthorizationCode(requestPayload.code);
             logger.appendKeys({ govuk_signin_journey_id: sessionItem.clientSessionId });
-            logger.info("found session");
+            logger.info("Session found");
 
             if (!configService.hasClientConfig(sessionItem.clientId)) {
                 await this.initClientConfig(sessionItem.clientId);
@@ -49,14 +51,20 @@ export class AccessTokenLambda implements LambdaInterface {
                 clientConfig!.get(ClientConfigKey.JWT_REDIRECT_URI)!,
             );
 
+            logger.info("Token request validated");
+
             await this.requestValidator.verifyJwtSignature(
                 requestPayload.client_assertion,
                 sessionItem.clientId,
                 clientConfig!,
             );
 
+            logger.info("JWT signature verified");
+
             const accessTokenResponse = await this.bearerAccessTokenFactory.create();
             await this.sessionService.createAccessTokenCode(sessionItem, accessTokenResponse);
+
+            logger.info("Access token created");
 
             metrics.addMetric(ACCESS_TOKEN, MetricUnits.Count, 1);
 
@@ -67,7 +75,7 @@ export class AccessTokenLambda implements LambdaInterface {
         } catch (err: any) {
             metrics.addMetric(ACCESS_TOKEN, MetricUnits.Count, 0);
             //Todo dont want any
-            logger.error("access token lambda error occurred", err as Error);
+            logger.error(`Access Token Lambda error occurred: ${err.getErrorDetails()}`, err as Error);
             return {
                 statusCode: err.statusCode ?? 500,
                 body: JSON.stringify({

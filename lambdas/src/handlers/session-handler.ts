@@ -54,6 +54,8 @@ export class SessionLambda implements LambdaInterface {
     public async handler(event: APIGatewayProxyEvent, _context: unknown): Promise<APIGatewayProxyResult> {
         try {
             const deserialisedRequestBody = JSON.parse(event.body as string);
+            logger.info("Session lambda triggered");
+
             const requestBodyClientId = deserialisedRequestBody.client_id;
             const clientIpAddress = getClientIpAddress(event);
 
@@ -66,16 +68,23 @@ export class SessionLambda implements LambdaInterface {
             const sessionRequestValidator = this.sessionRequestValidatorFactory.create(criClientConfig);
 
             const decryptedJwt = await this.jweDecrypter.decryptJwe(deserialisedRequestBody.request);
+            logger.info("JWE decrypted");
+
             const jwtPayload = await sessionRequestValidator.validateJwt(decryptedJwt, requestBodyClientId);
+            logger.info("JWT validated");
+
             const sessionRequestSummary = this.createSessionRequestSummary(jwtPayload, clientIpAddress);
             const sessionId: string = await this.sessionService.saveSession(sessionRequestSummary);
+            logger.info("Session created");
+
             await this.personIdentityService.savePersonIdentity(jwtPayload.shared_claims as PersonIdentity, sessionId);
+            logger.info("Personal identity created");
+
             await this.sendAuditEvent(sessionId, sessionRequestSummary, clientIpAddress);
 
             metrics.addDimension("issuer", requestBodyClientId);
             metrics.addMetric(SESSION_CREATED_METRIC, MetricUnits.Count, 1);
             logger.appendKeys({ govuk_signin_journey_id: sessionId });
-            logger.info("created session");
 
             return {
                 statusCode: 201,
@@ -86,7 +95,7 @@ export class SessionLambda implements LambdaInterface {
                 }),
             };
         } catch (err: any) {
-            logger.error("session lambda error occurred", err as Error);
+            logger.error(`Session Lambda error occurred: ${err.getErrorDetails()}`, err as Error);
             metrics.addMetric(SESSION_CREATED_METRIC, MetricUnits.Count, 0);
             return {
                 statusCode: err?.statusCode ?? 500,

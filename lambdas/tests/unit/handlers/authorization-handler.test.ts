@@ -119,7 +119,7 @@ describe("authorization-handler.ts", () => {
 
                 expect(output.statusCode).toBe(200);
                 expect(output.body).not.toBeNull();
-                expect(loggerSpyInfo).toBeCalledWith("found session");
+                expect(loggerSpyInfo).toBeCalledWith("Session found");
                 expect(loggerSpyAppendkeys).toBeCalledWith({ govuk_signin_journey_id: "1" });
                 expect(metricsSpyAddMetrics).toBeCalledWith("authorization_sent", "Count", 1);
             });
@@ -138,7 +138,7 @@ describe("authorization-handler.ts", () => {
                     null,
                 );
 
-                expect(loggerSpyInfo).toBeCalledWith("found session");
+                expect(loggerSpyInfo).toBeCalledWith("Session found");
                 expect(loggerSpyAppendkeys).toBeCalledWith({ govuk_signin_journey_id: "1" });
                 expect(metricsSpyAddMetrics).toBeCalledWith("authorization_sent", "Count", 1);
             });
@@ -199,7 +199,7 @@ describe("authorization-handler.ts", () => {
                 expect(output.body).toContain("Session Validation Exception");
 
                 expect(loggerSpyError).toBeCalledWith(
-                    "authorization lambda error occurred",
+                    "Authorization Lambda error occurred: 1019: Session Validation Exception - Missing response_type parameter",
                     expect.any(SessionValidationError),
                 );
                 expect(metricsSpyAddMetrics).toBeCalledWith("authorization_sent", "Count", 0);
@@ -223,7 +223,7 @@ describe("authorization-handler.ts", () => {
                 expect(output.body).toContain("Session Validation Exception");
 
                 expect(loggerSpyError).toBeCalledWith(
-                    "authorization lambda error occurred",
+                    "Authorization Lambda error occurred: 1019: Session Validation Exception - Missing redirect_uri parameter",
                     expect.any(SessionValidationError),
                 );
                 expect(metricsSpyAddMetrics).toBeCalledWith("authorization_sent", "Count", 0);
@@ -247,7 +247,7 @@ describe("authorization-handler.ts", () => {
                 expect(output.body).toContain("Session Validation Exception");
 
                 expect(loggerSpyError).toBeCalledWith(
-                    "authorization lambda error occurred",
+                    "Authorization Lambda error occurred: 1019: Session Validation Exception - Missing client_id parameter",
                     expect.any(SessionValidationError),
                 );
                 expect(metricsSpyAddMetrics).toBeCalledWith("authorization_sent", "Count", 0);
@@ -267,7 +267,7 @@ describe("authorization-handler.ts", () => {
                 expect(output.statusCode).toBe(400);
                 expect(output.body).toContain("Invalid request: Missing session-id header");
                 expect(loggerSpyError).toBeCalledWith(
-                    "authorization lambda error occurred",
+                    "Authorization Lambda error occurred: Invalid request: Missing session-id header",
                     expect.any(InvalidRequestError),
                 );
                 expect(metricsSpyAddMetrics).toBeCalledWith("authorization_sent", "Count", 0);
@@ -291,7 +291,10 @@ describe("authorization-handler.ts", () => {
                 );
                 expect(output.statusCode).toBe(400);
                 expect(output.body).toContain(`Could not find session item with id: ${sessionId}`);
-                expect(loggerSpyError).toBeCalledWith("authorization lambda error occurred", sessionNotFound);
+                expect(loggerSpyError).toBeCalledWith(
+                    "Authorization Lambda error occurred: 1029: Could not find session item with id: 1",
+                    sessionNotFound,
+                );
                 expect(metricsSpyAddMetrics).toBeCalledWith("authorization_sent", "Count", 0);
             });
 
@@ -312,8 +315,8 @@ describe("authorization-handler.ts", () => {
                     null,
                 );
                 expect(output.statusCode).toBe(500);
-                expect(output.body).toContain("undefined: Server error");
-                expect(loggerSpyError).toBeCalledWith("authorization lambda error occurred", serverError);
+                expect(output.body).toContain("Server error");
+                expect(loggerSpyError).toBeCalledWith("Authorization Lambda error occurred: Server error", serverError);
                 expect(metricsSpyAddMetrics).toBeCalledWith("authorization_sent", "Count", 0);
             });
         });
