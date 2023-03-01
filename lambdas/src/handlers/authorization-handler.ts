@@ -11,6 +11,7 @@ import { DynamoDBDocument } from "@aws-sdk/lib-dynamodb";
 import { SSMClient } from "@aws-sdk/client-ssm";
 import { ClientConfigKey, CommonConfigKey } from "../types/config-keys";
 import { Tracer } from "@aws-lambda-powertools/tracer";
+import { errorPayload } from "../types/errors";
 
 const dynamoDbClient = createClient(AwsClientType.DYNAMO) as DynamoDBDocument;
 const ssmClient = createClient(AwsClientType.SSM) as SSMClient;
@@ -37,7 +38,6 @@ export class AuthorizationLambda implements LambdaInterface {
 
             const sessionId = getSessionId(event);
             const sessionItem = await this.sessionService.getSession(sessionId);
-
             logger.info("Session found");
 
             if (!configService.hasClientConfig(sessionItem.clientId)) {
@@ -51,9 +51,7 @@ export class AuthorizationLambda implements LambdaInterface {
                 sessionItem.clientId,
                 clientConfig?.get(ClientConfigKey.JWT_REDIRECT_URI) as string,
             );
-
             logger.info("Session validated");
-
             logger.appendKeys({ govuk_signin_journey_id: sessionItem.clientSessionId });
 
             if (!sessionItem.authorizationCode) {
@@ -72,24 +70,15 @@ export class AuthorizationLambda implements LambdaInterface {
             };
 
             logger.info("Authorisation response created");
-
             metrics.addMetric(AUTHORIZATION_SENT_METRIC, MetricUnits.Count, 1);
 
             return {
                 statusCode: 200,
                 body: JSON.stringify(authorizationResponse),
             };
-        } catch (err: any) {
-            logger.error(`Authorization Lambda error occurred: ${err.getErrorDetails()}`, err as Error);
+        } catch (err: unknown) {
             metrics.addMetric(AUTHORIZATION_SENT_METRIC, MetricUnits.Count, 0);
-            return {
-                statusCode: err.statusCode ?? 500,
-                body: JSON.stringify({
-                    message: err?.statusCode >= 500 ? "Server Error" : err.message,
-                    code: err.code || null,
-                    errorSummary: err.getErrorSummary(),
-                }),
-            };
+            return errorPayload(err as Error, logger, "Authorization Lambda error occurred");
         }
     }
 }
