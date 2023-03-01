@@ -36,8 +36,8 @@ export class ConfigService {
             throw new Error(`No client config found. Invalid client id encountered: ${clientId}`);
         }
         const clientConfigEntries: Map<string, string> = new Map<string, string>();
-        ssmParameters.forEach((p) => {
-            clientConfigEntries.set(p.Name!.substring(p.Name!.lastIndexOf("/") + 1), p.Value!);
+        ssmParameters.forEach(({ Name, Value }) => {
+            clientConfigEntries.set(Name!.split('/').pop()!, Value!);
         });
         this.clientConfigurations.set(clientId, clientConfigEntries);
     }
@@ -104,23 +104,17 @@ export class ConfigService {
     private async getDefaultConfig(paramNameSuffixes: CommonConfigKey[]): Promise<void> {
         const ssmParamNames = paramNameSuffixes.map((p) => this.getParameterName(p));
         const ssmParameters = await this.getParameters(ssmParamNames);
-        if (ssmParameters && ssmParameters.length) {
-            ssmParameters?.forEach((p) => {
-                this.configEntries.set(p.Name as string, p.Value as string);
-            }, this);
-        }
+            ssmParameters?.forEach((p) => this.configEntries.set(p.Name as string, p.Value as string));
     }
 
     private async getParameters(ssmParamNames: string[]): Promise<Parameter[]> {
-        const getParamsByNameCommand = new GetParametersCommand({ Names: ssmParamNames });
+        const getParamsResult = await this.ssmClient.send(new GetParametersCommand({ Names: ssmParamNames }));
 
-        const getParamsResult = await this.ssmClient.send(getParamsByNameCommand);
-
-        if (getParamsResult.InvalidParameters && getParamsResult.InvalidParameters.length) {
+        if (getParamsResult?.InvalidParameters?.length) {
             const invalidParameterNames = getParamsResult.InvalidParameters?.join(", ");
             throw new Error(`Invalid SSM parameters: ${invalidParameterNames}`);
         }
 
-        return getParamsResult.Parameters && getParamsResult.Parameters.length ? getParamsResult.Parameters : [];
+        return getParamsResult?.Parameters || [];
     }
 }
