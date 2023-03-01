@@ -46,8 +46,11 @@ export class ConfigService {
         return this.clientConfigurations.has(clientId);
     }
 
-    public getClientConfig(clientId: string): Map<string, string> | undefined {
-        return this.clientConfigurations.get(clientId);
+    public getClientConfig(clientId: string): Map<string, string>{
+        if (!this.clientConfigurations.get(clientId)){
+            throw new Error(`no configuration for client id ${clientId}`);
+        }
+        return this.clientConfigurations.get(clientId) as Map<string, string>;
     }
 
     public getConfigEntry(key: CommonConfigKey) {
