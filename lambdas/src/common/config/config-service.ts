@@ -37,7 +37,7 @@ export class ConfigService {
         }
         const clientConfigEntries: Map<string, string> = new Map<string, string>();
         ssmParameters.forEach(({ Name, Value }) => {
-            clientConfigEntries.set(Name!.split('/').pop()!, Value!);
+            clientConfigEntries.set(...this.validateNameSuffix(Name, Value));
         });
         this.clientConfigurations.set(clientId, clientConfigEntries);
     }
@@ -46,8 +46,8 @@ export class ConfigService {
         return this.clientConfigurations.has(clientId);
     }
 
-    public getClientConfig(clientId: string): Map<string, string>{
-        if (!this.clientConfigurations.get(clientId)){
+    public getClientConfig(clientId: string): Map<string, string> {
+        if (!this.clientConfigurations.get(clientId)) {
             throw new Error(`no configuration for client id ${clientId}`);
         }
         return this.clientConfigurations.get(clientId) as Map<string, string>;
@@ -101,10 +101,22 @@ export class ConfigService {
         return `/${PARAMETER_PREFIX}/${parameterNameSuffix}`;
     }
 
+    private validateNameSuffix(nameSuffix: string | undefined, nameSuffixValue: string | undefined): [string, string] {
+        const name = nameSuffix?.split("/").pop();
+        const value = nameSuffixValue;
+        if (!name) {
+            throw Error("NameSuffix may not be a valid string or the parameter is not found in the parameter store");
+        }
+        if (!value) {
+            throw Error("The value of the parameter maybe undefined or empty");
+        }
+        return [name, value];
+    }
+
     private async getDefaultConfig(paramNameSuffixes: CommonConfigKey[]): Promise<void> {
         const ssmParamNames = paramNameSuffixes.map((p) => this.getParameterName(p));
         const ssmParameters = await this.getParameters(ssmParamNames);
-            ssmParameters?.forEach((p) => this.configEntries.set(p.Name as string, p.Value as string));
+        ssmParameters?.forEach((p) => this.configEntries.set(p.Name as string, p.Value as string));
     }
 
     private async getParameters(ssmParamNames: string[]): Promise<Parameter[]> {
