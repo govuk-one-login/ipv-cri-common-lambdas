@@ -131,8 +131,8 @@ describe("ConfigService", () => {
             expect(configService.getClientConfig("client-id")).toEqual(mockMap);
         });
 
-        it("returns undefined if client config is available", () => {
-            expect(configService.getClientConfig("client-id")).toBe(undefined);
+        it("throws no configuration for client id error when config is unavialable", () => {
+            expect(() => configService.getClientConfig("client-id")).toThrowError("no configuration for client id client-id");
         });
     });
 
