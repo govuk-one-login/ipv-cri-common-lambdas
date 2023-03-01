@@ -76,12 +76,12 @@ export class ConfigService {
     }
 
     public getAuthorizationCodeExpirationEpoch() {
-        return Math.floor(Date.now() + this.authorizationCodeTtlInMillis) / 1000;
+        return Math.floor((Date.now() + this.authorizationCodeTtlInMillis) / 1000);
     }
 
     public getSessionExpirationEpoch() {
         const sessionTtl = this.getConfigEntry(CommonConfigKey.SESSION_TTL);
-        return Math.floor(Date.now() + parseInt(sessionTtl, 10) * 1000) / 1000;
+        return Math.floor((Date.now() + parseInt(sessionTtl, 10) * 1000) / 1000);
     }
 
     public getBearerAccessTokenTtl(): number {
