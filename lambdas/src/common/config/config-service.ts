@@ -76,7 +76,7 @@ export class ConfigService {
     }
 
     public getAuthorizationCodeExpirationEpoch() {
-        return Math.floor(Date.now() + this.authorizationCodeTtlInMillis * 1000) / 1000;
+        return Math.floor(Date.now() + this.authorizationCodeTtlInMillis) / 1000;
     }
 
     public getSessionExpirationEpoch() {
