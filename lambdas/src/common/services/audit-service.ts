@@ -26,8 +26,8 @@ export class AuditService {
         }
         const auditEventUser: AuditEventUser = this.createAuditEventUser(context.sessionItem, context.clientIpAddress);
         return {
-            component_id: this.auditConfig!.issuer,
-            event_name: `${this.auditConfig!.auditEventNamePrefix}_${eventType}`,
+            component_id: this.auditConfig?.issuer as string,
+            event_name: `${this.auditConfig?.auditEventNamePrefix}_${eventType}`,
             extensions: context?.extensions ?? undefined,
             restricted: context?.personIdentity ?? undefined,
             timestamp: Date.now(),
@@ -48,7 +48,7 @@ export class AuditService {
     private async sendAuditEventToQueue(auditEvent: AuditEvent) {
         const sendMsgCommand = new SendMessageCommand({
             MessageBody: JSON.stringify(auditEvent),
-            QueueUrl: this.auditConfig!.queueUrl,
+            QueueUrl: this.auditConfig?.queueUrl as string,
         });
         await this.sqsClient.send(sendMsgCommand);
     }
