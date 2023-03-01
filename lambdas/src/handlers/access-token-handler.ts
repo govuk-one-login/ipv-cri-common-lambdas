@@ -11,6 +11,7 @@ import { DynamoDBDocument } from "@aws-sdk/lib-dynamodb";
 import { SSMClient } from "@aws-sdk/client-ssm";
 import { ClientConfigKey, CommonConfigKey } from "../types/config-keys";
 import { BearerAccessTokenFactory } from "../services/bearer-access-token-factory";
+import { errorPayload } from "../types/errors";
 
 const logger = new Logger();
 const metrics = new Metrics();
@@ -32,7 +33,6 @@ export class AccessTokenLambda implements LambdaInterface {
     public async handler(event: APIGatewayProxyEvent, _context: unknown): Promise<APIGatewayProxyResult> {
         try {
             await initPromise;
-
             logger.info("Access Token Lambda triggered");
 
             const requestPayload = this.requestValidator.validatePayload(event.body);
@@ -44,13 +44,11 @@ export class AccessTokenLambda implements LambdaInterface {
                 await this.initClientConfig(sessionItem.clientId);
             }
             const clientConfig = configService.getClientConfig(sessionItem.clientId);
-
             this.requestValidator.validateTokenRequestToRecord(
                 requestPayload.code,
                 sessionItem,
                 clientConfig!.get(ClientConfigKey.JWT_REDIRECT_URI)!,
             );
-
             logger.info("Token request validated");
 
             await this.requestValidator.verifyJwtSignature(
@@ -58,32 +56,21 @@ export class AccessTokenLambda implements LambdaInterface {
                 sessionItem.clientId,
                 clientConfig!,
             );
-
             logger.info("JWT signature verified");
 
             const accessTokenResponse = await this.bearerAccessTokenFactory.create();
             await this.sessionService.createAccessTokenCode(sessionItem, accessTokenResponse);
 
             logger.info("Access token created");
-
             metrics.addMetric(ACCESS_TOKEN, MetricUnits.Count, 1);
 
             return {
                 statusCode: 200,
                 body: JSON.stringify(accessTokenResponse),
             };
-        } catch (err: any) {
+        } catch (err: unknown) {
             metrics.addMetric(ACCESS_TOKEN, MetricUnits.Count, 0);
-            //Todo dont want any
-            logger.error(`Access Token Lambda error occurred: ${err.getErrorDetails()}`, err as Error);
-            return {
-                statusCode: err.statusCode ?? 500,
-                body: JSON.stringify({
-                    message: err?.statusCode >= 500 ? "Server Error" : err.message,
-                    code: err.code || null,
-                    errorSummary: err.getErrorSummary(),
-                }),
-            };
+            return errorPayload(err as Error, logger, "Access Token Lambda error occurred");
         }
     }
     private async initClientConfig(clientId: string): Promise<void> {

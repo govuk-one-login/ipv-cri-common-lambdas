@@ -1,4 +1,32 @@
+import { Logger } from "@aws-lambda-powertools/logger";
 // Implementation of ErrorResponse.java in di-ipv-cri-lib
+
+interface ErrorResponse {
+    statusCode: number;
+    body: string;
+}
+
+export function errorPayload(err: Error, logger: Logger, loggerMessage: string): ErrorResponse {
+    let code,
+        errorSummary,
+        errorDetails,
+        statusCode = 500,
+        message = err.message;
+
+    if (err instanceof BaseError) {
+        code = err.code;
+        statusCode = err?.statusCode as number;
+        errorSummary = err.getErrorSummary();
+        errorDetails = err.getErrorDetails();
+    }
+
+    if (statusCode >= 500) {
+        message = "Server Error";
+    }
+
+    logger.error(`${loggerMessage}: ${errorDetails}`, err);
+    return { statusCode, body: JSON.stringify({ message, code, errorSummary }) };
+}
 export abstract class BaseError extends Error {
     constructor(
         public readonly message: string,
@@ -17,7 +45,7 @@ export abstract class BaseError extends Error {
     }
 
     getErrorDetails() {
-        let error = this.getErrorSummary();
+        const error = this.getErrorSummary();
         if (this.details) {
             return error + " - " + this.details;
         } else {
