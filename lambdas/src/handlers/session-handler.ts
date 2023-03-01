@@ -20,6 +20,7 @@ import { SQSClient } from "@aws-sdk/client-sqs";
 import { AwsClientType, createClient } from "../common/aws-client-factory";
 import { getClientIpAddress } from "../common/utils/request-utils";
 import { KMSClient } from "@aws-sdk/client-kms";
+import { errorPayload } from "../types/errors";
 
 const dynamoDbClient = createClient(AwsClientType.DYNAMO) as DynamoDBDocument;
 const ssmClient = createClient(AwsClientType.SSM) as SSMClient;
@@ -94,17 +95,9 @@ export class SessionLambda implements LambdaInterface {
                     redirect_uri: jwtPayload.redirect_uri,
                 }),
             };
-        } catch (err: any) {
-            logger.error(`Session Lambda error occurred: ${err.getErrorDetails()}`, err as Error);
+        } catch (err: unknown) {
             metrics.addMetric(SESSION_CREATED_METRIC, MetricUnits.Count, 0);
-            return {
-                statusCode: err?.statusCode ?? 500,
-                body: JSON.stringify({
-                    message: err?.statusCode >= 500 ? "Server Error" : err.message,
-                    code: err?.code,
-                    errorSummary: err?.getErrorSummary(),
-                }),
-            };
+            return errorPayload(err as Error, logger, "Session Lambda error occurred");
         }
     }
     private async initClientConfig(clientId: string): Promise<void> {
