@@ -46,8 +46,8 @@ export class AccessTokenRequestValidator {
     }
     public async verifyJwtSignature(jwt: string, clientId: string, clientConfig: Map<string, string>): Promise<void> {
         const jwtVerifier = this.jwtVerifierFactory.create(
-            clientConfig.get(ClientConfigKey.JWT_SIGNING_ALGORITHM)!,
-            clientConfig.get(ClientConfigKey.JWT_PUBLIC_SIGNING_KEY)!,
+            clientConfig.get(ClientConfigKey.JWT_SIGNING_ALGORITHM) as string,
+            clientConfig.get(ClientConfigKey.JWT_PUBLIC_SIGNING_KEY) as string,
         );
 
         const jwtPayload = await jwtVerifier.verify(
@@ -60,7 +60,7 @@ export class AccessTokenRequestValidator {
                 JwtVerifier.ClaimNames.JWT_ID,
             ]),
             new Map([
-                [JwtVerifier.ClaimNames.AUDIENCE, clientConfig.get(ClientConfigKey.JWT_AUDIENCE)!],
+                [JwtVerifier.ClaimNames.AUDIENCE, clientConfig.get(ClientConfigKey.JWT_AUDIENCE) as string],
                 [JwtVerifier.ClaimNames.SUBJECT, clientId],
                 [JwtVerifier.ClaimNames.ISSUER, clientId],
             ]),
