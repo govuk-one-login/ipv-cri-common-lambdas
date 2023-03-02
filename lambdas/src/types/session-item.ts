@@ -1,5 +1,5 @@
 export interface SessionItem {
-    expiryDate?: number;
+    expiryDate: number;
     sessionId: string;
     clientId: string;
     clientSessionId: string;

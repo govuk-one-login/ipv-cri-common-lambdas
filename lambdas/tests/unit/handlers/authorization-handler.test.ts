@@ -73,7 +73,7 @@ describe("authorization-handler.ts", () => {
             jest.resetAllMocks();
             configService.init = () => Promise.resolve();
             authorizationHandlerLambda = new AuthorizationLambda(sessionService, authorizationRequestValidator);
-            const sessionItem: SessionItem = {
+            const sessionItem: Partial<SessionItem> = {
                 sessionId: "abc",
                 authorizationCodeExpiryDate: 1,
                 clientId: "1",
@@ -85,7 +85,7 @@ describe("authorization-handler.ts", () => {
             };
             jest.spyOn(sessionService, "getSession").mockReturnValue(
                 new Promise<SessionItem>((resolve) => {
-                    resolve(sessionItem);
+                    resolve(sessionItem as SessionItem);
                 }),
             );
             const clientConfig = new Map<string, string>();
@@ -144,7 +144,7 @@ describe("authorization-handler.ts", () => {
             });
 
             it("should create an auth code if not available", async () => {
-                const sessionItem: SessionItem = {
+                const sessionItem: Partial<SessionItem> = {
                     sessionId: "abc",
                     authorizationCodeExpiryDate: 1,
                     clientId: "1",
@@ -156,7 +156,7 @@ describe("authorization-handler.ts", () => {
                 };
                 jest.spyOn(sessionService, "getSession").mockReturnValue(
                     new Promise<SessionItem>((resolve) => {
-                        resolve(sessionItem);
+                        resolve(sessionItem as SessionItem);
                     }),
                 );
                 const createSpy = jest.spyOn(sessionService, "createAuthorizationCode");
