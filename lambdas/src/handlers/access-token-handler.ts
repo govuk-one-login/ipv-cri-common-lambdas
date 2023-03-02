@@ -47,14 +47,14 @@ export class AccessTokenLambda implements LambdaInterface {
             this.requestValidator.validateTokenRequestToRecord(
                 requestPayload.code,
                 sessionItem,
-                clientConfig!.get(ClientConfigKey.JWT_REDIRECT_URI)!,
+                clientConfig.get(ClientConfigKey.JWT_REDIRECT_URI) as string,
             );
             logger.info("Token request validated");
 
             await this.requestValidator.verifyJwtSignature(
                 requestPayload.client_assertion,
                 sessionItem.clientId,
-                clientConfig!,
+                clientConfig as Map<string, string>,
             );
             logger.info("JWT signature verified");
 
