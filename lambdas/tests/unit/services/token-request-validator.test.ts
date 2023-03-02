@@ -88,7 +88,7 @@ describe("token-request-validator.ts", () => {
         it("should throw exception the authorizationCode within the sessionItem does not match the authCode", async () => {
             const authCode = "1234";
             const expectedRedirectUri = "http://abc123.com";
-            const sessionItem: SessionItem = {
+            const sessionItem: Partial<SessionItem> = {
                 sessionId: "1",
                 clientId: "1",
                 clientSessionId: "1",
@@ -99,14 +99,18 @@ describe("token-request-validator.ts", () => {
                 accessTokenExpiryDate: 0,
             };
             expect(() =>
-                accessTokenRequestValidator.validateTokenRequestToRecord(authCode, sessionItem, expectedRedirectUri),
+                accessTokenRequestValidator.validateTokenRequestToRecord(
+                    authCode,
+                    sessionItem as SessionItem,
+                    expectedRedirectUri,
+                ),
             ).toThrow("Access token expired");
         });
 
         it("should pass when the authorizationCode within the sessionItem does matches the authCode", async () => {
             const authCode = "1234";
             const expectedRedirectUri = "http://abc123.com";
-            const sessionItem: SessionItem = {
+            const sessionItem: Partial<SessionItem> = {
                 sessionId: "1",
                 clientId: "1",
                 clientSessionId: "1",
@@ -117,7 +121,11 @@ describe("token-request-validator.ts", () => {
                 accessTokenExpiryDate: 0,
             };
             expect(() =>
-                accessTokenRequestValidator.validateTokenRequestToRecord(authCode, sessionItem, expectedRedirectUri),
+                accessTokenRequestValidator.validateTokenRequestToRecord(
+                    authCode,
+                    sessionItem as SessionItem,
+                    expectedRedirectUri,
+                ),
             ).not.toThrow();
         });
 
@@ -125,7 +133,7 @@ describe("token-request-validator.ts", () => {
             const authCode = "1234";
             const expectedRedirectUri = "http://abc123.com";
             const badRedirectUri = "http://123Abc.com";
-            const sessionItem: SessionItem = {
+            const sessionItem: Partial<SessionItem> = {
                 sessionId: "1",
                 clientId: "1",
                 clientSessionId: "1",
@@ -136,7 +144,11 @@ describe("token-request-validator.ts", () => {
                 accessTokenExpiryDate: 0,
             };
             expect(() =>
-                accessTokenRequestValidator.validateTokenRequestToRecord(authCode, sessionItem, expectedRedirectUri),
+                accessTokenRequestValidator.validateTokenRequestToRecord(
+                    authCode,
+                    sessionItem as SessionItem,
+                    expectedRedirectUri,
+                ),
             ).toThrow(
                 `Invalid request: redirect uri ${badRedirectUri} does not match configuration uri ${expectedRedirectUri}`,
             );

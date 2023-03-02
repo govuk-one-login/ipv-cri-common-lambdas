@@ -627,7 +627,7 @@ describe("access-token-handler.ts", () => {
                 );
 
                 expect(output.statusCode).toBe(403);
-                expect(output.body).toContain("Session Expired");
+                expect(output.body).toContain("Session expired");
                 expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnits.Count, 0);
             });
 
