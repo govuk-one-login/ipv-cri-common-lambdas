@@ -72,8 +72,8 @@ export class SessionService {
         return sessionItem.Items[0] as SessionItem;
     }
 
-    private hasDateExpired(authorizationCodeExpiryDate: number): boolean {
-        return authorizationCodeExpiryDate < Math.floor(Date.now() / 1000);
+    private hasDateExpired(dateToCheck: number): boolean {
+        return dateToCheck < Math.floor(Date.now() / 1000);
     }
 
     public async createAccessTokenCode(sessionItem: SessionItem, accessToken: BearerAccessToken) {
