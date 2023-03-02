@@ -80,8 +80,8 @@ export class ConfigService {
     }
 
     public getSessionExpirationEpoch() {
-        const sessionTtl = this.getConfigEntry(CommonConfigKey.SESSION_TTL);
-        return Math.floor((Date.now() + parseInt(sessionTtl, 10) * 1000) / 1000);
+        const sessionTtl = parseInt(this.getConfigEntry(CommonConfigKey.SESSION_TTL), 10);
+        return Math.floor(((Date.now() + sessionTtl) * 1000) / 1000);
     }
 
     public getBearerAccessTokenTtl(): number {
