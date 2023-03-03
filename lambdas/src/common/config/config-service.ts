@@ -79,14 +79,12 @@ export class ConfigService {
     }
 
     public getAuthorizationCodeExpirationEpoch() {
-        // TODO: consider if this should be output in epoch seconds rather than milliseconds
-        // so that it is consistent with the java implementation
-        return Date.now() + this.authorizationCodeTtlInMillis;
+        return Math.floor((Date.now() + this.authorizationCodeTtlInMillis) / 1000);
     }
 
     public getSessionExpirationEpoch() {
-        const sessionTtl = this.getConfigEntry(CommonConfigKey.SESSION_TTL);
-        return Date.now() + parseInt(sessionTtl, 10) * 1000;
+        const sessionTtl = parseInt(this.getConfigEntry(CommonConfigKey.SESSION_TTL), 10);
+        return Math.floor((Date.now() + sessionTtl * 1000) / 1000);
     }
 
     public getBearerAccessTokenTtl(): number {
@@ -94,7 +92,7 @@ export class ConfigService {
     }
 
     public getBearerAccessTokenExpirationEpoch(): number {
-        return Math.floor((new Date().getTime() + this.getBearerAccessTokenTtl() * 1000) / 1000);
+        return Math.floor((Date.now() + this.getBearerAccessTokenTtl() * 1000) / 1000);
     }
 
     private getParameterName(parameterNameSuffix: string) {
