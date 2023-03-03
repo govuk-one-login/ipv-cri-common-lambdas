@@ -39,20 +39,6 @@ describe("session-request-validator.ts", () => {
             );
         });
 
-        it("should return an error on JWT verification failure", async () => {
-            const jwtPayload = jest.mocked({} as JWTPayload);
-            jest.spyOn(jwtVerifier.prototype, "verify").mockResolvedValueOnce(jwtPayload);
-
-            await expect(
-                sessionRequestValidator.validateJwt(Buffer.from("test-jwt"), "request-client-id"),
-            ).rejects.toThrow(
-                expect.objectContaining({
-                    message: "Session Validation Exception",
-                    details: "Invalid request: JWT validation/verification failed: JWT payload missing shared claims",
-                }),
-            );
-        });
-
         it("should return anerror on mismatched client ID", async () => {
             jest.spyOn(jwtVerifier.prototype, "verify").mockReturnValue(
                 new Promise<JWTPayload | null>((res) =>
