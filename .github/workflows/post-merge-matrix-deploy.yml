@@ -119,7 +119,6 @@ jobs:
 
 
   publish_common_cri_to_matrix_build:
-    if: ${{ always() }}
     needs: publish_common_cri_to_matrix_dev
     continue-on-error: true
     strategy:
