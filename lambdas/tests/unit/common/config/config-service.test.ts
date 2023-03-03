@@ -247,17 +247,17 @@ describe("ConfigService", () => {
     });
 
     describe("getSessionExpirationEpoch", () => {
-        jest.spyOn(global.Date, "now").mockReturnValueOnce(1675382400000);
+        jest.spyOn(global.Date, "now").mockReturnValue(1675382400000);
         it("should get the session expiration", async () => {
             mockSsmClient.prototype.send = getMockSend(CommonConfigKey.SESSION_TTL, "100");
             await configService.init([CommonConfigKey.SESSION_TABLE_NAME]);
             const epoch = configService.getSessionExpirationEpoch();
-            expect(epoch).toEqual(1675382500000);
+            expect(epoch).toEqual(1675382500);
         });
     });
 
     describe("getBearerAccessTokenExpirationEpoch", () => {
-        jest.spyOn(Date.prototype, "getTime").mockReturnValueOnce(1675382400000);
+        jest.spyOn(Date.prototype, "getTime").mockReturnValue(1675382400000);
         it("should return the ttl of the access token", () => {
             const output = configService.getBearerAccessTokenExpirationEpoch();
             expect(output).toEqual(1675382500);
@@ -266,17 +266,17 @@ describe("ConfigService", () => {
 
     describe("getAuthorizationCodeExpirationEpoch", () => {
         it("should get the authorization expiration", () => {
-            jest.spyOn(global.Date, "now").mockReturnValueOnce(1675382400000);
+            jest.spyOn(global.Date, "now").mockReturnValue(1675382400000);
             const epoch = configService.getAuthorizationCodeExpirationEpoch();
-            expect(epoch).toEqual(1675382500000);
+            expect(epoch).toEqual(1675382500);
         });
 
         it("should use the default expiration if not available", () => {
-            jest.spyOn(global.Date, "now").mockReturnValueOnce(1675382400000);
+            jest.spyOn(global.Date, "now").mockReturnValue(1675382400000);
             process.env.AUTHORIZATION_CODE_TTL = undefined;
             configService = new ConfigService(mockSsmClient.prototype);
             const epoch = configService.getAuthorizationCodeExpirationEpoch();
-            expect(epoch).toEqual(1675383000000);
+            expect(epoch).toEqual(1675383000);
         });
     });
 });
