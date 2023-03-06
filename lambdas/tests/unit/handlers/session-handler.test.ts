@@ -222,6 +222,26 @@ describe("SessionLambda", () => {
         expect(spy).toHaveBeenCalledWith(mockPerson, "test-session-id");
     });
 
+    it("should not save the personal identity information is no shared claims are available", async () => {
+        jest.spyOn(sessionRequestValidator.prototype, "validateJwt").mockReturnValue(
+            new Promise<JWTPayload>((res) =>
+                res({
+                    client_id: "test-jwt-client-id",
+                    govuk_signin_journey_id: "test-journey-id",
+                    persistent_session_id: "test-persistent-session-id",
+                    redirect_uri: "test-redirect-uri",
+                    state: "test-state",
+                    sub: "test-sub",
+                } as JWTPayload),
+            ),
+        );
+
+        const spy = jest.spyOn(personIdentityService.prototype, "savePersonIdentity");
+        await sessionLambda.handler(mockEvent, {});
+
+        expect(spy).not.toHaveBeenCalled();
+    });
+
     it("should send the audit event", async () => {
         const spy = jest.spyOn(auditService.prototype, "sendAuditEvent");
         await sessionLambda.handler(mockEvent, {});
