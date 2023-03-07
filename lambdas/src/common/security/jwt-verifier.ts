@@ -12,6 +12,8 @@ export enum ClaimNames {
     ISSUED_AT = "iat",
     JWT_ID = "jti",
     REDIRECT_URI = "redirect_uri",
+    SCOPE = "scope",
+    STATE = "state",
 }
 
 export class JwtVerifier {
