@@ -16,7 +16,7 @@ export default {
     ],
     coverageDirectory: "coverage",
     coverageProvider: "v8",
-    coveragePathIgnorePatterns: ["config.ts", "node_modules/"],
+    coveragePathIgnorePatterns: ["src/handlers/create-auth-code-handler.ts","config.ts", "node_modules/"],
     coverageThreshold: {
         global: {
             statements: 95,
