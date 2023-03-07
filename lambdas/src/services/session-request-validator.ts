@@ -16,11 +16,6 @@ export class SessionRequestValidator {
                 "Session Validation Exception",
                 "Invalid request: JWT validation/verification failed: JWT verification failure",
             );
-        } else if (!payload.shared_claims) {
-            throw new SessionValidationError(
-                "Session Validation Exception",
-                "Invalid request: JWT validation/verification failed: JWT payload missing shared claims",
-            );
         } else if (payload.client_id !== requestBodyClientId) {
             throw new SessionValidationError(
                 "Session Validation Exception",
