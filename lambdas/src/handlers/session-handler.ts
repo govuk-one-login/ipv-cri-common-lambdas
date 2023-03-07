@@ -78,8 +78,13 @@ export class SessionLambda implements LambdaInterface {
             const sessionId: string = await this.sessionService.saveSession(sessionRequestSummary);
             logger.info("Session created");
 
-            await this.personIdentityService.savePersonIdentity(jwtPayload.shared_claims as PersonIdentity, sessionId);
-            logger.info("Personal identity created");
+            if (jwtPayload.shared_claims) {
+                await this.personIdentityService.savePersonIdentity(
+                    jwtPayload.shared_claims as PersonIdentity,
+                    sessionId,
+                );
+                logger.info("Personal identity created");
+            }
 
             await this.sendAuditEvent(sessionId, sessionRequestSummary, clientIpAddress);
 

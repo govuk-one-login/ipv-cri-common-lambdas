@@ -5,7 +5,7 @@ on:
       - main
   workflow_dispatch: # deploy manually
 
-  concurrency: post-merge-matrix-deploy
+concurrency: post-merge-matrix-deploy
 
 jobs:
   publish_common_cri_to_matrix_dev:
@@ -127,7 +127,7 @@ jobs:
 
 
   publish_common_cri_to_matrix_build:
-  if: ${{ always() }}
+    if: ${{ always() }}
     needs: publish_common_cri_to_matrix_dev
     continue-on-error: true
     strategy:
