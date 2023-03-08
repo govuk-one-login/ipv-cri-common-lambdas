@@ -5,6 +5,7 @@ Feature: Authorization API
     And Session lambda implementation is in '<SessionLambdaImplementation>'
     When user sends a request to session API
     Then user gets a session id
+    When session has an authCode
     And Authorisation lambda implementation is in '<AuthLambdaImplementation>'
     When user sends a valid request to authorization end point
     Then expect a status code of 200 in the response
@@ -21,6 +22,7 @@ Feature: Authorization API
     And Session lambda implementation is in '<SessionLambdaImplementation>'
     When user sends a request to session API
     Then user gets a session id
+    When session has an authCode
     And Authorisation lambda implementation is in '<AuthLambdaImplementation>'
     When user sends a request to authorization end point with invalid client id
     Then expect a status code of 400 in the response
@@ -37,6 +39,7 @@ Feature: Authorization API
     And Session lambda implementation is in '<SessionLambdaImplementation>'
     When user sends a request to session API
     Then user gets a session id
+    When session has an authCode
     And Authorisation lambda implementation is in '<AuthLambdaImplementation>'
     When user sends a request to authorization end point with invalid redirect uri
     Then expect a status code of 400 in the response

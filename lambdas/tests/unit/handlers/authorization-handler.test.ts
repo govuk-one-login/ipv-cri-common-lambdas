@@ -142,35 +142,6 @@ describe("authorization-handler.ts", () => {
                 expect(loggerSpyAppendkeys).toBeCalledWith({ govuk_signin_journey_id: "1" });
                 expect(metricsSpyAddMetrics).toBeCalledWith("authorization_sent", "Count", 1);
             });
-
-            it("should create an auth code if not available", async () => {
-                const sessionItem: SessionItem = {
-                    sessionId: "abc",
-                    authorizationCodeExpiryDate: 1,
-                    clientId: "1",
-                    clientSessionId: "1",
-                    redirectUri: "http://123.com",
-                    accessToken: "",
-                    accessTokenExpiryDate: 0,
-                    authorizationCode: undefined,
-                };
-                jest.spyOn(sessionService, "getSession").mockReturnValue(
-                    new Promise<SessionItem>((resolve) => {
-                        resolve(sessionItem);
-                    }),
-                );
-                const createSpy = jest.spyOn(sessionService, "createAuthorizationCode");
-
-                await authorizationHandlerLambda.handler(
-                    {
-                        body,
-                        headers,
-                        queryStringParameters: queryString,
-                    } as unknown as APIGatewayProxyEvent,
-                    null,
-                );
-                expect(createSpy).toHaveBeenCalledWith(sessionItem);
-            });
         });
 
         describe("authorization request has missing attributes", () => {
