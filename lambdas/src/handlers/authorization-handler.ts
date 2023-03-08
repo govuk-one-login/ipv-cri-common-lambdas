@@ -54,11 +54,6 @@ export class AuthorizationLambda implements LambdaInterface {
             logger.info("Session validated");
             logger.appendKeys({ govuk_signin_journey_id: sessionItem.clientSessionId });
 
-            if (!sessionItem.authorizationCode) {
-                await this.sessionService.createAuthorizationCode(sessionItem);
-                logger.info("Authorization code not present. Authorization code generated successfully.");
-            }
-
             const authorizationResponse = {
                 state: {
                     value: event.queryStringParameters?.["state"],
