@@ -44,7 +44,7 @@ export class SessionRequestValidator {
 
         return payload;
     }
-    public async verifyJwtSignature(jwt: Buffer): Promise<JWTPayload | null> {
+    private async verifyJwtSignature(jwt: Buffer): Promise<JWTPayload | null> {
         const expectedIssuer = this.validationConfig.expectedJwtIssuer;
         const expectedAudience = this.validationConfig.expectedJwtAudience;
         return await this.jwtVerifier.verify(
