@@ -66,6 +66,12 @@ jobs:
           java-version: 11
           distribution: zulu
 
+      - name: Setup Python
+        if: matrix.ENABLED == 'true'
+        uses: actions/setup-python@v4
+        with: 
+          python-version: 3.11.2
+
       - name: Setup Gradle
         if: matrix.ENABLED == 'true'
         uses: gradle/gradle-build-action@v2
@@ -75,6 +81,8 @@ jobs:
       - name: Setup SAM
         if: matrix.ENABLED == 'true'
         uses: aws-actions/setup-sam@v2
+        with:
+          version: 1.74.0
 
       - name: Assume temporary AWS role
         if: matrix.ENABLED == 'true'
@@ -173,6 +181,12 @@ jobs:
           java-version: 11
           distribution: zulu
 
+      - name: Setup Python
+        if: matrix.ENABLED == 'true'
+        uses: actions/setup-python@v4
+        with: 
+          python-version: 3.11.2
+
       - name: Setup Gradle
         if: matrix.ENABLED == 'true'
         uses: gradle/gradle-build-action@v2
@@ -182,6 +196,8 @@ jobs:
       - name: Setup SAM
         if: matrix.ENABLED == 'true'
         uses: aws-actions/setup-sam@v2
+        with:
+          version: 1.74.0
 
       - name: Assume temporary AWS role
         if: matrix.ENABLED == 'true'
