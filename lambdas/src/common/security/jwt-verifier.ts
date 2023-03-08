@@ -27,7 +27,7 @@ export class JwtVerifier {
             const signingPublicJwkBase64 = this.jwtVerifierConfig.publicSigningJwk;
             const signingAlgorithm = this.jwtVerifierConfig.jwtSigningAlgorithm;
             const signingPublicJwk = JSON.parse(Buffer.from(signingPublicJwkBase64, "base64").toString("utf8"));
-            const publicKey = await importJWK(signingPublicJwk, signingPublicJwk.alg);
+            const publicKey = await importJWK(signingPublicJwk, signingPublicJwk?.alg || signingAlgorithm);
 
             const jwtVerifyOptions = this.createJwtVerifyOptions(signingAlgorithm, expectedClaimValues);
             const { payload } = await jwtVerify(encodedJwt, publicKey, jwtVerifyOptions);

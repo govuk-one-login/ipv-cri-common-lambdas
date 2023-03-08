@@ -52,6 +52,49 @@ describe("jwt-verifier.ts", () => {
                 jest.clearAllMocks();
             });
 
+            it("should succeed with a JWT that has signing key in config but not in JWK", async () => {
+                delete signingPublicJwk.alg;
+                jwtVerifierConfig.jwtSigningAlgorithm = "ECDSA";
+                const untypedJwtVerifyOptions = jwtVerifyOptions as any;
+                untypedJwtVerifyOptions.algorithms = ["ECDSA"];
+
+                const encodedJwt = Buffer.from("example.encoded.jwt");
+                jest.spyOn(global.Buffer, "from").mockReturnValueOnce(encodedJwt);
+                jest.spyOn(global.JSON, "parse").mockReturnValueOnce(signingPublicJwk);
+
+                const importJWKMock = importJWK as jest.MockedFunction<typeof importJWK>;
+                const jwtVerifyMock = jwtVerify as jest.MockedFunction<typeof jwtVerify>;
+                const mandatoryClaims = new Set(["iss", "sub"]);
+                const expectedClaimValues = new Map([
+                    ["iss", "some-issuer"],
+                    ["sub", "some-subject"],
+                    ["aud", "some-audience"],
+                ]);
+                const jwtPayload = {
+                    iss: "some-issuer",
+                    sub: "some-subject",
+                    aud: "some-audience",
+                };
+                importJWKMock.mockResolvedValueOnce(publicKey);
+                jwtVerifyMock.mockResolvedValueOnce({
+                    payload: jwtPayload,
+                    protectedHeader: {} as JWTHeaderParameters,
+                } as unknown as Promise<jose.JWTVerifyResult & jose.ResolvedKey>);
+
+                const payload = await jwtVerifier.verify(encodedJwt, mandatoryClaims, expectedClaimValues);
+
+                expect(payload).toEqual({
+                    iss: "some-issuer",
+                    sub: "some-subject",
+                    aud: "some-audience",
+                });
+                expect(Buffer.from).toHaveBeenCalledWith("publicSigningJwk", "base64");
+                expect(JSON.parse).toHaveBeenCalledWith("example.encoded.jwt");
+                expect(importJWKMock).toBeCalledWith(signingPublicJwk, jwtVerifierConfig.jwtSigningAlgorithm);
+                expect(jwtVerifyMock).toBeCalledWith(encodedJwt, publicKey, jwtVerifyOptions);
+                expect(logger.error).not.toHaveBeenCalled();
+            });
+
             it("should succeed with a JWT that has signing key and mandatory claims", async () => {
                 const encodedJwt = Buffer.from("example.encoded.jwt");
                 jest.spyOn(global.Buffer, "from").mockReturnValueOnce(encodedJwt);
