@@ -36,7 +36,7 @@ export class SessionRequestValidator {
                 "Session Validation Exception",
                 `Invalid request: JWT validation/verification failed: Redirect uri ${payload.redirect_uri} does not match configuration uri ${expectedRedirectUri}`,
             );
-        } else if (!payload.scope || scope.toLowerCase().indexOf("openid") === -1) {
+        } else if (!payload.scope || !scope.toLowerCase().includes("openid")) {
             throw new SessionValidationError("Session Validation Exception", "Invalid scope parameter");
         } else if (!state) {
             throw new SessionValidationError("Session Validation Exception", "Invalid state parameter");
