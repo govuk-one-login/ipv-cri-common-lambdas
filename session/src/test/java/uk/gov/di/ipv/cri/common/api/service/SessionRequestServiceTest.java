@@ -179,6 +179,7 @@ class SessionRequestServiceTest {
             ex.printStackTrace(new PrintWriter(sw));
             String stacktrace = sw.toString();
             assertFalse(stacktrace.contains(birthdaySharedClaim));
+            assertTrue(ex.getMessage().equals("Could not parse request body"));
         }
     }
 
