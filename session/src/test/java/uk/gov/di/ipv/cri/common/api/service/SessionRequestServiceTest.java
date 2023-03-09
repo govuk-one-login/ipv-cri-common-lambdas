@@ -154,24 +154,25 @@ class SessionRequestServiceTest {
         String birthdaySharedClaim = "{\"birthDate\": [{\"value\": \"1965-0-0\"}]}";
 
         JWSHeader header = new JWSHeader(new JWSAlgorithm("suraj-test"));
-        JWTClaimsSet claimsSet = new JWTClaimsSet
-                .Builder()
-                .claim("client_id", "test-value")
-                .claim("test", "test-value")
-                .claim("redirect_uri", "test-value")
-                .claim("state", "test-value")
-                .claim("persistent_session_id", "test-value")
-                .claim("govuk_signin_journey_id", "test-value")
-                .claim("shared_claims", birthdaySharedClaim)
-                .audience(List.of("aud"))
-                .expirationTime(new Date())
-                .issuer("iss")
-                .build();
+        JWTClaimsSet claimsSet =
+                new JWTClaimsSet.Builder()
+                        .claim("client_id", "test-value")
+                        .claim("test", "test-value")
+                        .claim("redirect_uri", "test-value")
+                        .claim("state", "test-value")
+                        .claim("persistent_session_id", "test-value")
+                        .claim("govuk_signin_journey_id", "test-value")
+                        .claim("shared_claims", birthdaySharedClaim)
+                        .audience(List.of("aud"))
+                        .expirationTime(new Date())
+                        .issuer("iss")
+                        .build();
         SignedJWT signedJWT = new SignedJWT(header, claimsSet);
         when(mockJwtDecrypter.decrypt("request")).thenReturn(signedJWT);
 
         try {
-            given(sessionRequestService.validateSessionRequest(requestBody.toString())).willThrow(SessionValidationException.class);
+            given(sessionRequestService.validateSessionRequest(requestBody.toString()))
+                    .willThrow(SessionValidationException.class);
             fail("Expected SessionValidationException to be thrown");
         } catch (SessionValidationException ex) {
             ex.printStackTrace();
@@ -179,10 +180,9 @@ class SessionRequestServiceTest {
             ex.printStackTrace(new PrintWriter(sw));
             String stacktrace = sw.toString();
             assertFalse(stacktrace.contains(birthdaySharedClaim));
-            assertTrue(ex.getMessage().equals("Could not parse request body"));
+            assertEquals("Could not parse request body", ex.getMessage());
         }
     }
-
 
     @Test
     void shouldValidateJWTSignedWithECKey()
