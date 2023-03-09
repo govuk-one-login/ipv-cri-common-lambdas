@@ -111,7 +111,7 @@ public class SessionRequestService {
 
             return sessionRequest;
         } catch (JsonProcessingException | ParseException e) {
-            throw new SessionValidationException("Could not parse request body", e);
+            throw new SessionValidationException("Could not parse request body");
         }
     }
 
