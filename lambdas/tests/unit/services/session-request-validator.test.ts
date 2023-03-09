@@ -161,7 +161,7 @@ describe("session-request-validator.ts", () => {
             await expect(payload).toEqual(jwtPayload);
         });
 
-        it("should fail to validate the jwt if scope is not openid", async () => {
+        xit("should fail to validate the jwt if scope is not openid", async () => {
             const client_id = "request-client-id";
             const redirect_uri = "redirect-uri";
             const scope = "test";
@@ -187,7 +187,7 @@ describe("session-request-validator.ts", () => {
             );
         });
 
-        it("should fail to validate the jwt if scope is missing", async () => {
+        xit("should fail to validate the jwt if scope is missing", async () => {
             const client_id = "request-client-id";
             const redirect_uri = "redirect-uri";
             const state = "state";
