@@ -2,25 +2,6 @@ import { GetParametersCommand, ParameterType, SSMClient } from "@aws-sdk/client-
 import { ClientConfigKey, CommonConfigKey } from "../../../../src/types/config-keys";
 import { ConfigService } from "../../../../src/common/config/config-service";
 
-const getMockSend = (key: CommonConfigKey, value?: string) => {
-    const mockPromise = new Promise<unknown>((resolve) => {
-        resolve({
-            Parameters: [
-                {
-                    Name: `/di-ipv-cri-common-lambdas/${key}`,
-                    Type: ParameterType.STRING,
-                    Value: value ? value : "session-cic-common-cri-api-local",
-                },
-            ],
-        });
-    });
-    const mockSend = jest.fn();
-    mockSend.mockImplementation(() => {
-        return mockPromise;
-    });
-    return mockSend;
-};
-
 jest.mock("@aws-sdk/client-ssm", () => {
     return {
         __esModule: true,
@@ -36,18 +17,40 @@ jest.mock("@aws-sdk/client-ssm", () => {
 
 describe("ConfigService", () => {
     let configService: ConfigService;
-
+    let getMockSend:
+        | ((key: CommonConfigKey, value?: string) => jest.Mock<unknown, unknown[]>)
+        | ((arg0: CommonConfigKey, arg1?: string | undefined) => jest.Mock);
     const mockUrl = "https://sqs.eu-west-2.amazonaws.com/123456789/txma-infrastructure-AuditEventQueue";
-
-    const mockSsmClient = jest.mocked(SSMClient);
-    mockSsmClient.prototype.send = getMockSend(CommonConfigKey.SESSION_TABLE_NAME);
-
-    const mockGetParametersCommand = jest.mocked(GetParametersCommand);
-
+    let mockSsmClient: jest.MockedObjectDeep<typeof SSMClient>;
+    let mockGetParametersCommand: jest.MockedObjectDeep<typeof GetParametersCommand>;
     beforeEach(() => {
+        getMockSend = (key: CommonConfigKey, value?: string) => {
+            const mockPromise = new Promise<unknown>((resolve) => {
+                resolve({
+                    Parameters: [
+                        {
+                            Name: `/di-ipv-cri-common-lambdas/${key}`,
+                            Type: ParameterType.STRING,
+                            Value: value ? value : "session-cic-common-cri-api-local",
+                        },
+                    ],
+                });
+            });
+            const mockSend = jest.fn();
+            mockSend.mockImplementation(() => {
+                return mockPromise;
+            });
+            return mockSend;
+        };
+
         jest.clearAllMocks();
 
+        mockSsmClient = jest.mocked(SSMClient);
+        mockSsmClient.prototype.send = getMockSend(CommonConfigKey.SESSION_TABLE_NAME);
+
         configService = new ConfigService(mockSsmClient.prototype);
+
+        mockGetParametersCommand = jest.mocked(GetParametersCommand);
     });
 
     describe("init", () => {
@@ -110,6 +113,51 @@ describe("ConfigService", () => {
 
             expect(configService.hasClientConfig("test")).toBe(true);
         });
+
+        it("should fail to initialise the client config when name suffix is empty", async () => {
+            const mockedSend = (key: CommonConfigKey, value?: string) => {
+                return jest.fn().mockResolvedValueOnce({
+                    Parameters: [
+                        {
+                            Name: "",
+                            Type: ParameterType.STRING,
+                            Value: value || "session-cic-common-cri-api-local",
+                        },
+                    ],
+                });
+            };
+            const mockSsmClient = jest.mocked(SSMClient);
+            mockSsmClient.prototype.send = mockedSend(CommonConfigKey.SESSION_TABLE_NAME);
+            await expect(() => configService.initClientConfig("test", [ClientConfigKey.JWT_ISSUER])).rejects.toThrow(
+                "NameSuffix may not be a valid string or the parameter is not found in the parameter store",
+            );
+
+            expect(mockSsmClient.prototype.send).toHaveBeenCalledTimes(1);
+            expect(configService.hasClientConfig("test")).toBe(false);
+        });
+
+        it("should fail to initialise the client config when value is empty", async () => {
+            const mockedSend = (key: CommonConfigKey, value?: string) => {
+                return jest.fn().mockResolvedValueOnce({
+                    Parameters: [
+                        {
+                            Name: `/di-ipv-cri-common-lambdas/${key}`,
+                            Type: ParameterType.STRING,
+                            Value: value,
+                        },
+                    ],
+                });
+            };
+            const mockSsmClient = jest.mocked(SSMClient);
+            mockSsmClient.prototype.send = mockedSend(CommonConfigKey.SESSION_TABLE_NAME, undefined);
+
+            await expect(() => configService.initClientConfig("test", [ClientConfigKey.JWT_ISSUER])).rejects.toThrow(
+                "The value of the parameter maybe undefined or empty",
+            );
+
+            expect(mockSsmClient.prototype.send).toHaveBeenCalledTimes(1);
+            expect(configService.hasClientConfig("test")).toBe(false);
+        });
     });
 
     describe("hasClientConfig", () => {
@@ -131,8 +179,10 @@ describe("ConfigService", () => {
             expect(configService.getClientConfig("client-id")).toEqual(mockMap);
         });
 
-        it("returns undefined if client config is available", () => {
-            expect(configService.getClientConfig("client-id")).toBe(undefined);
+        it("throws no configuration for client id error when config is unavialable", () => {
+            expect(() => configService.getClientConfig("client-id")).toThrowError(
+                "no configuration for client id client-id",
+            );
         });
     });
 
@@ -197,17 +247,17 @@ describe("ConfigService", () => {
     });
 
     describe("getSessionExpirationEpoch", () => {
-        jest.spyOn(global.Date, "now").mockReturnValueOnce(1675382400000);
+        jest.spyOn(global.Date, "now").mockReturnValue(1675382400000);
         it("should get the session expiration", async () => {
             mockSsmClient.prototype.send = getMockSend(CommonConfigKey.SESSION_TTL, "100");
             await configService.init([CommonConfigKey.SESSION_TABLE_NAME]);
             const epoch = configService.getSessionExpirationEpoch();
-            expect(epoch).toEqual(1675382500000);
+            expect(epoch).toEqual(1675382500);
         });
     });
 
     describe("getBearerAccessTokenExpirationEpoch", () => {
-        jest.spyOn(Date.prototype, "getTime").mockReturnValueOnce(1675382400000);
+        jest.spyOn(Date.prototype, "getTime").mockReturnValue(1675382400000);
         it("should return the ttl of the access token", () => {
             const output = configService.getBearerAccessTokenExpirationEpoch();
             expect(output).toEqual(1675382500);
@@ -216,17 +266,17 @@ describe("ConfigService", () => {
 
     describe("getAuthorizationCodeExpirationEpoch", () => {
         it("should get the authorization expiration", () => {
-            jest.spyOn(global.Date, "now").mockReturnValueOnce(1675382400000);
+            jest.spyOn(global.Date, "now").mockReturnValue(1675382400000);
             const epoch = configService.getAuthorizationCodeExpirationEpoch();
-            expect(epoch).toEqual(1675382500000);
+            expect(epoch).toEqual(1675382500);
         });
 
         it("should use the default expiration if not available", () => {
-            jest.spyOn(global.Date, "now").mockReturnValueOnce(1675382400000);
+            jest.spyOn(global.Date, "now").mockReturnValue(1675382400000);
             process.env.AUTHORIZATION_CODE_TTL = undefined;
             configService = new ConfigService(mockSsmClient.prototype);
             const epoch = configService.getAuthorizationCodeExpirationEpoch();
-            expect(epoch).toEqual(1675383000000);
+            expect(epoch).toEqual(1675383000);
         });
     });
 });

@@ -869,6 +869,46 @@ Resources:
               ArnLike:
                 "kms:EncryptionContext:aws:logs:arn": !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*"
 
+  CreateAuthCodeFunction:
+    Type: AWS::Serverless::Function
+    Condition: IsDevEnvironment
+    Properties:
+      Handler: create-auth-code-handler.lambdaHandler
+      CodeUri: ../../lambdas
+      Runtime: nodejs18.x
+      FunctionName: !Sub "${AWS::StackName}-CreateAuthCodeFunction"
+      Environment:
+        Variables:
+          POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-create-auth-code"
+      Policies:
+        - DynamoDBWritePolicy:
+            TableName:
+              Ref: SessionTable
+        - Statement:
+            - Effect: Allow
+              Action:
+                - ssm:GetParameters
+              Resource:
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/SessionTableName"
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/clients/*"
+    Metadata: # Manage esbuild properties
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: "esnext"
+        Sourcemap: true # Enabling source maps will create the required NODE_OPTIONS environment variables on your lambda function during sam build
+        EntryPoints:
+          - src/handlers/create-auth-code-handler.ts
+        External:
+          - '@aws-sdk/*'
+
+  CreateAuthCodeFunctionPermission:
+    Type: AWS::Lambda::Permission
+    Condition: IsDevEnvironment
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt CreateAuthCodeFunction.Arn
+      Principal: apigateway.amazonaws.com
 
   PreMergeDevOnlyApi:
     Type: AWS::Serverless::Api
