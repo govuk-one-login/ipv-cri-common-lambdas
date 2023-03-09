@@ -142,15 +142,12 @@ describe("session-request-validator.ts", () => {
 
         it("should pass when jwt body is correct", async () => {
             const client_id = "request-client-id";
-            const redirect_uri = "redirect-uri";
-            const scope = "openid";
-            const state = "state";
 
             const jwtPayload = {
                 client_id: client_id,
-                redirect_uri: redirect_uri,
-                scope: scope,
-                state: state,
+                redirect_uri: "redirect-uri",
+                scope: "openid",
+                state: "state",
                 shared_claims: personIdentity,
             } as JWTPayload;
 
