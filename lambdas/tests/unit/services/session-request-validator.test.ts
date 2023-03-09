@@ -141,7 +141,7 @@ describe("session-request-validator.ts", () => {
         });
 
         it("should pass when jwt body is correct", async () => {
-            const client_id = " request-client-id";
+            const client_id = "request-client-id";
 
             const jwtPayload = {
                 client_id: client_id,
