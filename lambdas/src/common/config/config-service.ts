@@ -36,8 +36,8 @@ export class ConfigService {
             throw new Error(`No client config found. Invalid client id encountered: ${clientId}`);
         }
         const clientConfigEntries: Map<string, string> = new Map<string, string>();
-        ssmParameters.forEach((p) => {
-            clientConfigEntries.set(p.Name!.substring(p.Name!.lastIndexOf("/") + 1), p.Value!);
+        ssmParameters.forEach(({ Name, Value }) => {
+            clientConfigEntries.set(...this.validateNameSuffix(Name, Value));
         });
         this.clientConfigurations.set(clientId, clientConfigEntries);
     }
@@ -46,8 +46,11 @@ export class ConfigService {
         return this.clientConfigurations.has(clientId);
     }
 
-    public getClientConfig(clientId: string): Map<string, string> | undefined {
-        return this.clientConfigurations.get(clientId);
+    public getClientConfig(clientId: string): Map<string, string> {
+        if (!this.clientConfigurations.get(clientId)) {
+            throw new Error(`no configuration for client id ${clientId}`);
+        }
+        return this.clientConfigurations.get(clientId) as Map<string, string>;
     }
 
     public getConfigEntry(key: CommonConfigKey) {
@@ -76,14 +79,12 @@ export class ConfigService {
     }
 
     public getAuthorizationCodeExpirationEpoch() {
-        // TODO: consider if this should be output in epoch seconds rather than milliseconds
-        // so that it is consistent with the java implementation
-        return Date.now() + this.authorizationCodeTtlInMillis;
+        return Math.floor((Date.now() + this.authorizationCodeTtlInMillis) / 1000);
     }
 
     public getSessionExpirationEpoch() {
-        const sessionTtl = this.getConfigEntry(CommonConfigKey.SESSION_TTL);
-        return Date.now() + parseInt(sessionTtl, 10) * 1000;
+        const sessionTtl = parseInt(this.getConfigEntry(CommonConfigKey.SESSION_TTL), 10);
+        return Math.floor((Date.now() + sessionTtl * 1000) / 1000);
     }
 
     public getBearerAccessTokenTtl(): number {
@@ -91,33 +92,39 @@ export class ConfigService {
     }
 
     public getBearerAccessTokenExpirationEpoch(): number {
-        return Math.floor((new Date().getTime() + this.getBearerAccessTokenTtl() * 1000) / 1000);
+        return Math.floor((Date.now() + this.getBearerAccessTokenTtl() * 1000) / 1000);
     }
 
     private getParameterName(parameterNameSuffix: string) {
         return `/${PARAMETER_PREFIX}/${parameterNameSuffix}`;
     }
 
+    private validateNameSuffix(nameSuffix: string | undefined, nameSuffixValue: string | undefined): [string, string] {
+        const name = nameSuffix?.split("/").pop();
+        const value = nameSuffixValue;
+        if (!name) {
+            throw Error("NameSuffix may not be a valid string or the parameter is not found in the parameter store");
+        }
+        if (!value) {
+            throw Error("The value of the parameter maybe undefined or empty");
+        }
+        return [name, value];
+    }
+
     private async getDefaultConfig(paramNameSuffixes: CommonConfigKey[]): Promise<void> {
         const ssmParamNames = paramNameSuffixes.map((p) => this.getParameterName(p));
         const ssmParameters = await this.getParameters(ssmParamNames);
-        if (ssmParameters && ssmParameters.length) {
-            ssmParameters?.forEach((p) => {
-                this.configEntries.set(p.Name as string, p.Value as string);
-            }, this);
-        }
+        ssmParameters?.forEach((p) => this.configEntries.set(p.Name as string, p.Value as string));
     }
 
     private async getParameters(ssmParamNames: string[]): Promise<Parameter[]> {
-        const getParamsByNameCommand = new GetParametersCommand({ Names: ssmParamNames });
+        const getParamsResult = await this.ssmClient.send(new GetParametersCommand({ Names: ssmParamNames }));
 
-        const getParamsResult = await this.ssmClient.send(getParamsByNameCommand);
-
-        if (getParamsResult.InvalidParameters && getParamsResult.InvalidParameters.length) {
+        if (getParamsResult?.InvalidParameters?.length) {
             const invalidParameterNames = getParamsResult.InvalidParameters?.join(", ");
             throw new Error(`Invalid SSM parameters: ${invalidParameterNames}`);
         }
 
-        return getParamsResult.Parameters && getParamsResult.Parameters.length ? getParamsResult.Parameters : [];
+        return getParamsResult?.Parameters || [];
     }
 }

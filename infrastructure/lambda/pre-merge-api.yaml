@@ -5,6 +5,41 @@ info:
 
 paths:
 
+  /pre-merge-create-auth-code:
+      get:
+        parameters:
+        - $ref: "#/components/parameters/SessionHeader"
+        responses:
+          "200":
+            description: A successful response with an authorization code
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    authCode:
+                      type: string
+                      description: The authorization code for premerge
+          "400":
+            description: A bad request error with a message
+            content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/Error"
+          "500":
+            description: An internal server error with a message
+            content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/Error"
+        x-amazon-apigateway-request-validator: "Validate both"
+        x-amazon-apigateway-integration:
+          type: "aws_proxy"
+          httpMethod: "POST"
+          uri:
+            Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${CreateAuthCodeFunction.Arn}/invocations
+          passthroughBehavior: "when_no_match"
+
   /authorization:
     get:
       parameters:

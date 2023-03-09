@@ -16,6 +16,7 @@ import java.net.http.HttpResponse;
 import java.util.Map;
 import java.util.UUID;
 
+import static gov.uk.di.ipv.cri.common.api.util.IpvCoreStubUtil.sendCreateAuthCodeRequest;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -173,5 +174,11 @@ public class APISteps {
     public void userSendsARequestToAccessTokenEndPointWithIncorrectAuthorizationCode()
             throws URISyntaxException, IOException, InterruptedException {
         response = IpvCoreStubUtil.sendAccessTokenRequest("wrong_authorization_code");
+    }
+
+    @When("session has an authCode")
+    public void sessionHasAnAuthCode()
+            throws URISyntaxException, IOException, InterruptedException {
+        sendCreateAuthCodeRequest(currentSessionId);
     }
 }

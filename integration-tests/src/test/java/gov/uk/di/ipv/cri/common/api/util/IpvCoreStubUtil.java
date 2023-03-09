@@ -5,6 +5,7 @@ import org.apache.http.client.utils.URIBuilder;
 import java.io.IOException;
 import java.net.Authenticator;
 import java.net.PasswordAuthentication;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -19,7 +20,7 @@ public class IpvCoreStubUtil {
     private static final String ADDRESS_CRI_DEV = "address-cri-dev";
     private static final String API_GATEWAY_ID_PRIVATE = "API_GATEWAY_ID_PRIVATE";
 
-    private static String getPrivateApiEndpoint() {
+    public static String getPrivateApiEndpoint() {
         String apiEndpoint = System.getenv(API_GATEWAY_ID_PRIVATE);
         Optional.ofNullable(apiEndpoint)
                 .orElseThrow(
@@ -126,15 +127,30 @@ public class IpvCoreStubUtil {
                         .addParameter("scope", "openid")
                         .addParameter("state", "state-ipv")
                         .build();
+        HttpRequest request = getHttpRequest(sessionId, url);
+
+        return sendHttpRequest(request);
+    }
+
+    public static void sendCreateAuthCodeRequest(String sessionId)
+            throws URISyntaxException, IOException, InterruptedException {
         var request =
-                HttpRequest.newBuilder()
-                        .uri(url)
+                getHttpRequest(
+                        sessionId,
+                        new URIBuilder(getPrivateApiEndpoint())
+                                .setPath("dev/pre-merge-create-auth-code")
+                                .build());
+        sendHttpRequest(request);
+    }
+
+    private static HttpRequest getHttpRequest(String sessionId, URI url) throws URISyntaxException {
+        var request =
+                HttpRequest.newBuilder(url)
                         .setHeader("Accept", "application/json")
                         .setHeader("session-id", sessionId)
                         .GET()
                         .build();
-
-        return sendHttpRequest(request);
+        return request;
     }
 
     public static HttpResponse<String> sendAccessTokenRequest(String authorizationCode)

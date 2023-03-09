@@ -5,8 +5,11 @@ on:
       - main
   workflow_dispatch: # deploy manually
 
+concurrency: post-merge-matrix-deploy
+
 jobs:
   publish_common_cri_to_matrix_dev:
+    continue-on-error: true
     strategy:
       fail-fast: false
       matrix:
@@ -63,6 +66,12 @@ jobs:
           java-version: 11
           distribution: zulu
 
+      - name: Setup Python
+        if: matrix.ENABLED == 'true'
+        uses: actions/setup-python@v4
+        with: 
+          python-version: 3.11.2
+
       - name: Setup Gradle
         if: matrix.ENABLED == 'true'
         uses: gradle/gradle-build-action@v2
@@ -72,6 +81,8 @@ jobs:
       - name: Setup SAM
         if: matrix.ENABLED == 'true'
         uses: aws-actions/setup-sam@v2
+        with:
+          version: 1.74.0
 
       - name: Assume temporary AWS role
         if: matrix.ENABLED == 'true'
@@ -116,7 +127,9 @@ jobs:
 
 
   publish_common_cri_to_matrix_build:
+    if: ${{ always() }}
     needs: publish_common_cri_to_matrix_dev
+    continue-on-error: true
     strategy:
       fail-fast: false
       matrix:
@@ -128,7 +141,7 @@ jobs:
             GH_ACTIONS_ROLE_ARN_SECRET:    ADDRESS_BUILD_COMMON_CRI_GH_ACTIONS_ROLE_ARN
             SIGNING_PROFILE_NAME: ADDRESS_BUILD_SIGNING_PROFILE_NAME
           - target: FRAUD_BUILD
-            ENABLED: "${{ vars.ADDRESS_BUILD_ENABLED }}"
+            ENABLED: "${{ vars.FRAUD_BUILD_ENABLED }}"
             ARTIFACT_SOURCE_BUCKET_NAME_SECRET: FRAUD_BUILD_COMMON_CRI_ARTIFACT_SOURCE_BUCKET_NAME
             GH_ACTIONS_ROLE_ARN_SECRET:    FRAUD_BUILD_COMMON_CRI_GH_ACTIONS_ROLE_ARN
             SIGNING_PROFILE_NAME: FRAUD_BUILD_SIGNING_PROFILE_NAME
@@ -168,6 +181,12 @@ jobs:
           java-version: 11
           distribution: zulu
 
+      - name: Setup Python
+        if: matrix.ENABLED == 'true'
+        uses: actions/setup-python@v4
+        with: 
+          python-version: 3.11.2
+
       - name: Setup Gradle
         if: matrix.ENABLED == 'true'
         uses: gradle/gradle-build-action@v2
@@ -177,6 +196,8 @@ jobs:
       - name: Setup SAM
         if: matrix.ENABLED == 'true'
         uses: aws-actions/setup-sam@v2
+        with:
+          version: 1.74.0
 
       - name: Assume temporary AWS role
         if: matrix.ENABLED == 'true'

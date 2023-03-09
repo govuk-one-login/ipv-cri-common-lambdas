@@ -1,5 +1,5 @@
 {
-  "name": "Node Lambdas",
+  "name": "di-ipv-common-lambdas",
   "version": "1.0.0",
   "description": "Common node Lambdas",
   "main": "app.js",
