@@ -26,9 +26,7 @@ describe("session-request-validator.ts", () => {
         });
 
         it("should return an error on JWT verification failure", async () => {
-            jest.spyOn(jwtVerifier.prototype, "verify").mockReturnValue(
-                new Promise<JWTPayload | null>((res) => res(null)),
-            );
+            jest.spyOn(jwtVerifier.prototype, "verify").mockReturnValue(Promise.resolve(null));
 
             await expect(
                 sessionRequestValidator.validateJwt(Buffer.from("test-jwt"), "request-client-id"),
@@ -42,12 +40,10 @@ describe("session-request-validator.ts", () => {
 
         it("should return anerror on mismatched client ID", async () => {
             jest.spyOn(jwtVerifier.prototype, "verify").mockReturnValue(
-                new Promise<JWTPayload | null>((res) =>
-                    res({
-                        client_id: "payload-client-id",
-                        shared_claims: personIdentity,
-                    } as JWTPayload),
-                ),
+                Promise.resolve({
+                    client_id: "payload-client-id",
+                    shared_claims: personIdentity,
+                } as JWTPayload),
             );
 
             await expect(
@@ -63,12 +59,10 @@ describe("session-request-validator.ts", () => {
 
         it("should return an error on failure to retrieve redirect URI", async () => {
             jest.spyOn(jwtVerifier.prototype, "verify").mockReturnValue(
-                new Promise<JWTPayload | null>((res) =>
-                    res({
-                        client_id: "request-client-id",
-                        shared_claims: personIdentity,
-                    } as JWTPayload),
-                ),
+                Promise.resolve({
+                    client_id: "request-client-id",
+                    shared_claims: personIdentity,
+                } as JWTPayload),
             );
 
             await expect(
@@ -84,13 +78,11 @@ describe("session-request-validator.ts", () => {
 
         it("should return an error on mismatched redirect URI", async () => {
             jest.spyOn(jwtVerifier.prototype, "verify").mockReturnValue(
-                new Promise<JWTPayload | null>((res) =>
-                    res({
-                        client_id: "request-client-id",
-                        redirect_uri: "wrong-redirect-uri",
-                        shared_claims: personIdentity,
-                    } as JWTPayload),
-                ),
+                Promise.resolve({
+                    client_id: "request-client-id",
+                    redirect_uri: "wrong-redirect-uri",
+                    shared_claims: personIdentity,
+                } as JWTPayload),
             );
             mockMap.set(ClientConfigKey.JWT_REDIRECT_URI, "redirect-uri");
             sessionRequestValidator = sessionRequestValidatorFactory.create(mockMap);
@@ -110,15 +102,13 @@ describe("session-request-validator.ts", () => {
             const scope = "openid";
             const state = "state";
             jest.spyOn(jwtVerifier.prototype, "verify").mockReturnValue(
-                new Promise<JWTPayload | null>((res) =>
-                    res({
-                        client_id: "request-client-id",
-                        redirect_uri: "redirect-uri",
-                        scope: scope,
-                        state: state,
-                        shared_claims: personIdentity,
-                    } as JWTPayload),
-                ),
+                Promise.resolve({
+                    client_id: "request-client-id",
+                    redirect_uri: "redirect-uri",
+                    scope: scope,
+                    state: state,
+                    shared_claims: personIdentity,
+                } as JWTPayload),
             );
             mockMap.set(ClientConfigKey.JWT_REDIRECT_URI, "redirect-uri");
             sessionRequestValidator = sessionRequestValidatorFactory.create(mockMap);
@@ -164,9 +154,7 @@ describe("session-request-validator.ts", () => {
                 shared_claims: personIdentity,
             } as JWTPayload;
 
-            jest.spyOn(jwtVerifier.prototype, "verify").mockReturnValue(
-                new Promise<JWTPayload | null>((res) => res(jwtPayload)),
-            );
+            jest.spyOn(jwtVerifier.prototype, "verify").mockReturnValue(Promise.resolve(jwtPayload));
 
             const payload = (await sessionRequestValidator.validateJwt(
                 Buffer.from("test-jwt"),
@@ -183,15 +171,13 @@ describe("session-request-validator.ts", () => {
             const state = "state";
 
             jest.spyOn(jwtVerifier.prototype, "verify").mockReturnValue(
-                new Promise<JWTPayload | null>((res) =>
-                    res({
-                        client_id: client_id,
-                        redirect_uri: redirect_uri,
-                        scope: scope,
-                        state: state,
-                        shared_claims: personIdentity,
-                    } as JWTPayload),
-                ),
+                Promise.resolve({
+                    client_id: client_id,
+                    redirect_uri: redirect_uri,
+                    scope: scope,
+                    state: state,
+                    shared_claims: personIdentity,
+                } as JWTPayload),
             );
 
             await expect(async () =>
@@ -210,14 +196,12 @@ describe("session-request-validator.ts", () => {
             const state = "state";
 
             jest.spyOn(jwtVerifier.prototype, "verify").mockReturnValue(
-                new Promise<JWTPayload | null>((res) =>
-                    res({
-                        client_id: client_id,
-                        redirect_uri: redirect_uri,
-                        state: state,
-                        shared_claims: personIdentity,
-                    } as JWTPayload),
-                ),
+                Promise.resolve({
+                    client_id: client_id,
+                    redirect_uri: redirect_uri,
+                    state: state,
+                    shared_claims: personIdentity,
+                } as JWTPayload),
             );
 
             await expect(async () =>
@@ -236,14 +220,12 @@ describe("session-request-validator.ts", () => {
             const scope = "openid";
 
             jest.spyOn(jwtVerifier.prototype, "verify").mockReturnValue(
-                new Promise<JWTPayload | null>((res) =>
-                    res({
-                        client_id: client_id,
-                        redirect_uri: redirect_uri,
-                        scope: scope,
-                        shared_claims: personIdentity,
-                    } as JWTPayload),
-                ),
+                Promise.resolve({
+                    client_id: client_id,
+                    redirect_uri: redirect_uri,
+                    scope: scope,
+                    shared_claims: personIdentity,
+                } as JWTPayload),
             );
 
             await expect(async () =>
