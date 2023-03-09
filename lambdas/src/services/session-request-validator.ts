@@ -16,7 +16,12 @@ export class SessionRequestValidator {
                 "Session Validation Exception",
                 "Invalid request: JWT validation/verification failed: JWT verification failure",
             );
-        } else if (payload.client_id !== requestBodyClientId) {
+        }
+
+        const scope = payload["scope"] as string;
+        const state = payload["state"] as string;
+
+        if (payload.client_id !== requestBodyClientId) {
             throw new SessionValidationError(
                 "Session Validation Exception",
                 `Invalid request: JWT validation/verification failed: Mismatched client_id in request body (${requestBodyClientId}) & jwt (${payload.client_id})`,
@@ -31,6 +36,10 @@ export class SessionRequestValidator {
                 "Session Validation Exception",
                 `Invalid request: JWT validation/verification failed: Redirect uri ${payload.redirect_uri} does not match configuration uri ${expectedRedirectUri}`,
             );
+        } else if (!payload.scope || !scope.toLowerCase().includes("openid")) {
+            throw new SessionValidationError("Session Validation Exception", "Invalid scope parameter");
+        } else if (!state) {
+            throw new SessionValidationError("Session Validation Exception", "Invalid state parameter");
         }
 
         return payload;
@@ -44,6 +53,8 @@ export class SessionRequestValidator {
                 JwtVerifier.ClaimNames.EXPIRATION_TIME,
                 JwtVerifier.ClaimNames.SUBJECT,
                 JwtVerifier.ClaimNames.NOT_BEFORE,
+                JwtVerifier.ClaimNames.STATE,
+                JwtVerifier.ClaimNames.SCOPE,
             ]),
             new Map([
                 [JwtVerifier.ClaimNames.AUDIENCE, expectedAudience],
