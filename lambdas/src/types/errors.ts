@@ -134,3 +134,11 @@ export class AuthorizationCodeExpiredError extends BaseError {
         this.code = 1027;
     }
 }
+
+export class SessionExpiredError extends BaseError {
+    constructor() {
+        super("Session expired");
+        this.statusCode = 403;
+        this.code = 1028;
+    }
+}
