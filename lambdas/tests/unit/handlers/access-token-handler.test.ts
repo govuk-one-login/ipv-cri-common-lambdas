@@ -576,6 +576,61 @@ describe("access-token-handler.ts", () => {
                 expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnits.Count, 0);
             });
 
+            it("should return http 403 if the session has expired", async () => {
+                const redirectUri = "http://123.abc.com";
+                const code = "123abc";
+
+                const clientConfig = new Map<string, string>();
+                clientConfig.set("code", code);
+                clientConfig.set("redirectUri", redirectUri);
+                jest.spyOn(mockConfigService.prototype, "getClientConfig").mockReturnValue(clientConfig);
+
+                const twentyFourthOfFeb2023InMs = 1677249836658;
+                jest.spyOn(Date, "now").mockReturnValue(twentyFourthOfFeb2023InMs);
+                const sevenDaysInMilliseconds = 7 * 24 * 60 * 60 * 1000;
+                const expiry = Math.floor((twentyFourthOfFeb2023InMs - sevenDaysInMilliseconds) / 1000);
+                const futureExpiry = Math.floor((twentyFourthOfFeb2023InMs + sevenDaysInMilliseconds) / 1000);
+
+                const sessionItem = {
+                    Items: [
+                        {
+                            sessionId: code,
+                            expiryDate: expiry,
+                            authorizationCodeExpiryDate: futureExpiry,
+                            clientId: "1",
+                            clientSessionId: "1",
+                            redirectUri: redirectUri,
+                            accessToken: "",
+                            accessTokenExpiryDate: futureExpiry,
+                            authorizationCode: code,
+                        } as SessionItem,
+                    ],
+                } as unknown as QueryCommandOutput;
+
+                mockDynamoDbClient.prototype.query.mockImplementation(() => {
+                    return new Promise<JWTPayload>((resolve) => {
+                        resolve(sessionItem);
+                    });
+                });
+
+                const output = await accessTokenLambda.handler(
+                    {
+                        body: {
+                            code,
+                            grant_type: "authorization_code",
+                            redirect_uri: redirectUri,
+                            client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+                            client_assertion: "2",
+                        },
+                    } as unknown as APIGatewayProxyEvent,
+                    null,
+                );
+
+                expect(output.statusCode).toBe(403);
+                expect(output.body).toContain("Session expired");
+                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnits.Count, 0);
+            });
+
             it("should return http 403 when there is more than 1 session item", async () => {
                 const redirectUri = "http://123.abc.com";
                 const code = "123abc";

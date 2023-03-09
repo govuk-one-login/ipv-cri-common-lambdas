@@ -79,7 +79,7 @@ describe("session-service", () => {
     describe("createAuthorizationCode", () => {
         it("should call the update command with the a payload that includes ", async () => {
             const tableName = "sessionTable";
-            const sessionItem: SessionItem = {
+            const sessionItem: Partial<SessionItem> = {
                 sessionId: "123abc",
                 authorizationCodeExpiryDate: 1,
                 clientId: "",
@@ -90,7 +90,7 @@ describe("session-service", () => {
             };
             jest.spyOn(mockConfigService.prototype, "getConfigEntry").mockReturnValue(tableName);
             expect.assertions(2);
-            await sessionService.createAuthorizationCode(sessionItem);
+            await sessionService.createAuthorizationCode(sessionItem as SessionItem);
             expect(mockUpdateCommand).toHaveBeenCalled();
             expect(mockUpdateCommand).toHaveBeenCalledWith(
                 expect.objectContaining({
@@ -158,7 +158,7 @@ describe("session-service", () => {
             };
             jest.spyOn(configService, "getConfigEntry").mockReturnValue("session-table-name");
             jest.spyOn(configService, "getBearerAccessTokenExpirationEpoch").mockReturnValueOnce(1675382400000);
-            await sessionService.createAccessTokenCode(sessionItem, accessToken);
+            await sessionService.createAccessTokenCode(sessionItem as SessionItem, accessToken);
 
             expect(mockUpdateCommand).toHaveBeenCalledWith({
                 TableName: "session-table-name",
