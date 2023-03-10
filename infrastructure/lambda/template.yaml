@@ -327,18 +327,18 @@ Resources:
       FilterPattern: ""
       LogGroupName: !Ref SessionFunctionLogGroup
 
-  SessionFunctionTwo:
+  SessionFunctionTS:
     Type: AWS::Serverless::Function
     Properties:
       Handler: session-handler.lambdaHandler
       Runtime: nodejs18.x
       CodeUri: ../../lambdas
-      FunctionName: !Sub "${AWS::StackName}-SessionFunctionTwo"
+      FunctionName: !Sub "${AWS::StackName}-SessionFunctionTS"
       # Layers:
       #   - !Sub arn:aws:lambda:${AWS::Region}:094274105915:layer:AWSLambdaPowertoolsTypeScript:6
       Environment:
         Variables:
-          POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-sessionTwo"
+          POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-sessionTS"
           SQS_AUDIT_EVENT_QUEUE_URL: !ImportValue AuditEventQueueUrl
       Policies:
         - AWSLambdaBasicExecutionRole
@@ -387,19 +387,19 @@ Resources:
           # - '@aws-lambda-powertools/tracer'
           - '@aws-sdk/*'
 
-  SessionFunctionTwoLogGroup:
+  SessionFunctionTSLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub "/aws/lambda/${SessionFunctionTwo}"
+      LogGroupName: !Sub "/aws/lambda/${SessionFunctionTS}"
       RetentionInDays: 30
   
-  SessionFunctionLogGroupSubscriptionFilterCSLSTwo:
+  SessionFunctionLogGroupSubscriptionFilterCSLSTS:
     Type: AWS::Logs::SubscriptionFilter
     Condition: IsNotDevEnvironment
     Properties:
       DestinationArn: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython"
       FilterPattern: ""
-      LogGroupName: !Ref SessionFunctionTwoLogGroup
+      LogGroupName: !Ref SessionFunctionTSLogGroup
 
   AuthorizationFunction:
     Type: AWS::Serverless::Function
@@ -436,18 +436,18 @@ Resources:
       LogGroupName: !Sub "/aws/lambda/${AuthorizationFunction}"
       RetentionInDays: 30
 
-  AuthorizationFunctionTwo:
+  AuthorizationFunctionTS:
     Type: AWS::Serverless::Function
     Properties:
       Handler: authorization-handler.lambdaHandler
       CodeUri: ../../lambdas
       Runtime: nodejs18.x
-      FunctionName: !Sub "${AWS::StackName}-AuthorizationFunctionTwo"
+      FunctionName: !Sub "${AWS::StackName}-AuthorizationFunctionTS"
       # Layers:
         # - !Sub arn:aws:lambda:${AWS::Region}:094274105915:layer:AWSLambdaPowertoolsTypeScript:6
       Environment:
         Variables:
-          POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-authorizationTwo"
+          POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-authorizationTS"
       Policies:
         - AWSLambdaBasicExecutionRole
         - AWSXrayWriteOnlyAccess
@@ -478,10 +478,10 @@ Resources:
         #   - '@aws-lambda-powertools/tracer'
           - '@aws-sdk/*'
 
-  AuthorizationFunctionTwoLogGroup:
+  AuthorizationFunctionTSLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub "/aws/lambda/${AuthorizationFunctionTwo}"
+      LogGroupName: !Sub "/aws/lambda/${AuthorizationFunctionTS}"
       RetentionInDays: 30
 
   AuthorizationFunctionLogGroupSubscriptionFilterCSLS:
@@ -492,13 +492,13 @@ Resources:
       FilterPattern: ""
       LogGroupName: !Ref AuthorizationFunctionLogGroup
 
-  AuthorizationFunctionLogGroupSubscriptionFilterCSLSTwo:
+  AuthorizationFunctionLogGroupSubscriptionFilterCSLSTS:
     Type: AWS::Logs::SubscriptionFilter
     Condition: IsNotDevEnvironment
     Properties:
       DestinationArn: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython"
       FilterPattern: ""
-      LogGroupName: !Ref AuthorizationFunctionTwoLogGroup
+      LogGroupName: !Ref AuthorizationFunctionTSLogGroup
 
   AccessTokenFunction:
     Type: AWS::Serverless::Function
@@ -530,13 +530,13 @@ Resources:
               Resource:
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/clients/*"
 
-  AccessTokenFunctionTwo:
+  AccessTokenFunctionTS:
     Type: AWS::Serverless::Function
     Properties:
       Handler: access-token-handler.lambdaHandler
       CodeUri: ../../lambdas
       Runtime: nodejs18.x
-      FunctionName: !Sub "${AWS::StackName}-AccessTokenFunctionTwo"
+      FunctionName: !Sub "${AWS::StackName}-AccessTokenFunctionTS"
       # Layers:
         # - !Sub arn:aws:lambda:${AWS::Region}:094274105915:layer:AWSLambdaPowertoolsTypeScript:6
       Environment:
@@ -572,17 +572,17 @@ Resources:
           # - '@aws-lambda-powertools/tracer'
           - '@aws-sdk/*'
 
-  AccessTokenTwoFunctionLogGroup:
+  AccessTokenTSFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub "/aws/lambda/${AccessTokenFunctionTwo}"
+      LogGroupName: !Sub "/aws/lambda/${AccessTokenFunctionTS}"
       RetentionInDays: 30
 
-  AccessTokenTwoPermission:
+  AccessTokenTSPermission:
     Type: AWS::Lambda::Permission
     Properties:
       Action: lambda:InvokeFunction
-      FunctionName: !GetAtt AccessTokenFunctionTwo.Arn
+      FunctionName: !GetAtt AccessTokenFunctionTS.Arn
       Principal: apigateway.amazonaws.com
 
   AccessTokenFunctionLogGroup:
@@ -599,13 +599,13 @@ Resources:
       FilterPattern: ""
       LogGroupName: !Ref AccessTokenFunctionLogGroup
 
-  AccessTokenFunctionLogGroupSubscriptionFilterCSLSTwo:
+  AccessTokenFunctionLogGroupSubscriptionFilterCSLSTS:
     Type: AWS::Logs::SubscriptionFilter
     Condition: IsNotDevEnvironment
     Properties:
       DestinationArn: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython"
       FilterPattern: ""
-      LogGroupName: !Ref AccessTokenTwoFunctionLogGroup
+      LogGroupName: !Ref AccessTokenTSFunctionLogGroup
 
   SessionTable:
     Type: "AWS::DynamoDB::Table"
@@ -838,11 +838,11 @@ Resources:
       FunctionName: !GetAtt SessionFunction.Arn
       Principal: apigateway.amazonaws.com
 
-  SessionFunctionTwoPermission:
+  SessionFunctionTSPermission:
     Type: AWS::Lambda::Permission
     Properties:
       Action: lambda:InvokeFunction
-      FunctionName: !GetAtt SessionFunctionTwo.Arn
+      FunctionName: !GetAtt SessionFunctionTS.Arn
       Principal: apigateway.amazonaws.com
 
   AccessTokenFunctionPermission:
@@ -859,11 +859,11 @@ Resources:
       FunctionName: !GetAtt AuthorizationFunction.Arn
       Principal: apigateway.amazonaws.com
 
-  AuthorizationFunctionTwoPermission:
+  AuthorizationFunctionTSPermission:
     Type: AWS::Lambda::Permission
     Properties:
       Action: lambda:InvokeFunction
-      FunctionName: !GetAtt AuthorizationFunctionTwo.Arn
+      FunctionName: !GetAtt AuthorizationFunctionTS.Arn
       Principal: apigateway.amazonaws.com
 
   LoggingKmsKey:
