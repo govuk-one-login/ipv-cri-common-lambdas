@@ -52,19 +52,19 @@ public class APISteps {
 
     @Given("Session lambda implementation is in {string}")
     public void setSessionEndpoint(String endPoint) {
-        if (endPoint.equals("TS")) DEV_SESSION_URI = ENVIRONMENT + "/session-two";
+        if (endPoint.equals("TS")) DEV_SESSION_URI = ENVIRONMENT + "/session-ts";
         else DEV_SESSION_URI = ENVIRONMENT + "/session";
     }
 
     @Given("Authorisation lambda implementation is in {string}")
     public void setAuthorizationEndpoint(String endPoint) {
-        if (endPoint.equals("TS")) DEV_AUTHORIZATION_URI = ENVIRONMENT + "/authorization-two";
+        if (endPoint.equals("TS")) DEV_AUTHORIZATION_URI = ENVIRONMENT + "/authorization-ts";
         else DEV_AUTHORIZATION_URI = ENVIRONMENT + "/authorization";
     }
 
     @Given("AccessToken lambda implementation is in {string}")
     public void setAccessTokenEndpoint(String endPoint) {
-        if (endPoint.equals("TS")) DEV_ACCESS_TOKEN_URI = ENVIRONMENT + "/token-two";
+        if (endPoint.equals("TS")) DEV_ACCESS_TOKEN_URI = ENVIRONMENT + "/token-ts";
         else DEV_ACCESS_TOKEN_URI = ENVIRONMENT + "/token";
     }
 
