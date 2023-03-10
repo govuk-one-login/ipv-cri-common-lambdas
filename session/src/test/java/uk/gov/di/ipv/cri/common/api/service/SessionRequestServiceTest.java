@@ -5,13 +5,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
-import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import net.minidev.json.JSONObject;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -24,26 +24,19 @@ import uk.gov.di.ipv.cri.common.library.service.ConfigurationService;
 import uk.gov.di.ipv.cri.common.library.service.JWTVerifier;
 
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.net.URI;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
 import java.text.ParseException;
 import java.util.Base64;
-import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.fail;
-import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -55,17 +48,11 @@ class SessionRequestServiceTest {
     @Mock private JWTDecrypter mockJwtDecrypter;
     @Mock private JWTVerifier mockJwtVerifier;
     @Mock private ObjectMapper mockObjectMapper;
-    private SessionRequestService sessionRequestService;
+    @InjectMocks SessionRequestService sessionRequestService;
     private SharedClaims testSharedClaims;
 
     @BeforeEach
     void setUp() {
-        sessionRequestService =
-                new SessionRequestService(
-                        mockObjectMapper,
-                        mockJwtVerifier,
-                        mockConfigurationService,
-                        mockJwtDecrypter);
         testSharedClaims = new SharedClaims();
     }
 
@@ -148,7 +135,7 @@ class SessionRequestServiceTest {
     }
 
     @Test
-    void shouldFailOnInvalidDOBInClaims() throws Exception {
+    void shouldFailOnInvalidDOBInClaimsWithoutRevealingPI() throws Exception {
         sessionRequestService =
                 new SessionRequestService(
                         new ObjectMapper().registerModule(new JavaTimeModule()),
@@ -157,40 +144,27 @@ class SessionRequestServiceTest {
                         mockJwtDecrypter);
 
         JSONObject requestBody = new JSONObject();
-        requestBody.put("client_id", "client-id");
-        requestBody.put("requestJWT", "request");
-
+        requestBody.put("client_id", "some-client-id");
+        requestBody.put("request", "some.jwt.value");
+        String request = requestBody.toString();
         String birthdaySharedClaim = "{\"birthDate\": [{\"value\": \"1965-0-0\"}]}";
 
-        JWSHeader header = new JWSHeader(new JWSAlgorithm("suraj-test"));
-        JWTClaimsSet claimsSet =
-                new JWTClaimsSet.Builder()
-                        .claim("client_id", "test-value")
-                        .claim("test", "test-value")
-                        .claim("redirect_uri", "test-value")
-                        .claim("state", "test-value")
-                        .claim("persistent_session_id", "test-value")
-                        .claim("govuk_signin_journey_id", "test-value")
-                        .claim("shared_claims", birthdaySharedClaim)
-                        .audience(List.of("aud"))
-                        .expirationTime(new Date())
-                        .issuer("iss")
+        SignedJWT signedJWT =
+                new SignedJWTBuilder()
+                        .setPrivateKeyFile("signing_ec.pk8")
+                        .setCertificateFile("signing_ec.crt.pem")
+                        .setSigningAlgorithm(JWSAlgorithm.ES384)
+                        .setSharedClaims(birthdaySharedClaim)
                         .build();
-        SignedJWT signedJWT = new SignedJWT(header, claimsSet);
-        when(mockJwtDecrypter.decrypt("request")).thenReturn(signedJWT);
 
-        try {
-            given(sessionRequestService.validateSessionRequest(requestBody.toString()))
-                    .willThrow(SessionValidationException.class);
-            fail("Expected SessionValidationException to be thrown");
-        } catch (SessionValidationException ex) {
-            ex.printStackTrace();
-            StringWriter sw = new StringWriter();
-            ex.printStackTrace(new PrintWriter(sw));
-            String stacktrace = sw.toString();
-            assertFalse(stacktrace.contains(birthdaySharedClaim));
-            assertEquals("Could not parse request body", ex.getMessage());
-        }
+        when(mockJwtDecrypter.decrypt(requestBody.get("request").toString())).thenReturn(signedJWT);
+        SessionValidationException exception =
+                assertThrows(
+                        SessionValidationException.class,
+                        () -> sessionRequestService.validateSessionRequest(request));
+
+        assertThat(exception.getMessage(), not(containsString(birthdaySharedClaim)));
+        assertThat(exception.getMessage(), containsString("Could not parse request body"));
     }
 
     @Test
