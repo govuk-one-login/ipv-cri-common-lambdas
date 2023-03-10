@@ -25,6 +25,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 class SignedJWTBuilder {
@@ -43,6 +44,7 @@ class SignedJWTBuilder {
     private boolean includeSharedClaims = false;
     private String persistentSessionId = "persistentSessionIdTest";
     private String clientSessionId = "clientSessionIdTest";
+    private Object sharedClaims = null;
 
     SignedJWTBuilder setNow(Instant now) {
         this.now = now;
@@ -99,6 +101,11 @@ class SignedJWTBuilder {
         return this;
     }
 
+    SignedJWTBuilder setSharedClaims(Object sharedClaims) {
+        this.sharedClaims = sharedClaims;
+        return this;
+    }
+
     SignedJWTBuilder setPersistentSessionId(String persistentSessionId) {
         this.persistentSessionId = persistentSessionId;
         return this;
@@ -142,8 +149,12 @@ class SignedJWTBuilder {
             if (includeSubject) {
                 jwtClaimSetBuilder.subject(ipv_session_id);
             }
-            if (includeSharedClaims) {
+            if (Objects.isNull(sharedClaims) && includeSharedClaims) {
                 jwtClaimSetBuilder.claim("shared_claims", "sharedClaimsJsonObject");
+            } else {
+                if (Objects.nonNull(sharedClaims)) {
+                    jwtClaimSetBuilder.claim("shared_claims", this.sharedClaims);
+                }
             }
 
             SignedJWT signedJWT =
