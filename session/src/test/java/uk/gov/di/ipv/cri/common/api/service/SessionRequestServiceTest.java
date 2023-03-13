@@ -2,6 +2,7 @@ package uk.gov.di.ipv.cri.common.api.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
@@ -16,6 +17,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import uk.gov.di.ipv.cri.common.api.domain.RawSessionRequest;
+import uk.gov.di.ipv.cri.common.api.serializer.PiiRedactingDeserializer;
 import uk.gov.di.ipv.cri.common.library.domain.SessionRequest;
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.SharedClaims;
 import uk.gov.di.ipv.cri.common.library.exception.ClientConfigurationException;
@@ -30,6 +32,7 @@ import java.security.cert.CertificateEncodingException;
 import java.text.ParseException;
 import java.util.Base64;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -136,18 +139,22 @@ class SessionRequestServiceTest {
 
     @Test
     void shouldFailOnInvalidDOBInClaimsWithoutRevealingPI() throws Exception {
+        List<String> sensitiveFields = List.of("name", "birthDate", "address");
+        SimpleModule redactionModule = new SimpleModule();
+        redactionModule.addDeserializer(
+                SharedClaims.class, new PiiRedactingDeserializer<>(sensitiveFields));
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule()).registerModule(redactionModule);
         sessionRequestService =
                 new SessionRequestService(
-                        new ObjectMapper().registerModule(new JavaTimeModule()),
-                        mockJwtVerifier,
-                        mockConfigurationService,
-                        mockJwtDecrypter);
+                        objectMapper, mockJwtVerifier, mockConfigurationService, mockJwtDecrypter);
 
         JSONObject requestBody = new JSONObject();
         requestBody.put("client_id", "some-client-id");
         requestBody.put("request", "some.jwt.value");
         String request = requestBody.toString();
-        String birthdaySharedClaim = "{\"birthDate\": [{\"value\": \"1965-0-0\"}]}";
+        String birthdaySharedClaim =
+                "{\"@context\":[\"https:\\/\\/www.w3.org\\/2018\\/credentials\\/v1\",\"https:\\/\\/vocab.london.cloudapps.digital\\/contexts\\/identity-v1.jsonld\"],\"name\":[{\"nameParts\":[{\"type\":\"GivenName\",\"value\":\"KENNETH\"},{\"type\":\"FamilyName\",\"value\":\"DECERQUEIRA\"}]}],\"birthDate\":[{\"value\":\"1965-00-00\"}],\"address\":[{\"buildingNumber\":\"8\",\"streetName\":\"HADLEY ROAD\",\"postalCode\":\"BA2 5AA\",\"validFrom\":\"2021-01-01\"}]}";
 
         SignedJWT signedJWT =
                 new SignedJWTBuilder()
@@ -163,7 +170,11 @@ class SessionRequestServiceTest {
                         SessionValidationException.class,
                         () -> sessionRequestService.validateSessionRequest(request));
 
-        assertThat(exception.getMessage(), not(containsString(birthdaySharedClaim)));
+        assertThat(exception.getCause().getMessage(), not(containsString(birthdaySharedClaim)));
+        assertThat(
+                exception.getCause().getMessage(),
+                containsString(
+                        "Unexpected error while deserializing object. Some PII fields may have been redacted. {\"@context\":[\"https://www.w3.org/2018/credentials/v1\",\"https://vocab.london.cloudapps.digital/contexts/identity-v1.jsonld\"],\"name\":null,\"birthDate\":null,\"address\":null}"));
         assertThat(exception.getMessage(), containsString("Could not parse request body"));
     }
 
