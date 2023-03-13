@@ -44,7 +44,7 @@ jobs:
       - name: Setup SAM
         uses: aws-actions/setup-sam@v2
         with:
-          version: 1.74.0
+          version: 2.0.0
 
       - name: Assume temporary AWS role
         uses: aws-actions/configure-aws-credentials@v1-node16
