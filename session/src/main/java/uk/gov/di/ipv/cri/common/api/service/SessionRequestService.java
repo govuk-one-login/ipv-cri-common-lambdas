@@ -4,12 +4,13 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import uk.gov.di.ipv.cri.common.api.domain.RawSessionRequest;
-import uk.gov.di.ipv.cri.common.api.serializer.PiiRedactingDeserializer;
+import uk.gov.di.ipv.cri.common.api.serializer.PIIRedactingDeserializer;
 import uk.gov.di.ipv.cri.common.library.annotations.ExcludeFromGeneratedCoverageReport;
 import uk.gov.di.ipv.cri.common.library.domain.SessionRequest;
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.SharedClaims;
@@ -40,11 +41,15 @@ public class SessionRequestService {
 
     @ExcludeFromGeneratedCoverageReport
     public SessionRequestService() {
-        this.objectMapper = new ObjectMapper();
         SimpleModule redactionModule = new SimpleModule();
+        this.objectMapper = new ObjectMapper();
         redactionModule.addDeserializer(
-                SharedClaims.class, new PiiRedactingDeserializer<>(sensitiveFields));
-        objectMapper.registerModule(new JavaTimeModule()).registerModule(redactionModule);
+                SharedClaims.class,
+                new PIIRedactingDeserializer<>(sensitiveFields, SharedClaims.class));
+        this.objectMapper
+                .registerModule(new JavaTimeModule())
+                .registerModule(new Jdk8Module())
+                .registerModule(redactionModule);
         this.jwtVerifier = new JWTVerifier();
         this.configurationService = new ConfigurationService();
         String encryptionKeyId = this.configurationService.getKmsEncryptionKeyId();
