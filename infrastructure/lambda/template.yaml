@@ -214,9 +214,9 @@ Mappings:
       integration: "https://identity.integration.account.gov.uk/credential-issuer/callback?id=kbv"
       production: "https://identity.account.gov.uk/credential-issuer/callback?id=kbv"
     di-ipv-cri-dl-api:
-      staging: "https://identity.staging.account.gov.uk/credential-issuer/callback?id=driving-permit"
-      integration: "https://identity.integration.account.gov.uk/credential-issuer/callback?id=driving-permit"
-      production: "https://identity.account.gov.uk/credential-issuer/callback?id=driving-permit"
+      staging: "https://identity.staging.account.gov.uk/credential-issuer/callback?id=drivingLicence"
+      integration: "https://identity.integration.account.gov.uk/credential-issuer/callback?id=drivingLicence"
+      production: "https://identity.account.gov.uk/credential-issuer/callback?id=drivingLicence"
 
   VerifiableCredentialIssuerMapping:
     di-ipv-cri-address-api:
