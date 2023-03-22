@@ -30,6 +30,8 @@ import java.util.UUID;
 
 class SignedJWTBuilder {
 
+    private static final String SHARED_CLAIMS =
+            "{\"@context\":[\"https:\\/\\/www.w3.org\\/2018\\/credentials\\/v1\",\"https:\\/\\/vocab.london.cloudapps.digital\\/contexts\\/identity-v1.jsonld\"],\"name\":[{\"nameParts\":[{\"type\":\"GivenName\",\"value\":\"KENNETH\"},{\"type\":\"FamilyName\",\"value\":\"DECERQUEIRA\"}]}],\"birthDate\":[{\"value\":\"1965-04-05\"}],\"address\":[{\"buildingNumber\":\"8\",\"streetName\":\"HADLEY ROAD\",\"postalCode\":\"BA2 5AA\",\"validFrom\":\"2021-01-01\"}]}";
     private String issuer = "ipv-core";
     private Instant now = Instant.now();
     private JWSAlgorithm signingAlgorithm = JWSAlgorithm.RS256;
@@ -150,7 +152,7 @@ class SignedJWTBuilder {
                 jwtClaimSetBuilder.subject(ipv_session_id);
             }
             if (Objects.isNull(sharedClaims) && includeSharedClaims) {
-                jwtClaimSetBuilder.claim("shared_claims", "sharedClaimsJsonObject");
+                jwtClaimSetBuilder.claim("shared_claims", SHARED_CLAIMS);
             } else {
                 if (Objects.nonNull(sharedClaims)) {
                     jwtClaimSetBuilder.claim("shared_claims", this.sharedClaims);

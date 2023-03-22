@@ -2,6 +2,7 @@ package uk.gov.di.ipv.cri.common.api.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jwt.JWTClaimsSet;
@@ -14,9 +15,11 @@ import uk.gov.di.ipv.cri.common.library.exception.ClientConfigurationException;
 import uk.gov.di.ipv.cri.common.library.exception.SessionValidationException;
 import uk.gov.di.ipv.cri.common.library.service.ConfigurationService;
 import uk.gov.di.ipv.cri.common.library.service.JWTVerifier;
+import uk.gov.di.ipv.cri.common.library.util.deserializers.PiiRedactingDeserializer;
 
 import java.net.URI;
 import java.text.ParseException;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -32,13 +35,24 @@ public class SessionRequestService {
     private final JWTDecrypter jwtDecrypter;
     private final ConfigurationService configurationService;
 
+    private final List<String> sensitiveFields = List.of("name", "birthDate", "address");
+
     @ExcludeFromGeneratedCoverageReport
     public SessionRequestService() {
-        this.objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
+        this.objectMapper = new ObjectMapper();
+        this.objectMapper
+                .registerModule(new JavaTimeModule())
+                .registerModule(
+                        new SimpleModule()
+                                .addDeserializer(
+                                        SharedClaims.class,
+                                        new PiiRedactingDeserializer<>(
+                                                sensitiveFields, SharedClaims.class)));
         this.jwtVerifier = new JWTVerifier();
         this.configurationService = new ConfigurationService();
-        String encryptionKeyId = this.configurationService.getKmsEncryptionKeyId();
-        this.jwtDecrypter = new JWTDecrypter(new KMSRSADecrypter(encryptionKeyId));
+        this.jwtDecrypter =
+                new JWTDecrypter(
+                        new KMSRSADecrypter(this.configurationService.getKmsEncryptionKeyId()));
     }
 
     public SessionRequestService(
@@ -110,8 +124,8 @@ public class SessionRequestService {
             }
 
             return sessionRequest;
-        } catch (JsonProcessingException | ParseException e) {
-            throw new SessionValidationException("Could not parse request body");
+        } catch (ParseException | JsonProcessingException e) {
+            throw new SessionValidationException("Could not parse request body", e);
         }
     }
 
