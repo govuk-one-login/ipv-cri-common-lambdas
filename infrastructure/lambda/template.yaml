@@ -313,8 +313,6 @@ Resources:
       Runtime: nodejs18.x
       CodeUri: ../../lambdas
       FunctionName: !Sub "${AWS::StackName}-SessionFunctionTS"
-      # Layers:
-      #   - !Sub arn:aws:lambda:${AWS::Region}:094274105915:layer:AWSLambdaPowertoolsTypeScript:6
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-sessionTS"
@@ -360,10 +358,6 @@ Resources:
         EntryPoints:
           - src/handlers/session-handler.ts
         External:
-          # - '@aws-lambda-powertools/commons'
-          # - '@aws-lambda-powertools/logger'
-          # - '@aws-lambda-powertools/metrics'
-          # - '@aws-lambda-powertools/tracer'
           - '@aws-sdk/*'
 
   SessionFunctionTSLogGroup:
@@ -422,8 +416,6 @@ Resources:
       CodeUri: ../../lambdas
       Runtime: nodejs18.x
       FunctionName: !Sub "${AWS::StackName}-AuthorizationFunctionTS"
-      # Layers:
-        # - !Sub arn:aws:lambda:${AWS::Region}:094274105915:layer:AWSLambdaPowertoolsTypeScript:6
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-authorizationTS"
@@ -451,10 +443,6 @@ Resources:
         EntryPoints:
           - src/handlers/authorization-handler.ts
         External:
-        #   - '@aws-lambda-powertools/commons'
-        #   - '@aws-lambda-powertools/logger'
-        #   - '@aws-lambda-powertools/metrics'
-        #   - '@aws-lambda-powertools/tracer'
           - '@aws-sdk/*'
 
   AuthorizationFunctionTSLogGroup:
@@ -516,12 +504,12 @@ Resources:
       CodeUri: ../../lambdas
       Runtime: nodejs18.x
       FunctionName: !Sub "${AWS::StackName}-AccessTokenFunctionTS"
-      # Layers:
-        # - !Sub arn:aws:lambda:${AWS::Region}:094274105915:layer:AWSLambdaPowertoolsTypeScript:6
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-access-token-2"
       Policies:
+        - AWSLambdaBasicExecutionRole
+        - AWSXrayWriteOnlyAccess
         - DynamoDBReadPolicy:
             TableName:
               Ref: SessionTable
@@ -540,15 +528,11 @@ Resources:
       BuildMethod: esbuild
       BuildProperties:
         Minify: true
-        Target: "es2020"
+        Target: "node18"
         Sourcemap: true # Enabling source maps will create the required NODE_OPTIONS environment variables on your lambda function during sam build
         EntryPoints:
           - src/handlers/access-token-handler.ts
         External:
-          # - '@aws-lambda-powertools/commons'
-          # - '@aws-lambda-powertools/logger'
-          # - '@aws-lambda-powertools/metrics'
-          # - '@aws-lambda-powertools/tracer'
           - '@aws-sdk/*'
 
   AccessTokenTSFunctionLogGroup:
