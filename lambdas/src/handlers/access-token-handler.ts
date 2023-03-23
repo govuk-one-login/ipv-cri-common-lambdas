@@ -12,9 +12,11 @@ import { SSMClient } from "@aws-sdk/client-ssm";
 import { ClientConfigKey, CommonConfigKey } from "../types/config-keys";
 import { BearerAccessTokenFactory } from "../services/bearer-access-token-factory";
 import { errorPayload } from "../types/errors";
+import { Tracer } from "@aws-lambda-powertools/tracer";
 
 const logger = new Logger();
 const metrics = new Metrics();
+const _tracer = new Tracer({ captureHTTPsRequests: false });
 const dynamoDbClient = createClient(AwsClientType.DYNAMO) as DynamoDBDocument;
 const ssmClient = createClient(AwsClientType.SSM) as SSMClient;
 const configService = new ConfigService(ssmClient);
@@ -30,6 +32,7 @@ export class AccessTokenLambda implements LambdaInterface {
 
     @logger.injectLambdaContext({ clearState: true })
     @metrics.logMetrics({ throwOnEmptyMetrics: false, captureColdStartMetric: true })
+    @_tracer.captureLambdaHandler({ captureResponse: false })
     public async handler(event: APIGatewayProxyEvent, _context: unknown): Promise<APIGatewayProxyResult> {
         try {
             await initPromise;
@@ -37,7 +40,6 @@ export class AccessTokenLambda implements LambdaInterface {
 
             const requestPayload = this.requestValidator.validatePayload(event.body);
             const sessionItem = await this.sessionService.getSessionByAuthorizationCode(requestPayload.code);
-            logger.appendKeys({ govuk_signin_journey_id: sessionItem.clientSessionId });
             logger.info("Session found");
 
             if (!configService.hasClientConfig(sessionItem.clientId)) {
@@ -63,6 +65,7 @@ export class AccessTokenLambda implements LambdaInterface {
 
             logger.info("Access token created");
             metrics.addMetric(ACCESS_TOKEN, MetricUnits.Count, 1);
+            logger.appendKeys({ govuk_signin_journey_id: sessionItem.clientSessionId });
 
             return {
                 statusCode: 200,
