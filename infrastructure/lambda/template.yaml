@@ -126,6 +126,11 @@ Mappings:
       build: "https://review-d.build.account.gov.uk"
       staging: "https://review-d.staging.account.gov.uk"
       integration: "https://review-d.integration.account.gov.uk"
+    di-ipv-cri-passport-api:
+      dev: "https://review-p.dev.account.gov.uk"
+      build: "https://review-p.build.account.gov.uk"
+      staging: "https://review-p.staging.account.gov.uk"
+      integration: "https://review-p.integration.account.gov.uk"
 
   IPVCoreStubPreProdAudienceMapping:
     di-ipv-cri-address-api:
@@ -136,6 +141,8 @@ Mappings:
       production: "https://review-k.account.gov.uk"
     di-ipv-cri-dl-api:
       production: "https://review-d.account.gov.uk"
+    di-ipv-cri-passport-api:
+      production: "https://review-p.account.gov.uk"
 
   IPVCore1AudienceMapping:
     di-ipv-cri-address-api:
@@ -154,6 +161,10 @@ Mappings:
       staging: "https://review-d.staging.account.gov.uk"
       integration: "https://review-d.integration.account.gov.uk"
       production: "https://review-d.account.gov.uk"
+    di-ipv-cri-passport-api:
+      staging: "https://review-p.staging.account.gov.uk"
+      integration: "https://review-p.integration.account.gov.uk"
+      production: "https://review-p.account.gov.uk"
 
   IPVCoreStubIssuerMapping:
     Environment:
@@ -217,6 +228,10 @@ Mappings:
       staging: "https://identity.staging.account.gov.uk/credential-issuer/callback?id=drivingLicence"
       integration: "https://identity.integration.account.gov.uk/credential-issuer/callback?id=drivingLicence"
       production: "https://identity.account.gov.uk/credential-issuer/callback?id=drivingLicence"
+    di-ipv-cri-passport-api:
+      staging: "https://identity.staging.account.gov.uk/credential-issuer/callback?id=ukPassport"
+      integration: "https://identity.integration.account.gov.uk/credential-issuer/callback?id=ukPassport"
+      production: "https://identity.account.gov.uk/credential-issuer/callback?id=ukPassport"
 
   VerifiableCredentialIssuerMapping:
     di-ipv-cri-address-api:
@@ -243,6 +258,12 @@ Mappings:
       staging: "https://review-d.staging.account.gov.uk"
       integration: "https://review-d.integration.account.gov.uk"
       production: "https://review-d.account.gov.uk"
+    di-ipv-cri-passport-api:
+      dev: "https://review-p.dev.account.gov.uk"
+      build: "https://review-p.build.account.gov.uk"
+      staging: "https://review-p.staging.account.gov.uk"
+      integration: "https://review-p.integration.account.gov.uk"
+      production: "https://review-p.account.gov.uk"
 
 Resources:
   SessionFunction:
