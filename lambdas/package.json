@@ -4,9 +4,9 @@
   "description": "Common node Lambdas",
   "main": "app.js",
   "dependencies": {
-      "@aws-lambda-powertools/logger": "^1.5.0",
-      "@aws-lambda-powertools/metrics": "^1.5.0",
-      "@aws-lambda-powertools/tracer": "^1.5.1",
+      "@aws-lambda-powertools/logger": "1.7.0",
+      "@aws-lambda-powertools/metrics": "1.7.0",
+      "@aws-lambda-powertools/tracer": "1.7.0",
       "@aws-sdk/client-dynamodb": "3.150.0",
       "@aws-sdk/client-ssm": "^3.186.0",
       "@aws-sdk/lib-dynamodb": "3.150.0",
