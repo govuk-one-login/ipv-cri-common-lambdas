@@ -265,13 +265,30 @@ Mappings:
       integration: "https://review-p.integration.account.gov.uk"
       production: "https://review-p.account.gov.uk"
 
+
 Resources:
+  
+  SessionFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${SessionFunction}"
+      RetentionInDays: 30
+
+  SessionFunctionLogGroupSubscriptionFilterCSLS:
+    Type: AWS::Logs::SubscriptionFilter
+    Condition: IsNotDevEnvironment
+    Properties:
+      DestinationArn: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython"
+      FilterPattern: ""
+      LogGroupName: !Ref SessionFunctionLogGroup
+
   SessionFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ../../session
+      Handler: session-handler.lambdaHandler
+      Runtime: nodejs18.x
+      CodeUri: ../../lambdas
       FunctionName: !Sub "${AWS::StackName}-SessionFunction"
-      Handler: uk.gov.di.ipv.cri.common.api.handler.SessionHandler::handleRequest
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-session"
@@ -287,68 +304,6 @@ Resources:
             QueueName: !ImportValue AuditEventQueueName
         - KMSDecryptPolicy:
             KeyId: !ImportValue core-infrastructure-CriDecryptionKey1Id
-        - Statement:
-            - Effect: Allow
-              Action:
-                - ssm:GetParameter
-              Resource:
-                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/SessionTableName"
-                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/SessionTtl"
-                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/KBVCriAudience"
-                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/AuthRequestKmsEncryptionKeyId"
-                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/PersonIdentityTableName"
-                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/verifiable-credential/issuer"
-        - Statement:
-            - Effect: Allow
-              Action:
-                - ssm:GetParametersByPath
-              Resource:
-                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/clients/*"
-        - Statement:
-            - Sid: auditEventQueueKmsEncryptionKeyPermission
-              Effect: Allow
-              Action:
-                - 'kms:Decrypt'
-                - 'kms:GenerateDataKey'
-              Resource:
-                - !ImportValue AuditEventQueueEncryptionKeyArn
-
-  SessionFunctionLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub "/aws/lambda/${SessionFunction}"
-      RetentionInDays: 30
-
-  SessionFunctionLogGroupSubscriptionFilterCSLS:
-    Type: AWS::Logs::SubscriptionFilter
-    Condition: IsNotDevEnvironment
-    Properties:
-      DestinationArn: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython"
-      FilterPattern: ""
-      LogGroupName: !Ref SessionFunctionLogGroup
-
-  SessionFunctionTS:
-    Type: AWS::Serverless::Function
-    Properties:
-      Handler: session-handler.lambdaHandler
-      Runtime: nodejs18.x
-      CodeUri: ../../lambdas
-      FunctionName: !Sub "${AWS::StackName}-SessionFunctionTS"
-      Environment:
-        Variables:
-          POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-sessionTS"
-          SQS_AUDIT_EVENT_QUEUE_URL: !ImportValue AuditEventQueueUrl
-      Policies:
-        - AWSLambdaBasicExecutionRole
-        - AWSXrayWriteOnlyAccess
-        - DynamoDBWritePolicy:
-            TableName: !Ref SessionTable
-        - DynamoDBWritePolicy:
-            TableName: !Ref PersonIdentityTable
-        - SQSSendMessagePolicy:
-            QueueName: !ImportValue AuditEventQueueName
-        - KMSDecryptPolicy:
-            KeyId: !ImportValue core-infrastructure-CriDecryptionKey1Id
         - SSMParameterReadPolicy:
             ParameterName: !Sub "${AWS::StackName}/clients/*"
         - Statement:
@@ -370,6 +325,8 @@ Resources:
                 - 'kms:GenerateDataKey'
               Resource:
                 - !ImportValue AuditEventQueueEncryptionKeyArn
+      AutoPublishAlias: Versioned
+      VersionDescription: Changed from Java lambda to Typescript
     Metadata: # Manage esbuild properties
       BuildMethod: esbuild
       BuildProperties:
@@ -381,65 +338,22 @@ Resources:
         External:
           - '@aws-sdk/*'
 
-  SessionFunctionTSLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub "/aws/lambda/${SessionFunctionTS}"
-      RetentionInDays: 30
-  
-  SessionFunctionLogGroupSubscriptionFilterCSLSTS:
-    Type: AWS::Logs::SubscriptionFilter
-    Condition: IsNotDevEnvironment
-    Properties:
-      DestinationArn: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython"
-      FilterPattern: ""
-      LogGroupName: !Ref SessionFunctionTSLogGroup
-
-  AuthorizationFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: ../../authorization
-      FunctionName: !Sub "${AWS::StackName}-AuthorizationFunction"
-      Handler: uk.gov.di.ipv.cri.common.api.handler.AuthorizationHandler::handleRequest
-      Environment:
-        Variables:
-          POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-authorization"
-      Policies:
-        - AWSLambdaBasicExecutionRole
-        - AWSXrayWriteOnlyAccess
-        - DynamoDBReadPolicy:
-            TableName: !Ref SessionTable
-        - DynamoDBWritePolicy:
-            TableName: !Ref SessionTable
-        - Statement:
-            - Effect: Allow
-              Action:
-                - ssm:GetParameter
-              Resource:
-                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/SessionTableName"
-        - Statement:
-            - Effect: Allow
-              Action:
-                - ssm:GetParametersByPath
-              Resource:
-                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/clients/*"
-
   AuthorizationFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub "/aws/lambda/${AuthorizationFunction}"
       RetentionInDays: 30
 
-  AuthorizationFunctionTS:
+  AuthorizationFunction:
     Type: AWS::Serverless::Function
     Properties:
       Handler: authorization-handler.lambdaHandler
       CodeUri: ../../lambdas
       Runtime: nodejs18.x
-      FunctionName: !Sub "${AWS::StackName}-AuthorizationFunctionTS"
+      FunctionName: !Sub "${AWS::StackName}-AuthorizationFunction"
       Environment:
         Variables:
-          POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-authorizationTS"
+          POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-authorization"
       Policies:
         - AWSLambdaBasicExecutionRole
         - AWSXrayWriteOnlyAccess
@@ -455,6 +369,8 @@ Resources:
                 - ssm:GetParameters
               Resource:
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/SessionTableName"
+        AutoPublishAlias: Versioned
+        VersionDescription: Changed from Java lambda to Typescript
     Metadata: # Manage esbuild properties
       BuildMethod: esbuild
       BuildProperties:
@@ -466,12 +382,6 @@ Resources:
         External:
           - '@aws-sdk/*'
 
-  AuthorizationFunctionTSLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub "/aws/lambda/${AuthorizationFunctionTS}"
-      RetentionInDays: 30
-
   AuthorizationFunctionLogGroupSubscriptionFilterCSLS:
     Type: AWS::Logs::SubscriptionFilter
     Condition: IsNotDevEnvironment
@@ -480,51 +390,13 @@ Resources:
       FilterPattern: ""
       LogGroupName: !Ref AuthorizationFunctionLogGroup
 
-  AuthorizationFunctionLogGroupSubscriptionFilterCSLSTS:
-    Type: AWS::Logs::SubscriptionFilter
-    Condition: IsNotDevEnvironment
-    Properties:
-      DestinationArn: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython"
-      FilterPattern: ""
-      LogGroupName: !Ref AuthorizationFunctionTSLogGroup
-
   AccessTokenFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: ../../accesstoken
-      FunctionName: !Sub "${AWS::StackName}-AccessTokenFunction"
-      Handler: uk.gov.di.ipv.cri.common.api.handler.AccessTokenHandler::handleRequest
-      Environment:
-        Variables:
-          POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-access-token"
-      Policies:
-        - DynamoDBReadPolicy:
-            TableName:
-              Ref: SessionTable
-        - DynamoDBWritePolicy:
-            TableName:
-              Ref: SessionTable
-        - Statement:
-            - Effect: Allow
-              Action:
-                - ssm:GetParameter
-              Resource:
-                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/SessionTableName"
-                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/SessionTtl"
-        - Statement:
-            - Effect: Allow
-              Action:
-                - ssm:GetParametersByPath
-              Resource:
-                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/clients/*"
-
-  AccessTokenFunctionTS:
     Type: AWS::Serverless::Function
     Properties:
       Handler: access-token-handler.lambdaHandler
       CodeUri: ../../lambdas
       Runtime: nodejs18.x
-      FunctionName: !Sub "${AWS::StackName}-AccessTokenFunctionTS"
+      FunctionName: !Sub "${AWS::StackName}-AccessTokenFunction"
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-access-token-2"
@@ -545,6 +417,8 @@ Resources:
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/SessionTableName"
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/SessionTtl"
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/clients/*"
+        AutoPublishAlias: Versioned
+        VersionDescription: Changed from Java lambda to Typescript
     Metadata: # Manage esbuild properties
       BuildMethod: esbuild
       BuildProperties:
@@ -555,19 +429,6 @@ Resources:
           - src/handlers/access-token-handler.ts
         External:
           - '@aws-sdk/*'
-
-  AccessTokenTSFunctionLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub "/aws/lambda/${AccessTokenFunctionTS}"
-      RetentionInDays: 30
-
-  AccessTokenTSPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      Action: lambda:InvokeFunction
-      FunctionName: !GetAtt AccessTokenFunctionTS.Arn
-      Principal: apigateway.amazonaws.com
 
   AccessTokenFunctionLogGroup:
     Type: AWS::Logs::LogGroup
@@ -582,14 +443,6 @@ Resources:
       DestinationArn: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython"
       FilterPattern: ""
       LogGroupName: !Ref AccessTokenFunctionLogGroup
-
-  AccessTokenFunctionLogGroupSubscriptionFilterCSLSTS:
-    Type: AWS::Logs::SubscriptionFilter
-    Condition: IsNotDevEnvironment
-    Properties:
-      DestinationArn: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython"
-      FilterPattern: ""
-      LogGroupName: !Ref AccessTokenTSFunctionLogGroup
 
   SessionTable:
     Type: "AWS::DynamoDB::Table"
@@ -822,13 +675,6 @@ Resources:
       FunctionName: !GetAtt SessionFunction.Arn
       Principal: apigateway.amazonaws.com
 
-  SessionFunctionTSPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      Action: lambda:InvokeFunction
-      FunctionName: !GetAtt SessionFunctionTS.Arn
-      Principal: apigateway.amazonaws.com
-
   AccessTokenFunctionPermission:
     Type: AWS::Lambda::Permission
     Properties:
@@ -841,13 +687,6 @@ Resources:
     Properties:
       Action: lambda:InvokeFunction
       FunctionName: !GetAtt AuthorizationFunction.Arn
-      Principal: apigateway.amazonaws.com
-
-  AuthorizationFunctionTSPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      Action: lambda:InvokeFunction
-      FunctionName: !GetAtt AuthorizationFunctionTS.Arn
       Principal: apigateway.amazonaws.com
 
   LoggingKmsKey:
