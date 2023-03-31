@@ -8,8 +8,8 @@ import com.nimbusds.oauth2.sdk.AuthorizationCode;
 import com.nimbusds.oauth2.sdk.AuthorizationSuccessResponse;
 import com.nimbusds.oauth2.sdk.ParseException;
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest;
-import org.apache.logging.log4j.Level;
 import software.amazon.awssdk.http.HttpStatusCode;
+import software.amazon.awssdk.utils.StringUtils;
 import software.amazon.lambda.powertools.logging.CorrelationIdPathConstants;
 import software.amazon.lambda.powertools.logging.Logging;
 import software.amazon.lambda.powertools.metrics.Metrics;
@@ -29,12 +29,14 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.apache.logging.log4j.Level.ERROR;
+import static org.apache.logging.log4j.Level.INFO;
 
 public class AuthorizationHandler
         implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
 
     private static final String HEADER_SESSION_ID = "session-id";
     public static final String EVENT_AUTHORIZATION_SENT = "authorization_sent";
+    public static final String EVENT_NO_AUTHORIZATION_CODE = "no_authorization_code";
     private final SessionService sessionService;
     private final EventProbe eventProbe;
     private final AuthorizationValidatorService authorizationValidatorService;
@@ -68,9 +70,21 @@ public class AuthorizationHandler
             SessionItem sessionItem = sessionService.getSession(sessionId);
             eventProbe
                     .addJourneyIdToLoggingContext(sessionItem.getClientSessionId())
-                    .log(Level.INFO, "found session");
+                    .log(INFO, "found session");
             // validate
             authorizationValidatorService.validate(authenticationRequest, sessionItem);
+
+            // Return access denied if there is no authcode found
+            if (StringUtils.isBlank(sessionItem.getAuthorizationCode())) {
+
+                eventProbe
+                        .log(INFO, "No Auth Code retrieved returning Oauth access_denied")
+                        .counterMetric(EVENT_NO_AUTHORIZATION_CODE);
+
+                return ApiGatewayResponseGenerator.proxyJsonResponse(
+                        HttpStatusCode.FORBIDDEN, OauthErrorResponse.ACCESS_DENIED_ERROR);
+            }
+
             AuthorizationSuccessResponse authorizationSuccessResponse =
                     new AuthorizationSuccessResponse(
                             authenticationRequest.getRedirectionURI(),
