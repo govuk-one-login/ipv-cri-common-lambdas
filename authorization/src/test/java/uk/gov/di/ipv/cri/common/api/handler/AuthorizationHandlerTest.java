@@ -32,12 +32,16 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class AuthorizationHandlerTest {
     private static final String FOUND_SESSION_LOG_MESSAGE = "found session";
+    private static final String NO_AUTH_CODE_LOG_MESSAGE =
+            "No Auth Code retrieved returning Oauth access_denied";
     private static final String SESSION_ID = UUID.randomUUID().toString();
 
     private final ObjectMapper objectMapper =
@@ -152,5 +156,54 @@ class AuthorizationHandlerTest {
         verify(mockSessionService).getSession(SESSION_ID);
         verify(mockEventProbe).log(Level.INFO, FOUND_SESSION_LOG_MESSAGE);
         verify(mockEventProbe).log(eq(Level.ERROR), any(SessionValidationException.class));
+    }
+
+    @Test
+    void shouldReturn403AndOAuthAccessDeniedWhenNoAuthCode() throws JsonProcessingException {
+        String code = "access_denied";
+        String message = "Authorization permission denied";
+
+        String redirectUri = "https://example.com";
+        String state = "state-ipv";
+        Map<String, String> params = new HashMap<>();
+        params.put("redirect_uri", redirectUri);
+        params.put("client_id", "ipv-core");
+        params.put("response_type", "code");
+        params.put("scope", "openid");
+        params.put("state", state);
+        when(apiGatewayProxyRequestEvent.getQueryStringParameters()).thenReturn(params);
+
+        when(apiGatewayProxyRequestEvent.getHeaders()).thenReturn(Map.of("session-id", SESSION_ID));
+
+        SessionItem mockSessionItem = mock(SessionItem.class);
+        when(mockSessionItem.getAuthorizationCode()).thenReturn(null); // No AuthCode in Session
+        when(mockSessionItem.getClientSessionId()).thenReturn(SESSION_ID);
+
+        when(mockSessionService.getSession(SESSION_ID)).thenReturn(mockSessionItem);
+
+        when(mockEventProbe.addJourneyIdToLoggingContext(SESSION_ID)).thenReturn(mockEventProbe);
+        when(mockEventProbe.log(Level.INFO, FOUND_SESSION_LOG_MESSAGE)).thenReturn(mockEventProbe);
+
+        when(mockEventProbe.log(Level.INFO, NO_AUTH_CODE_LOG_MESSAGE)).thenReturn(mockEventProbe);
+        when(mockEventProbe.counterMetric(anyString())).thenReturn(mockEventProbe);
+
+        APIGatewayProxyResponseEvent responseEvent =
+                authorizationHandler.handleRequest(apiGatewayProxyRequestEvent, null);
+        assertNotNull(responseEvent.getBody());
+        assertEquals(403, responseEvent.getStatusCode()); // 403 Forbidden
+
+        JsonNode node = objectMapper.readTree(responseEvent.getBody());
+
+        assertEquals(code, node.get("code").textValue());
+        assertEquals(message, node.get("message").textValue());
+
+        verify(mockSessionService).getSession(SESSION_ID);
+        verify(mockAuthorizationValidatorService)
+                .validate(any(AuthenticationRequest.class), eq(mockSessionItem));
+        verify(mockEventProbe).addJourneyIdToLoggingContext(SESSION_ID);
+        verify(mockEventProbe).log(Level.INFO, FOUND_SESSION_LOG_MESSAGE);
+        verify(mockEventProbe).log(Level.INFO, NO_AUTH_CODE_LOG_MESSAGE);
+        verify(mockEventProbe, times(1)).counterMetric(anyString());
+        verify(mockEventProbe, never()).auditEvent(any());
     }
 }
