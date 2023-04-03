@@ -54,6 +54,9 @@ Conditions:
     - dev
   IsNotDevEnvironment: !Not
     - Condition: IsDevEnvironment
+  IsDevPlatformDeploy: !Equals
+    - !FindInMap [ CriVpcMapping, !Ref CriIdentifier, !Ref Environment ]
+    - "di-devplatform-deploy"
   UsePermissionsBoundary:
     Fn::Not:
       - Fn::Equals:
@@ -62,9 +65,14 @@ Conditions:
 Globals:
   Function:
     VpcConfig:
-      SecurityGroupIds:
-        - !ImportValue cri-vpc-LambdaSecurityGroup
-      SubnetIds: !Split [ ",", !ImportValue cri-vpc-PrivateSubnets ]
+      SecurityGroupIds: !If
+        - IsDevPlatformDeploy
+        - [ !ImportValue cri-vpc-AWSServicesEndpointSecurityGroupId ]
+        - [ !ImportValue cri-vpc-LambdaSecurityGroup ]
+      SubnetIds: !If
+        - IsDevPlatformDeploy
+        - [ !ImportValue cri-vpc-PrivateSubnetIdA, !ImportValue cri-vpc-PrivateSubnetIdB, !ImportValue cri-vpc-PrivateSubnetIdC ]
+        - !Split [ ",", !ImportValue cri-vpc-PrivateSubnets ]
     PermissionsBoundary: !If
       - UsePermissionsBoundary
       - !Ref PermissionsBoundary
@@ -104,6 +112,37 @@ Mappings:
       staging: 7200 # 2 hours
       integration: 7200 # 2 hours
       production: 7200 # 2 hours
+
+  CriVpcMapping:
+    di-ipv-cri-address-api:
+      dev: "di-ipv-cri-pipeline-deployment"
+      build: "di-ipv-cri-pipeline-deployment"
+      staging: "di-ipv-cri-pipeline-deployment"
+      integration: "di-ipv-cri-pipeline-deployment"
+      production: "di-ipv-cri-pipeline-deployment"
+    di-ipv-cri-fraud-api:
+      dev: "di-ipv-cri-pipeline-deployment"
+      build: "di-ipv-cri-pipeline-deployment"
+      staging: "di-ipv-cri-pipeline-deployment"
+      integration: "di-ipv-cri-pipeline-deployment"
+      production: "di-ipv-cri-pipeline-deployment"
+    di-ipv-cri-kbv-api:
+      dev: "di-ipv-cri-pipeline-deployment"
+      build: "di-ipv-cri-pipeline-deployment"
+      staging: "di-ipv-cri-pipeline-deployment"
+      integration: "di-ipv-cri-pipeline-deployment"
+      production: "di-ipv-cri-pipeline-deployment"
+    di-ipv-cri-dl-api:
+      dev: "di-ipv-cri-pipeline-deployment"
+      build: "di-ipv-cri-pipeline-deployment"
+      staging: "di-ipv-cri-pipeline-deployment"
+      integration: "di-ipv-cri-pipeline-deployment"
+      production: "di-ipv-cri-pipeline-deployment"
+    di-ipv-cri-passport-api:
+      dev: "di-ipv-cri-pipeline-deployment" # cri-dev
+      build: "di-devplatform-deploy"
+      staging: "di-devplatform-deploy"
+      integration: "di-devplatform-deploy"
 
   IPVCoreStubAudienceMapping:
     di-ipv-cri-address-api:
