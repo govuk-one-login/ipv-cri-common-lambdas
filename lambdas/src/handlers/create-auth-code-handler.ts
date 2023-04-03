@@ -8,7 +8,7 @@ import { ConfigService } from "../common/config/config-service";
 import { getSessionId } from "../common/utils/request-utils";
 import { CommonConfigKey } from "../types/config-keys";
 import { Logger } from "@aws-lambda-powertools/logger";
-import { errorPayload } from "../types/errors";
+import { errorPayload } from "../common/utils/errors";
 
 const dynamoDbClient = createClient(AwsClientType.DYNAMO) as DynamoDBDocument;
 const ssmClient = createClient(AwsClientType.SSM) as SSMClient;

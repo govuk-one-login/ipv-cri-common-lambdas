@@ -1,7 +1,7 @@
 import { base64url } from "jose";
 import { CipherGCMTypes, createDecipheriv, KeyObject } from "crypto";
 import { DecryptCommand, EncryptionAlgorithmSpec, KMSClient } from "@aws-sdk/client-kms";
-import { JweDecrypterError } from "../../types/errors";
+import { JweDecrypterError } from "../../common/utils/errors";
 
 export class JweDecrypter {
     private kmsEncryptionKeyId: string | undefined;

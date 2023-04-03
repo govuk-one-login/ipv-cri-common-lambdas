@@ -1,26 +1,27 @@
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
-import { LambdaInterface } from "@aws-lambda-powertools/commons";
-import { Metrics, MetricUnits } from "@aws-lambda-powertools/metrics";
-import { Logger } from "@aws-lambda-powertools/logger";
+import middy from "@middy/core";
+import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from "aws-lambda";
 import { SessionService } from "../services/session-service";
-import { ConfigService } from "../common/config/config-service";
 import { AccessTokenRequestValidator } from "../services/token-request-validator";
 import { JwtVerifierFactory } from "../common/security/jwt-verifier";
+import { ClientConfigKey } from "../types/config-keys";
+import { BearerAccessTokenFactory } from "../services/bearer-access-token-factory";
+import { errorPayload } from "../common/utils/errors";
+import { SessionItem } from "../types/session-item";
+import accessTokenValidatorMiddleware from "../middlewares/access-token/validate-event-payload-middleware";
+import configurationInitMiddleware, { configService } from "../middlewares/config/configuration-init-middleware";
 import { AwsClientType, createClient } from "../common/aws-client-factory";
 import { DynamoDBDocument } from "@aws-sdk/lib-dynamodb";
-import { SSMClient } from "@aws-sdk/client-ssm";
-import { ClientConfigKey, CommonConfigKey } from "../types/config-keys";
-import { BearerAccessTokenFactory } from "../services/bearer-access-token-factory";
-import { errorPayload } from "../types/errors";
-import { Tracer } from "@aws-lambda-powertools/tracer";
-
-const logger = new Logger();
-const metrics = new Metrics();
-const _tracer = new Tracer({ captureHTTPsRequests: false });
+import setGovUkSigningJourneyIdMiddleware from "../middlewares/session/set-gov-uk-signing-journey-id-middleware";
+import { LambdaInterface } from "@aws-lambda-powertools/commons";
+import getSessionByAuthCodeMiddleware from "../middlewares/session/get-session-by-auth-code-middleware";
+import { logger, metrics, tracer as _tracer } from "../common/utils/power-tool";
+import { MetricUnits } from "@aws-lambda-powertools/metrics";
+import { injectLambdaContext } from "@aws-lambda-powertools/logger/lib/middleware/middy";
+import { RequestPayload } from "../types/request_payload";
+import getSessionById from "../middlewares/session/get-session-by-id";
+import errorMiddleware from "../middlewares/error/error-middleware";
 const dynamoDbClient = createClient(AwsClientType.DYNAMO) as DynamoDBDocument;
-const ssmClient = createClient(AwsClientType.SSM) as SSMClient;
-const configService = new ConfigService(ssmClient);
-const initPromise = configService.init([CommonConfigKey.SESSION_TABLE_NAME, CommonConfigKey.SESSION_TTL]);
+
 const ACCESS_TOKEN = "accesstoken";
 
 export class AccessTokenLambda implements LambdaInterface {
@@ -29,30 +30,27 @@ export class AccessTokenLambda implements LambdaInterface {
         private readonly sessionService: SessionService,
         private readonly requestValidator: AccessTokenRequestValidator,
     ) {}
-
-    @logger.injectLambdaContext({ clearState: true })
     @metrics.logMetrics({ throwOnEmptyMetrics: false, captureColdStartMetric: true })
     @_tracer.captureLambdaHandler({ captureResponse: false })
-    public async handler(event: APIGatewayProxyEvent, _context: unknown): Promise<APIGatewayProxyResult> {
+    public async handler(event: APIGatewayProxyEvent, _context: Context): Promise<APIGatewayProxyResult> {
         try {
-            await initPromise;
             logger.info("Access Token Lambda triggered");
-
-            const requestPayload = this.requestValidator.validatePayload(event.body);
-            const sessionItem = await this.sessionService.getSessionByAuthorizationCode(requestPayload.code);
-            logger.info("Session found");
+            const eventBody = event.body;
+            const sessionItem = eventBody as unknown as SessionItem;
+            const requestPayload = eventBody as unknown as RequestPayload;
 
             if (!configService.hasClientConfig(sessionItem.clientId)) {
                 await this.initClientConfig(sessionItem.clientId);
             }
             const clientConfig = configService.getClientConfig(sessionItem.clientId);
+
             this.requestValidator.validateTokenRequestToRecord(
-                requestPayload.code,
+                requestPayload.code as string,
                 sessionItem,
                 clientConfig.get(ClientConfigKey.JWT_REDIRECT_URI) as string,
             );
-            logger.info("Token request validated");
 
+            logger.info("Token request validated");
             await this.requestValidator.verifyJwtSignature(
                 requestPayload.client_assertion,
                 sessionItem.clientId,
@@ -85,10 +83,23 @@ export class AccessTokenLambda implements LambdaInterface {
         ]);
     }
 }
-
+const jwtVerifierFactory = new JwtVerifierFactory(logger);
+const sessionService = new SessionService(dynamoDbClient, configService);
+const accessTokenValidator = new AccessTokenRequestValidator(jwtVerifierFactory);
 const handlerClass = new AccessTokenLambda(
     new BearerAccessTokenFactory(configService.getBearerAccessTokenTtl()),
-    new SessionService(dynamoDbClient, configService),
-    new AccessTokenRequestValidator(new JwtVerifierFactory(logger)),
+    sessionService,
+    accessTokenValidator,
 );
-export const lambdaHandler = handlerClass.handler.bind(handlerClass);
+export const lambdaHandler = middy(handlerClass.handler.bind(handlerClass))
+    .use(errorMiddleware(logger, metrics, { metric_name: ACCESS_TOKEN, message: "Access Token Lambda error occurred" }))
+    .use(injectLambdaContext(logger, { clearState: true }))
+    .use(configurationInitMiddleware())
+    .use(
+        accessTokenValidatorMiddleware({
+            requestValidator: accessTokenValidator,
+        }),
+    )
+    .use(getSessionByAuthCodeMiddleware({ sessionService: sessionService }))
+    .use(getSessionById({ sessionService: sessionService }))
+    .use(setGovUkSigningJourneyIdMiddleware(logger));

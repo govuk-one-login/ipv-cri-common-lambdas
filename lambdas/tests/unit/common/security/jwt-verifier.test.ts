@@ -55,7 +55,7 @@ describe("jwt-verifier.ts", () => {
             it("should succeed with a JWT that has signing key in config but not in JWK", async () => {
                 delete signingPublicJwk.alg;
                 jwtVerifierConfig.jwtSigningAlgorithm = "ECDSA";
-                const untypedJwtVerifyOptions = jwtVerifyOptions as any;
+                const untypedJwtVerifyOptions = jwtVerifyOptions as unknown as { algorithms: Array<string> };
                 untypedJwtVerifyOptions.algorithms = ["ECDSA"];
 
                 const encodedJwt = Buffer.from("example.encoded.jwt");

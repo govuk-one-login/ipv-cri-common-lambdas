@@ -8,7 +8,7 @@ import {
     InvalidAccessTokenError,
     SessionExpiredError,
     SessionNotFoundError,
-} from "../types/errors";
+} from "../common/utils/errors";
 import { SessionRequestSummary } from "../types/session-request-summary";
 import { CommonConfigKey } from "../types/config-keys";
 
@@ -23,7 +23,7 @@ export class SessionService {
             },
         });
         const result = await this.dynamoDbClient.send(getSessionCommand);
-        if (!result.Item) {
+        if (!result || !result?.Item) {
             throw new SessionNotFoundError(`Could not find session item with id: ${sessionId}`);
         }
         return result.Item as SessionItem;
