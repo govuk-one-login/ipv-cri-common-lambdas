@@ -1,6 +1,6 @@
 import { APIGatewayProxyEvent, APIGatewayProxyEventHeaders } from "aws-lambda";
 import { getClientIpAddress, getSessionId } from "../../../../src/common/utils/request-utils";
-import { InvalidRequestError } from "../../../../src/types/errors";
+import { InvalidRequestError } from "../../../../src/common/utils/errors";
 
 describe("request-utils", () => {
     describe("getClientIpAddress", () => {

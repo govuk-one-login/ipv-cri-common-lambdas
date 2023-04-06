@@ -2,7 +2,7 @@ import { SessionService } from "../../../src/services/session-service";
 import { ConfigService } from "../../../src/common/config/config-service";
 import { SSMClient } from "@aws-sdk/client-ssm";
 import { DynamoDBDocument, GetCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
-import { InvalidAccessTokenError, SessionNotFoundError } from "../../../src/types/errors";
+import { InvalidAccessTokenError, SessionNotFoundError } from "../../../src/common/utils/errors";
 import { SessionItem } from "../../../src/types/session-item";
 
 jest.mock("@aws-sdk/lib-dynamodb", () => {
