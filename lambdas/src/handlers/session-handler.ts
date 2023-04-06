@@ -1,7 +1,7 @@
+import middy from "@middy/core";
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { LambdaInterface } from "@aws-lambda-powertools/commons";
 import { MetricUnits } from "@aws-lambda-powertools/metrics";
-import { ConfigService } from "../common/config/config-service";
 import { ClientConfigKey, CommonConfigKey } from "../types/config-keys";
 import { SessionService } from "../services/session-service";
 import { JweDecrypter } from "../services/security/jwe-decrypter";
@@ -13,27 +13,20 @@ import { AuditEventType } from "../types/audit-event";
 import { SessionRequestSummary } from "../types/session-request-summary";
 import { JWTPayload } from "jose";
 import { DynamoDBDocument } from "@aws-sdk/lib-dynamodb";
-import { SSMClient } from "@aws-sdk/client-ssm";
 import { SQSClient } from "@aws-sdk/client-sqs";
 import { AwsClientType, createClient } from "../common/aws-client-factory";
 import { getClientIpAddress } from "../common/utils/request-utils";
 import { KMSClient } from "@aws-sdk/client-kms";
 import { errorPayload } from "../common/utils/errors";
 import { logger, metrics, tracer as _tracer } from "../common/utils/power-tool";
+import errorMiddleware from "../middlewares/error/error-middleware";
+import { injectLambdaContext } from "@aws-lambda-powertools/logger/lib/middleware/middy";
+import initialiseConfigMiddleware, { configService } from "../middlewares/config/initialise-config-middleware";
 
 const dynamoDbClient = createClient(AwsClientType.DYNAMO) as DynamoDBDocument;
-const ssmClient = createClient(AwsClientType.SSM) as SSMClient;
 const sqsClient = createClient(AwsClientType.SQS) as SQSClient;
 const kmsClient = createClient(AwsClientType.KMS) as KMSClient;
 
-const configService = new ConfigService(ssmClient);
-const configInitPromise = configService.init([
-    CommonConfigKey.SESSION_TABLE_NAME,
-    CommonConfigKey.SESSION_TTL,
-    CommonConfigKey.PERSON_IDENTITY_TABLE_NAME,
-    CommonConfigKey.DECRYPTION_KEY_ID,
-    CommonConfigKey.VC_ISSUER,
-]);
 const SESSION_CREATED_METRIC = "session_created";
 
 export class SessionLambda implements LambdaInterface {
@@ -46,7 +39,6 @@ export class SessionLambda implements LambdaInterface {
     ) {}
 
     @_tracer.captureLambdaHandler({ captureResponse: false })
-    @logger.injectLambdaContext({ clearState: true })
     @metrics.logMetrics({ throwOnEmptyMetrics: false, captureColdStartMetric: true })
     public async handler(event: APIGatewayProxyEvent, _context: unknown): Promise<APIGatewayProxyResult> {
         try {
@@ -56,7 +48,6 @@ export class SessionLambda implements LambdaInterface {
             const requestBodyClientId = deserialisedRequestBody.client_id;
             const clientIpAddress = getClientIpAddress(event);
 
-            await configInitPromise;
             if (!configService.hasClientConfig(requestBodyClientId)) {
                 await this.initClientConfig(requestBodyClientId);
             }
@@ -148,4 +139,16 @@ const handlerClass = new SessionLambda(
     new JweDecrypter(kmsClient, () => configService.getConfigEntry(CommonConfigKey.DECRYPTION_KEY_ID)),
     new AuditService(() => configService.getAuditConfig(), sqsClient),
 );
-export const lambdaHandler = handlerClass.handler.bind(handlerClass);
+export const lambdaHandler = middy(handlerClass.handler.bind(handlerClass))
+.use(errorMiddleware(logger, metrics, { metric_name: SESSION_CREATED_METRIC, message: "Session Lambda error occurred" }))
+.use(injectLambdaContext(logger, { clearState: true }))
+.use(initialiseConfigMiddleware({ config_keys: [
+    CommonConfigKey.SESSION_TABLE_NAME,
+    CommonConfigKey.SESSION_TTL,
+    CommonConfigKey.PERSON_IDENTITY_TABLE_NAME,
+    CommonConfigKey.DECRYPTION_KEY_ID,
+    CommonConfigKey.VC_ISSUER,
+]}))
+
+
+

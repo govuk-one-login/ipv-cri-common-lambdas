@@ -3,7 +3,7 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from "aws-lambda
 import { SessionService } from "../services/session-service";
 import { AccessTokenRequestValidator } from "../services/token-request-validator";
 import { JwtVerifierFactory } from "../common/security/jwt-verifier";
-import { ClientConfigKey } from "../types/config-keys";
+import { ClientConfigKey, CommonConfigKey } from "../types/config-keys";
 import { BearerAccessTokenFactory } from "../services/bearer-access-token-factory";
 import { errorPayload } from "../common/utils/errors";
 import { SessionItem } from "../types/session-item";
@@ -93,7 +93,7 @@ const handlerClass = new AccessTokenLambda(
 export const lambdaHandler = middy(handlerClass.handler.bind(handlerClass))
     .use(errorMiddleware(logger, metrics, { metric_name: ACCESS_TOKEN, message: "Access Token Lambda error occurred" }))
     .use(injectLambdaContext(logger, { clearState: true }))
-    .use(initialiseConfigMiddleware())
+    .use(initialiseConfigMiddleware({ config_keys : [CommonConfigKey.SESSION_TABLE_NAME, CommonConfigKey.SESSION_TTL]}))
     .use(
         accessTokenValidatorMiddleware({
             requestValidator: accessTokenValidator,
