@@ -15,7 +15,7 @@ import { BearerAccessTokenFactory } from "../../../src/services/bearer-access-to
 import { SSMClient } from "@aws-sdk/client-ssm";
 import { InvalidRequestError, ServerError } from "../../../src/common/utils/errors";
 import errorMiddleware from "../../../src/middlewares/error/error-middleware";
-import configurationInitMiddleware from "../../../src/middlewares/config/configuration-init-middleware";
+import initialiseConfigMiddleware from "../../../src/middlewares/config/initialise-config-middleware";
 import getSessionByAuthCodeMiddleware from "../../../src/middlewares/session/get-session-by-auth-code-middleware";
 import getSessionById from "../../../src/middlewares/session/get-session-by-id";
 import setGovUkSigningJourneyIdMiddleware from "../../../src/middlewares/session/set-gov-uk-signing-journey-id-middleware";
@@ -83,7 +83,7 @@ describe("access-token-handler.ts", () => {
                 }),
             )
             .use(injectLambdaContext(logger, { clearState: true }))
-            .use(configurationInitMiddleware())
+            .use(initialiseConfigMiddleware())
             .use(
                 validateEventPayloadMiddleware({
                     requestValidator: accessTokenRequestValidator,
