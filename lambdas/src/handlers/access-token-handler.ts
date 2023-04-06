@@ -63,7 +63,6 @@ export class AccessTokenLambda implements LambdaInterface {
 
             logger.info("Access token created");
             metrics.addMetric(ACCESS_TOKEN, MetricUnits.Count, 1);
-            logger.appendKeys({ govuk_signin_journey_id: sessionItem.clientSessionId });
 
             return {
                 statusCode: 200,

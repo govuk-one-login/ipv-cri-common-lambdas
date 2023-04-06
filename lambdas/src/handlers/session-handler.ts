@@ -90,7 +90,7 @@ export class SessionLambda implements LambdaInterface {
 
             metrics.addDimension("issuer", requestBodyClientId);
             metrics.addMetric(SESSION_CREATED_METRIC, MetricUnits.Count, 1);
-            logger.appendKeys({ govuk_signin_journey_id: sessionId });
+            logger.appendKeys({ govuk_signin_journey_id: sessionRequestSummary.clientSessionId });
 
             return {
                 statusCode: 201,
