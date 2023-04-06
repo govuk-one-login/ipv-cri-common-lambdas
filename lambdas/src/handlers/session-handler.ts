@@ -45,6 +45,7 @@ export class SessionLambda implements LambdaInterface {
             const deserialisedRequestBody = JSON.parse(event.body as string);
             logger.info("Session lambda triggered");
 
+            console.dir(deserialisedRequestBody);
             const requestBodyClientId = deserialisedRequestBody.client_id;
             const clientIpAddress = getClientIpAddress(event);
 
@@ -55,10 +56,10 @@ export class SessionLambda implements LambdaInterface {
             const criClientConfig = configService.getClientConfig(requestBodyClientId) as Map<string, string>;
             const sessionRequestValidator = this.sessionRequestValidatorFactory.create(criClientConfig);
 
-            const decryptedJwt = await this.jweDecrypter.decryptJwe(deserialisedRequestBody.request);
-            logger.info("JWE decrypted");
+            //const decryptedJwt = //await this.jweDecrypter.decryptJwe(deserialisedRequestBody.request);
+            //logger.info("JWE decrypted");
 
-            const jwtPayload = await sessionRequestValidator.validateJwt(decryptedJwt, requestBodyClientId);
+            const jwtPayload = await sessionRequestValidator.validateJwt(deserialisedRequestBody as Buffer, requestBodyClientId);
             logger.info("JWT validated");
 
             const sessionRequestSummary = this.createSessionRequestSummary(jwtPayload, clientIpAddress);
@@ -148,7 +149,7 @@ export const lambdaHandler = middy(handlerClass.handler.bind(handlerClass))
     CommonConfigKey.PERSON_IDENTITY_TABLE_NAME,
     CommonConfigKey.DECRYPTION_KEY_ID,
     CommonConfigKey.VC_ISSUER,
-]}))
+]}));
 
 
 
