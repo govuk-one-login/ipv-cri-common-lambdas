@@ -1,8 +1,6 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { LambdaInterface } from "@aws-lambda-powertools/commons";
-import { Metrics, MetricUnits } from "@aws-lambda-powertools/metrics";
-import { Tracer } from "@aws-lambda-powertools/tracer";
-import { Logger } from "@aws-lambda-powertools/logger";
+import { MetricUnits } from "@aws-lambda-powertools/metrics";
 import { ConfigService } from "../common/config/config-service";
 import { ClientConfigKey, CommonConfigKey } from "../types/config-keys";
 import { SessionService } from "../services/session-service";
@@ -21,15 +19,13 @@ import { AwsClientType, createClient } from "../common/aws-client-factory";
 import { getClientIpAddress } from "../common/utils/request-utils";
 import { KMSClient } from "@aws-sdk/client-kms";
 import { errorPayload } from "../common/utils/errors";
+import { logger, metrics, tracer as _tracer } from "../common/utils/power-tool";
 
 const dynamoDbClient = createClient(AwsClientType.DYNAMO) as DynamoDBDocument;
 const ssmClient = createClient(AwsClientType.SSM) as SSMClient;
 const sqsClient = createClient(AwsClientType.SQS) as SQSClient;
 const kmsClient = createClient(AwsClientType.KMS) as KMSClient;
 
-const logger = new Logger();
-const metrics = new Metrics();
-const _tracer = new Tracer({ captureHTTPsRequests: false });
 const configService = new ConfigService(ssmClient);
 const configInitPromise = configService.init([
     CommonConfigKey.SESSION_TABLE_NAME,
