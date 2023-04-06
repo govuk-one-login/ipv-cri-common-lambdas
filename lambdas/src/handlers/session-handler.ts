@@ -20,7 +20,7 @@ import { SQSClient } from "@aws-sdk/client-sqs";
 import { AwsClientType, createClient } from "../common/aws-client-factory";
 import { getClientIpAddress } from "../common/utils/request-utils";
 import { KMSClient } from "@aws-sdk/client-kms";
-import { errorPayload } from "../types/errors";
+import { errorPayload } from "../common/utils/errors";
 
 const dynamoDbClient = createClient(AwsClientType.DYNAMO) as DynamoDBDocument;
 const ssmClient = createClient(AwsClientType.SSM) as SSMClient;

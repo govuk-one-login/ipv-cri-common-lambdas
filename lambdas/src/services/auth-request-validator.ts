@@ -1,5 +1,5 @@
 import { APIGatewayProxyEventQueryStringParameters } from "aws-lambda/trigger/api-gateway-proxy";
-import { SessionValidationError } from "../types/errors";
+import { SessionValidationError } from "../common/utils/errors";
 
 export class AuthorizationRequestValidator {
     validate(

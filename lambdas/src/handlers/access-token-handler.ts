@@ -6,6 +6,8 @@ import { SessionService } from "../services/session-service";
 import { ConfigService } from "../common/config/config-service";
 import { AccessTokenRequestValidator } from "../services/token-request-validator";
 import { JwtVerifierFactory } from "../common/security/jwt-verifier";
+import { errorPayload } from "../common/utils/errors";
+import { SessionItem } from "../types/session-item";
 import { AwsClientType, createClient } from "../common/aws-client-factory";
 import { DynamoDBDocument } from "@aws-sdk/lib-dynamodb";
 import { SSMClient } from "@aws-sdk/client-ssm";

@@ -1,7 +1,7 @@
 import { AccessTokenRequestValidator } from "../../../src/services/token-request-validator";
 import { JwtVerifierFactory } from "../../../src/common/security/jwt-verifier";
 import { SessionItem } from "../../../src/types/session-item";
-import { InvalidPayloadError } from "../../../src/types/errors";
+import { InvalidPayloadError } from "../../../src/common/utils/errors";
 
 describe("token-request-validator.ts", () => {
     let accessTokenRequestValidator: AccessTokenRequestValidator;

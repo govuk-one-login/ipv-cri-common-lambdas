@@ -1,5 +1,5 @@
 import { SessionItem } from "../types/session-item";
-import { InvalidAccessTokenError, InvalidPayloadError, InvalidRequestError } from "../types/errors";
+import { InvalidAccessTokenError, InvalidPayloadError, InvalidRequestError } from "../common/utils/errors";
 import { RequestPayload } from "../types/request_payload";
 import { JwtVerifier, JwtVerifierFactory } from "../common/security/jwt-verifier";
 import { ClientConfigKey } from "../types/config-keys";

@@ -1,7 +1,7 @@
 import { Logger } from "@aws-lambda-powertools/logger";
 // Implementation of ErrorResponse.java in di-ipv-cri-lib
 
-interface ErrorResponse {
+export interface ErrorResponse {
     statusCode: number;
     body: string;
 }
