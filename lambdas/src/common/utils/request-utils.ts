@@ -8,7 +8,7 @@ const getHeaderValue = (event: APIGatewayProxyEvent, desiredHeader: string) => {
     );
     const matchingHeadersLength =
         matchingHeaders[0] && (event?.multiValueHeaders[matchingHeaders[0]]?.length as number);
-    if (matchingHeadersLength > 1) {
+    if (+matchingHeadersLength > 1) {
         throw new InvalidRequestError(
             `Unexpected quantity of ${desiredHeader} headers encountered: ${matchingHeadersLength}`,
         );
