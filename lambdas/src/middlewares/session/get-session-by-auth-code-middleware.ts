@@ -12,6 +12,7 @@ const getSessionByAuthCodeMiddleware = (opts: { sessionService: SessionService }
         const requestPayload = request.event.body as RequestPayload;
         const sessionItem = await options.sessionService.getSessionByAuthorizationCode(requestPayload.code);
         request.event = {
+            ...request.event,
             body: {
                 ...sessionItem,
                 ...requestPayload,
