@@ -8,7 +8,7 @@ import { BearerAccessTokenFactory } from "../services/bearer-access-token-factor
 import { errorPayload } from "../common/utils/errors";
 import { SessionItem } from "../types/session-item";
 import accessTokenValidatorMiddleware from "../middlewares/access-token/validate-event-payload-middleware";
-import initialiseConfigMiddleware, { configService } from "../middlewares/config/initialise-config-middleware";
+import initialiseConfigMiddleware from "../middlewares/config/initialise-config-middleware";
 import { AwsClientType, createClient } from "../common/aws-client-factory";
 import { DynamoDBDocument } from "@aws-sdk/lib-dynamodb";
 import setGovUkSigningJourneyIdMiddleware from "../middlewares/session/set-gov-uk-signing-journey-id-middleware";
@@ -20,8 +20,10 @@ import { injectLambdaContext } from "@aws-lambda-powertools/logger/lib/middlewar
 import { RequestPayload } from "../types/request_payload";
 import getSessionById from "../middlewares/session/get-session-by-id";
 import errorMiddleware from "../middlewares/error/error-middleware";
+import { ConfigService } from "../common/config/config-service";
+import { SSMClient } from "@aws-sdk/client-ssm";
+import initialiseClientConfigMiddleware from "../middlewares/config/initialise-client-config-middleware";
 const dynamoDbClient = createClient(AwsClientType.DYNAMO) as DynamoDBDocument;
-
 const ACCESS_TOKEN = "accesstoken";
 
 export class AccessTokenLambda implements LambdaInterface {
@@ -38,10 +40,6 @@ export class AccessTokenLambda implements LambdaInterface {
             const eventBody = event.body;
             const sessionItem = eventBody as unknown as SessionItem;
             const requestPayload = eventBody as unknown as RequestPayload;
-
-            if (!configService.hasClientConfig(sessionItem.clientId)) {
-                await this.initClientConfig(sessionItem.clientId);
-            }
             const clientConfig = configService.getClientConfig(sessionItem.clientId);
 
             this.requestValidator.validateTokenRequestToRecord(
@@ -73,15 +71,9 @@ export class AccessTokenLambda implements LambdaInterface {
             return errorPayload(err as Error, logger, "Access Token Lambda error occurred");
         }
     }
-    private async initClientConfig(clientId: string): Promise<void> {
-        await configService.initClientConfig(clientId, [
-            ClientConfigKey.JWT_AUDIENCE,
-            ClientConfigKey.JWT_PUBLIC_SIGNING_KEY,
-            ClientConfigKey.JWT_REDIRECT_URI,
-            ClientConfigKey.JWT_SIGNING_ALGORITHM,
-        ]);
-    }
 }
+const ssmClient = createClient(AwsClientType.SSM) as SSMClient;
+const configService = new ConfigService(ssmClient);
 const jwtVerifierFactory = new JwtVerifierFactory(logger);
 const sessionService = new SessionService(dynamoDbClient, configService);
 const accessTokenValidator = new AccessTokenRequestValidator(jwtVerifierFactory);
@@ -93,12 +85,28 @@ const handlerClass = new AccessTokenLambda(
 export const lambdaHandler = middy(handlerClass.handler.bind(handlerClass))
     .use(errorMiddleware(logger, metrics, { metric_name: ACCESS_TOKEN, message: "Access Token Lambda error occurred" }))
     .use(injectLambdaContext(logger, { clearState: true }))
-    .use(initialiseConfigMiddleware({ config_keys : [CommonConfigKey.SESSION_TABLE_NAME, CommonConfigKey.SESSION_TTL]}))
+    .use(
+        initialiseConfigMiddleware({
+            configService: configService,
+            config_keys: [CommonConfigKey.SESSION_TABLE_NAME, CommonConfigKey.SESSION_TTL],
+        }),
+    )
     .use(
         accessTokenValidatorMiddleware({
             requestValidator: accessTokenValidator,
         }),
     )
     .use(getSessionByAuthCodeMiddleware({ sessionService: sessionService }))
+    .use(
+        initialiseClientConfigMiddleware({
+            configService: configService,
+            client_config_keys: [
+                ClientConfigKey.JWT_AUDIENCE,
+                ClientConfigKey.JWT_PUBLIC_SIGNING_KEY,
+                ClientConfigKey.JWT_REDIRECT_URI,
+                ClientConfigKey.JWT_SIGNING_ALGORITHM,
+            ],
+        }),
+    )
     .use(getSessionById({ sessionService: sessionService }))
     .use(setGovUkSigningJourneyIdMiddleware(logger));
