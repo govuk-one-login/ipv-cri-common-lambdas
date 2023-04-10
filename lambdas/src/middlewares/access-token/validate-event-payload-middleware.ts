@@ -11,6 +11,7 @@ const validateEventPayloadMiddleware = (opts: { requestValidator: AccessTokenReq
         const event = request.event as APIGatewayProxyEvent;
 
         request.event = {
+            ...request.event,
             body: options.requestValidator.validatePayload(event.body),
         } as unknown as APIGatewayProxyEvent;
 
