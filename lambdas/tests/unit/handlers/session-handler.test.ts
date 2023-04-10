@@ -20,6 +20,10 @@ import { GenericServerError, SessionValidationError } from "../../../src/common/
 import { JWTPayload } from "jose";
 import initialiseConfigMiddleware from "../../../src/middlewares/config/initialise-config-middleware";
 import errorMiddleware from "../../../src/middlewares/error/error-middleware";
+import decryptJweMiddleware from "../../../src/middlewares/jwt/decrypt-jwe-middleware";
+import validateJwtMiddleware from "../../../src/middlewares/jwt/validate-jwt-middleware";
+import setGovUkSigningJourneyIdMiddleware from "../../../src/middlewares/session/set-gov-uk-signing-journey-id-middleware";
+import initialiseClientConfigMiddleware from "../../../src/middlewares/config/initialise-client-config-middleware";
 
 jest.mock("@aws-sdk/lib-dynamodb");
 jest.mock("@aws-sdk/client-ssm");
@@ -33,19 +37,16 @@ const SESSION_CREATED_METRIC = "session_created";
 describe("SessionLambda", () => {
     let sessionLambda: SessionLambda;
     let lambdaHandler: middy.MiddyfiedHandler;
-
-    const logger = jest.mocked(Logger);
-    const metrics = jest.mocked(Metrics);
-    const personIdentityService = jest.mocked(PersonIdentityService);
-    const jweDecrypter = jest.mocked(JweDecrypter);
-    const auditService = jest.mocked(AuditService);
-    const configService = jest.mocked(ConfigService);
-    const sessionService = jest.mocked(SessionService);
-    const sessionRequestValidator = jest.mocked(SessionRequestValidator);
-    const sessionRequestValidatorFactory = jest.mocked(SessionRequestValidatorFactory);
-
-    const errorSpy = jest.spyOn(logger.prototype, "error").mockImplementation();
-    jest.spyOn(logger.prototype, "info").mockImplementation();
+    let errorSpy: jest.SpyInstance<unknown, never, unknown>;
+    let logger: jest.MockedObjectDeep<typeof Logger>;
+    let metrics: jest.MockedObjectDeep<typeof Metrics>;
+    let personIdentityService: jest.MockedObjectDeep<typeof PersonIdentityService>;
+    let jweDecrypter: jest.MockedObjectDeep<typeof JweDecrypter>;
+    let auditService: jest.MockedObjectDeep<typeof AuditService>;
+    let configService: jest.MockedObjectDeep<typeof ConfigService>;
+    let sessionService: jest.MockedObjectDeep<typeof SessionService>;
+    let sessionRequestValidator: jest.MockedObjectDeep<typeof SessionRequestValidator>;
+    let sessionRequestValidatorFactory: jest.MockedObjectDeep<typeof SessionRequestValidatorFactory>;
 
     const mockPerson: PersonIdentity = {
         name: [
@@ -89,7 +90,6 @@ describe("SessionLambda", () => {
     };
 
     const mockMap = new Map<string, string>();
-    mockMap.set("test-client-id", "test-config-value");
 
     const mockEvent = {
         body: JSON.stringify({
@@ -103,25 +103,68 @@ describe("SessionLambda", () => {
 
     beforeEach(() => {
         jest.clearAllMocks();
+        mockMap.set("test-client-id", "test-config-value");
+
+        logger = jest.mocked(Logger);
+        metrics = jest.mocked(Metrics);
+        personIdentityService = jest.mocked(PersonIdentityService);
+        jweDecrypter = jest.mocked(JweDecrypter);
+        auditService = jest.mocked(AuditService);
+        configService = jest.mocked(ConfigService);
+        sessionService = jest.mocked(SessionService);
+        sessionRequestValidator = jest.mocked(SessionRequestValidator);
+        sessionRequestValidatorFactory = jest.mocked(SessionRequestValidatorFactory);
+
+        errorSpy = jest.spyOn(logger.prototype, "error").mockImplementation();
+        jest.spyOn(logger.prototype, "info").mockImplementation();
 
         sessionLambda = new SessionLambda(
             sessionService.prototype,
             personIdentityService.prototype,
-            sessionRequestValidatorFactory.prototype,
-            jweDecrypter.prototype,
             auditService.prototype,
         );
+
         lambdaHandler = middy(sessionLambda.handler.bind(sessionLambda))
-        .use(errorMiddleware(logger.prototype, metrics.prototype, { metric_name: SESSION_CREATED_METRIC, message: "Session Lambda error occurred" }))
-        .use(injectLambdaContext(logger.prototype, { clearState: true }))
-        .use(initialiseConfigMiddleware({ config_keys: [
-            CommonConfigKey.SESSION_TABLE_NAME,
-            CommonConfigKey.SESSION_TTL,
-            CommonConfigKey.PERSON_IDENTITY_TABLE_NAME,
-            CommonConfigKey.DECRYPTION_KEY_ID,
-            CommonConfigKey.VC_ISSUER,
-        ]}));
-        
+            .use(
+                errorMiddleware(logger.prototype, metrics.prototype, {
+                    metric_name: SESSION_CREATED_METRIC,
+                    message: "Session Lambda error occurred",
+                }),
+            )
+            .use(injectLambdaContext(logger.prototype, { clearState: true }))
+            .use(
+                initialiseConfigMiddleware({
+                    configService: configService.prototype,
+                    config_keys: [
+                        CommonConfigKey.SESSION_TABLE_NAME,
+                        CommonConfigKey.SESSION_TTL,
+                        CommonConfigKey.PERSON_IDENTITY_TABLE_NAME,
+                        CommonConfigKey.DECRYPTION_KEY_ID,
+                        CommonConfigKey.VC_ISSUER,
+                    ],
+                }),
+            )
+            .use(decryptJweMiddleware(logger.prototype, { jweDecrypter: jweDecrypter.prototype }))
+            .use(
+                initialiseClientConfigMiddleware({
+                    configService: configService.prototype,
+                    client_config_keys: [
+                        ClientConfigKey.JWT_AUDIENCE,
+                        ClientConfigKey.JWT_ISSUER,
+                        ClientConfigKey.JWT_PUBLIC_SIGNING_KEY,
+                        ClientConfigKey.JWT_REDIRECT_URI,
+                        ClientConfigKey.JWT_SIGNING_ALGORITHM,
+                    ],
+                }),
+            )
+            .use(
+                validateJwtMiddleware(logger.prototype, {
+                    configService: configService.prototype,
+                    jwtValidatorFactory: sessionRequestValidatorFactory.prototype,
+                }),
+            )
+            .use(setGovUkSigningJourneyIdMiddleware(logger.prototype));
+
         jest.spyOn(jweDecrypter.prototype, "decryptJwe").mockResolvedValue(Buffer.from("test-data"));
         jest.spyOn(personIdentityService.prototype, "savePersonIdentity").mockImplementation();
         jest.spyOn(auditService.prototype, "sendAuditEvent").mockImplementation();
@@ -133,7 +176,7 @@ describe("SessionLambda", () => {
         jest.spyOn(sessionRequestValidator.prototype, "validateJwt").mockReturnValue(
             new Promise<JWTPayload>((res) =>
                 res({
-                    client_id: "test-jwt-client-id",
+                    client_id: "test-client-id",
                     govuk_signin_journey_id: "test-journey-id",
                     persistent_session_id: "test-persistent-session-id",
                     redirect_uri: "test-redirect-uri",
@@ -220,7 +263,7 @@ describe("SessionLambda", () => {
         await lambdaHandler(mockEvent, {} as Context);
 
         const expectedSessionRequestSummary = {
-            clientId: "test-jwt-client-id",
+            clientId: "test-client-id",
             clientIpAddress: "test-client-ip-address",
             clientSessionId: "test-journey-id",
             persistentSessionId: "test-persistent-session-id",
@@ -242,7 +285,7 @@ describe("SessionLambda", () => {
         jest.spyOn(sessionRequestValidator.prototype, "validateJwt").mockReturnValue(
             new Promise<JWTPayload>((res) =>
                 res({
-                    client_id: "test-jwt-client-id",
+                    client_id: "test-client-id",
                     govuk_signin_journey_id: "test-journey-id",
                     persistent_session_id: "test-persistent-session-id",
                     redirect_uri: "test-redirect-uri",
