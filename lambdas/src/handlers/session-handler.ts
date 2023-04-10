@@ -21,7 +21,13 @@ import { errorPayload } from "../common/utils/errors";
 import { logger, metrics, tracer as _tracer } from "../common/utils/power-tool";
 import errorMiddleware from "../middlewares/error/error-middleware";
 import { injectLambdaContext } from "@aws-lambda-powertools/logger/lib/middleware/middy";
-import initialiseConfigMiddleware, { configService } from "../middlewares/config/initialise-config-middleware";
+import initialiseConfigMiddleware from "../middlewares/config/initialise-config-middleware";
+import decryptJweMiddleware from "../middlewares/jwt/decrypt-jwe-middleware";
+import initialiseClientConfigMiddleware from "../middlewares/config/initialise-client-config-middleware";
+import validateJwtMiddleware from "../middlewares/jwt/validate-jwt-middleware";
+import setGovUkSigningJourneyIdMiddleware from "../middlewares/session/set-gov-uk-signing-journey-id-middleware";
+import { ConfigService } from "../common/config/config-service";
+import { SSMClient } from "@aws-sdk/client-ssm";
 
 const dynamoDbClient = createClient(AwsClientType.DYNAMO) as DynamoDBDocument;
 const sqsClient = createClient(AwsClientType.SQS) as SQSClient;
@@ -33,8 +39,6 @@ export class SessionLambda implements LambdaInterface {
     constructor(
         private readonly sessionService: SessionService,
         private readonly personIdentityService: PersonIdentityService,
-        private readonly sessionRequestValidatorFactory: SessionRequestValidatorFactory,
-        private readonly jweDecrypter: JweDecrypter,
         private readonly auditService: AuditService,
     ) {}
 
@@ -42,26 +46,10 @@ export class SessionLambda implements LambdaInterface {
     @metrics.logMetrics({ throwOnEmptyMetrics: false, captureColdStartMetric: true })
     public async handler(event: APIGatewayProxyEvent, _context: unknown): Promise<APIGatewayProxyResult> {
         try {
-            const deserialisedRequestBody = JSON.parse(event.body as string);
+            const jwtPayload = event.body as unknown as JWTPayload;
+
             logger.info("Session lambda triggered");
-
-            console.dir(deserialisedRequestBody);
-            const requestBodyClientId = deserialisedRequestBody.client_id;
             const clientIpAddress = getClientIpAddress(event);
-
-            if (!configService.hasClientConfig(requestBodyClientId)) {
-                await this.initClientConfig(requestBodyClientId);
-            }
-
-            const criClientConfig = configService.getClientConfig(requestBodyClientId) as Map<string, string>;
-            const sessionRequestValidator = this.sessionRequestValidatorFactory.create(criClientConfig);
-
-            //const decryptedJwt = //await this.jweDecrypter.decryptJwe(deserialisedRequestBody.request);
-            //logger.info("JWE decrypted");
-
-            const jwtPayload = await sessionRequestValidator.validateJwt(deserialisedRequestBody as Buffer, requestBodyClientId);
-            logger.info("JWT validated");
-
             const sessionRequestSummary = this.createSessionRequestSummary(jwtPayload, clientIpAddress);
             const sessionId: string = await this.sessionService.saveSession(sessionRequestSummary);
             logger.info("Session created");
@@ -75,10 +63,8 @@ export class SessionLambda implements LambdaInterface {
             }
 
             await this.sendAuditEvent(sessionId, sessionRequestSummary, clientIpAddress);
-
-            metrics.addDimension("issuer", requestBodyClientId);
+            metrics.addDimension("issuer", sessionRequestSummary.clientId);
             metrics.addMetric(SESSION_CREATED_METRIC, MetricUnits.Count, 1);
-            logger.appendKeys({ govuk_signin_journey_id: sessionRequestSummary.clientSessionId });
 
             return {
                 statusCode: 201,
@@ -93,15 +79,7 @@ export class SessionLambda implements LambdaInterface {
             return errorPayload(err as Error, logger, "Session Lambda error occurred");
         }
     }
-    private async initClientConfig(clientId: string): Promise<void> {
-        await configService.initClientConfig(clientId, [
-            ClientConfigKey.JWT_AUDIENCE,
-            ClientConfigKey.JWT_ISSUER,
-            ClientConfigKey.JWT_PUBLIC_SIGNING_KEY,
-            ClientConfigKey.JWT_REDIRECT_URI,
-            ClientConfigKey.JWT_SIGNING_ALGORITHM,
-        ]);
-    }
+
     private createSessionRequestSummary(
         jwtPayload: JWTPayload,
         clientIpAddress: string | undefined,
@@ -132,24 +110,47 @@ export class SessionLambda implements LambdaInterface {
         });
     }
 }
-
+const ssmClient = createClient(AwsClientType.SSM) as SSMClient;
+const configService = new ConfigService(ssmClient);
+const jweDecrypter = new JweDecrypter(kmsClient, () => configService.getConfigEntry(CommonConfigKey.DECRYPTION_KEY_ID));
+const jwtValidatorFactory = new SessionRequestValidatorFactory(logger);
 const handlerClass = new SessionLambda(
     new SessionService(dynamoDbClient, configService),
     new PersonIdentityService(dynamoDbClient, configService),
-    new SessionRequestValidatorFactory(logger),
-    new JweDecrypter(kmsClient, () => configService.getConfigEntry(CommonConfigKey.DECRYPTION_KEY_ID)),
     new AuditService(() => configService.getAuditConfig(), sqsClient),
 );
 export const lambdaHandler = middy(handlerClass.handler.bind(handlerClass))
-.use(errorMiddleware(logger, metrics, { metric_name: SESSION_CREATED_METRIC, message: "Session Lambda error occurred" }))
-.use(injectLambdaContext(logger, { clearState: true }))
-.use(initialiseConfigMiddleware({ config_keys: [
-    CommonConfigKey.SESSION_TABLE_NAME,
-    CommonConfigKey.SESSION_TTL,
-    CommonConfigKey.PERSON_IDENTITY_TABLE_NAME,
-    CommonConfigKey.DECRYPTION_KEY_ID,
-    CommonConfigKey.VC_ISSUER,
-]}));
-
-
-
+    .use(
+        errorMiddleware(logger, metrics, {
+            metric_name: SESSION_CREATED_METRIC,
+            message: "Session Lambda error occurred",
+        }),
+    )
+    .use(injectLambdaContext(logger, { clearState: true }))
+    .use(
+        initialiseConfigMiddleware({
+            configService: configService,
+            config_keys: [
+                CommonConfigKey.SESSION_TABLE_NAME,
+                CommonConfigKey.SESSION_TTL,
+                CommonConfigKey.PERSON_IDENTITY_TABLE_NAME,
+                CommonConfigKey.DECRYPTION_KEY_ID,
+                CommonConfigKey.VC_ISSUER,
+            ],
+        }),
+    )
+    .use(decryptJweMiddleware(logger, { jweDecrypter: jweDecrypter }))
+    .use(
+        initialiseClientConfigMiddleware({
+            configService: configService,
+            client_config_keys: [
+                ClientConfigKey.JWT_AUDIENCE,
+                ClientConfigKey.JWT_ISSUER,
+                ClientConfigKey.JWT_PUBLIC_SIGNING_KEY,
+                ClientConfigKey.JWT_REDIRECT_URI,
+                ClientConfigKey.JWT_SIGNING_ALGORITHM,
+            ],
+        }),
+    )
+    .use(validateJwtMiddleware(logger, { configService: configService, jwtValidatorFactory: jwtValidatorFactory }))
+    .use(setGovUkSigningJourneyIdMiddleware(logger));
