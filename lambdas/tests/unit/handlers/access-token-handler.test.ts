@@ -85,7 +85,12 @@ describe("access-token-handler.ts", () => {
                 }),
             )
             .use(injectLambdaContext(logger, { clearState: true }))
-            .use(initialiseConfigMiddleware({ config_keys : [CommonConfigKey.SESSION_TABLE_NAME, CommonConfigKey.SESSION_TTL]}))
+            .use(
+                initialiseConfigMiddleware({
+                    configService: configService,
+                    config_keys: [CommonConfigKey.SESSION_TABLE_NAME, CommonConfigKey.SESSION_TTL],
+                }),
+            )
             .use(
                 validateEventPayloadMiddleware({
                     requestValidator: accessTokenRequestValidator,
