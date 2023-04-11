@@ -58,3 +58,9 @@ If you have not installed `pre-commit` then please do so [here](https://pre-comm
 
 `STACK_NAME=di-ipv-cri-common-api-your-stack-name ENVIRONMENT=dev API_GATEWAY_ID_PRIVATE=xxxx IPV_CORE_STUB_BASIC_AUTH_USER=xxxx IPV_CORE_STUB_BASIC_AUTH_PASSWORD=xxxx IPV_CORE_STUB_URL="https://di-ipv-core-stub.london.cloudapps.digital" gradle integration-tests:cucumber
 `
+You can run against local host as follows:
+
+Run the either KBV or ADDRESS front-end and ensure the you start the stub as well
+
+`STACK_NAME=di-ipv-cri-common-api-your-stack-name CRI_DEV=kbv-cri-dev ENVIRONMENT=dev API_GATEWAY_ID_PRIVATE=xxxx IPV_CORE_STUB_BASIC_AUTH_USER=xxxx IPV_CORE_STUB_BASIC_AUTH_PASSWORD=xxxx IPV_CORE_STUB_URL="http://localhost:8085" DEFAULT_REDIRECT_URI="http://localhost:8085/callback" gradle integration-tests:cucumber
+`
