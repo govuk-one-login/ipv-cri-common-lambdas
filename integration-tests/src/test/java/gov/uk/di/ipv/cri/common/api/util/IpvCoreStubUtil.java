@@ -17,7 +17,8 @@ import static gov.uk.di.ipv.cri.common.api.stepDefinitions.APISteps.DEV_ACCESS_T
 
 public class IpvCoreStubUtil {
 
-    private static final String ADDRESS_CRI_DEV = "address-cri-dev";
+    private static final String CRI_DEV =
+            Optional.ofNullable(System.getenv("CRI_DEV")).orElse("address-cri-dev");
     private static final String API_GATEWAY_ID_PRIVATE = "API_GATEWAY_ID_PRIVATE";
 
     public static String getPrivateApiEndpoint() {
@@ -39,7 +40,7 @@ public class IpvCoreStubUtil {
                         .uri(
                                 new URIBuilder(getIPVCoreStubURL())
                                         .setPath("backend/generateInitialClaimsSet")
-                                        .addParameter("cri", ADDRESS_CRI_DEV)
+                                        .addParameter("cri", CRI_DEV)
                                         .addParameter(
                                                 "rowNumber", String.valueOf(userDataRowNumber))
                                         .build())
@@ -89,7 +90,7 @@ public class IpvCoreStubUtil {
         var uri =
                 new URIBuilder(getIPVCoreStubURL())
                         .setPath("backend/createSessionRequest")
-                        .addParameter("cri", ADDRESS_CRI_DEV)
+                        .addParameter("cri", CRI_DEV)
                         .build();
 
         HttpRequest request =
@@ -182,7 +183,7 @@ public class IpvCoreStubUtil {
         var url =
                 new URIBuilder(baseUrl)
                         .setPath("backend/createTokenRequestPrivateKeyJWT")
-                        .addParameter("cri", ADDRESS_CRI_DEV)
+                        .addParameter("cri", CRI_DEV)
                         .addParameter("authorization_code", authorizationCode)
                         .build();
 
