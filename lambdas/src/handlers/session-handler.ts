@@ -20,7 +20,7 @@ import { SQSClient } from "@aws-sdk/client-sqs";
 import { AwsClientType, createClient } from "../common/aws-client-factory";
 import { getClientIpAddress } from "../common/utils/request-utils";
 import { KMSClient } from "@aws-sdk/client-kms";
-import { errorPayload } from "../types/errors";
+import { errorPayload } from "../common/utils/errors";
 
 const dynamoDbClient = createClient(AwsClientType.DYNAMO) as DynamoDBDocument;
 const ssmClient = createClient(AwsClientType.SSM) as SSMClient;
@@ -90,7 +90,7 @@ export class SessionLambda implements LambdaInterface {
 
             metrics.addDimension("issuer", requestBodyClientId);
             metrics.addMetric(SESSION_CREATED_METRIC, MetricUnits.Count, 1);
-            logger.appendKeys({ govuk_signin_journey_id: sessionId });
+            logger.appendKeys({ govuk_signin_journey_id: sessionRequestSummary.clientSessionId });
 
             return {
                 statusCode: 201,

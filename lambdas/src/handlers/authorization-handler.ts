@@ -11,7 +11,7 @@ import { DynamoDBDocument } from "@aws-sdk/lib-dynamodb";
 import { SSMClient } from "@aws-sdk/client-ssm";
 import { ClientConfigKey, CommonConfigKey } from "../types/config-keys";
 import { Tracer } from "@aws-lambda-powertools/tracer";
-import { errorPayload } from "../types/errors";
+import { errorPayload } from "../common/utils/errors";
 
 const dynamoDbClient = createClient(AwsClientType.DYNAMO) as DynamoDBDocument;
 const ssmClient = createClient(AwsClientType.SSM) as SSMClient;

@@ -17,7 +17,7 @@ import {
     ServerError,
     SessionNotFoundError,
     SessionValidationError,
-} from "../../../src/types/errors";
+} from "../../../src/common/utils/errors";
 
 jest.mock("../../../src/common/config/config-service");
 jest.mock("@aws-lambda-powertools/metrics");

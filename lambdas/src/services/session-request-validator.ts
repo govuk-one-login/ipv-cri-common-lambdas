@@ -3,7 +3,7 @@ import { JWTPayload } from "jose";
 import { SessionRequestValidationConfig } from "../types/session-request-validation-config";
 import { ClientConfigKey } from "../types/config-keys";
 import { Logger } from "@aws-lambda-powertools/logger";
-import { SessionValidationError } from "../types/errors";
+import { SessionValidationError } from "../common/utils/errors";
 
 export class SessionRequestValidator {
     constructor(private validationConfig: SessionRequestValidationConfig, private jwtVerifier: JwtVerifier) {}
