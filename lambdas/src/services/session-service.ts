@@ -8,7 +8,7 @@ import {
     InvalidAccessTokenError,
     SessionExpiredError,
     SessionNotFoundError,
-} from "../types/errors";
+} from "../common/utils/errors";
 import { SessionRequestSummary } from "../types/session-request-summary";
 import { CommonConfigKey } from "../types/config-keys";
 

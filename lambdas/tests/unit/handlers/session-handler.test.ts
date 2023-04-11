@@ -14,7 +14,7 @@ import {
     SessionRequestValidatorFactory,
 } from "../../../src/services/session-request-validator";
 import { SessionService } from "../../../src/services/session-service";
-import { GenericServerError, SessionValidationError } from "../../../src/types/errors";
+import { GenericServerError, SessionValidationError } from "../../../src/common/utils/errors";
 import { JWTPayload } from "jose";
 
 jest.mock("@aws-sdk/lib-dynamodb");
