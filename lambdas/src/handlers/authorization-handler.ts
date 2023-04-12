@@ -1,48 +1,40 @@
+import middy from "@middy/core";
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { SessionService } from "../services/session-service";
 import { LambdaInterface } from "@aws-lambda-powertools/commons";
-import { Metrics, MetricUnits } from "@aws-lambda-powertools/metrics";
-import { Logger } from "@aws-lambda-powertools/logger";
+import { MetricUnits } from "@aws-lambda-powertools/metrics";
 import { ConfigService } from "../common/config/config-service";
 import { AuthorizationRequestValidator } from "../services/auth-request-validator";
-import { getSessionId } from "../common/utils/request-utils";
 import { AwsClientType, createClient } from "../common/aws-client-factory";
 import { DynamoDBDocument } from "@aws-sdk/lib-dynamodb";
 import { SSMClient } from "@aws-sdk/client-ssm";
 import { ClientConfigKey, CommonConfigKey } from "../types/config-keys";
-import { Tracer } from "@aws-lambda-powertools/tracer";
 import { errorPayload } from "../common/utils/errors";
+import { logger, metrics, tracer as _tracer } from "../common/utils/power-tool";
+import errorMiddleware from "../middlewares/error/error-middleware";
+import initialiseConfigMiddleware from "../middlewares/config/initialise-config-middleware";
+import getSessionByIdMiddleware from "../middlewares/session/get-session-by-id-middleware";
+import { SessionItem } from "../types/session-item";
+import { injectLambdaContext } from "@aws-lambda-powertools/logger/lib/middleware/middy";
+import setGovUkSigningJourneyIdMiddleware from "../middlewares/session/set-gov-uk-signing-journey-id-middleware";
+import initialiseClientConfigMiddleware from "../middlewares/config/initialise-client-config-middleware";
 
 const dynamoDbClient = createClient(AwsClientType.DYNAMO) as DynamoDBDocument;
 const ssmClient = createClient(AwsClientType.SSM) as SSMClient;
-const logger = new Logger();
-const metrics = new Metrics();
-const _tracer = new Tracer({ captureHTTPsRequests: false });
 const configService = new ConfigService(ssmClient);
-const initPromise = configService.init([CommonConfigKey.SESSION_TABLE_NAME]);
 const AUTHORIZATION_SENT_METRIC = "authorization_sent";
 
 export class AuthorizationLambda implements LambdaInterface {
-    constructor(
-        private readonly sessionService: SessionService,
-        private readonly authorizationRequestValidator: AuthorizationRequestValidator,
-    ) {}
+    constructor(private readonly authorizationRequestValidator: AuthorizationRequestValidator) {}
 
-    @logger.injectLambdaContext({ clearState: true })
     @metrics.logMetrics({ throwOnEmptyMetrics: false, captureColdStartMetric: true })
     @_tracer.captureLambdaHandler({ captureResponse: false })
     public async handler(event: APIGatewayProxyEvent, _context: unknown): Promise<APIGatewayProxyResult> {
         try {
-            await initPromise;
             logger.info("Authorisation Lambda triggered");
 
-            const sessionId = getSessionId(event);
-            const sessionItem = await this.sessionService.getSession(sessionId);
+            const sessionItem = event.body as unknown as SessionItem;
             logger.info("Session found");
-
-            if (!configService.hasClientConfig(sessionItem.clientId)) {
-                await configService.initClientConfig(sessionItem.clientId, [ClientConfigKey.JWT_REDIRECT_URI]);
-            }
             const clientConfig = configService.getClientConfig(sessionItem.clientId);
 
             logger.info("Validating session");
@@ -52,7 +44,6 @@ export class AuthorizationLambda implements LambdaInterface {
                 clientConfig?.get(ClientConfigKey.JWT_REDIRECT_URI) as string,
             );
             logger.info("Session validated");
-            logger.appendKeys({ govuk_signin_journey_id: sessionItem.clientSessionId });
 
             const authorizationResponse = {
                 state: {
@@ -77,9 +68,27 @@ export class AuthorizationLambda implements LambdaInterface {
         }
     }
 }
-
-const handlerClass = new AuthorizationLambda(
-    new SessionService(dynamoDbClient, configService),
-    new AuthorizationRequestValidator(),
-);
-export const lambdaHandler = handlerClass.handler.bind(handlerClass);
+const sessionService = new SessionService(dynamoDbClient, configService);
+const handlerClass = new AuthorizationLambda(new AuthorizationRequestValidator());
+export const lambdaHandler = middy(handlerClass.handler.bind(handlerClass))
+    .use(
+        errorMiddleware(logger, metrics, {
+            metric_name: AUTHORIZATION_SENT_METRIC,
+            message: "Authorization Lambda error occurred",
+        }),
+    )
+    .use(injectLambdaContext(logger, { clearState: true }))
+    .use(
+        initialiseConfigMiddleware({
+            configService: configService,
+            config_keys: [CommonConfigKey.SESSION_TABLE_NAME],
+        }),
+    )
+    .use(getSessionByIdMiddleware({ sessionService: sessionService }))
+    .use(
+        initialiseClientConfigMiddleware({
+            configService: configService,
+            client_config_keys: [ClientConfigKey.JWT_REDIRECT_URI],
+        }),
+    )
+    .use(setGovUkSigningJourneyIdMiddleware(logger));
