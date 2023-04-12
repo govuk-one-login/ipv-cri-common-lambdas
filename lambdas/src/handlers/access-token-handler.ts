@@ -18,7 +18,7 @@ import { logger, metrics, tracer as _tracer } from "../common/utils/power-tool";
 import { MetricUnits } from "@aws-lambda-powertools/metrics";
 import { injectLambdaContext } from "@aws-lambda-powertools/logger/lib/middleware/middy";
 import { RequestPayload } from "../types/request_payload";
-import getSessionById from "../middlewares/session/get-session-by-id";
+import getSessionByIdMiddleware from "../middlewares/session/get-session-by-id-middleware";
 import errorMiddleware from "../middlewares/error/error-middleware";
 import { ConfigService } from "../common/config/config-service";
 import { SSMClient } from "@aws-sdk/client-ssm";
@@ -108,5 +108,5 @@ export const lambdaHandler = middy(handlerClass.handler.bind(handlerClass))
             ],
         }),
     )
-    .use(getSessionById({ sessionService: sessionService }))
+    .use(getSessionByIdMiddleware({ sessionService: sessionService }))
     .use(setGovUkSigningJourneyIdMiddleware(logger));

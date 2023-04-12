@@ -18,7 +18,7 @@ import { InvalidRequestError, ServerError } from "../../../src/common/utils/erro
 import errorMiddleware from "../../../src/middlewares/error/error-middleware";
 import initialiseConfigMiddleware from "../../../src/middlewares/config/initialise-config-middleware";
 import getSessionByAuthCodeMiddleware from "../../../src/middlewares/session/get-session-by-auth-code-middleware";
-import getSessionById from "../../../src/middlewares/session/get-session-by-id";
+import getSessionByIdMiddleware from "../../../src/middlewares/session/get-session-by-id-middleware";
 import setGovUkSigningJourneyIdMiddleware from "../../../src/middlewares/session/set-gov-uk-signing-journey-id-middleware";
 import { CommonConfigKey } from "../../../src/types/config-keys";
 
@@ -97,7 +97,7 @@ describe("access-token-handler.ts", () => {
                 }),
             )
             .use(getSessionByAuthCodeMiddleware({ sessionService: sessionService }))
-            .use(getSessionById({ sessionService: sessionService }))
+            .use(getSessionByIdMiddleware({ sessionService: sessionService }))
             .use(setGovUkSigningJourneyIdMiddleware(logger));
     });
 
