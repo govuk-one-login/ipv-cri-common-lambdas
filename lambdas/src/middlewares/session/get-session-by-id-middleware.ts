@@ -1,21 +1,21 @@
 import { MiddlewareObj, Request } from "@middy/core";
 import { SessionService } from "../../services/session-service";
-import { RequestPayload } from "../../types/request_payload";
-import { SessionItem } from "../../types/session-item";
+import { getSessionId } from "../../common/utils/request-utils";
 
 const defaults = {};
 
-const getSessionById = (opts: { sessionService: SessionService }): MiddlewareObj => {
+const getSessionByIdMiddleware = (opts: { sessionService: SessionService }): MiddlewareObj => {
     const options = { ...defaults, ...opts };
 
     const before = async (request: Request) => {
-        const event_body = request.event.body as SessionItem & RequestPayload;
-        const sessionItem = await options.sessionService.getSession(event_body.sessionId);
+        const event = request.event;
+        const sessionId = event?.body?.sessionId || getSessionId(event);
+        const sessionItem = await options.sessionService.getSession(sessionId);
         request.event = {
             ...request.event,
             body: {
                 ...sessionItem,
-                ...event_body,
+                ...event.body,
             },
         };
         await request.event;
@@ -26,4 +26,4 @@ const getSessionById = (opts: { sessionService: SessionService }): MiddlewareObj
     };
 };
 
-export default getSessionById;
+export default getSessionByIdMiddleware;
