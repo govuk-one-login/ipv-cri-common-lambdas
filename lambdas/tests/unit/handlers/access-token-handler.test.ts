@@ -1,4 +1,5 @@
 import middy from "@middy/core";
+
 import { Metrics, MetricUnits } from "@aws-lambda-powertools/metrics";
 import { APIGatewayProxyEvent, Context } from "aws-lambda";
 import { AccessTokenLambda } from "../../../src/handlers/access-token-handler";
@@ -19,6 +20,7 @@ import initialiseConfigMiddleware from "../../../src/middlewares/config/initiali
 import getSessionByAuthCodeMiddleware from "../../../src/middlewares/session/get-session-by-auth-code-middleware";
 import getSessionById from "../../../src/middlewares/session/get-session-by-id";
 import setGovUkSigningJourneyIdMiddleware from "../../../src/middlewares/session/set-gov-uk-signing-journey-id-middleware";
+import { CommonConfigKey } from "../../../src/types/config-keys";
 
 jest.mock("../../../src/common/config/config-service");
 jest.mock("../../../src/common/security/jwt-verifier");
@@ -83,7 +85,12 @@ describe("access-token-handler.ts", () => {
                 }),
             )
             .use(injectLambdaContext(logger, { clearState: true }))
-            .use(initialiseConfigMiddleware())
+            .use(
+                initialiseConfigMiddleware({
+                    configService: configService,
+                    config_keys: [CommonConfigKey.SESSION_TABLE_NAME, CommonConfigKey.SESSION_TTL],
+                }),
+            )
             .use(
                 validateEventPayloadMiddleware({
                     requestValidator: accessTokenRequestValidator,
