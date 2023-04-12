@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.http.HttpResponse;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import static gov.uk.di.ipv.cri.common.api.util.IpvCoreStubUtil.sendCreateAuthCodeRequest;
@@ -28,7 +29,8 @@ public class APISteps {
     public static String DEV_ACCESS_TOKEN_URI;
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final String DEFAULT_REDIRECT_URI =
-            "https://di-ipv-core-stub.london.cloudapps.digital/callback";
+            Optional.ofNullable(System.getenv("DEFAULT_REDIRECT_URI"))
+                    .orElse("https://di-ipv-core-stub.london.cloudapps.digital/callback");
     private static final String DEFAULT_CLIENT_ID = "ipv-core-stub";
     private String currentAuthorizationCode;
     private String sessionRequestBody;
