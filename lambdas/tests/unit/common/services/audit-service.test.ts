@@ -44,7 +44,7 @@ describe("AuditService", () => {
             };
         });
 
-        jest.spyOn(global.Date, "now").mockReturnValueOnce(1675382400);
+        jest.spyOn(global.Date, "now").mockReturnValueOnce(1681147957473);
 
         auditService = new AuditService(mockGetAuditConfig, mockSqsClient.prototype);
     });
@@ -69,7 +69,7 @@ describe("AuditService", () => {
                 event_name: `TEST_PREFIX_START`,
                 extensions: undefined,
                 restricted: undefined,
-                timestamp: 1675382400,
+                timestamp: 1681147957,
                 user: {
                     govuk_signin_journey_id: "test-client-session-id",
                     ip_address: undefined,
@@ -97,7 +97,7 @@ describe("AuditService", () => {
                 event_name: `TEST_PREFIX_START`,
                 extensions: undefined,
                 restricted: undefined,
-                timestamp: 1675382400,
+                timestamp: 1681147957,
                 user: {
                     govuk_signin_journey_id: undefined,
                     ip_address: undefined,
