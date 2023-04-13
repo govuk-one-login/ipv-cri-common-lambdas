@@ -30,7 +30,7 @@ export class AuditService {
             event_name: `${this.auditConfig?.auditEventNamePrefix}_${eventType}`,
             extensions: context?.extensions ?? undefined,
             restricted: context?.personIdentity ?? undefined,
-            timestamp: Date.now(),
+            timestamp: Math.floor(Date.now() / 1000),
             user: auditEventUser,
         };
     }
