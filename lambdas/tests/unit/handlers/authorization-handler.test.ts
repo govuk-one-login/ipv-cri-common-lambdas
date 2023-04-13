@@ -1,3 +1,6 @@
+import middy from "@middy/core";
+import { injectLambdaContext } from "@aws-lambda-powertools/logger/lib/middleware/middy";
+
 import { DynamoDBDocument } from "@aws-sdk/lib-dynamodb";
 import { AuthorizationLambda } from "../../../src/handlers/authorization-handler";
 import { ConfigService } from "../../../src/common/config/config-service";
@@ -18,6 +21,13 @@ import {
     SessionNotFoundError,
     SessionValidationError,
 } from "../../../src/common/utils/errors";
+import getSessionByIdMiddleware from "../../../src/middlewares/session/get-session-by-id-middleware";
+import { ClientConfigKey, CommonConfigKey } from "../../../src/types/config-keys";
+import initialiseConfigMiddleware from "../../../src/middlewares/config/initialise-config-middleware";
+import errorMiddleware from "../../../src/middlewares/error/error-middleware";
+import { Context } from "aws-lambda";
+import setGovUkSigningJourneyIdMiddleware from "../../../src/middlewares/session/set-gov-uk-signing-journey-id-middleware";
+import initialiseClientConfigMiddleware from "../../../src/middlewares/config/initialise-client-config-middleware";
 
 jest.mock("../../../src/common/config/config-service");
 jest.mock("@aws-lambda-powertools/metrics");
@@ -30,20 +40,14 @@ jest.mock("@aws-sdk/lib-dynamodb", () => {
         UpdateCommand: jest.fn(),
     };
 });
+const AUTHORIZATION_SENT_METRIC = "authorization_sent";
 
 describe("authorization-handler.ts", () => {
     const mockDynamoDbClient = jest.mocked(DynamoDBDocument);
 
     beforeEach(() => {
         jest.resetAllMocks();
-        const impl = () => {
-            const mockPromise = new Promise<unknown>((resolve) => {
-                resolve({ Parameters: [] });
-            });
-            return jest.fn().mockImplementation(() => {
-                return mockPromise;
-            });
-        };
+        const impl = () => jest.fn().mockImplementation(() => Promise.resolve({ Parameters: [] }));
         mockDynamoDbClient.prototype.send = impl();
         mockDynamoDbClient.prototype.query = impl();
     });
@@ -52,6 +56,7 @@ describe("authorization-handler.ts", () => {
         let body = {};
         let headers = {};
         let authorizationHandlerLambda: AuthorizationLambda;
+        let lambdaHandler: middy.MiddyfiedHandler;
         const configService = new ConfigService(jest.fn() as unknown as SSMClient);
         const sessionService = new SessionService(mockDynamoDbClient.prototype, configService);
         const authorizationRequestValidator = new AuthorizationRequestValidator();
@@ -72,7 +77,30 @@ describe("authorization-handler.ts", () => {
             } as APIGatewayProxyEventHeaders;
             jest.resetAllMocks();
             configService.init = () => Promise.resolve();
-            authorizationHandlerLambda = new AuthorizationLambda(sessionService, authorizationRequestValidator);
+            authorizationHandlerLambda = new AuthorizationLambda(authorizationRequestValidator);
+            lambdaHandler = middy(authorizationHandlerLambda.handler.bind(authorizationHandlerLambda))
+                .use(
+                    errorMiddleware(logger.prototype, metrics.prototype, {
+                        metric_name: AUTHORIZATION_SENT_METRIC,
+                        message: "Authorization Lambda error occurred",
+                    }),
+                )
+                .use(injectLambdaContext(logger.prototype, { clearState: true }))
+                .use(
+                    initialiseConfigMiddleware({
+                        configService: configService,
+                        config_keys: [CommonConfigKey.SESSION_TABLE_NAME],
+                    }),
+                )
+                .use(getSessionByIdMiddleware({ sessionService: sessionService }))
+                .use(
+                    initialiseClientConfigMiddleware({
+                        configService: configService,
+                        client_config_keys: [ClientConfigKey.JWT_REDIRECT_URI],
+                    }),
+                )
+                .use(setGovUkSigningJourneyIdMiddleware(logger.prototype));
+
             const sessionItem: Partial<SessionItem> = {
                 sessionId: "abc",
                 authorizationCodeExpiryDate: 1,
@@ -83,11 +111,7 @@ describe("authorization-handler.ts", () => {
                 accessTokenExpiryDate: 0,
                 authorizationCode: "abc",
             };
-            jest.spyOn(sessionService, "getSession").mockReturnValue(
-                new Promise<SessionItem>((resolve) => {
-                    resolve(sessionItem as SessionItem);
-                }),
-            );
+            jest.spyOn(sessionService, "getSession").mockReturnValue(Promise.resolve(sessionItem as SessionItem));
             const clientConfig = new Map<string, string>();
             clientConfig.set("code", "abc");
             clientConfig.set("redirectUri", "http://123.com");
@@ -108,13 +132,13 @@ describe("authorization-handler.ts", () => {
                 const loggerSpyAppendkeys = jest.spyOn(logger.prototype, "appendKeys");
                 const loggerSpyInfo = jest.spyOn(logger.prototype, "info");
 
-                const output = await authorizationHandlerLambda.handler(
+                const output = await lambdaHandler(
                     {
                         body,
                         headers,
                         queryStringParameters: queryString,
                     } as unknown as APIGatewayProxyEvent,
-                    null,
+                    {} as Context,
                 );
 
                 expect(output.statusCode).toBe(200);
@@ -129,13 +153,13 @@ describe("authorization-handler.ts", () => {
                 const loggerSpyAppendkeys = jest.spyOn(logger.prototype, "appendKeys");
                 const loggerSpyInfo = jest.spyOn(logger.prototype, "info");
 
-                await authorizationHandlerLambda.handler(
+                await lambdaHandler(
                     {
                         body,
                         headers,
                         queryStringParameters: queryString,
                     } as unknown as APIGatewayProxyEvent,
-                    null,
+                    {} as Context,
                 );
 
                 expect(loggerSpyInfo).toBeCalledWith("Session found");
@@ -157,13 +181,13 @@ describe("authorization-handler.ts", () => {
                     redirect_uri: "http://123.com",
                 } as APIGatewayProxyEventQueryStringParameters;
 
-                const output = await authorizationHandlerLambda.handler(
+                const output = await lambdaHandler(
                     {
                         body: body,
                         headers: headers,
                         queryStringParameters: queryString,
                     } as unknown as APIGatewayProxyEvent,
-                    null,
+                    {} as Context,
                 );
 
                 expect(output.statusCode).toBe(400);
@@ -181,13 +205,13 @@ describe("authorization-handler.ts", () => {
                     response_type: "test",
                 } as APIGatewayProxyEventQueryStringParameters;
 
-                const output = await authorizationHandlerLambda.handler(
+                const output = await lambdaHandler(
                     {
                         body: body,
                         headers: headers,
                         queryStringParameters: queryString,
                     } as unknown as APIGatewayProxyEvent,
-                    null,
+                    {} as Context,
                 );
 
                 expect(output.statusCode).toBe(400);
@@ -205,13 +229,13 @@ describe("authorization-handler.ts", () => {
                     response_type: "test",
                 } as APIGatewayProxyEventQueryStringParameters;
 
-                const output = await authorizationHandlerLambda.handler(
+                const output = await lambdaHandler(
                     {
                         body: body,
                         headers: headers,
                         queryStringParameters: queryString,
                     } as unknown as APIGatewayProxyEvent,
-                    null,
+                    {} as Context,
                 );
 
                 expect(output.statusCode).toBe(400);
@@ -229,11 +253,11 @@ describe("authorization-handler.ts", () => {
             it("should should fail when there is no session-id in the authorization request header", async () => {
                 const metricsSpyAddMetrics = jest.spyOn(metrics.prototype, "addMetric");
                 const loggerSpyError = jest.spyOn(logger.prototype, "error");
-                const output = await authorizationHandlerLambda.handler(
+                const output = await lambdaHandler(
                     {
                         body,
                     } as unknown as APIGatewayProxyEvent,
-                    null,
+                    {} as Context,
                 );
                 expect(output.statusCode).toBe(400);
                 expect(output.body).toContain("Invalid request: Missing session-id header");
@@ -248,17 +272,14 @@ describe("authorization-handler.ts", () => {
                 const loggerSpyError = jest.spyOn(logger.prototype, "error");
                 const sessionId = "1";
                 const sessionNotFound = new SessionNotFoundError(sessionId);
-
                 jest.spyOn(sessionService, "getSession").mockRejectedValueOnce(sessionNotFound);
 
-                authorizationHandlerLambda = new AuthorizationLambda(sessionService, authorizationRequestValidator);
-
-                const output = await authorizationHandlerLambda.handler(
+                const output = await lambdaHandler(
                     {
                         body,
                         headers,
                     } as unknown as APIGatewayProxyEvent,
-                    null,
+                    {} as Context,
                 );
                 expect(output.statusCode).toBe(400);
                 expect(output.body).toContain(`Could not find session item with id: ${sessionId}`);
@@ -273,17 +294,14 @@ describe("authorization-handler.ts", () => {
                 const metricsSpyAddMetrics = jest.spyOn(metrics.prototype, "addMetric");
                 const loggerSpyError = jest.spyOn(logger.prototype, "error");
                 const serverError = new ServerError();
-
                 jest.spyOn(sessionService, "getSession").mockRejectedValueOnce(serverError);
 
-                authorizationHandlerLambda = new AuthorizationLambda(sessionService, authorizationRequestValidator);
-
-                const output = await authorizationHandlerLambda.handler(
+                const output = await lambdaHandler(
                     {
                         body,
                         headers,
                     } as unknown as APIGatewayProxyEvent,
-                    null,
+                    {} as Context,
                 );
                 expect(output.statusCode).toBe(500);
                 expect(output.body).toContain("Server error");
