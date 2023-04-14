@@ -144,63 +144,34 @@ Mappings:
       staging: "di-devplatform-deploy"
       integration: "di-devplatform-deploy"
 
-  IPVCoreStubAudienceMapping:
+  CriAudienceMapping:
     di-ipv-cri-address-api:
       dev: "https://review-a.dev.account.gov.uk"
       build: "https://review-a.build.account.gov.uk"
       staging: "https://review-a.staging.account.gov.uk"
       integration: "https://review-a.integration.account.gov.uk"
+      production: "https://review-a.account.gov.uk"
     di-ipv-cri-fraud-api:
       dev: "https://review-f.dev.account.gov.uk"
       build: "https://review-f.build.account.gov.uk"
       staging: "https://review-f.staging.account.gov.uk"
       integration: "https://review-f.integration.account.gov.uk"
+      production: "https://review-f.account.gov.uk"
     di-ipv-cri-kbv-api:
       dev: "https://review-k.dev.account.gov.uk"
       build: "https://review-k.build.account.gov.uk"
       staging: "https://review-k.staging.account.gov.uk"
       integration: "https://review-k.integration.account.gov.uk"
+      production: "https://review-k.account.gov.uk"
     di-ipv-cri-dl-api:
       dev: "https://review-d.dev.account.gov.uk"
       build: "https://review-d.build.account.gov.uk"
       staging: "https://review-d.staging.account.gov.uk"
       integration: "https://review-d.integration.account.gov.uk"
+      production: "https://review-d.account.gov.uk"
     di-ipv-cri-passport-api:
       dev: "https://review-p.dev.account.gov.uk"
       build: "https://review-p.build.account.gov.uk"
-      staging: "https://review-p.staging.account.gov.uk"
-      integration: "https://review-p.integration.account.gov.uk"
-
-  IPVCoreStubPreProdAudienceMapping:
-    di-ipv-cri-address-api:
-      production: "https://review-a.account.gov.uk"
-    di-ipv-cri-fraud-api:
-      production: "https://review-f.account.gov.uk"
-    di-ipv-cri-kbv-api:
-      production: "https://review-k.account.gov.uk"
-    di-ipv-cri-dl-api:
-      production: "https://review-d.account.gov.uk"
-    di-ipv-cri-passport-api:
-      production: "https://review-p.account.gov.uk"
-
-  IPVCore1AudienceMapping:
-    di-ipv-cri-address-api:
-      staging: "https://review-a.staging.account.gov.uk"
-      integration: "https://review-a.integration.account.gov.uk"
-      production: "https://review-a.account.gov.uk"
-    di-ipv-cri-fraud-api:
-      staging: "https://review-f.staging.account.gov.uk"
-      integration: "https://review-f.integration.account.gov.uk"
-      production: "https://review-f.account.gov.uk"
-    di-ipv-cri-kbv-api:
-      staging: "https://review-k.staging.account.gov.uk"
-      integration: "https://review-k.integration.account.gov.uk"
-      production: "https://review-k.account.gov.uk"
-    di-ipv-cri-dl-api:
-      staging: "https://review-d.staging.account.gov.uk"
-      integration: "https://review-d.integration.account.gov.uk"
-      production: "https://review-d.account.gov.uk"
-    di-ipv-cri-passport-api:
       staging: "https://review-p.staging.account.gov.uk"
       integration: "https://review-p.integration.account.gov.uk"
       production: "https://review-p.account.gov.uk"
@@ -425,7 +396,7 @@ Resources:
     Properties:
       LogGroupName: !Sub "/aws/lambda/${SessionFunctionTS}"
       RetentionInDays: 30
-  
+
   SessionFunctionLogGroupSubscriptionFilterCSLSTS:
     Type: AWS::Logs::SubscriptionFilter
     Condition: IsNotDevEnvironment
@@ -740,7 +711,7 @@ Resources:
     Properties:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub/jwtAuthentication/audience"
       Type: String
-      Value: !FindInMap [ IPVCoreStubAudienceMapping, !Ref CriIdentifier, !Ref Environment ]
+      Value: !FindInMap [ CriAudienceMapping, !Ref CriIdentifier, !Ref Environment ]
 
   IPVCoreStubPreProdAudienceParameter:
     Condition: IsProdEnvironment
@@ -748,7 +719,7 @@ Resources:
     Properties:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod/jwtAuthentication/audience"
       Type: String
-      Value: !FindInMap [ IPVCoreStubPreProdAudienceMapping, !Ref CriIdentifier, !Ref Environment ]
+      Value: !FindInMap [ CriAudienceMapping, !Ref CriIdentifier, !Ref Environment ]
 
   IPVCore1AudienceParameter:
     Condition: IsProdLikeEnvironment
@@ -756,7 +727,7 @@ Resources:
     Properties:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core/jwtAuthentication/audience"
       Type: String
-      Value: !FindInMap [ IPVCore1AudienceMapping, !Ref CriIdentifier, !Ref Environment ]
+      Value: !FindInMap [ CriAudienceMapping, !Ref CriIdentifier, !Ref Environment ]
 
   IPVCoreStubIssuerParameter:
     Condition: IsStubEnvironment
