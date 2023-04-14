@@ -50,3 +50,9 @@ build
 .idea
 *.env
 integration-tests/target
+
+
+accesstoken/bin/
+authorization/bin/
+integration-tests/bin/
+session/bin/
