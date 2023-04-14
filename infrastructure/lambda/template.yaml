@@ -176,6 +176,13 @@ Mappings:
       integration: "https://review-p.integration.account.gov.uk"
       production: "https://review-p.account.gov.uk"
 
+  IPVCoreStubAwsBuildIssuerMapping:
+    Environment:
+      dev: "https://cri.core.build.stubs.account.gov.uk"
+      build: "https://cri.core.build.stubs.account.gov.uk"
+      staging: "https://cri.core.build.stubs.account.gov.uk"
+      integration: "https://cri.core.build.stubs.account.gov.uk"
+
   IPVCoreStubIssuerMapping:
     Environment:
       dev: "https://di-ipv-core-stub.london.cloudapps.digital"
@@ -193,6 +200,13 @@ Mappings:
       integration: "https://identity.integration.account.gov.uk"
       production: "https://identity.account.gov.uk"
 
+  IPVCoreStubAwsBuildPublicSigningJwkBase64Mapping:
+    Environment:
+      dev: "ewogICAgImt0eSI6ICJFQyIsCiAgICAidXNlIjogInNpZyIsCiAgICAiY3J2IjogIlAtMjU2IiwKICAgICJraWQiOiAiaXB2LWNvcmUtc3R1Yi0yLWZyb20tbWtqd2sub3JnIiwKICAgICJ4IjogImszOXVLYWNTdWtRQnJNWnJIRFRCVVpzbGl2cFhLRE5aVGc2aW5DSHdyTGMiLAogICAgInkiOiAiOEY4TG5RN3dHOWh4c1Q0YXgwQXR5N2lNR0l5aVlfWUdwM19xSVp6S28xQSIsCiAgICAiYWxnIjogIkVTMjU2Igp9"
+      build: "ewogICAgImt0eSI6ICJFQyIsCiAgICAidXNlIjogInNpZyIsCiAgICAiY3J2IjogIlAtMjU2IiwKICAgICJraWQiOiAiaXB2LWNvcmUtc3R1Yi0yLWZyb20tbWtqd2sub3JnIiwKICAgICJ4IjogImszOXVLYWNTdWtRQnJNWnJIRFRCVVpzbGl2cFhLRE5aVGc2aW5DSHdyTGMiLAogICAgInkiOiAiOEY4TG5RN3dHOWh4c1Q0YXgwQXR5N2lNR0l5aVlfWUdwM19xSVp6S28xQSIsCiAgICAiYWxnIjogIkVTMjU2Igp9"
+      staging: "ewogICAgImt0eSI6ICJFQyIsCiAgICAidXNlIjogInNpZyIsCiAgICAiY3J2IjogIlAtMjU2IiwKICAgICJraWQiOiAiaXB2LWNvcmUtc3R1Yi0yLWZyb20tbWtqd2sub3JnIiwKICAgICJ4IjogImszOXVLYWNTdWtRQnJNWnJIRFRCVVpzbGl2cFhLRE5aVGc2aW5DSHdyTGMiLAogICAgInkiOiAiOEY4TG5RN3dHOWh4c1Q0YXgwQXR5N2lNR0l5aVlfWUdwM19xSVp6S28xQSIsCiAgICAiYWxnIjogIkVTMjU2Igp9"
+      integration: "ewogICAgImt0eSI6ICJFQyIsCiAgICAidXNlIjogInNpZyIsCiAgICAiY3J2IjogIlAtMjU2IiwKICAgICJraWQiOiAiaXB2LWNvcmUtc3R1Yi0yLWZyb20tbWtqd2sub3JnIiwKICAgICJ4IjogImszOXVLYWNTdWtRQnJNWnJIRFRCVVpzbGl2cFhLRE5aVGc2aW5DSHdyTGMiLAogICAgInkiOiAiOEY4TG5RN3dHOWh4c1Q0YXgwQXR5N2lNR0l5aVlfWUdwM19xSVp6S28xQSIsCiAgICAiYWxnIjogIkVTMjU2Igp9"
+
   IPVCoreStubPublicSigningJwkBase64Mapping:
     Environment:
       dev: "ewogICAgImt0eSI6ICJFQyIsCiAgICAidXNlIjogInNpZyIsCiAgICAiY3J2IjogIlAtMjU2IiwKICAgICJraWQiOiAiaXB2LWNvcmUtc3R1Yi0yLWZyb20tbWtqd2sub3JnIiwKICAgICJ4IjogImszOXVLYWNTdWtRQnJNWnJIRFRCVVpzbGl2cFhLRE5aVGc2aW5DSHdyTGMiLAogICAgInkiOiAiOEY4TG5RN3dHOWh4c1Q0YXgwQXR5N2lNR0l5aVlfWUdwM19xSVp6S28xQSIsCiAgICAiYWxnIjogIkVTMjU2Igp9"
@@ -209,7 +223,14 @@ Mappings:
       staging: "eyJrdHkiOiJFQyIsImNydiI6IlAtMjU2IiwieCI6ImtlMVRNRnFNb0Z5eHg1eXpOdFFRbGw0dk9yeHZUdFBKQ0huUzRqOHpoMlUiLCJ5IjoicURLX0g4QXpKS2FIbU1zaHg5TGp2LTB0ek5rV2EtSkVHUzJtZHRKUjFPQSJ9"
       integration: "eyJrdHkiOiJFQyIsImNydiI6IlAtMjU2IiwieCI6IkJUUWdWQjU0RE9JcDU0eGRVSVg0SGtUX3pCdjZHdVdMV1RUTkdxMk15dEkiLCJ5IjoiTFFRamx5ZEtOMUhXZFJQcFBpalJObEJrbi1qaDgzZzBBUmIyNms2WVh1byJ9"
       production: "eyJrdHkiOiJFQyIsImNydiI6IlAtMjU2IiwieCI6IlVQdlU1TlBtRUxyV2lXU01WZkREN0c4dTNFSllyeXFQSVo0Nlc5TUFsUmMiLCJ5Ijoicjc3RjItS1BocHZUSUdFV2d0NVNtYXZTdkJVSENxV1V4RDZSR19GSkhWayJ9"
-
+  
+  IPVCoreStubAwsBuildRedirectURIMapping:
+    Environment:
+      dev: "https://cri.core.build.stubs.account.gov.uk/callback"
+      build: "https://cri.core.build.stubs.account.gov.uk/callback"
+      staging: "https://cri.core.build.stubs.account.gov.uk/callback"
+      integration: "https://cri.core.build.stubs.account.gov.uk/callback"
+  
   IPVCoreStubRedirectURIMapping:
     Environment:
       dev: "https://di-ipv-core-stub.london.cloudapps.digital/callback"
@@ -681,6 +702,14 @@ Resources:
       Value: !FindInMap [ SessionTtlMapping, Environment, !Ref 'Environment' ]
       Description: default time to live for a session item (seconds)
 
+  IPVCoreStubAwsBuildAuthenticationAlgParameter:
+    Condition: IsStubEnvironment
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build/jwtAuthentication/authenticationAlg"
+      Type: String
+      Value: ES256
+
   IPVCoreStubAuthenticationAlgParameter:
     Condition: IsStubEnvironment
     Type: AWS::SSM::Parameter
@@ -704,6 +733,14 @@ Resources:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core/jwtAuthentication/authenticationAlg"
       Type: String
       Value: ES256
+  
+  IPVCoreStubAwsBuildAudienceParameter:
+    Condition: IsStubEnvironment
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build/jwtAuthentication/audience"
+      Type: String
+      Value: !FindInMap [ CriAudienceMapping, !Ref CriIdentifier, !Ref Environment ]
 
   IPVCoreStubAudienceParameter:
     Condition: IsStubEnvironment
@@ -729,6 +766,14 @@ Resources:
       Type: String
       Value: !FindInMap [ CriAudienceMapping, !Ref CriIdentifier, !Ref Environment ]
 
+  IPVCoreStubAwsBuildIssuerParameter:
+    Condition: IsStubEnvironment
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build/jwtAuthentication/issuer"
+      Type: String
+      Value: !FindInMap [IPVCoreStubAwsBuildIssuerMapping, Environment, !Ref 'Environment']
+
   IPVCoreStubIssuerParameter:
     Condition: IsStubEnvironment
     Type: AWS::SSM::Parameter
@@ -753,6 +798,14 @@ Resources:
       Type: String
       Value: !FindInMap [IPVCore1IssuerMapping, Environment, !Ref 'Environment']
 
+  IPVCoreStubAwsBuildPublicSigningJwkBase64Parameter:
+    Condition: IsStubEnvironment
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build/jwtAuthentication/publicSigningJwkBase64"
+      Type: String
+      Value: !FindInMap [IPVCoreStubAwsBuildPublicSigningJwkBase64Mapping, Environment, !Ref 'Environment']
+
   IPVCoreStubPublicSigningJwkBase64Parameter:
     Condition: IsStubEnvironment
     Type: AWS::SSM::Parameter
@@ -776,6 +829,14 @@ Resources:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core/jwtAuthentication/publicSigningJwkBase64"
       Type: String
       Value: !FindInMap [IPVCore1PublicSigningJwkBase64Mapping, Environment, !Ref 'Environment']
+
+  IPVCoreStubAwsBuildRedirectURIParameter:
+    Condition: IsStubEnvironment
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build/jwtAuthentication/redirectUri"
+      Type: String
+      Value: !FindInMap [IPVCoreStubAwsBuildRedirectURIMapping, Environment, !Ref 'Environment']
 
   IPVCoreStubRedirectURIParameter:
     Condition: IsStubEnvironment
