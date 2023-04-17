@@ -3,6 +3,7 @@ import { MiddlewareObj, Request } from "@middy/core";
 import { ConfigService } from "../../common/config/config-service";
 import { SessionRequestValidatorFactory } from "../../services/session-request-validator";
 import { JweRequest } from "../../types/jwe-request";
+import { JWTPayload } from "jose/dist/types/types";
 
 const defaults = {};
 
@@ -26,12 +27,20 @@ const validateJwtMiddleware = (
                 ...jwtPayload,
             },
         };
-        logger.info("JWT validated");
         await request.event;
     };
 
+    const after = async (request: Request) => {
+        const jwtPayload = request.event.body as unknown as JWTPayload;
+        const clientSessionId = jwtPayload["govuk_signin_journey_id"] as string;
+
+        logger.appendKeys({ govuk_signin_journey_id: clientSessionId });
+        logger.info("JWT validated");
+        await request.event;
+    };
     return {
         before,
+        after,
     };
 };
 
