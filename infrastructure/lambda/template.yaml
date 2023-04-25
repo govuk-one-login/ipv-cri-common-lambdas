@@ -195,12 +195,23 @@ Mappings:
       staging: "https://cri.core.build.stubs.account.gov.uk"
       integration: "https://cri.core.build.stubs.account.gov.uk"
 
+  IPVCoreStubAwsProdIssuerMapping:
+    Environment:
+      dev: "https://cri.core.stubs.account.gov.uk"
+      build: "https://cri.core.stubs.account.gov.uk"
+      staging: "https://cri.core.stubs.account.gov.uk"
+      integration: "https://cri.core.stubs.account.gov.uk"
+
   IPVCoreStubIssuerMapping:
     Environment:
       dev: "https://di-ipv-core-stub.london.cloudapps.digital"
       build: "https://di-ipv-core-stub.london.cloudapps.digital"
       staging: "https://di-ipv-core-stub.london.cloudapps.digital"
       integration: "https://di-ipv-core-stub.london.cloudapps.digital"
+
+  IPVCoreStubPreProdAwsBuildIssuerMapping:
+    Environment:
+      production: "https://cri-preprod.core.build.stubs.account.gov.uk"
 
   IPVCoreStubPreProdIssuerMapping:
     Environment:
@@ -226,6 +237,10 @@ Mappings:
       staging: "ewogICAgImt0eSI6ICJFQyIsCiAgICAidXNlIjogInNpZyIsCiAgICAiY3J2IjogIlAtMjU2IiwKICAgICJraWQiOiAiaXB2LWNvcmUtc3R1Yi0yLWZyb20tbWtqd2sub3JnIiwKICAgICJ4IjogImszOXVLYWNTdWtRQnJNWnJIRFRCVVpzbGl2cFhLRE5aVGc2aW5DSHdyTGMiLAogICAgInkiOiAiOEY4TG5RN3dHOWh4c1Q0YXgwQXR5N2lNR0l5aVlfWUdwM19xSVp6S28xQSIsCiAgICAiYWxnIjogIkVTMjU2Igp9"
       integration: "ewogICAgImt0eSI6ICJFQyIsCiAgICAidXNlIjogInNpZyIsCiAgICAiY3J2IjogIlAtMjU2IiwKICAgICJraWQiOiAiaXB2LWNvcmUtc3R1Yi0yLWZyb20tbWtqd2sub3JnIiwKICAgICJ4IjogImszOXVLYWNTdWtRQnJNWnJIRFRCVVpzbGl2cFhLRE5aVGc2aW5DSHdyTGMiLAogICAgInkiOiAiOEY4TG5RN3dHOWh4c1Q0YXgwQXR5N2lNR0l5aVlfWUdwM19xSVp6S28xQSIsCiAgICAiYWxnIjogIkVTMjU2Igp9"
 
+  IPVCoreStubPreProdAwsBuildPublicSigningJwkBase64Mapping:
+    Environment:
+      production: "ewogICAgImt0eSI6ICJFQyIsCiAgICAidXNlIjogInNpZyIsCiAgICAiY3J2IjogIlAtMjU2IiwKICAgICJraWQiOiAiaXB2LWNvcmUtc3R1Yi0yLWZyb20tbWtqd2sub3JnIiwKICAgICJ4IjogImszOXVLYWNTdWtRQnJNWnJIRFRCVVpzbGl2cFhLRE5aVGc2aW5DSHdyTGMiLAogICAgInkiOiAiOEY4TG5RN3dHOWh4c1Q0YXgwQXR5N2lNR0l5aVlfWUdwM19xSVp6S28xQSIsCiAgICAiYWxnIjogIkVTMjU2Igp9"
+
   IPVCoreStubPreProdPublicSigningJwkBase64Mapping:
     Environment:
       production: "ewogICAgImt0eSI6ICJFQyIsCiAgICAidXNlIjogInNpZyIsCiAgICAiY3J2IjogIlAtMjU2IiwKICAgICJraWQiOiAiaXB2LWNvcmUtc3R1Yi0yLWZyb20tbWtqd2sub3JnIiwKICAgICJ4IjogImszOXVLYWNTdWtRQnJNWnJIRFRCVVpzbGl2cFhLRE5aVGc2aW5DSHdyTGMiLAogICAgInkiOiAiOEY4TG5RN3dHOWh4c1Q0YXgwQXR5N2lNR0l5aVlfWUdwM19xSVp6S28xQSIsCiAgICAiYWxnIjogIkVTMjU2Igp9"
@@ -235,7 +250,14 @@ Mappings:
       staging: "eyJrdHkiOiJFQyIsImNydiI6IlAtMjU2IiwieCI6ImtlMVRNRnFNb0Z5eHg1eXpOdFFRbGw0dk9yeHZUdFBKQ0huUzRqOHpoMlUiLCJ5IjoicURLX0g4QXpKS2FIbU1zaHg5TGp2LTB0ek5rV2EtSkVHUzJtZHRKUjFPQSJ9"
       integration: "eyJrdHkiOiJFQyIsImNydiI6IlAtMjU2IiwieCI6IkJUUWdWQjU0RE9JcDU0eGRVSVg0SGtUX3pCdjZHdVdMV1RUTkdxMk15dEkiLCJ5IjoiTFFRamx5ZEtOMUhXZFJQcFBpalJObEJrbi1qaDgzZzBBUmIyNms2WVh1byJ9"
       production: "eyJrdHkiOiJFQyIsImNydiI6IlAtMjU2IiwieCI6IlVQdlU1TlBtRUxyV2lXU01WZkREN0c4dTNFSllyeXFQSVo0Nlc5TUFsUmMiLCJ5Ijoicjc3RjItS1BocHZUSUdFV2d0NVNtYXZTdkJVSENxV1V4RDZSR19GSkhWayJ9"
-  
+
+  IPVCoreStubAwsProdRedirectURIMapping:
+    Environment:
+      dev: "https://cri.core.stubs.account.gov.uk/callback"
+      build: "https://cri.core.stubs.account.gov.uk/callback"
+      staging: "https://cri.core.stubs.account.gov.uk/callback"
+      integration: "https://cri.core.stubs.account.gov.uk/callback"
+      
   IPVCoreStubAwsBuildRedirectURIMapping:
     Environment:
       dev: "https://cri.core.build.stubs.account.gov.uk/callback"
@@ -249,6 +271,10 @@ Mappings:
       build: "https://di-ipv-core-stub.london.cloudapps.digital/callback"
       staging: "https://di-ipv-core-stub.london.cloudapps.digital/callback"
       integration: "https://di-ipv-core-stub.london.cloudapps.digital/callback"
+
+  IPVCoreStubPreProdAwsBuildRedirectURIMapping:
+    Environment:
+      production: "https://cri-preprod.core.build.stubs.account.gov.uk/callback"
 
   IPVCoreStubPreProdRedirectURIMapping:
     Environment:
@@ -720,6 +746,14 @@ Resources:
       Value: !FindInMap [ SessionTtlMapping, Environment, !Ref 'Environment' ]
       Description: default time to live for a session item (seconds)
 
+  IPVCoreStubAwsProdAuthenticationAlgParameter:
+    Condition: IsStubEnvironment
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod/jwtAuthentication/authenticationAlg"
+      Type: String
+      Value: ES256
+
   IPVCoreStubAwsBuildAuthenticationAlgParameter:
     Condition: IsStubEnvironment
     Type: AWS::SSM::Parameter
@@ -733,6 +767,14 @@ Resources:
     Type: AWS::SSM::Parameter
     Properties:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub/jwtAuthentication/authenticationAlg"
+      Type: String
+      Value: ES256
+
+  IPVCoreStubPreProdAwsBuildAuthenticationAlgParameter:
+    Condition: IsProdLikeEnvironment
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod-aws-build/jwtAuthentication/authenticationAlg"
       Type: String
       Value: ES256
 
@@ -752,6 +794,14 @@ Resources:
       Type: String
       Value: ES256
   
+  IPVCoreStubAwsProdAudienceParameter:
+    Condition: IsStubEnvironment
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod/jwtAuthentication/audience"
+      Type: String
+      Value: !FindInMap [ CriAudienceMapping, !Ref CriIdentifier, !Ref Environment ]
+
   IPVCoreStubAwsBuildAudienceParameter:
     Condition: IsStubEnvironment
     Type: AWS::SSM::Parameter
@@ -765,6 +815,14 @@ Resources:
     Type: AWS::SSM::Parameter
     Properties:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub/jwtAuthentication/audience"
+      Type: String
+      Value: !FindInMap [ CriAudienceMapping, !Ref CriIdentifier, !Ref Environment ]
+
+  IPVCoreStubPreProdAwsBuildAudienceParameter:
+    Condition: IsProdEnvironment
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod-aws-build/jwtAuthentication/audience"
       Type: String
       Value: !FindInMap [ CriAudienceMapping, !Ref CriIdentifier, !Ref Environment ]
 
@@ -784,6 +842,14 @@ Resources:
       Type: String
       Value: !FindInMap [ CriAudienceMapping, !Ref CriIdentifier, !Ref Environment ]
 
+  IPVCoreStubAwsProdIssuerParameter:
+    Condition: IsStubEnvironment
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod/jwtAuthentication/issuer"
+      Type: String
+      Value: !FindInMap [IPVCoreStubAwsProdIssuerMapping, Environment, !Ref 'Environment']
+
   IPVCoreStubAwsBuildIssuerParameter:
     Condition: IsStubEnvironment
     Type: AWS::SSM::Parameter
@@ -799,6 +865,14 @@ Resources:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub/jwtAuthentication/issuer"
       Type: String
       Value: !FindInMap [IPVCoreStubIssuerMapping, Environment, !Ref 'Environment']
+
+  IPVCoreStubPreProdAwsBuildIssuerParameter:
+    Condition: IsProdEnvironment
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod-aws-build/jwtAuthentication/issuer"
+      Type: String
+      Value: !FindInMap [IPVCoreStubPreProdAwsBuildIssuerMapping, Environment, !Ref 'Environment']
 
   IPVCoreStubPreProdIssuerParameter:
     Condition: IsProdEnvironment
@@ -816,6 +890,14 @@ Resources:
       Type: String
       Value: !FindInMap [IPVCore1IssuerMapping, Environment, !Ref 'Environment']
 
+  IPVCoreStubAwsProdPublicSigningJwkBase64Parameter:
+    Condition: IsStubEnvironment
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod/jwtAuthentication/publicSigningJwkBase64"
+      Type: String
+      Value: !FindInMap [IPVCoreStubAwsBuildPublicSigningJwkBase64Mapping, Environment, !Ref 'Environment']
+
   IPVCoreStubAwsBuildPublicSigningJwkBase64Parameter:
     Condition: IsStubEnvironment
     Type: AWS::SSM::Parameter
@@ -832,6 +914,14 @@ Resources:
       Type: String
       Value: !FindInMap [IPVCoreStubPublicSigningJwkBase64Mapping, Environment, !Ref 'Environment']
 
+  IPVCoreStubPreProdAwsBuildPublicSigningJwkBase64Parameter:
+    Condition: IsProdEnvironment
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod-aws-build/jwtAuthentication/publicSigningJwkBase64"
+      Type: String
+      Value: !FindInMap [IPVCoreStubPreProdAwsBuildPublicSigningJwkBase64Mapping, Environment, !Ref 'Environment']
+
   IPVCoreStubPreProdPublicSigningJwkBase64Parameter:
     Condition: IsProdEnvironment
     Type: AWS::SSM::Parameter
@@ -847,6 +937,14 @@ Resources:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core/jwtAuthentication/publicSigningJwkBase64"
       Type: String
       Value: !FindInMap [IPVCore1PublicSigningJwkBase64Mapping, Environment, !Ref 'Environment']
+  
+  IPVCoreStubAwsProdRedirectURIParameter:
+    Condition: IsStubEnvironment
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod/jwtAuthentication/redirectUri"
+      Type: String
+      Value: !FindInMap [IPVCoreStubAwsProdRedirectURIMapping, Environment, !Ref 'Environment']
 
   IPVCoreStubAwsBuildRedirectURIParameter:
     Condition: IsStubEnvironment
@@ -863,6 +961,14 @@ Resources:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub/jwtAuthentication/redirectUri"
       Type: String
       Value: !FindInMap [IPVCoreStubRedirectURIMapping, Environment, !Ref 'Environment']
+
+  IPVCoreStubPreProdAwsBuildRedirectURIParameter:
+    Condition: IsProdEnvironment
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod-aws-build/jwtAuthentication/redirectUri"
+      Type: String
+      Value: !FindInMap [IPVCoreStubPreProdAwsBuildRedirectURIMapping, Environment, !Ref 'Environment']
 
   IPVCoreStubPreProdRedirectURIParameter:
     Condition: IsProdEnvironment
