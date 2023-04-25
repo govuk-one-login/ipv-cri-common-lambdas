@@ -31,7 +31,8 @@ public class APISteps {
     private static final String DEFAULT_REDIRECT_URI =
             Optional.ofNullable(System.getenv("DEFAULT_REDIRECT_URI"))
                     .orElse("https://di-ipv-core-stub.london.cloudapps.digital/callback");
-    private static final String DEFAULT_CLIENT_ID = "ipv-core-stub";
+    private static final String DEFAULT_CLIENT_ID =
+            Optional.ofNullable(System.getenv("DEFAULT_CLIENT_ID")).orElse("ipv-core-stub");
     private String currentAuthorizationCode;
     private String sessionRequestBody;
     private String currentSessionId;
