@@ -37,7 +37,7 @@ sam build -t infrastructure/lambda/template.yaml
 sam deploy --stack-name "$stack_name" \
    --no-fail-on-empty-changeset \
    --no-confirm-changeset \
-   --s3-bucket=sam-cli-source-bucket-toy-dev \
+   --resolve-s3 \
    --region eu-west-2 \
    --capabilities CAPABILITY_IAM \
    --parameter-overrides \
