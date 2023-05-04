@@ -13,7 +13,7 @@ import java.net.http.HttpResponse;
 import java.util.Objects;
 import java.util.Optional;
 
-import static gov.uk.di.ipv.cri.common.api.stepDefinitions.APISteps.DEV_ACCESS_TOKEN_URI;
+import static gov.uk.di.ipv.cri.common.api.stepDefinitions.APISteps.devAccessTokenUri;
 
 public class IpvCoreStubUtil {
 
@@ -117,12 +117,25 @@ public class IpvCoreStubUtil {
     }
 
     public static HttpResponse<String> sendAuthorizationRequest(
+            String apiPath, String sessionId, String clientId)
+            throws URISyntaxException, IOException, InterruptedException {
+        return sendAuthorizationRequest(apiPath, sessionId, null, clientId);
+    }
+
+    public static HttpResponse<String> sendAuthorizationRequest(
             String apiPath, String sessionId, String redirectUri, String clientId)
             throws URISyntaxException, IOException, InterruptedException {
         var url =
                 new URIBuilder(getPrivateApiEndpoint())
                         .setPath(apiPath)
-                        .addParameter("redirect_uri", redirectUri)
+                        .addParameter(
+                                "redirect_uri",
+                                Optional.ofNullable(redirectUri)
+                                        .orElse(
+                                                new URIBuilder(getIPVCoreStubURL())
+                                                        .setPath("/callback")
+                                                        .build()
+                                                        .toString()))
                         .addParameter("client_id", clientId)
                         .addParameter("response_type", "code")
                         .addParameter("scope", "openid")
@@ -158,12 +171,12 @@ public class IpvCoreStubUtil {
             throws URISyntaxException, IOException, InterruptedException {
 
         String privateKeyJWT = getPrivateKeyJWT(authorizationCode.trim());
-        System.out.println("DEV_ACCESS_TOKEN_URI is --------" + DEV_ACCESS_TOKEN_URI);
+        System.out.println("DEV_ACCESS_TOKEN_URI is --------" + devAccessTokenUri);
         var request =
                 HttpRequest.newBuilder()
                         .uri(
                                 new URIBuilder(getPrivateApiEndpoint())
-                                        .setPath(DEV_ACCESS_TOKEN_URI)
+                                        .setPath(devAccessTokenUri)
                                         .build())
                         .header("Content-Type", "application/x-www-form-urlencoded")
                         .POST(HttpRequest.BodyPublishers.ofString(privateKeyJWT))
