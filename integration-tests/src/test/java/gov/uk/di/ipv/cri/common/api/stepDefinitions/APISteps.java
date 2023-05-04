@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.uk.di.ipv.cri.common.api.util.IpvCoreStubUtil;
-import io.cucumber.java.Before;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -24,12 +23,12 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 public class APISteps {
 
     private static final String ENVIRONMENT = "/dev"; // dev, build, staging, integration
-    private static String DEV_SESSION_URI;
-    private static String DEV_AUTHORIZATION_URI;
-    public static String DEV_ACCESS_TOKEN_URI;
+    private static String devSessionUri;
+    private static String devAuthorizationUri;
+    public static String devAccessTokenUri;
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final String DEFAULT_REDIRECT_URI =
-            Optional.ofNullable(System.getenv("DEFAULT_REDIRECT_URI"))
+            Optional.ofNullable(System.getenv("IPV_CORE_STUB_URL") + "/callback")
                     .orElse("https://di-ipv-core-stub.london.cloudapps.digital/callback");
     private static final String DEFAULT_CLIENT_ID =
             Optional.ofNullable(System.getenv("DEFAULT_CLIENT_ID")).orElse("ipv-core-stub");
@@ -38,13 +37,6 @@ public class APISteps {
     private String currentSessionId;
     private HttpResponse<String> response;
     private Map<String, String> responseBodyMap;
-
-    @Before
-    public void setUp() {
-        DEV_SESSION_URI = "";
-        DEV_AUTHORIZATION_URI = "";
-        DEV_ACCESS_TOKEN_URI = "";
-    }
 
     @Given("authorization JAR for test user {int}")
     public void setAuthorizationJARForTestUser(int rowNumber)
@@ -55,27 +47,24 @@ public class APISteps {
 
     @Given("Session lambda implementation is in {string}")
     public void setSessionEndpoint(String endPoint) {
-        if (endPoint.equals("TS")) DEV_SESSION_URI = ENVIRONMENT + "/session-ts";
-        else DEV_SESSION_URI = ENVIRONMENT + "/session";
+        devSessionUri = ENVIRONMENT + "/session" + (endPoint.equals("TS") ? "-ts" : "");
     }
 
     @Given("Authorisation lambda implementation is in {string}")
     public void setAuthorizationEndpoint(String endPoint) {
-        if (endPoint.equals("TS")) DEV_AUTHORIZATION_URI = ENVIRONMENT + "/authorization-ts";
-        else DEV_AUTHORIZATION_URI = ENVIRONMENT + "/authorization";
+        devAuthorizationUri = ENVIRONMENT + "/authorization" + (endPoint.equals("TS") ? "-ts" : "");
     }
 
     @Given("AccessToken lambda implementation is in {string}")
     public void setAccessTokenEndpoint(String endPoint) {
-        if (endPoint.equals("TS")) DEV_ACCESS_TOKEN_URI = ENVIRONMENT + "/token-ts";
-        else DEV_ACCESS_TOKEN_URI = ENVIRONMENT + "/token";
+        devAccessTokenUri = ENVIRONMENT + "/token" + (endPoint.equals("TS") ? "-ts" : "");
     }
 
     @When("user sends a request to session API")
     public void user_sends_a_request_to_session_api()
             throws URISyntaxException, IOException, InterruptedException {
-        System.out.println("DEV_SESSION_URI is --------" + DEV_SESSION_URI);
-        response = IpvCoreStubUtil.sendSessionRequest(DEV_SESSION_URI, sessionRequestBody);
+        System.out.println("DEV_SESSION_URI is --------" + devSessionUri);
+        response = IpvCoreStubUtil.sendSessionRequest(devSessionUri, sessionRequestBody);
         responseBodyMap = objectMapper.readValue(response.body(), new TypeReference<>() {});
     }
 
@@ -89,7 +78,7 @@ public class APISteps {
     @When("user sends an empty request to session end point")
     public void user_sends_an_empty_request_to_session_end_point()
             throws URISyntaxException, IOException, InterruptedException {
-        response = IpvCoreStubUtil.sendSessionRequest(DEV_SESSION_URI, "");
+        response = IpvCoreStubUtil.sendSessionRequest(devSessionUri, "");
         responseBodyMap = objectMapper.readValue(response.body(), new TypeReference<>() {});
     }
 
@@ -109,13 +98,10 @@ public class APISteps {
     @When("user sends a valid request to authorization end point")
     public void user_sends_a_valid_request_to_authorization_end_point()
             throws IOException, InterruptedException, URISyntaxException {
-        System.out.println("DEV_AUTHORIZATION_URI is --------" + DEV_AUTHORIZATION_URI);
+        System.out.println("DEV_AUTHORIZATION_URI is --------" + devAuthorizationUri);
         response =
                 IpvCoreStubUtil.sendAuthorizationRequest(
-                        DEV_AUTHORIZATION_URI,
-                        currentSessionId,
-                        DEFAULT_REDIRECT_URI,
-                        DEFAULT_CLIENT_ID);
+                        devAuthorizationUri, currentSessionId, DEFAULT_CLIENT_ID);
     }
 
     @And("a valid authorization code is returned in the response")
@@ -133,10 +119,7 @@ public class APISteps {
             throws URISyntaxException, IOException, InterruptedException {
         response =
                 IpvCoreStubUtil.sendAuthorizationRequest(
-                        DEV_AUTHORIZATION_URI,
-                        currentSessionId,
-                        DEFAULT_REDIRECT_URI,
-                        "INVALID-CLIENT-ID");
+                        devAuthorizationUri, currentSessionId, "INVALID-CLIENT-ID");
     }
 
     @When("user sends a request to authorization end point with invalid redirect uri")
@@ -144,7 +127,7 @@ public class APISteps {
             throws URISyntaxException, IOException, InterruptedException {
         response =
                 IpvCoreStubUtil.sendAuthorizationRequest(
-                        DEV_AUTHORIZATION_URI,
+                        devAuthorizationUri,
                         currentSessionId,
                         "https://wrong-incorrect-url/callback",
                         DEFAULT_CLIENT_ID);
