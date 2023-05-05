@@ -30,25 +30,25 @@ public class APISteps {
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final String DEFAULT_CLIENT_ID =
             Optional.ofNullable(System.getenv("DEFAULT_CLIENT_ID")).orElse("ipv-core-stub");
-    private final String defaultRedirectUri;
+    private static final String defaultRedirectUri;
     private String currentAuthorizationCode;
     private String sessionRequestBody;
     private String currentSessionId;
     private HttpResponse<String> response;
     private Map<String, String> responseBodyMap;
 
-    public APISteps() {
-
-        System.getenv()
-                .forEach(
-                        (key, val) -> {
-                            System.out.println("Env: " + key);
-                        });
-
+    static {
         if (System.getenv().containsValue("IPV_CORE_STUB_URL")) {
             defaultRedirectUri = String.format("%s/callback", System.getenv("IPV_CORE_STUB_URL"));
+        } else {
+            defaultRedirectUri = null;
         }
-        throw new RuntimeException("Missing environment variable: IPV_CORE_STUB_URL");
+    }
+
+    public APISteps() {
+        if (defaultRedirectUri == null) {
+            throw new RuntimeException("Missing environment variable: IPV_CORE_STUB_URL");
+        }
     }
 
     @Given("authorization JAR for test user {int}")
