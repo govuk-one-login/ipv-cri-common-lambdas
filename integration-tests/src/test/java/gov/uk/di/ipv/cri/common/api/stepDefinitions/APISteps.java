@@ -38,7 +38,14 @@ public class APISteps {
     private Map<String, String> responseBodyMap;
 
     public APISteps() {
-        if(System.getenv().containsValue("IPV_CORE_STUB_URL")) {
+
+        System.getenv()
+                .forEach(
+                        (key, val) -> {
+                            System.out.println("Env: " + key);
+                        });
+
+        if (System.getenv().containsValue("IPV_CORE_STUB_URL")) {
             defaultRedirectUri = String.format("%s/callback", System.getenv("IPV_CORE_STUB_URL"));
         }
         throw new RuntimeException("Missing environment variable: IPV_CORE_STUB_URL");
