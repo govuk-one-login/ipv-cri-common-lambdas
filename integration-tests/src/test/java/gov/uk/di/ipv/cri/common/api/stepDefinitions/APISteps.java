@@ -30,23 +30,17 @@ public class APISteps {
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final String DEFAULT_CLIENT_ID =
             Optional.ofNullable(System.getenv("DEFAULT_CLIENT_ID")).orElse("ipv-core-stub");
-    private static final String defaultRedirectUri;
+    private static final String DEFAULT_REDIRECT_URI =
+            Optional.ofNullable(System.getenv("IPV_CORE_STUB_URL") + "/callback")
+                    .orElse("https://g.com");
     private String currentAuthorizationCode;
     private String sessionRequestBody;
     private String currentSessionId;
     private HttpResponse<String> response;
     private Map<String, String> responseBodyMap;
 
-    static {
-        if (System.getenv().containsValue("IPV_CORE_STUB_URL")) {
-            defaultRedirectUri = String.format("%s/callback", System.getenv("IPV_CORE_STUB_URL"));
-        } else {
-            defaultRedirectUri = null;
-        }
-    }
-
     public APISteps() {
-        if (defaultRedirectUri == null) {
+        if (DEFAULT_REDIRECT_URI == null) {
             throw new RuntimeException("Missing environment variable: IPV_CORE_STUB_URL");
         }
     }
@@ -123,7 +117,7 @@ public class APISteps {
         currentAuthorizationCode = jsonNode.get("authorizationCode").get("value").textValue();
         assertEquals(
                 UUID.fromString(currentAuthorizationCode).toString(), currentAuthorizationCode);
-        assertEquals(defaultRedirectUri, jsonNode.get("redirectionURI").textValue());
+        assertEquals(DEFAULT_REDIRECT_URI, jsonNode.get("redirectionURI").textValue());
         assertEquals("state-ipv", jsonNode.get("state").get("value").textValue());
     }
 
