@@ -27,9 +27,12 @@ public class APISteps {
     private static String devAuthorizationUri;
     public static String devAccessTokenUri;
     private static final ObjectMapper objectMapper = new ObjectMapper();
+    private static final String REDIRECT_URI = System.getenv("IPV_CORE_STUB_URL");
     private static final String DEFAULT_REDIRECT_URI =
-            System.getenv("IPV_CORE_STUB_URL") + "/callback";
-    private static final String DEFAULT_CLIENT_ID = System.getenv("DEFAULT_CLIENT_ID");
+            (REDIRECT_URI.toLowerCase().startsWith("http"))
+                    ? REDIRECT_URI + "/callback"
+                    : "https://di-ipv-core-stub.london.cloudapps.digital/callback";
+    private static final String DEFAULT_CLIENT_ID = "null";
     private String currentAuthorizationCode;
     private String sessionRequestBody;
     private String currentSessionId;
