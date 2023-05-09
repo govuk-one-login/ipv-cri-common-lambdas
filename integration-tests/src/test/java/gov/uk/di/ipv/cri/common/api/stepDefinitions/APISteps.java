@@ -32,7 +32,7 @@ public class APISteps {
             (REDIRECT_URI.toLowerCase().startsWith("http"))
                     ? REDIRECT_URI + "/callback"
                     : "https://di-ipv-core-stub.london.cloudapps.digital/callback";
-    private static final String DEFAULT_CLIENT_ID = System.getenv("DEFAULT_CLIENT_ID");
+    private static final String DEFAULT_CLIENT_ID = "null";
     private String currentAuthorizationCode;
     private String sessionRequestBody;
     private String currentSessionId;
