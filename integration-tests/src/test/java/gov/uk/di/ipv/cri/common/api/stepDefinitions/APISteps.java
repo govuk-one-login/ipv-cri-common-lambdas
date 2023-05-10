@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.http.HttpResponse;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.logging.Logger;
 
@@ -32,7 +33,8 @@ public class APISteps {
             (REDIRECT_URI.toLowerCase().startsWith("http"))
                     ? REDIRECT_URI + "/callback"
                     : "https://di-ipv-core-stub.london.cloudapps.digital/callback";
-    private static final String DEFAULT_CLIENT_ID = System.getenv("DEFAULT_CLIENT_ID");
+    private static final String DEFAULT_CLIENT_ID =
+            Optional.ofNullable(System.getenv("DEFAULT_CLIENT_ID")).orElse("ipv-core-stub");
     private String currentAuthorizationCode;
     private String sessionRequestBody;
     private String currentSessionId;
