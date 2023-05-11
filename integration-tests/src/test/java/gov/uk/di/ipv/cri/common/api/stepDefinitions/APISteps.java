@@ -15,21 +15,24 @@ import java.net.http.HttpResponse;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.logging.Logger;
 
 import static gov.uk.di.ipv.cri.common.api.util.IpvCoreStubUtil.sendCreateAuthCodeRequest;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class APISteps {
-
+    private static final Logger LOG = Logger.getLogger(APISteps.class.getName());
     private static final String ENVIRONMENT = "/dev"; // dev, build, staging, integration
     private static String devSessionUri;
     private static String devAuthorizationUri;
     public static String devAccessTokenUri;
     private static final ObjectMapper objectMapper = new ObjectMapper();
+    private static final String REDIRECT_URI = System.getenv("IPV_CORE_STUB_URL");
     private static final String DEFAULT_REDIRECT_URI =
-            Optional.ofNullable(System.getenv("IPV_CORE_STUB_URL") + "/callback")
-                    .orElse("https://di-ipv-core-stub.london.cloudapps.digital/callback");
+            (REDIRECT_URI.toLowerCase().startsWith("http"))
+                    ? REDIRECT_URI + "/callback"
+                    : "https://di-ipv-core-stub.london.cloudapps.digital/callback";
     private static final String DEFAULT_CLIENT_ID =
             Optional.ofNullable(System.getenv("DEFAULT_CLIENT_ID")).orElse("ipv-core-stub");
     private String currentAuthorizationCode;
@@ -63,7 +66,7 @@ public class APISteps {
     @When("user sends a request to session API")
     public void user_sends_a_request_to_session_api()
             throws URISyntaxException, IOException, InterruptedException {
-        System.out.println("DEV_SESSION_URI is --------" + devSessionUri);
+        LOG.info("DEV_SESSION_URI is --------" + devSessionUri);
         response = IpvCoreStubUtil.sendSessionRequest(devSessionUri, sessionRequestBody);
         responseBodyMap = objectMapper.readValue(response.body(), new TypeReference<>() {});
     }
@@ -98,7 +101,7 @@ public class APISteps {
     @When("user sends a valid request to authorization end point")
     public void user_sends_a_valid_request_to_authorization_end_point()
             throws IOException, InterruptedException, URISyntaxException {
-        System.out.println("DEV_AUTHORIZATION_URI is --------" + devAuthorizationUri);
+        LOG.info("DEV_AUTHORIZATION_URI is --------" + devAuthorizationUri);
         response =
                 IpvCoreStubUtil.sendAuthorizationRequest(
                         devAuthorizationUri, currentSessionId, DEFAULT_CLIENT_ID);
