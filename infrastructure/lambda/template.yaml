@@ -257,14 +257,14 @@ Mappings:
       build: "https://cri.core.stubs.account.gov.uk/callback"
       staging: "https://cri.core.stubs.account.gov.uk/callback"
       integration: "https://cri.core.stubs.account.gov.uk/callback"
-      
+
   IPVCoreStubAwsBuildRedirectURIMapping:
     Environment:
       dev: "https://cri.core.build.stubs.account.gov.uk/callback"
       build: "https://cri.core.build.stubs.account.gov.uk/callback"
       staging: "https://cri.core.build.stubs.account.gov.uk/callback"
       integration: "https://cri.core.build.stubs.account.gov.uk/callback"
-  
+
   IPVCoreStubRedirectURIMapping:
     Environment:
       dev: "https://di-ipv-core-stub.london.cloudapps.digital/callback"
@@ -301,6 +301,8 @@ Mappings:
       staging: "https://identity.staging.account.gov.uk/credential-issuer/callback?id=ukPassport"
       integration: "https://identity.integration.account.gov.uk/credential-issuer/callback?id=ukPassport"
       production: "https://identity.account.gov.uk/credential-issuer/callback?id=ukPassport"
+    di-ipv-cri-toy-api:
+      staging: "https://identity.staging.account.gov.uk/credential-issuer/callback?id=toy"
 
   VerifiableCredentialIssuerMapping:
     di-ipv-cri-address-api:
@@ -793,7 +795,7 @@ Resources:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core/jwtAuthentication/authenticationAlg"
       Type: String
       Value: ES256
-  
+
   IPVCoreStubAwsProdAudienceParameter:
     Condition: IsStubEnvironment
     Type: AWS::SSM::Parameter
@@ -937,7 +939,7 @@ Resources:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core/jwtAuthentication/publicSigningJwkBase64"
       Type: String
       Value: !FindInMap [IPVCore1PublicSigningJwkBase64Mapping, Environment, !Ref 'Environment']
-  
+
   IPVCoreStubAwsProdRedirectURIParameter:
     Condition: IsStubEnvironment
     Type: AWS::SSM::Parameter
