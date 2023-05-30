@@ -58,6 +58,73 @@ jobs:
           key: "${{ github.sha }}"
 
 
+  sign_and_publish_common_cri_to_dev:
+    needs: build_common_cri
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [ TOY_DEV ]
+        include:
+          - target: TOY_DEV
+            ENABLED: "${{ vars.TOY_DEV_ENABLED }}"
+            ARTIFACT_SOURCE_BUCKET_NAME_SECRET: TOY_DEV_COMMON_CRI_ARTIFACT_SOURCE_BUCKET_NAME
+            GH_ACTIONS_ROLE_ARN_SECRET:         TOY_DEV_COMMON_CRI_GH_ACTIONS_ROLE_ARN
+            SIGNING_PROFILE_NAME:               TOY_DEV_SIGNING_PROFILE_NAME
+      max-parallel: 2
+    name: Sign and publish common_cri infrastructure to Dev
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      AWS_REGION: eu-west-2
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+
+      - name: Checkout code
+        if: matrix.ENABLED == 'true'
+        uses: actions/checkout@v3
+
+      - name: Cache restore common lambdas build
+        if: ${{ matrix.ENABLED == 'true' }}
+        id: cache-common-lambdas-restore
+        uses: actions/cache/restore@v3
+        with:
+          path: |
+            out/
+          key: "${{ github.sha }}"
+
+      - name: Assume temporary AWS role
+        if: matrix.ENABLED == 'true'
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: ${{ secrets[matrix.GH_ACTIONS_ROLE_ARN_SECRET] }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Python
+        if: matrix.ENABLED == 'true'
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.11.2
+
+      - name: Setup SAM
+        if: matrix.ENABLED == 'true'
+        uses: aws-actions/setup-sam@v2
+        with:
+          version: 1.74.0
+
+      - name: SAM Validate
+        if: matrix.ENABLED == 'true'
+        run: sam validate --region ${{ env.AWS_REGION }} -t out/template.yaml
+
+      - name: Deploy SAM app
+        uses: alphagov/di-devplatform-upload-action@v3.2
+        with:
+          artifact-bucket-name: "${{ secrets[matrix.ARTIFACT_SOURCE_BUCKET_NAME_SECRET] }}"
+          signing-profile-name: "${{ secrets[matrix.SIGNING_PROFILE_NAME] }}"
+          working-directory: ./out
+
   sign_and_publish_common_cri_to_build:
     needs: build_common_cri
     continue-on-error: true
