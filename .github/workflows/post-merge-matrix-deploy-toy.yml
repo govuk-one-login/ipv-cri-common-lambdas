@@ -64,14 +64,40 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [ TOY_DEV ]
+        target: [ ADDRESS_DEV, DL_DEV, FRAUD_DEV, KBV_DEV, PASSPORTA_DEV, TOY_DEV ]
         include:
+          - target: ADDRESS_DEV
+            ENABLED: "${{ vars.ADDRESS_DEV_ENABLED }}"
+            ARTIFACT_SOURCE_BUCKET_NAME_SECRET: ADDRESS_DEV_COMMON_CRI_ARTIFACT_SOURCE_BUCKET_NAME
+            GH_ACTIONS_ROLE_ARN_SECRET:         ADDRESS_DEV_COMMON_CRI_GH_ACTIONS_ROLE_ARN
+            SIGNING_PROFILE_NAME:               ADDRESS_DEV_SIGNING_PROFILE_NAME
+          - target: DL_DEV
+            ENABLED: "${{ vars.DL_DEV_ENABLED }}"
+            ARTIFACT_SOURCE_BUCKET_NAME_SECRET: DL_DEV_COMMON_CRI_ARTIFACT_SOURCE_BUCKET_NAME
+            GH_ACTIONS_ROLE_ARN_SECRET:         DL_DEV_COMMON_CRI_GH_ACTIONS_ROLE_ARN
+            SIGNING_PROFILE_NAME:               DL_DEV_SIGNING_PROFILE_NAME
+          - target: FRAUD_DEV
+            ENABLED: "${{ vars.FRAUD_DEV_ENABLED }}"
+            ARTIFACT_SOURCE_BUCKET_NAME_SECRET: FRAUD_DEV_COMMON_CRI_ARTIFACT_SOURCE_BUCKET_NAME
+            GH_ACTIONS_ROLE_ARN_SECRET:         FRAUD_DEV_COMMON_CRI_GH_ACTIONS_ROLE_ARN
+            SIGNING_PROFILE_NAME:               FRAUD_DEV_SIGNING_PROFILE_NAME
+          - target: KBV_DEV
+            ENABLED: "${{ vars.KBV_DEV_ENABLED }}"
+            ARTIFACT_SOURCE_BUCKET_NAME_SECRET: KBV_DEV_COMMON_CRI_ARTIFACT_SOURCE_BUCKET_NAME
+            GH_ACTIONS_ROLE_ARN_SECRET:         KBV_DEV_COMMON_CRI_GH_ACTIONS_ROLE_ARN
+            SIGNING_PROFILE_NAME:               KBV_DEV_SIGNING_PROFILE_NAME
+          - target: PASSPORTA_DEV
+            ENABLED: "${{ vars.PASSPORTA_DEV_ENABLED }}"
+            ARTIFACT_SOURCE_BUCKET_NAME_SECRET: PASSPORTA_DEV_COMMON_CRI_ARTIFACT_SOURCE_BUCKET_NAME
+            GH_ACTIONS_ROLE_ARN_SECRET:         PASSPORTA_DEV_COMMON_CRI_GH_ACTIONS_ROLE_ARN
+            SIGNING_PROFILE_NAME:               PASSPORTA_DEV_SIGNING_PROFILE_NAME
           - target: TOY_DEV
             ENABLED: "${{ vars.TOY_DEV_ENABLED }}"
             ARTIFACT_SOURCE_BUCKET_NAME_SECRET: TOY_DEV_COMMON_CRI_ARTIFACT_SOURCE_BUCKET_NAME
             GH_ACTIONS_ROLE_ARN_SECRET:         TOY_DEV_COMMON_CRI_GH_ACTIONS_ROLE_ARN
             SIGNING_PROFILE_NAME:               TOY_DEV_SIGNING_PROFILE_NAME
-      max-parallel: 2
+
+      # max-parallel: 2
     name: Sign and publish common_cri infrastructure to Dev
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -126,7 +152,7 @@ jobs:
           working-directory: ./out
 
   sign_and_publish_common_cri_to_build:
-    needs: build_common_cri
+    needs: sign_and_publish_common_cri_to_dev
     continue-on-error: true
     strategy:
       fail-fast: false
@@ -138,7 +164,7 @@ jobs:
             ARTIFACT_SOURCE_BUCKET_NAME_SECRET: TOY_BUILD_COMMON_CRI_ARTIFACT_SOURCE_BUCKET_NAME
             GH_ACTIONS_ROLE_ARN_SECRET:         TOY_BUILD_COMMON_CRI_GH_ACTIONS_ROLE_ARN
             SIGNING_PROFILE_NAME:               TOY_BUILD_SIGNING_PROFILE_NAME
-      max-parallel: 2
+      # max-parallel: 2
     name: Sign and publish common_cri infrastructure to Build
     runs-on: ubuntu-latest
     timeout-minutes: 10
