@@ -143,6 +143,7 @@ Mappings:
       build: "di-devplatform-deploy"
       staging: "di-devplatform-deploy"
       integration: "di-devplatform-deploy"
+      production: "di-devplatform-deploy"
     di-ipv-cri-toy-api:
       dev: "di-devplatform-deploy"
       build: "di-devplatform-deploy"
