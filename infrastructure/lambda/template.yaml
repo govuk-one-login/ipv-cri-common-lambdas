@@ -139,7 +139,7 @@ Mappings:
       integration: "di-ipv-cri-pipeline-deployment"
       production: "di-ipv-cri-pipeline-deployment"
     di-ipv-cri-passport-api:
-      dev: "di-ipv-cri-pipeline-deployment" # cri-dev
+      dev: "di-devplatform-deploy"
       build: "di-devplatform-deploy"
       staging: "di-devplatform-deploy"
       integration: "di-devplatform-deploy"
