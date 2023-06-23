@@ -97,7 +97,6 @@ jobs:
             GH_ACTIONS_ROLE_ARN_SECRET:         TOY_DEV_COMMON_CRI_GH_ACTIONS_ROLE_ARN
             SIGNING_PROFILE_NAME:               TOY_DEV_SIGNING_PROFILE_NAME
 
-      # max-parallel: 2
     name: Sign and publish common_cri infrastructure to Dev
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -145,6 +144,7 @@ jobs:
         run: sam validate --region ${{ env.AWS_REGION }} -t out/template.yaml
 
       - name: Deploy SAM app
+        if: matrix.ENABLED == 'true'
         uses: alphagov/di-devplatform-upload-action@v3.2
         with:
           artifact-bucket-name: "${{ secrets[matrix.ARTIFACT_SOURCE_BUCKET_NAME_SECRET] }}"
@@ -157,14 +157,38 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [ TOY_BUILD ]
+        target: [ ADDRESS_BUILD, DL_BUILD, FRAUD_BUILD, KBV_BUILD, PASSPORTA_BUILD, TOY_BUILD ]
         include:
+          - target: ADDRESS_BUILD
+            ENABLED: "${{ vars.ADDRESS_BUILD_ENABLED }}"
+            ARTIFACT_SOURCE_BUCKET_NAME_SECRET: ADDRESS_BUILD_COMMON_CRI_ARTIFACT_SOURCE_BUCKET_NAME
+            GH_ACTIONS_ROLE_ARN_SECRET:         ADDRESS_BUILD_COMMON_CRI_GH_ACTIONS_ROLE_ARN
+            SIGNING_PROFILE_NAME:               ADDRESS_BUILD_SIGNING_PROFILE_NAME
+          - target: FRAUD_BUILD
+            ENABLED: "${{ vars.FRAUD_BUILD_ENABLED }}"
+            ARTIFACT_SOURCE_BUCKET_NAME_SECRET: FRAUD_BUILD_COMMON_CRI_ARTIFACT_SOURCE_BUCKET_NAME
+            GH_ACTIONS_ROLE_ARN_SECRET:         FRAUD_BUILD_COMMON_CRI_GH_ACTIONS_ROLE_ARN
+            SIGNING_PROFILE_NAME:               FRAUD_BUILD_SIGNING_PROFILE_NAME
+          - target: KBV_BUILD
+            ENABLED: "${{ vars.KBV_BUILD_ENABLED }}"
+            ARTIFACT_SOURCE_BUCKET_NAME_SECRET: KBV_BUILD_COMMON_CRI_ARTIFACT_SOURCE_BUCKET_NAME
+            GH_ACTIONS_ROLE_ARN_SECRET:         KBV_BUILD_COMMON_CRI_GH_ACTIONS_ROLE_ARN
+            SIGNING_PROFILE_NAME:               KBV_BUILD_SIGNING_PROFILE_NAME
+          - target: DL_BUILD
+            ENABLED: "${{ vars.DL_BUILD_ENABLED }}"
+            ARTIFACT_SOURCE_BUCKET_NAME_SECRET: DL_BUILD_COMMON_CRI_ARTIFACT_SOURCE_BUCKET_NAME
+            GH_ACTIONS_ROLE_ARN_SECRET:         DL_BUILD_COMMON_CRI_GH_ACTIONS_ROLE_ARN
+            SIGNING_PROFILE_NAME:               DL_BUILD_SIGNING_PROFILE_NAME
+          - target: PASSPORTA_BUILD
+            ENABLED: "${{ vars.PASSPORTA_BUILD_ENABLED }}"
+            ARTIFACT_SOURCE_BUCKET_NAME_SECRET: PASSPORTA_BUILD_COMMON_CRI_ARTIFACT_SOURCE_BUCKET_NAME
+            GH_ACTIONS_ROLE_ARN_SECRET:         PASSPORTA_BUILD_COMMON_CRI_GH_ACTIONS_ROLE_ARN
+            SIGNING_PROFILE_NAME:               PASSPORTA_BUILD_SIGNING_PROFILE_NAME
           - target: TOY_BUILD
             ENABLED: "${{ vars.TOY_BUILD_ENABLED }}"
             ARTIFACT_SOURCE_BUCKET_NAME_SECRET: TOY_BUILD_COMMON_CRI_ARTIFACT_SOURCE_BUCKET_NAME
             GH_ACTIONS_ROLE_ARN_SECRET:         TOY_BUILD_COMMON_CRI_GH_ACTIONS_ROLE_ARN
             SIGNING_PROFILE_NAME:               TOY_BUILD_SIGNING_PROFILE_NAME
-      # max-parallel: 2
     name: Sign and publish common_cri infrastructure to Build
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -212,6 +236,7 @@ jobs:
         run: sam validate --region ${{ env.AWS_REGION }} -t out/template.yaml
 
       - name: Deploy SAM app
+        if: matrix.ENABLED == 'true'
         uses: alphagov/di-devplatform-upload-action@v3.2
         with:
           artifact-bucket-name: "${{ secrets[matrix.ARTIFACT_SOURCE_BUCKET_NAME_SECRET] }}"
