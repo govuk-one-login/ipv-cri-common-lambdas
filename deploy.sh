@@ -17,12 +17,12 @@ fi
 
 if [ -z "$audit_event_name_prefix" ]
 then
-  audit_event_name_prefix="/common-cri-parameters/KbvAuditEventNamePrefix"
+  audit_event_name_prefix="/common-cri-parameters/AuditEventNamePrefix"
 fi
 
 if [ -z "$cri_identifier" ]
 then
-  cri_identifier="/common-cri-parameters/KbvCriIdentifier"
+  cri_identifier="/common-cri-parameters/CriIdentifier"
 fi
 
 
