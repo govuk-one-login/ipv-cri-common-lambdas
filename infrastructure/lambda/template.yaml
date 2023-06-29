@@ -1164,6 +1164,57 @@ Resources:
       LogGroupName: !Sub /aws/apigateway/${AWS::StackName}-${PreMergeDevOnlyApi}-private-AccessLogs
       RetentionInDays: 7
 
+  StubAuditEventQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      MessageRetentionPeriod: 604800 # 7 days
+      VisibilityTimeout: 360
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt StubAuditEventDLQ.Arn
+        maxReceiveCount: 1
+
+  StubAuditEventDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      MessageRetentionPeriod: 604800 # 7 days
+      VisibilityTimeout: 360
+
+  AuditEventConsumerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: audit-event-consumer-lambda.lambdaHandler
+      CodeUri: ../../lambdas
+      Runtime: nodejs18.x
+      FunctionName: !Sub "${AWS::StackName}-AuditEventConsumerFunction"
+      Environment:
+        Variables:
+          POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-audit-event-consumer"
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - AWSXrayWriteOnlyAccess
+        - Statement:
+            - Effect: Allow
+              Action:
+                - sqs:ReceiveMessage
+              Resource:
+                - !GetAtt StubAuditEventQueue.Arn
+    Metadata: # Manage esbuild properties
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: "node18"
+        Sourcemap: true # Enabling source maps will create the required NODE_OPTIONS environment variables on your lambda function during sam build
+        EntryPoints:
+          - src/handlers/audit-event-consumer-handler.ts
+        External:
+          - '@aws-sdk/*'
+
+  AuditEventConsumerFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AuditEventConsumerFunction}"
+      RetentionInDays: 30
+
 Outputs:
   StackName:
     Description: "CloudFormation stack name"
