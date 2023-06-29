@@ -5,7 +5,7 @@ import { Context, SQSEvent, SQSRecord } from "aws-lambda";
 import { AuditEventConsumerLambda } from "../../../src/handlers/audit-event-consumer-handler";
 import errorMiddleware from "../../../src/middlewares/error/error-middleware";
 
-describe("access-token-handler.ts", () => {
+describe("audit-event-consumer-handler.ts", () => {
     const logger = jest.mocked(Logger);
     const metrics = jest.mocked(Metrics);
     let auditEventConsumerLambda: AuditEventConsumerLambda;
