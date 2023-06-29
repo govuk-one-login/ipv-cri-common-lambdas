@@ -53,6 +53,6 @@ describe("audit-event-consumer-handler.ts", () => {
         };
         await lambdaHandler(mockEvent, {} as Context);
         expect(loggerSpy).toHaveBeenCalledTimes(1);
-        expect(loggerSpy).toHaveBeenCalledWith("Audit event consumed:", mockBody);
+        expect(loggerSpy).toHaveBeenCalledWith("Audit event consumed", mockBody);
     });
 });
