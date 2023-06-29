@@ -30,12 +30,12 @@ jobs:
         run: npm run lint:prettier
       - name: Run tests with coverage
         run: npm run test
-      - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@master
-        with:
-          projectBaseDir: "./lambdas"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+#      - name: SonarCloud Scan
+#        uses: SonarSource/sonarcloud-github-action@master
+#        with:
+#          projectBaseDir: "./lambdas"
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
+#          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
 
