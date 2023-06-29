@@ -351,6 +351,54 @@ Resources:
   # Stub Audit Event Consumer  #
   ##############################
 
+  AuditEventQueueConsumerRole:
+    Type: AWS::IAM::Role
+    Condition: IsNotProdLikeEnvironment
+    Properties:
+      Description: >
+        A role to use in the SQS queue and KMS key policies. To be overridden in envs other than dev and build with
+        supplied TXMA roles when they exist.
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Policies:
+        - PolicyName: AWSLambdaBasicExecutionRole
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                Resource: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*"
+        - PolicyName: ReadSqs
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "sqs:SendMessage"
+                  - "sqs:ReceiveMessage"
+                  - "sqs:DeleteMessage"
+                  - "sqs:GetQueueAttributes"
+                Resource:
+                  - !Sub
+                    - "arn:aws:sqs:${AWS::Region}:${AWS::AccountId}:${queueName}"
+                    - queueName: !ImportValue AuditEventQueueName
+              - Effect: Allow
+                Action:
+                  - 'kms:Decrypt'
+                  - 'kms:GenerateDataKey'
+                Resource:
+                  - !ImportValue AuditEventQueueEncryptionKeyArn
+
   AuditEventConsumerFunction:
     Type: AWS::Serverless::Function
     Condition: IsNotProdLikeEnvironment
@@ -362,19 +410,7 @@ Resources:
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-audit-event-consumer"
-      Policies:
-        - AWSLambdaBasicExecutionRole
-        - AWSXrayWriteOnlyAccess
-        - Statement:
-            - Effect: Allow
-              Action:
-                - sqs:ReceiveMessage
-                - sqs:DeleteMessage
-                - sqs:GetQueueAttributes
-              Resource:
-                - !Sub
-                  - "arn:aws:sqs:${AWS::Region}:${AWS::AccountId}:${queueName}"
-                  - queueName: !ImportValue AuditEventQueueName
+      Role: !GetAtt AuditEventQueueConsumerRole.Arn
     Metadata: # Manage esbuild properties
       BuildMethod: esbuild
       BuildProperties:
