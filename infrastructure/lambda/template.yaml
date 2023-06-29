@@ -1215,6 +1215,14 @@ Resources:
       LogGroupName: !Sub "/aws/lambda/${AuditEventConsumerFunction}"
       RetentionInDays: 30
 
+  AuditEventConsumerFunctionEventSourceMapping:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      BatchSize: 10
+      Enabled: true
+      EventSourceArn: !GetAtt StubAuditEventQueue.Arn
+      FunctionName: !GetAtt AuditEventConsumerFunction.Arn
+
 Outputs:
   StackName:
     Description: "CloudFormation stack name"
