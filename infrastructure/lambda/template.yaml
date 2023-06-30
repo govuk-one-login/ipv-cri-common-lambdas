@@ -46,6 +46,8 @@ Conditions:
     - !Equals [ !Ref Environment, staging ]
     - !Equals [ !Ref Environment, integration ]
     - !Equals [ !Ref Environment, production ]
+  IsNotProdLikeEnvironment: !Not 
+    - Condition: IsProdLikeEnvironment
   IsProdEnvironment: !Equals
     - !Ref Environment
     - production
@@ -344,6 +346,76 @@ Mappings:
       production: "https://review-toy.account.gov.uk"
 
 Resources:
+
+  ##############################
+  # Stub Audit Event Consumer  #
+  ##############################
+
+  AuditEventConsumerFunction:
+    Type: AWS::Serverless::Function
+    Condition: IsNotProdLikeEnvironment
+    Properties:
+      Handler: audit-event-consumer-handler.lambdaHandler
+      CodeUri: ../../lambdas
+      Runtime: nodejs18.x
+      FunctionName: !Sub "${AWS::StackName}-AuditEventConsumerFunction"
+      Environment:
+        Variables:
+          POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-audit-event-consumer"
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - AWSXrayWriteOnlyAccess
+        - Statement:
+          - Effect: Allow
+            Action:
+              - "sqs:SendMessage"
+              - "sqs:ReceiveMessage"
+              - "sqs:DeleteMessage"
+              - "sqs:GetQueueAttributes"
+            Resource:
+              - !Sub
+                - "arn:aws:sqs:${AWS::Region}:${AWS::AccountId}:${queueName}"
+                - queueName: !ImportValue AuditEventQueueName
+        - Statement:
+          - Effect: Allow
+            Action:
+              - 'kms:Decrypt'
+              - 'kms:GenerateDataKey'
+            Resource:
+              - !ImportValue AuditEventQueueEncryptionKeyArn
+    Metadata: # Manage esbuild properties
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: "node18"
+        Sourcemap: true # Enabling source maps will create the required NODE_OPTIONS environment variables on your lambda function during sam build
+        EntryPoints:
+          - src/handlers/audit-event-consumer-handler.ts
+        External:
+          - '@aws-sdk/*'
+
+  AuditEventConsumerFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Condition: IsNotProdLikeEnvironment
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AuditEventConsumerFunction}"
+      RetentionInDays: 30
+
+  AuditEventConsumerFunctionEventSourceMapping:
+    Type: AWS::Lambda::EventSourceMapping
+    Condition: IsNotProdLikeEnvironment
+    Properties:
+      BatchSize: 10
+      Enabled: true
+      EventSourceArn: !Sub
+        - "arn:aws:sqs:${AWS::Region}:${AWS::AccountId}:${queueName}"
+        - queueName: !ImportValue AuditEventQueueName
+      FunctionName: !Ref AuditEventConsumerFunction
+
+  #########################
+  # Common OAuth Lambdas  #
+  #########################
+
   SessionFunction:
     Type: AWS::Serverless::Function
     Properties:
