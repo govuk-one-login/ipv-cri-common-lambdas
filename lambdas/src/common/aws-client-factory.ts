@@ -17,7 +17,7 @@ const createDynamoDbClient = () => {
     };
     const unmarshallOptions = {
         // Whether to return numbers as a string instead of converting them to native JavaScript numbers.
-        wrapNumbers: false,
+        wrapNumbers: false, #test
     };
     const translateConfig = { marshallOptions, unmarshallOptions };
     const dbClient = new DynamoDBClient({ region: awsRegion, credentials: fromEnv() });
