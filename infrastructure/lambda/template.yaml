@@ -351,24 +351,6 @@ Resources:
   # Stub Audit Event Consumer  #
   ##############################
 
-  # AuditEventQueueConsumerRole:
-  #   Type: AWS::IAM::Role
-  #   Condition: IsNotProdLikeEnvironment
-  #   Properties:
-  #     Description: >
-  #       A role to use in the SQS queue and KMS key policies. To be overridden in envs other than dev and build with
-  #       supplied TXMA roles when they exist.
-  #     AssumeRolePolicyDocument:
-  #       Version: "2012-10-17"
-  #       Statement:
-  #         - Effect: Allow
-  #           Principal:
-  #             Service:
-  #               - lambda.amazonaws.com
-  #           Action:
-  #             - 'sts:AssumeRole'
-  #     Policies:
-
   AuditEventConsumerFunction:
     Type: AWS::Serverless::Function
     Condition: IsNotProdLikeEnvironment

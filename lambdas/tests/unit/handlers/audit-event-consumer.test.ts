@@ -56,7 +56,7 @@ describe("audit-event-consumer-handler.ts", () => {
         expect(loggerSpy).toHaveBeenCalledWith(
             "Audit event consumed",
             "IPV_KBV_CRI_RESPONSE_RECEIVED",
-            "Session ID: 6492fead-283b-4fa9-b57a-6f7da8f3fbb8"
+            "Session ID: 6492fead-283b-4fa9-b57a-6f7da8f3fbb8",
         );
     });
 });
