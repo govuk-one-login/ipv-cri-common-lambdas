@@ -11,7 +11,8 @@ export class AuditEventConsumerLambda implements LambdaInterface {
     @_tracer.captureLambdaHandler({ captureResponse: false })
     public async handler(event: SQSEvent, _context: unknown): Promise<void> {
         for (const record of event.Records) {
-            logger.info("Audit event consumed", JSON.parse(record.body));
+            const body = JSON.parse(record.body);
+            logger.info("Audit event consumed", body.event_name, `Session ID: ${body.user.session_id}`);
         }
     }
 }

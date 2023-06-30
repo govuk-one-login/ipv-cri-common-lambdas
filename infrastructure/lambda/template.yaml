@@ -368,16 +368,8 @@ Resources:
             Action:
               - 'sts:AssumeRole'
       Policies:
-        - PolicyName: AWSLambdaBasicExecutionRole
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: Allow
-                Action:
-                  - "logs:CreateLogGroup"
-                  - "logs:CreateLogStream"
-                  - "logs:PutLogEvents"
-                Resource: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*"
+        - AWSLambdaBasicExecutionRole
+        - AWSXrayWriteOnlyAccess
         - PolicyName: ReadSqs
           PolicyDocument:
             Version: "2012-10-17"
@@ -392,6 +384,10 @@ Resources:
                   - !Sub
                     - "arn:aws:sqs:${AWS::Region}:${AWS::AccountId}:${queueName}"
                     - queueName: !ImportValue AuditEventQueueName
+        - PolicyName: DecryptMessages
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
               - Effect: Allow
                 Action:
                   - 'kms:Decrypt'
