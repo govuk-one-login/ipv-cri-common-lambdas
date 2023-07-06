@@ -5,6 +5,8 @@ import { Context, SQSEvent, SQSRecord } from "aws-lambda";
 import { AuditEventConsumerLambda } from "../../../src/handlers/audit-event-consumer-handler";
 import errorMiddleware from "../../../src/middlewares/error/error-middleware";
 
+jest.mock("@aws-lambda-powertools/metrics");
+jest.mock("@aws-lambda-powertools/logger");
 describe("audit-event-consumer-handler.ts", () => {
     const logger = jest.mocked(Logger);
     const metrics = jest.mocked(Metrics);
@@ -51,11 +53,10 @@ describe("audit-event-consumer-handler.ts", () => {
                 } as SQSRecord,
             ],
         };
-        await lambdaHandler(mockEvent, {} as Context);
+        const _response = await lambdaHandler(mockEvent, {} as Context);
         expect(loggerSpy).toHaveBeenCalledTimes(1);
         expect(loggerSpy).toHaveBeenCalledWith(
-            "Audit event consumed",
-            "IPV_KBV_CRI_RESPONSE_RECEIVED",
+            "Audit event consumed: IPV_KBV_CRI_RESPONSE_RECEIVED",
             "Session ID: 6492fead-283b-4fa9-b57a-6f7da8f3fbb8",
         );
     });
