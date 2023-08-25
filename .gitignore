@@ -56,3 +56,5 @@ accesstoken/bin/
 authorization/bin/
 integration-tests/bin/
 session/bin/
+
+*venv/
