@@ -152,6 +152,12 @@ Mappings:
       staging: "di-devplatform-deploy"
       integration: "di-devplatform-deploy"
       production: "di-devplatform-deploy"
+    di-ipv-cri-hmrc-kbv-api:
+      dev: "di-devplatform-deploy"
+      build: "di-devplatform-deploy"
+      staging: "di-devplatform-deploy"
+      integration: "di-devplatform-deploy"
+      production: "di-devplatform-deploy"
 
   CriAudienceMapping:
     di-ipv-cri-address-api:
@@ -190,6 +196,12 @@ Mappings:
       staging: "https://review-toy.staging.account.gov.uk"
       integration: "https://review-toy.integration.account.gov.uk"
       production: "https://review-toy.account.gov.uk"
+    di-ipv-cri-hmrc-kbv-api:
+      dev: "https://review-hk.dev.account.gov.uk"
+      build: "https://review-hk.build.account.gov.uk"
+      staging: "https://review-hk.staging.account.gov.uk"
+      integration: "https://review-hk.integration.account.gov.uk"
+      production: "https://review-hk.account.gov.uk"
 
   IPVCoreStubAwsBuildIssuerMapping:
     Environment:
@@ -344,6 +356,12 @@ Mappings:
       staging: "https://review-toy.staging.account.gov.uk"
       integration: "https://review-toy.integration.account.gov.uk"
       production: "https://review-toy.account.gov.uk"
+    di-ipv-cri-hmrc-kbv-api:
+      dev: "https://review-hk.dev.account.gov.uk"
+      build: "https://review-hk.build.account.gov.uk"
+      staging: "https://review-hk.staging.account.gov.uk"
+      integration: "https://review-hk.integration.account.gov.uk"
+      production: "https://review-hk.account.gov.uk"
 
 Resources:
 
