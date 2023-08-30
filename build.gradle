@@ -48,8 +48,9 @@ spotless {
 
 sonarqube {
 	properties {
-		property "sonar.projectKey", "alphagov_di-ipv-cri-common-lambdas"
-		property "sonar.organization", "alphagov"
+		property "sonar.projectName", "di-ipv-cri-common-lambdas"
+		property "sonar.projectKey", "govuk-one-login_di-ipv-cri-common-lambdas"
+		property "sonar.organization", "gds-document-checking"
 		property "sonar.host.url", "https://sonarcloud.io"
 	}
 }
