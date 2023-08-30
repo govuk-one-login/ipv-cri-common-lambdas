@@ -58,3 +58,6 @@ integration-tests/bin/
 session/bin/
 
 *venv/
+
+# sonar
+**/.scannerwork
