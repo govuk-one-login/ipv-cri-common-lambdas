@@ -152,7 +152,7 @@ Mappings:
       staging: "di-devplatform-deploy"
       integration: "di-devplatform-deploy"
       production: "di-devplatform-deploy"
-    di-ipv-cri-hmrc-kbv-api:
+    di-ipv-cri-kbv-hmrc-api:
       dev: "di-devplatform-deploy"
       build: "di-devplatform-deploy"
       staging: "di-devplatform-deploy"
@@ -202,7 +202,7 @@ Mappings:
       staging: "https://review-toy.staging.account.gov.uk"
       integration: "https://review-toy.integration.account.gov.uk"
       production: "https://review-toy.account.gov.uk"
-    di-ipv-cri-hmrc-kbv-api:
+    di-ipv-cri-kbv-hmrc-api:
       dev: "https://review-hk.dev.account.gov.uk"
       build: "https://review-hk.build.account.gov.uk"
       staging: "https://review-hk.staging.account.gov.uk"
@@ -368,7 +368,7 @@ Mappings:
       staging: "https://review-toy.staging.account.gov.uk"
       integration: "https://review-toy.integration.account.gov.uk"
       production: "https://review-toy.account.gov.uk"
-    di-ipv-cri-hmrc-kbv-api:
+    di-ipv-cri-kbv-hmrc-api:
       dev: "https://review-hk.dev.account.gov.uk"
       build: "https://review-hk.build.account.gov.uk"
       staging: "https://review-hk.staging.account.gov.uk"
