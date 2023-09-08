@@ -64,6 +64,15 @@ Conditions:
       - Fn::Equals:
           - !Ref PermissionsBoundary
           - "none"
+
+  IsCSLSDisabled: !And
+    - !Not
+      - !Or
+        - !Equals [!Ref CriIdentifier, "di-ipv-cri-hmrc-check-api"]
+        - !Equals [!Ref CriIdentifier, "di-ipv-cri-hmrc-kbv-api"]
+    - !Not
+      - !Equals [!Ref Environment, "dev"]
+
 Globals:
   Function:
     VpcConfig:
@@ -507,7 +516,7 @@ Resources:
 
   SessionFunctionLogGroupSubscriptionFilterCSLS:
     Type: AWS::Logs::SubscriptionFilter
-    Condition: IsNotDevEnvironment
+    Condition: IsCSLSDisabled
     Properties:
       DestinationArn: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython"
       FilterPattern: ""
@@ -575,7 +584,7 @@ Resources:
 
   SessionFunctionLogGroupSubscriptionFilterCSLSTS:
     Type: AWS::Logs::SubscriptionFilter
-    Condition: IsNotDevEnvironment
+    Condition: IsCSLSDisabled
     Properties:
       DestinationArn: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython"
       FilterPattern: ""
@@ -660,7 +669,7 @@ Resources:
 
   AuthorizationFunctionLogGroupSubscriptionFilterCSLS:
     Type: AWS::Logs::SubscriptionFilter
-    Condition: IsNotDevEnvironment
+    Condition: IsCSLSDisabled
     Properties:
       DestinationArn: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython"
       FilterPattern: ""
@@ -668,7 +677,7 @@ Resources:
 
   AuthorizationFunctionLogGroupSubscriptionFilterCSLSTS:
     Type: AWS::Logs::SubscriptionFilter
-    Condition: IsNotDevEnvironment
+    Condition: IsCSLSDisabled
     Properties:
       DestinationArn: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython"
       FilterPattern: ""
@@ -763,7 +772,7 @@ Resources:
 
   AccessTokenFunctionLogGroupSubscriptionFilterCSLS:
     Type: AWS::Logs::SubscriptionFilter
-    Condition: IsNotDevEnvironment
+    Condition: IsCSLSDisabled
     Properties:
       DestinationArn: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython"
       FilterPattern: ""
@@ -771,7 +780,7 @@ Resources:
 
   AccessTokenFunctionLogGroupSubscriptionFilterCSLSTS:
     Type: AWS::Logs::SubscriptionFilter
-    Condition: IsNotDevEnvironment
+    Condition: IsCSLSDisabled
     Properties:
       DestinationArn: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython"
       FilterPattern: ""
