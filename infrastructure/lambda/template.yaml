@@ -200,11 +200,11 @@ Mappings:
       integration: "https://review-d.integration.account.gov.uk"
       production: "https://review-d.account.gov.uk"
     di-ipv-cri-passport-api:
-      dev: "https://review-pa.dev.account.gov.uk"
-      build: "https://review-pa.build.account.gov.uk"
-      staging: "https://review-pa.staging.account.gov.uk"
-      integration: "https://review-pa.integration.account.gov.uk"
-      production: "https://review-pa.account.gov.uk"
+      dev: "https://review-p.dev.account.gov.uk"
+      build: "https://review-p.build.account.gov.uk"
+      staging: "https://review-p.staging.account.gov.uk"
+      integration: "https://review-p.integration.account.gov.uk"
+      production: "https://review-p.account.gov.uk"
     di-ipv-cri-toy-api:
       dev: "https://review-toy.dev.account.gov.uk"
       build: "https://review-toy.build.account.gov.uk"
@@ -251,7 +251,7 @@ Mappings:
 
   IPVCoreStubPreProdIssuerMapping:
     Environment:
-      production: "https://di-ipv-core-stub.london.cloudapps.digital"
+      production: "https://cri-preprod.core.stubs.account.gov.uk"
 
   IPVCore1IssuerMapping:
     Environment:
@@ -314,7 +314,7 @@ Mappings:
 
   IPVCoreStubPreProdRedirectURIMapping:
     Environment:
-      production: "https://di-ipv-core-stub-pre-prod.london.cloudapps.digital/callback"
+      production: "https://cri-preprod.core.stubs.account.gov.uk/callback"
 
   IPVCore1RedirectURIMapping:
     di-ipv-cri-address-api:
