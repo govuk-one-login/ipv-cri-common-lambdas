@@ -64,14 +64,29 @@ Conditions:
       - Fn::Equals:
           - !Ref PermissionsBoundary
           - "none"
+  IsCriHmrcCheckApi:
+    !Equals
+      - !Ref CriIdentifier
+      - "di-ipv-cri-hmrc-check-api"
+  IsCriHmrcKbvApi:
+    !Equals
+      - !Ref CriIdentifier
+      - "di-ipv-cri-kbv-hmrc-api"
+
+  IsAnyCriHmrcApi: !Or
+    - Condition: IsCriHmrcCheckApi
+    - Condition: IsCriHmrcKbvApi
 
   IsCSLSDisabled: !And
+    - !Or
+      - !Not
+          - Condition: IsCriHmrcCheckApi
+      - !Not
+          - Condition: IsCriHmrcKbvApi
     - !Not
-      - !Or
-        - !Equals [!Ref CriIdentifier, "di-ipv-cri-check-hmrc-api"]
-        - !Equals [!Ref CriIdentifier, "di-ipv-cri-kbv-hmrc-api"]
-    - !Not
-      - !Equals [!Ref Environment, "dev"]
+      - !Equals
+        - !Ref Environment
+        - "dev"
 
 Globals:
   Function:
