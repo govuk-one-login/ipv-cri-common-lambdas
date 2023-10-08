@@ -1296,6 +1296,76 @@ Resources:
       LogGroupName: !Sub /aws/apigateway/${AWS::StackName}-${PreMergeDevOnlyApi}-private-AccessLogs
       RetentionInDays: 7
 
+  #######################################
+  # Common Resources for HMRC CRI #
+  #######################################
+
+  #######################################
+  # Common Functions #
+  #######################################
+  TimeFunction:
+    Type: AWS::Serverless::Function
+    Condition: IsAnyCriHmrcApi
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-TimeFunction"
+      Runtime: nodejs18.x
+      Timeout: 3
+      CodeUri: ../../lambdas
+      Handler: time-handler.lambdaHandler
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: "es2020"
+        Sourcemap: true
+        EntryPoints:
+          - src/handlers/time-handler.ts
+  
+  IssueCredentialBuilderStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Condition: IsAnyCriHmrcApi
+    Properties:
+      Name: !Sub "${AWS::StackName}-IssueCredentialBuilder"
+      Type: EXPRESS
+      DefinitionUri: ../../step-functions/issue_credential_builder.asl.json
+      DefinitionSubstitutions:
+        CommonStackName: !Ref AWS::StackName
+        MaxJwtTtlParameter: !Sub "/${CriIdentifier}/${AWS::StackName}/MaxJwtTtl"
+        JwtTtlUnitParameter: !Sub "/${CriIdentifier}/${AWS::StackName}/JwtTtlUnit"
+        TimeFunctionArn: !GetAtt TimeFunction.Arn
+      Logging:
+        Destinations:
+          - CloudWatchLogsLogGroup:
+              LogGroupArn: !GetAtt IssueCredentialBuilderLogGroup.Arn
+        IncludeExecutionData: True
+        Level: ALL
+      Policies:
+        - LambdaInvokePolicy:
+            FunctionName: !Ref TimeFunction
+        - Statement:
+            Effect: Allow
+            Action:
+              - ssm:GetParameters
+              - ssm:GetParameter
+            Resource:
+              - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${CriIdentifier}/${AWS::StackName}/MaxJwtTtl"
+              - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${CriIdentifier}/${AWS::StackName}/JwtTtlUnit"
+              - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/SessionTableName"
+              - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/verifiable-credential/issuer"
+        - Statement:
+            Effect: Allow
+            Action:
+              - logs:*
+            Resource:
+              - "*"
+
+  IssueCredentialBuilderLogGroup:
+    Type: AWS::Logs::LogGroup
+    Condition: IsAnyCriHmrcApi
+    Properties:
+      LogGroupName: !Sub /aws/vendedlogs/states/aws/apigateway/${AWS::StackName}-IssueCredentialBuilder-state-machine-logs
+      RetentionInDays: 3
+
 Outputs:
   StackName:
     Description: "CloudFormation stack name"
@@ -1304,3 +1374,9 @@ Outputs:
     Condition: IsDevEnvironment
     Description: "API GatewayID of the dev-only common lambdas API"
     Value: !Sub "${PreMergeDevOnlyApi}"
+  IssueCredentialBuilderStateMachineArn:
+    Condition: IsAnyCriHmrcApi
+    Description: "Credential Issue Builder StateMachine Arn"
+    Value: !GetAtt IssueCredentialBuilderStateMachine.Arn
+    Export:
+      Name: !Sub ${AWS::StackName}-IssueCredentialBuilderArn
