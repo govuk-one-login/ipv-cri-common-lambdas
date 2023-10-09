@@ -1330,8 +1330,8 @@ Resources:
       DefinitionUri: ../../step-functions/issue_credential_builder.asl.json
       DefinitionSubstitutions:
         CommonStackName: !Ref AWS::StackName
-        MaxJwtTtlParameter: !Sub "/${CriIdentifier}/${AWS::StackName}/MaxJwtTtl"
-        JwtTtlUnitParameter: !Sub "/${CriIdentifier}/${AWS::StackName}/JwtTtlUnit"
+        MaxJwtTtlParameter: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${CriIdentifier}/${AWS::StackName}/MaxJwtTtl"
+        JwtTtlUnitParameter: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${CriIdentifier}/${AWS::StackName}/JwtTtlUnit"
         TimeFunctionArn: !GetAtt TimeFunction.Arn
       Logging:
         Destinations:
@@ -1348,8 +1348,8 @@ Resources:
               - ssm:GetParameters
               - ssm:GetParameter
             Resource:
-              - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${CriIdentifier}/${AWS::StackName}/MaxJwtTtl"
-              - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${CriIdentifier}/${AWS::StackName}/JwtTtlUnit"
+              - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/MaxJwtTtl"
+              - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/JwtTtlUnit"
               - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/SessionTableName"
               - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/verifiable-credential/issuer"
         - Statement:
@@ -1364,6 +1364,52 @@ Resources:
     Condition: IsAnyCriHmrcApi
     Properties:
       LogGroupName: !Sub /aws/vendedlogs/states/aws/apigateway/${AWS::StackName}-IssueCredentialBuilder-state-machine-logs
+      RetentionInDays: 3
+
+  KmsSignerStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Condition: IsAnyCriHmrcApi
+    Properties:
+      Name: !Sub "${AWS::StackName}-kms-signer"
+      Type: EXPRESS
+      DefinitionUri: ../../step-functions/kms-signer.asl.json
+      DefinitionSubstitutions:
+        CommonStackName: !Ref "AWS::StackName"
+      Logging:
+        Destinations:
+          - CloudWatchLogsLogGroup:
+              LogGroupArn: !GetAtt KmsSignerLogGroup.Arn
+        IncludeExecutionData: true
+        Level: ALL
+      Policies:
+        - LambdaInvokePolicy:
+            FunctionName: !Ref TimeFunction
+        - Statement:
+            Effect: Allow
+            Action:
+              - ssm:GetParameters
+              - ssm:GetParameter
+            Resource:
+              - !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/SessionTableName
+              - !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/verifiableCredentialKmsSigningKeyId
+        - Statement:
+            Effect: Allow
+            Action:
+              - logs:*
+            Resource:
+              - '*'
+        - Statement:
+            Effect: Allow
+            Action:
+              - kms:Sign
+            Resource:
+              - !ImportValue core-infrastructure-CriVcSigningKey1Arn
+
+  KmsSignerLogGroup:
+    Type: AWS::Logs::LogGroup
+    Condition: IsAnyCriHmrcApi
+    Properties:
+      LogGroupName: !Sub /aws/vendedlogs/states/aws/apigateway/${AWS::StackName}-kms-signer-state-machine-logs
       RetentionInDays: 3
 
 Outputs:

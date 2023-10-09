@@ -1,0 +1,56 @@
+{
+  "Comment": "A description of my state machine",
+  "StartAt": "Fetch VC KMS Signing Key",
+  "States": {
+    "Fetch VC KMS Signing Key": {
+      "Type": "Task",
+      "Parameters": {
+        "Name": "/${CommonStackName}/verifiableCredentialKmsSigningKeyId"
+      },
+      "Resource": "arn:aws:states:::aws-sdk:ssm:getParameter",
+      "ResultSelector": {
+        "value.$": "$.Parameter.Value"
+      },
+      "Next": "Create JWT Header",
+      "ResultPath": "$.kid"
+    },
+    "Create JWT Header": {
+      "Type": "Pass",
+      "Parameters": {
+        "kid.$": "$.kid",
+        "typ": "JWT",
+        "alg": "ES256"
+      },
+      "Next": "Base64 and Combine JWT Header and Payload",
+      "ResultPath": "$.header"
+    },
+    "Base64 and Combine JWT Header and Payload": {
+      "Type": "Pass",
+      "Parameters": {
+        "header.$": "States.Base64Encode(States.JsonToString($.header))",
+        "payload.$": "States.Base64Encode(States.JsonToString($.claimset))",
+        "kid.$": "$.kid.value"
+      },
+      "Next": "Sign VC claimset"
+    },
+    "Sign VC claimset": {
+      "Type": "Task",
+      "Next": "Create Signed JWT",
+      "Parameters": {
+        "KeyId.$": "$.kid",
+        "Message.$": "States.Format('{}.{}', $.header,$.payload)",
+        "SigningAlgorithm": "ECDSA_SHA_256"
+      },
+      "Resource": "arn:aws:states:::aws-sdk:kms:sign",
+      "ResultPath": "$.sign"
+    },
+    "Create Signed JWT": {
+      "Type": "Pass",
+      "Parameters": {
+        "jwt.$": "States.Format('{}.{}.{}', $.header, $.payload, States.Base64Encode($.sign.Signature))"
+      },
+      "End": true,
+      "OutputPath": "$.jwt"
+    }
+  }
+}
