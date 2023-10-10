@@ -68,10 +68,15 @@ Conditions:
   IsCSLSDisabled: !And
     - !Not
       - !Or
-        - !Equals [!Ref CriIdentifier, "di-ipv-cri-hmrc-check-api"]
+        - !Equals [!Ref CriIdentifier, "di-ipv-cri-check-hmrc-api"]
         - !Equals [!Ref CriIdentifier, "di-ipv-cri-hmrc-kbv-api"]
     - !Not
-      - !Equals [!Ref Environment, "dev"]
+      - !Or
+        - !Equals [!Ref Environment, "dev"]
+        - !Equals [!Ref Environment, "build"]
+        - !Equals [!Ref Environment, "staging"]
+        - !Equals [!Ref Environment, "integration"]
+        - !Equals [!Ref Environment, "prod"]
 
 Globals:
   Function:
@@ -167,7 +172,7 @@ Mappings:
       staging: "di-devplatform-deploy"
       integration: "di-devplatform-deploy"
       production: "di-devplatform-deploy"
-    di-ipv-cri-hmrc-check-api:
+    di-ipv-cri-check-hmrc-api:
       dev: "di-devplatform-deploy"
       build: "di-devplatform-deploy"
       staging: "di-devplatform-deploy"
@@ -217,7 +222,7 @@ Mappings:
       staging: "https://review-hk.staging.account.gov.uk"
       integration: "https://review-hk.integration.account.gov.uk"
       production: "https://review-hk.account.gov.uk"
-    di-ipv-cri-hmrc-check-api:
+    di-ipv-cri-check-hmrc-api:
       dev: "https://review-hc.dev.account.gov.uk"
       build: "https://review-hc.build.account.gov.uk"
       staging: "https://review-hc.staging.account.gov.uk"
@@ -383,7 +388,7 @@ Mappings:
       staging: "https://review-hk.staging.account.gov.uk"
       integration: "https://review-hk.integration.account.gov.uk"
       production: "https://review-hk.account.gov.uk"
-    di-ipv-cri-hmrc-check-api:
+    di-ipv-cri-check-hmrc-api:
       dev: "https://review-hc.dev.account.gov.uk"
       build: "https://review-hc.build.account.gov.uk"
       staging: "https://review-hc.staging.account.gov.uk"

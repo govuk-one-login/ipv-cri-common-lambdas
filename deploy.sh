@@ -5,7 +5,7 @@ RED="\033[1;31m"
 GREEN="\033[1;32m"
 NOCOLOR="\033[0m"
 
-stack_name="$1"
+stack_name="common-cri-api"
 audit_event_name_prefix="$2"
 cri_identifier="$3"
 
@@ -44,4 +44,5 @@ sam deploy --stack-name "$stack_name" \
    CodeSigningEnabled=false \
    Environment=dev \
    AuditEventNamePrefix=$audit_event_name_prefix \
-   CriIdentifier=$cri_identifier
+   CriIdentifier=$cri_identifier \
+   --profile di-ipv-cri-check-hmrc-dev
