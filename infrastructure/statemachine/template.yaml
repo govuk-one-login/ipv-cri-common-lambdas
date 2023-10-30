@@ -1,0 +1,181 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+
+Description: Common Issue Credential Workflow Resources
+
+Globals:
+  Function:
+    Runtime: nodejs18.x
+    Architectures:
+      - arm64
+    Timeout: 3
+#    VpcConfig:
+#      SecurityGroupIds:
+#        - !ImportValue cri-vpc-AWSServicesEndpointSecurityGroupId
+#      SubnetIds:
+#        - [ !ImportValue cri-vpc-PrivateSubnetIdA, !ImportValue cri-vpc-PrivateSubnetIdB ]
+#      PermissionsBoundary: !If
+#        - UsePermissionsBoundary
+#        - !Ref PermissionsBoundary
+#        - !Ref AWS::NoValue
+#      CodeSigningConfigArn: !If
+#        - EnforceCodeSigning
+#        - !Ref CodeSigningConfigArn
+#        - !Ref AWS::NoValue
+
+Parameters:
+  MaxJwtTtlParameterName:
+    Type: String
+    Description: Max Jwt Ttl
+
+  JwtTtlUnitParameterName:
+    Type: String
+    Description: Jwt Ttl Unit
+
+  SessionTableName:
+    Type: String
+    Description: Session Table Name
+  
+  VerifiableCredentialIssuerName:
+    Type: String
+    Description: Verifiable Credential Issuer Parameter Name
+
+  VerifiableCredentialKmsSigningKeyIdName:
+    Type: String
+    Description: Verifiable Credential Kms Signing KeyId Parameter Name
+
+#  TimeFunction:
+#    Type: String
+#    Description: Time Function
+
+#  PermissionsBoundary:
+#    Type: String
+#    Description: Permissions Boundary
+#
+#  CodeSigningEnabled:
+#    Type: String
+#    Default: 'true'
+#
+#  CodeSigningConfigArn:
+#    Type: String
+#    Description: >
+#      The ARN of the Code Signing Config to use, provided by the deployment pipeline
+
+#Conditions:
+#  EnforceCodeSigning: !Equals
+#    - !Ref CodeSigningEnabled
+#    - true
+#  UsePermissionsBoundary:
+#    Fn::Not:
+#      - Fn::Equals:
+#          - !Ref PermissionsBoundary
+#          - "none"
+
+Resources:
+  TimeFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../../lambdas
+      Handler: time-handler.lambdaHandler
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: "es2020"
+        Sourcemap: true
+        EntryPoints:
+          - src/handlers/time-handler.ts
+
+  IssueCredentialBuilderStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      Name: !Sub "${AWS::StackName}-IssueCredentialBuilder"
+      Type: EXPRESS
+      DefinitionUri: ../../step-functions/issue_credential_builder.asl.json
+      DefinitionSubstitutions:
+        VerifiableCredentialIssuerName: !Sub "${VerifiableCredentialIssuerName}"
+        MaxJwtTtlParameter: !Ref MaxJwtTtlParameterName
+        JwtTtlUnitParameter: !Ref JwtTtlUnitParameterName
+        TimeFunctionArn: !Ref TimeFunction
+      Logging:
+        Destinations:
+          - CloudWatchLogsLogGroup:
+              LogGroupArn: !GetAtt IssueCredentialBuilderLogGroup.Arn
+        IncludeExecutionData: True
+        Level: ALL
+      Policies:
+        - LambdaInvokePolicy:
+            FunctionName: !Ref TimeFunction
+        - Statement:
+            Effect: Allow
+            Action:
+              - ssm:GetParameters
+              - ssm:GetParameter
+            Resource:
+              - !Join [ '', [ 'arn:aws:ssm:', !Ref "AWS::Region", ':', !Ref "AWS::AccountId", ':parameter', !Ref "MaxJwtTtlParameterName" ] ]
+              - !Join [ '', [ 'arn:aws:ssm:', !Ref "AWS::Region", ':', !Ref "AWS::AccountId", ':parameter', !Ref "JwtTtlUnitParameterName" ] ]
+              - !Join [ '', [ 'arn:aws:ssm:', !Ref "AWS::Region", ':', !Ref "AWS::AccountId", ':parameter', !Ref "SessionTableName" ] ]
+              - !Join [ '', [ 'arn:aws:ssm:', !Ref "AWS::Region", ':', !Ref "AWS::AccountId", ':parameter', !Ref "VerifiableCredentialIssuerName" ] ]
+        - Statement:
+            Effect: Allow
+            Action:
+              - logs:*
+            Resource:
+              - "*"
+      PermissionsBoundary: !Ref AWS::NoValue
+
+  IssueCredentialBuilderLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/vendedlogs/states/aws/apigateway/${AWS::StackName}-IssueCredentialBuilder-state-machine-logs
+      RetentionInDays: 3
+
+  KmsSignerStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      Name: !Sub "${AWS::StackName}-kms-signer"
+      Type: EXPRESS
+      DefinitionUri: ../../step-functions/kms-signer.asl.json
+      DefinitionSubstitutions:
+        VerifiableCredentialKmsSigningKeyIdName: !Sub "${VerifiableCredentialKmsSigningKeyIdName}"
+      Logging:
+        Destinations:
+          - CloudWatchLogsLogGroup:
+              LogGroupArn: !GetAtt KmsSignerLogGroup.Arn
+        IncludeExecutionData: true
+        Level: ALL
+      Policies:
+        - Statement:
+            Effect: Allow
+            Action:
+              - ssm:GetParameters
+              - ssm:GetParameter
+            Resource:
+              - !Join [ '', [ 'arn:aws:ssm:', !Ref "AWS::Region", ':', !Ref "AWS::AccountId", ':parameter', !Ref "VerifiableCredentialKmsSigningKeyIdName" ] ]
+        - Statement:
+            Effect: Allow
+            Action:
+              - logs:*
+            Resource:
+              - '*'
+        - Statement:
+            Effect: Allow
+            Action:
+              - kms:Sign
+            Resource:
+              - !ImportValue core-infrastructure-CriVcSigningKey1Arn
+      PermissionsBoundary: !Ref AWS::NoValue
+
+  KmsSignerLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/vendedlogs/states/aws/apigateway/${AWS::StackName}-kms-signer-state-machine-logs
+      RetentionInDays: 3
+
+Outputs:
+  IssueCredentialBuilderSfnArn:
+    Description: Issue Credential Builder Step Function ARN
+    Value: !Ref IssueCredentialBuilderStateMachine
+  KmsSignerSfnArn:
+    Description: Kms Signer Step Function ARN
+    Value: !Ref KmsSignerStateMachine

@@ -5,7 +5,7 @@
     "Fetch VC KMS Signing Key": {
       "Type": "Task",
       "Parameters": {
-        "Name": "/${CommonStackName}/verifiableCredentialKmsSigningKeyId"
+        "Name": "${VerifiableCredentialKmsSigningKeyIdName}"
       },
       "Resource": "arn:aws:states:::aws-sdk:ssm:getParameter",
       "ResultSelector": {
