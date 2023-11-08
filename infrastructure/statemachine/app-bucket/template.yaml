@@ -1,0 +1,45 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: S3 bucket for Common Issue Credential SAR Application
+
+Resources:
+  CommonVcAppBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub ${AWS::StackName}-bucket-${AWS::Region}-${AWS::AccountId}
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      AccessControl: Private
+      VersioningConfiguration:
+        Status: Enabled
+
+  CommonVcAppBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref CommonVcAppBucket
+      PolicyDocument:
+        Statement:
+          - Sid: AllowServerlessRepoToGetSourceCode
+            Action: s3:GetObject
+            Effect: Allow
+            Resource: !Sub ${CommonVcAppBucket.Arn}/*
+            Principal:
+              Service: serverlessrepo.amazonaws.com
+
+Outputs:
+  CommonVcAppBucketName:
+    Description: The name of the S3 Bucket.
+    Value: !Ref CommonVcAppBucket
+    Export:
+      Name: !Sub ${AWS::StackName}-BucketName
+  CommonVcAppBucketNameArn:
+    Description: The Arn of the S3 Bucket.
+    Value: !GetAtt CommonVcAppBucket.Arn
+    Export:
+      Name: !Sub ${AWS::StackName}-BucketArn
