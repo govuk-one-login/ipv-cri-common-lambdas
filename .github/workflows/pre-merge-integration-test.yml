@@ -71,9 +71,7 @@ jobs:
           --capabilities CAPABILITY_IAM \
           --parameter-overrides \
           CodeSigningEnabled=false \
-          Environment=${{ env.ENVIRONMENT }} \
-          AuditEventNamePrefix=/common-cri-parameters/AuditEventNamePrefix \
-          CriIdentifier=/common-cri-parameters/CriIdentifier
+          Environment=${{ env.ENVIRONMENT }}
 
       - name: Run API integration tests
         env:
