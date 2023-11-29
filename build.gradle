@@ -86,6 +86,7 @@ subprojects {
 		ssm
 		cucumberRuntime
 		cri_common_lib
+		pact_tests
 	}
 
 	// The dynamodb enhanced package loads the apache-client as well as the spi-client, so
@@ -133,6 +134,9 @@ subprojects {
 				"org.mockito:mockito-junit-jupiter:${dependencyVersions.mockito}",
 				"org.mockito:mockito-inline:${dependencyVersions.mockito}",
 				"org.hamcrest:hamcrest:2.2"
+
+		pact_tests 'au.com.dius:pact-jvm-provider-junit5:4.0.10',
+				'software.amazon.awssdk:dynamodb:2.21.24'
 
 		test_runtime "org.junit.jupiter:junit-jupiter-engine:${dependencyVersions.junit}"
 
