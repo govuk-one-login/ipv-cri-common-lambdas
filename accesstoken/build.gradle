@@ -13,7 +13,7 @@ dependencies {
 
 	aspect configurations.powertools
 
-	testImplementation configurations.tests
+	testImplementation configurations.tests, configurations.pact_tests
 	testRuntimeOnly configurations.test_runtime
 }
 test {
