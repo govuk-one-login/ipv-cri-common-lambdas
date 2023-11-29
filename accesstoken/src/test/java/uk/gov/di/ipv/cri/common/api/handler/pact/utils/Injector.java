@@ -20,8 +20,6 @@ public class Injector {
 
     private final Map<Integer, String> pathParams;
 
-    private final Map<String, Object> authorizer;
-
     public Injector(
             RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> handler,
             String endpoint,
@@ -31,7 +29,6 @@ public class Injector {
         this.pathDescription = pathDescription;
         this.pathParams = new HashMap<>();
         this.findPathParams();
-        this.authorizer = new HashMap<>();
     }
 
     public RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> getHandler() {

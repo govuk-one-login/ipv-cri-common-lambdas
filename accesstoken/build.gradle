@@ -17,7 +17,9 @@ dependencies {
 	testRuntimeOnly configurations.test_runtime
 }
 test {
-	useJUnitPlatform()
+	useJUnitPlatform {
+		excludeTags 'Pact'
+	}
 	finalizedBy jacocoTestReport
 }
 jacocoTestReport {
