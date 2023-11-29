@@ -2,14 +2,15 @@ package uk.gov.di.ipv.cri.common.api.handler.pact;
 
 import au.com.dius.pact.provider.junit.Provider;
 import au.com.dius.pact.provider.junit.State;
-import au.com.dius.pact.provider.junit.loader.PactFolder;
+import au.com.dius.pact.provider.junit.loader.PactBroker;
+import au.com.dius.pact.provider.junit.loader.PactBrokerAuth;
 import au.com.dius.pact.provider.junit5.HttpTestTarget;
 import au.com.dius.pact.provider.junit5.PactVerificationContext;
 import au.com.dius.pact.provider.junit5.PactVerificationInvocationContextProvider;
 import org.apache.http.HttpRequest;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -46,9 +47,18 @@ import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@Disabled
+// For static tests against potential new contracts
+// @PactFolder("pacts")
+// For local tests the pact details will need set as environment variables
+@Tag("Pact")
 @Provider("PassportCriProvider")
-@PactFolder("pacts")
+@PactBroker(
+        host = "${PACT_BROKER_HOST}",
+        scheme = "https",
+        authentication =
+                @PactBrokerAuth(
+                        username = "${PACT_BROKER_USERNAME}",
+                        password = "${PACT_BROKER_PASSWORD}"))
 @ExtendWith(MockitoExtension.class)
 class AccessTokenHandlerTest {
 
@@ -58,7 +68,9 @@ class AccessTokenHandlerTest {
     @Mock private DataStore<SessionItem> dataStore;
 
     @BeforeAll
-    static void setupServer() {}
+    static void setupServer() {
+        System.setProperty("pact.verifier.publishResults", "true");
+    }
 
     @BeforeEach
     void pactSetup(PactVerificationContext context) throws IOException {
@@ -88,6 +100,7 @@ class AccessTokenHandlerTest {
                         "/token",
                         "/");
         MockHttpServer.startServer(new ArrayList<>(List.of(tokenHandlerInjector)), PORT);
+
         context.setTarget(new HttpTestTarget("localhost", PORT));
     }
 
