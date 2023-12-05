@@ -1,7 +1,7 @@
 import { CriAuditConfig } from "../../types/cri-audit-config";
 import { ClientConfigKey, CommonConfigKey } from "../../types/config-keys";
 import { SSMProvider } from "@aws-lambda-powertools/parameters/lib/ssm";
-import {Parameter} from "@aws-sdk/client-ssm";
+import { Parameter } from "@aws-sdk/client-ssm";
 
 const DEFAULT_AUTHORIZATION_CODE_TTL_IN_SECS = 600;
 const PARAMETER_PREFIX = process.env.AWS_STACK_NAME || "";
@@ -119,9 +119,11 @@ export class ConfigServiceTwo {
 
     private getParameters(ssmParamNames: string[]): Promise<Parameter[]> {
         try {
-            return this.ssmProvider.getParametersByName(Object.fromEntries(ssmParamNames.map(parameter => [Object.fromEntries([[parameter, {
-                maxAge: 300
-            }]])]))).then(results => Object.entries(results).map(param => ({Name: param[0], Value: param[1]}) as Parameter));
+            return this.ssmProvider
+                .getParametersByName<string>(
+                    Object.fromEntries(ssmParamNames.map((parameter) => [parameter, { maxAge: 300 }])),
+                )
+                .then((parameters) => Object.keys(parameters).map((name) => ({ Name: name, Value: parameters[name] })));
         } catch (error) {
             throw new Error(`Invalid SSM parameters provided: ${error}`);
         }
