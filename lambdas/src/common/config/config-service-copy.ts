@@ -125,7 +125,7 @@ export class ConfigServiceTwo {
                 )
                 .then((parameters) => Object.keys(parameters).map((name) => ({ Name: name, Value: parameters[name] })));
         } catch (error) {
-            throw new Error(`Invalid SSM parameters provided: ${error}`);
+            throw new Error(`Couldn't retrieve SSM parameters: ${error}`);
         }
     }
 }
