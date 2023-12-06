@@ -1,7 +1,8 @@
-import { SSMClient, GetParametersCommand } from "@aws-sdk/client-ssm";
+import { SSMClient } from "@aws-sdk/client-ssm";
 import { Parameter } from "aws-sdk/clients/ssm";
 import { CriAuditConfig } from "../../types/cri-audit-config";
 import { ClientConfigKey, CommonConfigKey } from "../../types/config-keys";
+import { SSMProvider } from "@aws-lambda-powertools/parameters/ssm";
 
 const DEFAULT_AUTHORIZATION_CODE_TTL_IN_SECS = 600;
 const PARAMETER_PREFIX = process.env.AWS_STACK_NAME || "";
@@ -11,11 +12,13 @@ export class ConfigService {
     private readonly configEntries = new Map<string, string>();
     private readonly clientConfigurations = new Map<string, Map<string, string>>();
     private readonly authorizationCodeTtlInMillis: number;
+    private readonly ssmProvider: SSMProvider;
 
-    constructor(private ssmClient: SSMClient) {
+    constructor(ssmClient: SSMClient) {
         const envAuthCodeTtl = parseInt(process.env.AUTHORIZATION_CODE_TTL || "", 10);
         this.authorizationCodeTtlInMillis =
             (Number.isInteger(envAuthCodeTtl) ? envAuthCodeTtl : DEFAULT_AUTHORIZATION_CODE_TTL_IN_SECS) * 1000;
+        this.ssmProvider = new SSMProvider({ awsSdkV3Client: ssmClient });
     }
 
     public init(keys: CommonConfigKey[]): Promise<void> {
@@ -115,14 +118,15 @@ export class ConfigService {
         ssmParameters?.forEach((p) => this.configEntries.set(p.Name as string, p.Value as string));
     }
 
-    private async getParameters(ssmParamNames: string[]): Promise<Parameter[]> {
-        const getParamsResult = await this.ssmClient.send(new GetParametersCommand({ Names: ssmParamNames }));
-
-        if (getParamsResult?.InvalidParameters?.length) {
-            const invalidParameterNames = getParamsResult.InvalidParameters?.join(", ");
-            throw new Error(`Invalid SSM parameters: ${invalidParameterNames}`);
+    private getParameters(ssmParamNames: string[]): Promise<Parameter[]> {
+        try {
+            return this.ssmProvider
+                .getParametersByName<string>(Object.fromEntries(ssmParamNames.map((parameter) => [parameter, {}])), {
+                    maxAge: 300,
+                })
+                .then((parameters) => Object.keys(parameters).map((name) => ({ Name: name, Value: parameters[name] })));
+        } catch (error) {
+            throw new Error(`Couldn't retrieve SSM parameters: ${error}`);
         }
-
-        return getParamsResult?.Parameters || [];
     }
 }
