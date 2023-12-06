@@ -12,11 +12,8 @@ import { AuditService } from "../common/services/audit-service";
 import { AuditEventType } from "../types/audit-event";
 import { SessionRequestSummary } from "../types/session-request-summary";
 import { JWTPayload } from "jose";
-import { DynamoDBDocument } from "@aws-sdk/lib-dynamodb";
-import { SQSClient } from "@aws-sdk/client-sqs";
 import { AwsClientType, createClient } from "../common/aws-client-factory";
 import { getClientIpAddress } from "../common/utils/request-utils";
-import { KMSClient } from "@aws-sdk/client-kms";
 import { errorPayload } from "../common/utils/errors";
 import { logger, metrics, tracer as _tracer } from "../common/utils/power-tool";
 import errorMiddleware from "../middlewares/error/error-middleware";
@@ -27,11 +24,10 @@ import initialiseClientConfigMiddleware from "../middlewares/config/initialise-c
 import validateJwtMiddleware from "../middlewares/jwt/validate-jwt-middleware";
 import setGovUkSigningJourneyIdMiddleware from "../middlewares/session/set-gov-uk-signing-journey-id-middleware";
 import { ConfigService } from "../common/config/config-service";
-import { SSMClient } from "@aws-sdk/client-ssm";
 
-const dynamoDbClient = createClient(AwsClientType.DYNAMO) as DynamoDBDocument;
-const sqsClient = createClient(AwsClientType.SQS) as SQSClient;
-const kmsClient = createClient(AwsClientType.KMS) as KMSClient;
+const dynamoDbClient = createClient(AwsClientType.DYNAMO);
+const sqsClient = createClient(AwsClientType.SQS);
+const kmsClient = createClient(AwsClientType.KMS);
 
 const SESSION_CREATED_METRIC = "session_created";
 
@@ -110,7 +106,8 @@ export class SessionLambda implements LambdaInterface {
         });
     }
 }
-const ssmClient = createClient(AwsClientType.SSM) as SSMClient;
+
+const ssmClient = createClient(AwsClientType.SSM);
 const configService = new ConfigService(ssmClient);
 const jweDecrypter = new JweDecrypter(kmsClient, () => configService.getConfigEntry(CommonConfigKey.DECRYPTION_KEY_ID));
 const jwtValidatorFactory = new SessionRequestValidatorFactory(logger);
