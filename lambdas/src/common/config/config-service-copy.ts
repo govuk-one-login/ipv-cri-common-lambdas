@@ -120,9 +120,9 @@ export class ConfigServiceTwo {
     private getParameters(ssmParamNames: string[]): Promise<Parameter[]> {
         try {
             return this.ssmProvider
-                .getParametersByName<string>(
-                    Object.fromEntries(ssmParamNames.map((parameter) => [parameter, { maxAge: 300 }])),
-                )
+                .getParametersByName<string>(Object.fromEntries(ssmParamNames.map((parameter) => [parameter, {}])), {
+                    maxAge: 300,
+                })
                 .then((parameters) => Object.keys(parameters).map((name) => ({ Name: name, Value: parameters[name] })));
         } catch (error) {
             throw new Error(`Couldn't retrieve SSM parameters: ${error}`);
