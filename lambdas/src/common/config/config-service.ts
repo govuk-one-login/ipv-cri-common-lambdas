@@ -5,9 +5,9 @@ import { ClientConfigKey, CommonConfigKey } from "../../types/config-keys";
 import { SSMProvider } from "@aws-lambda-powertools/parameters/ssm";
 
 const PARAMETER_PREFIX = process.env.AWS_STACK_NAME || "";
-const AUTHORIZATION_CODE_TTL = parseTtl(process.env.AUTHORIZATION_CODE_TTL) || 600;
-const PARAMETER_TTL = parseTtl(process.env.POWERTOOLS_PARAMETERS_MAX_AGE) || 300;
-const ACCESS_TOKEN_TTL = parseTtl(process.env.ACCESS_TOKEN_TTL_IN_SECS) || 3600;
+const AUTHORIZATION_CODE_TTL = parseNumber(process.env.AUTHORIZATION_CODE_TTL) || 600;
+const PARAMETER_TTL = parseNumber(process.env.POWERTOOLS_PARAMETERS_MAX_AGE) || 300;
+const ACCESS_TOKEN_TTL = parseNumber(process.env.ACCESS_TOKEN_TTL_IN_SECS) || 3600;
 
 export class ConfigService {
     private readonly configEntries = new Map<string, string>();
@@ -124,6 +124,6 @@ export class ConfigService {
     }
 }
 
-function parseTtl(value?: string) {
+function parseNumber(value?: string) {
     return parseInt(value || "", 10) || undefined;
 }
