@@ -10,7 +10,6 @@ import { SessionItem } from "../types/session-item";
 import accessTokenValidatorMiddleware from "../middlewares/access-token/validate-event-payload-middleware";
 import initialiseConfigMiddleware from "../middlewares/config/initialise-config-middleware";
 import { AwsClientType, createClient } from "../common/aws-client-factory";
-import { DynamoDBDocument } from "@aws-sdk/lib-dynamodb";
 import setGovUkSigningJourneyIdMiddleware from "../middlewares/session/set-gov-uk-signing-journey-id-middleware";
 import { LambdaInterface } from "@aws-lambda-powertools/commons";
 import getSessionByAuthCodeMiddleware from "../middlewares/session/get-session-by-auth-code-middleware";
@@ -21,9 +20,9 @@ import { RequestPayload } from "../types/request_payload";
 import getSessionByIdMiddleware from "../middlewares/session/get-session-by-id-middleware";
 import errorMiddleware from "../middlewares/error/error-middleware";
 import { ConfigService } from "../common/config/config-service";
-import { SSMClient } from "@aws-sdk/client-ssm";
 import initialiseClientConfigMiddleware from "../middlewares/config/initialise-client-config-middleware";
-const dynamoDbClient = createClient(AwsClientType.DYNAMO) as DynamoDBDocument;
+
+const dynamoDbClient = createClient(AwsClientType.DYNAMO);
 const ACCESS_TOKEN = "accesstoken";
 
 export class AccessTokenLambda implements LambdaInterface {
@@ -72,7 +71,8 @@ export class AccessTokenLambda implements LambdaInterface {
         }
     }
 }
-const ssmClient = createClient(AwsClientType.SSM) as SSMClient;
+
+const ssmClient = createClient(AwsClientType.SSM);
 const configService = new ConfigService(ssmClient);
 const jwtVerifierFactory = new JwtVerifierFactory(logger);
 const sessionService = new SessionService(dynamoDbClient, configService);
@@ -82,6 +82,7 @@ const handlerClass = new AccessTokenLambda(
     sessionService,
     accessTokenValidator,
 );
+
 export const lambdaHandler = middy(handlerClass.handler.bind(handlerClass))
     .use(errorMiddleware(logger, metrics, { metric_name: ACCESS_TOKEN, message: "Access Token Lambda error occurred" }))
     .use(injectLambdaContext(logger, { clearState: true }))
