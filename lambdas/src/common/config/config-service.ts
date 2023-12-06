@@ -4,20 +4,17 @@ import { CriAuditConfig } from "../../types/cri-audit-config";
 import { ClientConfigKey, CommonConfigKey } from "../../types/config-keys";
 import { SSMProvider } from "@aws-lambda-powertools/parameters/ssm";
 
-const DEFAULT_AUTHORIZATION_CODE_TTL_IN_SECS = 600;
 const PARAMETER_PREFIX = process.env.AWS_STACK_NAME || "";
-const ACCESS_TOKEN_TTL = process.env.ACCESS_TOKEN_TTL_IN_SECS || 3600;
+const AUTHORIZATION_CODE_TTL = parseTtl(process.env.AUTHORIZATION_CODE_TTL) || 600;
+const PARAMETER_TTL = parseTtl(process.env.POWERTOOLS_PARAMETERS_MAX_AGE) || 300;
+const ACCESS_TOKEN_TTL = parseTtl(process.env.ACCESS_TOKEN_TTL_IN_SECS) || 3600;
 
 export class ConfigService {
     private readonly configEntries = new Map<string, string>();
     private readonly clientConfigurations = new Map<string, Map<string, string>>();
-    private readonly authorizationCodeTtlInMillis: number;
     private readonly ssmProvider: SSMProvider;
 
     constructor(ssmClient: SSMClient) {
-        const envAuthCodeTtl = parseInt(process.env.AUTHORIZATION_CODE_TTL || "", 10);
-        this.authorizationCodeTtlInMillis =
-            (Number.isInteger(envAuthCodeTtl) ? envAuthCodeTtl : DEFAULT_AUTHORIZATION_CODE_TTL_IN_SECS) * 1000;
         this.ssmProvider = new SSMProvider({ awsSdkV3Client: ssmClient });
     }
 
@@ -80,7 +77,7 @@ export class ConfigService {
     }
 
     public getAuthorizationCodeExpirationEpoch() {
-        return Math.floor((Date.now() + this.authorizationCodeTtlInMillis) / 1000);
+        return Math.floor((Date.now() + AUTHORIZATION_CODE_TTL * 1000) / 1000);
     }
 
     public getSessionExpirationEpoch() {
@@ -88,12 +85,8 @@ export class ConfigService {
         return Math.floor((Date.now() + sessionTtl * 1000) / 1000);
     }
 
-    public getBearerAccessTokenTtl(): number {
-        return Number(ACCESS_TOKEN_TTL);
-    }
-
     public getBearerAccessTokenExpirationEpoch(): number {
-        return Math.floor((Date.now() + this.getBearerAccessTokenTtl() * 1000) / 1000);
+        return Math.floor((Date.now() + ACCESS_TOKEN_TTL * 1000) / 1000);
     }
 
     private getParameterName(parameterNameSuffix: string) {
@@ -122,11 +115,15 @@ export class ConfigService {
         try {
             return this.ssmProvider
                 .getParametersByName<string>(Object.fromEntries(ssmParamNames.map((parameter) => [parameter, {}])), {
-                    maxAge: 300,
+                    maxAge: PARAMETER_TTL,
                 })
                 .then((parameters) => Object.keys(parameters).map((name) => ({ Name: name, Value: parameters[name] })));
         } catch (error) {
             throw new Error(`Couldn't retrieve SSM parameters: ${error}`);
         }
     }
+}
+
+function parseTtl(value?: string) {
+    return parseInt(value || "", 10) || undefined;
 }
