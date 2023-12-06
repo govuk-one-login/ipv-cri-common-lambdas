@@ -7,7 +7,7 @@ const DEFAULT_AUTHORIZATION_CODE_TTL_IN_SECS = 600;
 const PARAMETER_PREFIX = process.env.AWS_STACK_NAME || "";
 const ACCESS_TOKEN_TTL = process.env.ACCESS_TOKEN_TTL_IN_SECS || 3600;
 
-export class ConfigServiceTwo {
+export class ConfigService {
     private readonly authorizationCodeTtlInMillis: number;
     private readonly configEntries: Map<string, string>;
     private readonly clientConfigurations: Map<string, Map<string, string>>;
