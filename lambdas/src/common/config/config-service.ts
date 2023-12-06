@@ -8,16 +8,14 @@ const PARAMETER_PREFIX = process.env.AWS_STACK_NAME || "";
 const ACCESS_TOKEN_TTL = process.env.ACCESS_TOKEN_TTL_IN_SECS || 3600;
 
 export class ConfigService {
+    private readonly configEntries = new Map<string, string>();
+    private readonly clientConfigurations = new Map<string, Map<string, string>>();
     private readonly authorizationCodeTtlInMillis: number;
-    private readonly configEntries: Map<string, string>;
-    private readonly clientConfigurations: Map<string, Map<string, string>>;
 
     constructor(private ssmClient: SSMClient) {
         const envAuthCodeTtl = parseInt(process.env.AUTHORIZATION_CODE_TTL || "", 10);
         this.authorizationCodeTtlInMillis =
             (Number.isInteger(envAuthCodeTtl) ? envAuthCodeTtl : DEFAULT_AUTHORIZATION_CODE_TTL_IN_SECS) * 1000;
-        this.configEntries = new Map<string, string>();
-        this.clientConfigurations = new Map<string, Map<string, string>>();
     }
 
     public init(keys: CommonConfigKey[]): Promise<void> {
