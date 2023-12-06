@@ -111,16 +111,17 @@ export class ConfigService {
         ssmParameters?.forEach((p) => this.configEntries.set(p.Name as string, p.Value as string));
     }
 
-    private getParameters(ssmParamNames: string[]): Promise<Parameter[]> {
-        try {
-            return this.ssmProvider
-                .getParametersByName<string>(Object.fromEntries(ssmParamNames.map((parameter) => [parameter, {}])), {
-                    maxAge: PARAMETER_TTL,
-                })
-                .then((parameters) => Object.keys(parameters).map((name) => ({ Name: name, Value: parameters[name] })));
-        } catch (error) {
-            throw new Error(`Couldn't retrieve SSM parameters: ${error}`);
+    private async getParameters(ssmParamNames: string[]): Promise<Parameter[]> {
+        const { _errors: errors, ...parameters } = await this.ssmProvider.getParametersByName<string>(
+            Object.fromEntries(ssmParamNames.map((parameter) => [parameter, {}])),
+            { maxAge: PARAMETER_TTL, throwOnError: false },
+        );
+
+        if (errors && errors.length) {
+            throw new Error(`Couldn't retrieve SSM parameters: ${errors.join(", ")}`);
         }
+
+        return Object.keys(parameters).map((name) => ({ Name: name, Value: parameters[name] }));
     }
 }
 
