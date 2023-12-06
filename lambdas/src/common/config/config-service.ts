@@ -121,7 +121,7 @@ export class ConfigService {
             throw new Error(`Couldn't retrieve SSM parameters: ${errors.join(", ")}`);
         }
 
-        return Object.keys(parameters).map((name) => ({ Name: name, Value: parameters[name] }));
+        return Object.entries(parameters).map(([name, value]) => ({ Name: name, Value: value }));
     }
 }
 
