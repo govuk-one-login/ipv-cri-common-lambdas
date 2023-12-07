@@ -5,7 +5,10 @@ import { JweDecrypterError } from "../../common/utils/errors";
 
 export class JweDecrypter {
     private kmsEncryptionKeyId: string | undefined;
-    constructor(private readonly kmsClient: KMSClient, private readonly getEncryptionKeyId: () => string) {}
+    constructor(
+        private readonly kmsClient: KMSClient,
+        private readonly getEncryptionKeyId: () => string,
+    ) {}
 
     public async decryptJwe(compactJwe: string): Promise<Buffer> {
         const { 0: jweProtectedHeader, 1: encryptedKey, 2: iv, 3: ciphertext, 4: tag, length } = compactJwe.split(".");

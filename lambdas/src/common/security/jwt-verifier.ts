@@ -18,7 +18,10 @@ export enum ClaimNames {
 
 export class JwtVerifier {
     static ClaimNames = ClaimNames;
-    constructor(private jwtVerifierConfig: JwtVerificationConfig, private logger: Logger) {}
+    constructor(
+        private jwtVerifierConfig: JwtVerificationConfig,
+        private logger: Logger,
+    ) {}
 
     public async verify(
         encodedJwt: Buffer,
