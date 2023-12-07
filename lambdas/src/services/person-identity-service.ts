@@ -10,7 +10,10 @@ import {
 } from "../types/person-identity-item";
 
 export class PersonIdentityService {
-    constructor(private dynamoDbClient: DynamoDBDocument, private configService: ConfigService) {}
+    constructor(
+        private dynamoDbClient: DynamoDBDocument,
+        private configService: ConfigService,
+    ) {}
 
     public async savePersonIdentity(sharedClaims: PersonIdentity, sessionId: string): Promise<string> {
         const personIdentityItem = this.createPersonIdentityItem(

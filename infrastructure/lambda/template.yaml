@@ -38,15 +38,15 @@ Conditions:
           - !Ref CodeSigningConfigArn
           - "none"
   IsStubEnvironment: !Or
-    - !Equals [ !Ref Environment, dev]
-    - !Equals [ !Ref Environment, build ]
-    - !Equals [ !Ref Environment, staging ]
-    - !Equals [ !Ref Environment, integration ]
+    - !Equals [!Ref Environment, dev]
+    - !Equals [!Ref Environment, build]
+    - !Equals [!Ref Environment, staging]
+    - !Equals [!Ref Environment, integration]
   IsProdLikeEnvironment: !Or
-    - !Equals [ !Ref Environment, staging ]
-    - !Equals [ !Ref Environment, integration ]
-    - !Equals [ !Ref Environment, production ]
-  IsNotProdLikeEnvironment: !Not 
+    - !Equals [!Ref Environment, staging]
+    - !Equals [!Ref Environment, integration]
+    - !Equals [!Ref Environment, production]
+  IsNotProdLikeEnvironment: !Not
     - Condition: IsProdLikeEnvironment
   IsProdEnvironment: !Equals
     - !Ref Environment
@@ -57,7 +57,7 @@ Conditions:
   IsNotDevEnvironment: !Not
     - Condition: IsDevEnvironment
   IsDevPlatformDeploy: !Equals
-    - !FindInMap [ CriVpcMapping, !Ref CriIdentifier, !Ref Environment ]
+    - !FindInMap [CriVpcMapping, !Ref CriIdentifier, !Ref Environment]
     - "di-devplatform-deploy"
   UsePermissionsBoundary:
     Fn::Not:
@@ -78,12 +78,15 @@ Globals:
     VpcConfig:
       SecurityGroupIds: !If
         - IsDevPlatformDeploy
-        - [ !ImportValue cri-vpc-AWSServicesEndpointSecurityGroupId ]
-        - [ !ImportValue cri-vpc-LambdaSecurityGroup ]
+        - [!ImportValue cri-vpc-AWSServicesEndpointSecurityGroupId]
+        - [!ImportValue cri-vpc-LambdaSecurityGroup]
       SubnetIds: !If
         - IsDevPlatformDeploy
-        - [ !ImportValue cri-vpc-PrivateSubnetIdA, !ImportValue cri-vpc-PrivateSubnetIdB ]
-        - !Split [ ",", !ImportValue cri-vpc-PrivateSubnets ]
+        - [
+            !ImportValue cri-vpc-PrivateSubnetIdA,
+            !ImportValue cri-vpc-PrivateSubnetIdB,
+          ]
+        - !Split [",", !ImportValue cri-vpc-PrivateSubnets]
     PermissionsBoundary: !If
       - UsePermissionsBoundary
       - !Ref PermissionsBoundary
@@ -96,7 +99,7 @@ Globals:
     Runtime: java11
     AutoPublishAlias: live
     Tracing: Active
-    MemorySize: !FindInMap [MemorySizeMapping, Environment, !Ref 'Environment']
+    MemorySize: !FindInMap [MemorySizeMapping, Environment, !Ref "Environment"]
     Architectures:
       - arm64
     Environment:
@@ -399,7 +402,6 @@ Mappings:
       production: "https://review-hc.account.gov.uk"
 
 Resources:
-
   ##############################
   # Stub Audit Event Consumer  #
   ##############################
@@ -419,23 +421,23 @@ Resources:
         - AWSLambdaBasicExecutionRole
         - AWSXrayWriteOnlyAccess
         - Statement:
-          - Effect: Allow
-            Action:
-              - "sqs:SendMessage"
-              - "sqs:ReceiveMessage"
-              - "sqs:DeleteMessage"
-              - "sqs:GetQueueAttributes"
-            Resource:
-              - !Sub
-                - "arn:aws:sqs:${AWS::Region}:${AWS::AccountId}:${queueName}"
-                - queueName: !ImportValue AuditEventQueueName
+            - Effect: Allow
+              Action:
+                - "sqs:SendMessage"
+                - "sqs:ReceiveMessage"
+                - "sqs:DeleteMessage"
+                - "sqs:GetQueueAttributes"
+              Resource:
+                - !Sub
+                  - "arn:aws:sqs:${AWS::Region}:${AWS::AccountId}:${queueName}"
+                  - queueName: !ImportValue AuditEventQueueName
         - Statement:
-          - Effect: Allow
-            Action:
-              - 'kms:Decrypt'
-              - 'kms:GenerateDataKey'
-            Resource:
-              - !ImportValue AuditEventQueueEncryptionKeyArn
+            - Effect: Allow
+              Action:
+                - "kms:Decrypt"
+                - "kms:GenerateDataKey"
+              Resource:
+                - !ImportValue AuditEventQueueEncryptionKeyArn
     Metadata: # Manage esbuild properties
       BuildMethod: esbuild
       BuildProperties:
@@ -445,7 +447,7 @@ Resources:
         EntryPoints:
           - src/handlers/audit-event-consumer-handler.ts
         External:
-          - '@aws-sdk/*'
+          - "@aws-sdk/*"
 
   AuditEventConsumerFunctionLogGroup:
     Type: AWS::Logs::LogGroup
@@ -511,8 +513,8 @@ Resources:
             - Sid: auditEventQueueKmsEncryptionKeyPermission
               Effect: Allow
               Action:
-                - 'kms:Decrypt'
-                - 'kms:GenerateDataKey'
+                - "kms:Decrypt"
+                - "kms:GenerateDataKey"
               Resource:
                 - !ImportValue AuditEventQueueEncryptionKeyArn
 
@@ -569,8 +571,8 @@ Resources:
             - Sid: auditEventQueueKmsEncryptionKeyPermission
               Effect: Allow
               Action:
-                - 'kms:Decrypt'
-                - 'kms:GenerateDataKey'
+                - "kms:Decrypt"
+                - "kms:GenerateDataKey"
               Resource:
                 - !ImportValue AuditEventQueueEncryptionKeyArn
     Metadata: # Manage esbuild properties
@@ -582,7 +584,7 @@ Resources:
         EntryPoints:
           - src/handlers/session-handler.ts
         External:
-          - '@aws-sdk/*'
+          - "@aws-sdk/*"
 
   SessionFunctionTSLogGroup:
     Type: AWS::Logs::LogGroup
@@ -667,7 +669,7 @@ Resources:
         EntryPoints:
           - src/handlers/authorization-handler.ts
         External:
-          - '@aws-sdk/*'
+          - "@aws-sdk/*"
 
   AuthorizationFunctionTSLogGroup:
     Type: AWS::Logs::LogGroup
@@ -757,7 +759,7 @@ Resources:
         EntryPoints:
           - src/handlers/access-token-handler.ts
         External:
-          - '@aws-sdk/*'
+          - "@aws-sdk/*"
 
   AccessTokenTSFunctionLogGroup:
     Type: AWS::Logs::LogGroup
@@ -871,7 +873,7 @@ Resources:
     Properties:
       Name: !Sub "/${AWS::StackName}/SessionTtl"
       Type: String
-      Value: !FindInMap [ SessionTtlMapping, Environment, !Ref 'Environment' ]
+      Value: !FindInMap [SessionTtlMapping, Environment, !Ref "Environment"]
       Description: default time to live for a session item (seconds)
 
   IPVCoreStubAwsProdAuthenticationAlgParameter:
@@ -928,7 +930,8 @@ Resources:
     Properties:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod/jwtAuthentication/audience"
       Type: String
-      Value: !FindInMap [ CriAudienceMapping, !Ref CriIdentifier, !Ref Environment ]
+      Value:
+        !FindInMap [CriAudienceMapping, !Ref CriIdentifier, !Ref Environment]
 
   IPVCoreStubAwsBuildAudienceParameter:
     Condition: IsStubEnvironment
@@ -936,7 +939,8 @@ Resources:
     Properties:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build/jwtAuthentication/audience"
       Type: String
-      Value: !FindInMap [ CriAudienceMapping, !Ref CriIdentifier, !Ref Environment ]
+      Value:
+        !FindInMap [CriAudienceMapping, !Ref CriIdentifier, !Ref Environment]
 
   IPVCoreStubAudienceParameter:
     Condition: IsStubEnvironment
@@ -944,7 +948,8 @@ Resources:
     Properties:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub/jwtAuthentication/audience"
       Type: String
-      Value: !FindInMap [ CriAudienceMapping, !Ref CriIdentifier, !Ref Environment ]
+      Value:
+        !FindInMap [CriAudienceMapping, !Ref CriIdentifier, !Ref Environment]
 
   IPVCoreStubPreProdAwsBuildAudienceParameter:
     Condition: IsProdEnvironment
@@ -952,7 +957,8 @@ Resources:
     Properties:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod-aws-build/jwtAuthentication/audience"
       Type: String
-      Value: !FindInMap [ CriAudienceMapping, !Ref CriIdentifier, !Ref Environment ]
+      Value:
+        !FindInMap [CriAudienceMapping, !Ref CriIdentifier, !Ref Environment]
 
   IPVCoreStubPreProdAudienceParameter:
     Condition: IsProdEnvironment
@@ -960,7 +966,8 @@ Resources:
     Properties:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod/jwtAuthentication/audience"
       Type: String
-      Value: !FindInMap [ CriAudienceMapping, !Ref CriIdentifier, !Ref Environment ]
+      Value:
+        !FindInMap [CriAudienceMapping, !Ref CriIdentifier, !Ref Environment]
 
   IPVCore1AudienceParameter:
     Condition: IsProdLikeEnvironment
@@ -968,7 +975,8 @@ Resources:
     Properties:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core/jwtAuthentication/audience"
       Type: String
-      Value: !FindInMap [ CriAudienceMapping, !Ref CriIdentifier, !Ref Environment ]
+      Value:
+        !FindInMap [CriAudienceMapping, !Ref CriIdentifier, !Ref Environment]
 
   IPVCoreStubAwsProdIssuerParameter:
     Condition: IsStubEnvironment
@@ -976,7 +984,12 @@ Resources:
     Properties:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod/jwtAuthentication/issuer"
       Type: String
-      Value: !FindInMap [IPVCoreStubAwsProdIssuerMapping, Environment, !Ref 'Environment']
+      Value:
+        !FindInMap [
+          IPVCoreStubAwsProdIssuerMapping,
+          Environment,
+          !Ref "Environment",
+        ]
 
   IPVCoreStubAwsBuildIssuerParameter:
     Condition: IsStubEnvironment
@@ -984,7 +997,12 @@ Resources:
     Properties:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build/jwtAuthentication/issuer"
       Type: String
-      Value: !FindInMap [IPVCoreStubAwsBuildIssuerMapping, Environment, !Ref 'Environment']
+      Value:
+        !FindInMap [
+          IPVCoreStubAwsBuildIssuerMapping,
+          Environment,
+          !Ref "Environment",
+        ]
 
   IPVCoreStubIssuerParameter:
     Condition: IsStubEnvironment
@@ -992,7 +1010,8 @@ Resources:
     Properties:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub/jwtAuthentication/issuer"
       Type: String
-      Value: !FindInMap [IPVCoreStubIssuerMapping, Environment, !Ref 'Environment']
+      Value:
+        !FindInMap [IPVCoreStubIssuerMapping, Environment, !Ref "Environment"]
 
   IPVCoreStubPreProdAwsBuildIssuerParameter:
     Condition: IsProdEnvironment
@@ -1000,7 +1019,12 @@ Resources:
     Properties:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod-aws-build/jwtAuthentication/issuer"
       Type: String
-      Value: !FindInMap [IPVCoreStubPreProdAwsBuildIssuerMapping, Environment, !Ref 'Environment']
+      Value:
+        !FindInMap [
+          IPVCoreStubPreProdAwsBuildIssuerMapping,
+          Environment,
+          !Ref "Environment",
+        ]
 
   IPVCoreStubPreProdIssuerParameter:
     Condition: IsProdEnvironment
@@ -1008,7 +1032,12 @@ Resources:
     Properties:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod/jwtAuthentication/issuer"
       Type: String
-      Value: !FindInMap [IPVCoreStubPreProdIssuerMapping, Environment, !Ref 'Environment']
+      Value:
+        !FindInMap [
+          IPVCoreStubPreProdIssuerMapping,
+          Environment,
+          !Ref "Environment",
+        ]
 
   IPVCore1IssuerParameter:
     Condition: IsProdLikeEnvironment
@@ -1016,7 +1045,7 @@ Resources:
     Properties:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core/jwtAuthentication/issuer"
       Type: String
-      Value: !FindInMap [IPVCore1IssuerMapping, Environment, !Ref 'Environment']
+      Value: !FindInMap [IPVCore1IssuerMapping, Environment, !Ref "Environment"]
 
   IPVCoreStubAwsProdPublicSigningJwkBase64Parameter:
     Condition: IsStubEnvironment
@@ -1024,7 +1053,12 @@ Resources:
     Properties:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod/jwtAuthentication/publicSigningJwkBase64"
       Type: String
-      Value: !FindInMap [IPVCoreStubAwsBuildPublicSigningJwkBase64Mapping, Environment, !Ref 'Environment']
+      Value:
+        !FindInMap [
+          IPVCoreStubAwsBuildPublicSigningJwkBase64Mapping,
+          Environment,
+          !Ref "Environment",
+        ]
 
   IPVCoreStubAwsBuildPublicSigningJwkBase64Parameter:
     Condition: IsStubEnvironment
@@ -1032,7 +1066,12 @@ Resources:
     Properties:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build/jwtAuthentication/publicSigningJwkBase64"
       Type: String
-      Value: !FindInMap [IPVCoreStubAwsBuildPublicSigningJwkBase64Mapping, Environment, !Ref 'Environment']
+      Value:
+        !FindInMap [
+          IPVCoreStubAwsBuildPublicSigningJwkBase64Mapping,
+          Environment,
+          !Ref "Environment",
+        ]
 
   IPVCoreStubPublicSigningJwkBase64Parameter:
     Condition: IsStubEnvironment
@@ -1040,7 +1079,12 @@ Resources:
     Properties:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub/jwtAuthentication/publicSigningJwkBase64"
       Type: String
-      Value: !FindInMap [IPVCoreStubPublicSigningJwkBase64Mapping, Environment, !Ref 'Environment']
+      Value:
+        !FindInMap [
+          IPVCoreStubPublicSigningJwkBase64Mapping,
+          Environment,
+          !Ref "Environment",
+        ]
 
   IPVCoreStubPreProdAwsBuildPublicSigningJwkBase64Parameter:
     Condition: IsProdEnvironment
@@ -1048,7 +1092,12 @@ Resources:
     Properties:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod-aws-build/jwtAuthentication/publicSigningJwkBase64"
       Type: String
-      Value: !FindInMap [IPVCoreStubPreProdAwsBuildPublicSigningJwkBase64Mapping, Environment, !Ref 'Environment']
+      Value:
+        !FindInMap [
+          IPVCoreStubPreProdAwsBuildPublicSigningJwkBase64Mapping,
+          Environment,
+          !Ref "Environment",
+        ]
 
   IPVCoreStubPreProdPublicSigningJwkBase64Parameter:
     Condition: IsProdEnvironment
@@ -1056,7 +1105,12 @@ Resources:
     Properties:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod/jwtAuthentication/publicSigningJwkBase64"
       Type: String
-      Value: !FindInMap [IPVCoreStubPreProdPublicSigningJwkBase64Mapping, Environment, !Ref 'Environment']
+      Value:
+        !FindInMap [
+          IPVCoreStubPreProdPublicSigningJwkBase64Mapping,
+          Environment,
+          !Ref "Environment",
+        ]
 
   IPVCore1PublicSigningJwkBase64Parameter:
     Condition: IsProdLikeEnvironment
@@ -1064,7 +1118,12 @@ Resources:
     Properties:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core/jwtAuthentication/publicSigningJwkBase64"
       Type: String
-      Value: !FindInMap [IPVCore1PublicSigningJwkBase64Mapping, Environment, !Ref 'Environment']
+      Value:
+        !FindInMap [
+          IPVCore1PublicSigningJwkBase64Mapping,
+          Environment,
+          !Ref "Environment",
+        ]
 
   IPVCoreStubAwsProdRedirectURIParameter:
     Condition: IsStubEnvironment
@@ -1072,7 +1131,12 @@ Resources:
     Properties:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod/jwtAuthentication/redirectUri"
       Type: String
-      Value: !FindInMap [IPVCoreStubAwsProdRedirectURIMapping, Environment, !Ref 'Environment']
+      Value:
+        !FindInMap [
+          IPVCoreStubAwsProdRedirectURIMapping,
+          Environment,
+          !Ref "Environment",
+        ]
 
   IPVCoreStubAwsBuildRedirectURIParameter:
     Condition: IsStubEnvironment
@@ -1080,7 +1144,12 @@ Resources:
     Properties:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build/jwtAuthentication/redirectUri"
       Type: String
-      Value: !FindInMap [IPVCoreStubAwsBuildRedirectURIMapping, Environment, !Ref 'Environment']
+      Value:
+        !FindInMap [
+          IPVCoreStubAwsBuildRedirectURIMapping,
+          Environment,
+          !Ref "Environment",
+        ]
 
   IPVCoreStubRedirectURIParameter:
     Condition: IsStubEnvironment
@@ -1088,7 +1157,12 @@ Resources:
     Properties:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub/jwtAuthentication/redirectUri"
       Type: String
-      Value: !FindInMap [IPVCoreStubRedirectURIMapping, Environment, !Ref 'Environment']
+      Value:
+        !FindInMap [
+          IPVCoreStubRedirectURIMapping,
+          Environment,
+          !Ref "Environment",
+        ]
 
   IPVCoreStubPreProdAwsBuildRedirectURIParameter:
     Condition: IsProdEnvironment
@@ -1096,7 +1170,12 @@ Resources:
     Properties:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod-aws-build/jwtAuthentication/redirectUri"
       Type: String
-      Value: !FindInMap [IPVCoreStubPreProdAwsBuildRedirectURIMapping, Environment, !Ref 'Environment']
+      Value:
+        !FindInMap [
+          IPVCoreStubPreProdAwsBuildRedirectURIMapping,
+          Environment,
+          !Ref "Environment",
+        ]
 
   IPVCoreStubPreProdRedirectURIParameter:
     Condition: IsProdEnvironment
@@ -1104,7 +1183,12 @@ Resources:
     Properties:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod/jwtAuthentication/redirectUri"
       Type: String
-      Value: !FindInMap [IPVCoreStubPreProdRedirectURIMapping, Environment, !Ref 'Environment']
+      Value:
+        !FindInMap [
+          IPVCoreStubPreProdRedirectURIMapping,
+          Environment,
+          !Ref "Environment",
+        ]
 
   IPVCore1RedirectURIParameter:
     Condition: IsProdLikeEnvironment
@@ -1112,7 +1196,12 @@ Resources:
     Properties:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core/jwtAuthentication/redirectUri"
       Type: String
-      Value: !FindInMap [IPVCore1RedirectURIMapping, !Ref CriIdentifier, !Ref Environment]
+      Value:
+        !FindInMap [
+          IPVCore1RedirectURIMapping,
+          !Ref CriIdentifier,
+          !Ref Environment,
+        ]
 
   AuthRequestKmsEncryptionKeyIdParameter:
     Type: AWS::SSM::Parameter
@@ -1127,7 +1216,12 @@ Resources:
     Properties:
       Name: !Sub "/${AWS::StackName}/verifiable-credential/issuer"
       Type: String
-      Value: !FindInMap [VerifiableCredentialIssuerMapping, !Ref CriIdentifier, !Ref Environment]
+      Value:
+        !FindInMap [
+          VerifiableCredentialIssuerMapping,
+          !Ref CriIdentifier,
+          !Ref Environment,
+        ]
       Description: Issuer of the Verifiable Credential
 
   VerifiableCredentialKmsSigningKeyParameter:
@@ -1231,7 +1325,7 @@ Resources:
         EntryPoints:
           - src/handlers/create-auth-code-handler.ts
         External:
-          - '@aws-sdk/*'
+          - "@aws-sdk/*"
 
   CreateAuthCodeFunctionPermission:
     Type: AWS::Lambda::Permission
@@ -1248,12 +1342,12 @@ Resources:
       Description: CRI API Gateway for pre-merge testing in dev only
       MethodSettings:
         - LoggingLevel: INFO
-          ResourcePath: '/*'
-          HttpMethod: '*'
+          ResourcePath: "/*"
+          HttpMethod: "*"
           ThrottlingRateLimit: 5
           ThrottlingBurstLimit: 10
       AccessLogSetting:
-        DestinationArn: !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${PreMergeDevOnlyApiAccessLogGroup}'
+        DestinationArn: !Sub "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${PreMergeDevOnlyApiAccessLogGroup}"
         Format: >-
           {
           "requestId":"$context.requestId",
@@ -1273,11 +1367,11 @@ Resources:
         openapi: "3.0.1" # workaround to get `sam validate` to work
         paths: # workaround to get `sam validate` to work
           /never-created:
-            options: { } # workaround to get `sam validate` to work
+            options: {} # workaround to get `sam validate` to work
         Fn::Transform:
           Name: AWS::Include
           Parameters:
-            Location: './pre-merge-api.yaml'
+            Location: "./pre-merge-api.yaml"
       OpenApiVersion: 3.0.1
       EndpointConfiguration:
         Type: REGIONAL

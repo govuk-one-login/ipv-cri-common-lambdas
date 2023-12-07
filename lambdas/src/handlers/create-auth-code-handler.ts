@@ -16,7 +16,10 @@ const configService = new ConfigService(ssmClient);
 const initPromise = configService.init([CommonConfigKey.SESSION_TABLE_NAME]);
 
 export class CreateAuthCodeLambda implements LambdaInterface {
-    constructor(private readonly configService: ConfigService, private readonly dynamoDbClient: DynamoDBDocument) {}
+    constructor(
+        private readonly configService: ConfigService,
+        private readonly dynamoDbClient: DynamoDBDocument,
+    ) {}
 
     @logger.injectLambdaContext({ clearState: true })
     public async handler(

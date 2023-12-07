@@ -1,11 +1,11 @@
 version: 2
 updates:
-  - package-ecosystem: 'github-actions'
-    directory: '/'
+  - package-ecosystem: "github-actions"
+    directory: "/"
     schedule:
-      interval: 'weekly'
+      interval: "weekly"
     target-branch: main
     labels:
-    - dependabot
+      - dependabot
     commit-message:
       prefix: BAU

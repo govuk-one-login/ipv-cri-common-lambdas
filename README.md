@@ -1,4 +1,5 @@
 # di-ipv-cri-common-lambdas
+
 DI IPV Credential Issuer Common Lambdas
 
 This code runs inside its own Repo
@@ -17,7 +18,7 @@ Required GitHub secrets:
 Common CRI secrets for dev environments:
 
 | Secret                                             | Description            |
-|----------------------------------------------------|------------------------|
+| -------------------------------------------------- | ---------------------- |
 | ADDRESS_DEV_COMMON_CRI_ARTIFACT_SOURCE_BUCKET_NAME | Upload artifact bucket |
 | ADDRESS_DEV_COMMON_CRI_GH_ACTIONS_ROLE_ARN         | Assumed role IAM ARN   |
 | ADDRESS_DEV_SIGNING_PROFILE_NAME                   | Signing profile name   |
@@ -33,7 +34,7 @@ Common CRI secrets for dev environments:
 Common CRI secrets for Build environments:
 
 | Secret                                               | Description            |
-|------------------------------------------------------|------------------------|
+| ---------------------------------------------------- | ---------------------- |
 | ADDRESS_BUILD_COMMON_CRI_ARTIFACT_SOURCE_BUCKET_NAME | Upload artifact bucket |
 | ADDRESS_BUILD_COMMON_CRI_GH_ACTIONS_ROLE_ARN         | Assumed role IAM ARN   |
 | ADDRESS_BUILD_SIGNING_PROFILE_NAME                   | Signing profile name   |
@@ -60,9 +61,7 @@ Below runs and uses the PAAS stub as default
 
 `STACK_NAME=di-ipv-cri-common-api-your-stack-name ENVIRONMENT=dev API_GATEWAY_ID_PRIVATE=xxxx IPV_CORE_STUB_BASIC_AUTH_USER=xxxx IPV_CORE_STUB_BASIC_AUTH_PASSWORD=xxxx IPV_CORE_STUB_URL="https://di-ipv-core-stub.london.cloudapps.digital" gradle integration-tests:cucumber
 
-`
-Below runs overriding default PAAS stub by using the AWS stub
-`
+`Below runs overriding default PAAS stub by using the AWS stub`
 STACK_NAME=di-ipv-cri-common-api-your-stack-name ENVIRONMENT=dev API_GATEWAY_ID_PRIVATE=xxxx IPV_CORE_STUB_BASIC_AUTH_USER=xxxx IPV_CORE_STUB_BASIC_AUTH_PASSWORD=xxxx IPV_CORE_STUB_URL="https://cri.core.build.stubs.account.gov.uk" DEFAULT_CLIENT_ID=ipv-core-stub-aws-build gradle integration-tests:cucumber
 `
 

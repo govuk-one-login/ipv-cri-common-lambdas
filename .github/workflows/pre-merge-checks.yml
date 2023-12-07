@@ -18,7 +18,7 @@ jobs:
         with:
           java-version: 11
           distribution: zulu
-          cache: 'gradle'
+          cache: "gradle"
       - name: Run Spotless
         run: ./gradlew --no-daemon spotlessCheck
 
@@ -32,7 +32,7 @@ jobs:
         with:
           java-version: 11
           distribution: zulu
-          cache: 'gradle'
+          cache: "gradle"
       - name: Build Cache
         uses: actions/cache@v3
         with:
@@ -57,7 +57,7 @@ jobs:
         with:
           java-version: 11
           distribution: zulu
-          cache: 'gradle'
+          cache: "gradle"
       - name: Build Cache
         uses: actions/cache@v3
         with:
@@ -99,7 +99,7 @@ jobs:
         with:
           java-version: 11
           distribution: zulu
-          cache: 'gradle'
+          cache: "gradle"
       - name: Build Cache
         uses: actions/cache@v3
         with:

@@ -6,7 +6,10 @@ import { Logger } from "@aws-lambda-powertools/logger";
 import { SessionValidationError } from "../common/utils/errors";
 
 export class SessionRequestValidator {
-    constructor(private validationConfig: SessionRequestValidationConfig, private jwtVerifier: JwtVerifier) {}
+    constructor(
+        private validationConfig: SessionRequestValidationConfig,
+        private jwtVerifier: JwtVerifier,
+    ) {}
     async validateJwt(jwt: Buffer, requestBodyClientId: string): Promise<JWTPayload> {
         const expectedRedirectUri = this.validationConfig.expectedJwtRedirectUri;
 
