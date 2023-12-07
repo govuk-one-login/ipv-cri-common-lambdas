@@ -6,8 +6,6 @@ import { MetricUnits } from "@aws-lambda-powertools/metrics";
 import { ConfigService } from "../common/config/config-service";
 import { AuthorizationRequestValidator } from "../services/auth-request-validator";
 import { AwsClientType, createClient } from "../common/aws-client-factory";
-import { DynamoDBDocument } from "@aws-sdk/lib-dynamodb";
-import { SSMClient } from "@aws-sdk/client-ssm";
 import { ClientConfigKey, CommonConfigKey } from "../types/config-keys";
 import { errorPayload } from "../common/utils/errors";
 import { logger, metrics, tracer as _tracer } from "../common/utils/power-tool";
@@ -19,8 +17,8 @@ import { injectLambdaContext } from "@aws-lambda-powertools/logger/lib/middlewar
 import setGovUkSigningJourneyIdMiddleware from "../middlewares/session/set-gov-uk-signing-journey-id-middleware";
 import initialiseClientConfigMiddleware from "../middlewares/config/initialise-client-config-middleware";
 
-const dynamoDbClient = createClient(AwsClientType.DYNAMO) as DynamoDBDocument;
-const ssmClient = createClient(AwsClientType.SSM) as SSMClient;
+const dynamoDbClient = createClient(AwsClientType.DYNAMO);
+const ssmClient = createClient(AwsClientType.SSM);
 const configService = new ConfigService(ssmClient);
 const AUTHORIZATION_SENT_METRIC = "authorization_sent";
 
