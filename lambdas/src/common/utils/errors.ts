@@ -118,7 +118,10 @@ export class SessionNotFoundError extends BaseError {
 }
 
 export class SessionValidationError extends BaseError {
-    constructor(public readonly message: string, public readonly details?: string) {
+    constructor(
+        public readonly message: string,
+        public readonly details?: string,
+    ) {
         super(message);
         this.statusCode = 400;
         this.code = 1019;

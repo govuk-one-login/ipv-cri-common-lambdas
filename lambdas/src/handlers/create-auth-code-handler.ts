@@ -1,4 +1,3 @@
-import { SSMClient } from "@aws-sdk/client-ssm";
 import { DynamoDBDocument, UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { randomUUID } from "crypto";
@@ -10,14 +9,17 @@ import { CommonConfigKey } from "../types/config-keys";
 import { Logger } from "@aws-lambda-powertools/logger";
 import { errorPayload } from "../common/utils/errors";
 
-const dynamoDbClient = createClient(AwsClientType.DYNAMO) as DynamoDBDocument;
-const ssmClient = createClient(AwsClientType.SSM) as SSMClient;
+const dynamoDbClient = createClient(AwsClientType.DYNAMO);
+const ssmClient = createClient(AwsClientType.SSM);
 const logger = new Logger();
 const configService = new ConfigService(ssmClient);
 const initPromise = configService.init([CommonConfigKey.SESSION_TABLE_NAME]);
 
 export class CreateAuthCodeLambda implements LambdaInterface {
-    constructor(private readonly configService: ConfigService, private readonly dynamoDbClient: DynamoDBDocument) {}
+    constructor(
+        private readonly configService: ConfigService,
+        private readonly dynamoDbClient: DynamoDBDocument,
+    ) {}
 
     @logger.injectLambdaContext({ clearState: true })
     public async handler(

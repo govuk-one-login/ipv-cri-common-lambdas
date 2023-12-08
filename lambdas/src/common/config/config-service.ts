@@ -1,23 +1,21 @@
-import { SSMClient, GetParametersCommand } from "@aws-sdk/client-ssm";
+import { SSMClient } from "@aws-sdk/client-ssm";
 import { Parameter } from "aws-sdk/clients/ssm";
 import { CriAuditConfig } from "../../types/cri-audit-config";
 import { ClientConfigKey, CommonConfigKey } from "../../types/config-keys";
+import { SSMProvider } from "@aws-lambda-powertools/parameters/ssm";
 
-const DEFAULT_AUTHORIZATION_CODE_TTL_IN_SECS = 600;
 const PARAMETER_PREFIX = process.env.AWS_STACK_NAME || "";
-const ACCESS_TOKEN_TTL = process.env.ACCESS_TOKEN_TTL_IN_SECS || 3600;
+const AUTHORIZATION_CODE_TTL = parseNumber(process.env.AUTHORIZATION_CODE_TTL) || 600;
+const PARAMETER_TTL = parseNumber(process.env.POWERTOOLS_PARAMETERS_MAX_AGE) || 300;
+const ACCESS_TOKEN_TTL = parseNumber(process.env.ACCESS_TOKEN_TTL_IN_SECS) || 3600;
 
 export class ConfigService {
-    private readonly authorizationCodeTtlInMillis: number;
-    private readonly configEntries: Map<string, string>;
-    private readonly clientConfigurations: Map<string, Map<string, string>>;
+    private readonly configEntries = new Map<string, string>();
+    private readonly clientConfigurations = new Map<string, Map<string, string>>();
+    private readonly ssmProvider: SSMProvider;
 
-    constructor(private ssmClient: SSMClient) {
-        const envAuthCodeTtl = parseInt(process.env.AUTHORIZATION_CODE_TTL || "", 10);
-        this.authorizationCodeTtlInMillis =
-            (Number.isInteger(envAuthCodeTtl) ? envAuthCodeTtl : DEFAULT_AUTHORIZATION_CODE_TTL_IN_SECS) * 1000;
-        this.configEntries = new Map<string, string>();
-        this.clientConfigurations = new Map<string, Map<string, string>>();
+    constructor(ssmClient: SSMClient) {
+        this.ssmProvider = new SSMProvider({ awsSdkV3Client: ssmClient });
     }
 
     public init(keys: CommonConfigKey[]): Promise<void> {
@@ -62,7 +60,7 @@ export class ConfigService {
     }
 
     public getAuditConfig(): CriAuditConfig {
-        const auditEventNamePrefix = process.env["SQS_AUDIT_EVENT_PREFIX"];
+        const auditEventNamePrefix = process.env.SQS_AUDIT_EVENT_PREFIX;
         if (!auditEventNamePrefix) {
             throw new Error("Missing environment variable: SQS_AUDIT_EVENT_PREFIX");
         }
@@ -79,7 +77,7 @@ export class ConfigService {
     }
 
     public getAuthorizationCodeExpirationEpoch() {
-        return Math.floor((Date.now() + this.authorizationCodeTtlInMillis) / 1000);
+        return Math.floor((Date.now() + AUTHORIZATION_CODE_TTL * 1000) / 1000);
     }
 
     public getSessionExpirationEpoch() {
@@ -87,8 +85,8 @@ export class ConfigService {
         return Math.floor((Date.now() + sessionTtl * 1000) / 1000);
     }
 
-    public getBearerAccessTokenTtl(): number {
-        return Number(ACCESS_TOKEN_TTL);
+    public getBearerAccessTokenTtl() {
+        return ACCESS_TOKEN_TTL;
     }
 
     public getBearerAccessTokenExpirationEpoch(): number {
@@ -99,7 +97,7 @@ export class ConfigService {
         return `/${PARAMETER_PREFIX}/${parameterNameSuffix}`;
     }
 
-    private validateNameSuffix(nameSuffix: string | undefined, nameSuffixValue: string | undefined): [string, string] {
+    private validateNameSuffix(nameSuffix?: string, nameSuffixValue?: string): [string, string] {
         const name = nameSuffix?.split("/").pop();
         const value = nameSuffixValue;
         if (!name) {
@@ -118,13 +116,19 @@ export class ConfigService {
     }
 
     private async getParameters(ssmParamNames: string[]): Promise<Parameter[]> {
-        const getParamsResult = await this.ssmClient.send(new GetParametersCommand({ Names: ssmParamNames }));
+        const { _errors: errors, ...parameters } = await this.ssmProvider.getParametersByName<string>(
+            Object.fromEntries(ssmParamNames.map((parameter) => [parameter, {}])),
+            { maxAge: PARAMETER_TTL, throwOnError: false },
+        );
 
-        if (getParamsResult?.InvalidParameters?.length) {
-            const invalidParameterNames = getParamsResult.InvalidParameters?.join(", ");
-            throw new Error(`Invalid SSM parameters: ${invalidParameterNames}`);
+        if (errors?.length) {
+            throw new Error(`Couldn't retrieve SSM parameters: ${errors.join(", ")}`);
         }
 
-        return getParamsResult?.Parameters || [];
+        return Object.entries(parameters).map(([name, value]) => ({ Name: name, Value: value }));
     }
+}
+
+function parseNumber(value?: string) {
+    return parseInt(value || "", 10) || undefined;
 }

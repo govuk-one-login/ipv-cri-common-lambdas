@@ -13,7 +13,10 @@ import { SessionRequestSummary } from "../types/session-request-summary";
 import { CommonConfigKey } from "../types/config-keys";
 
 export class SessionService {
-    constructor(private dynamoDbClient: DynamoDBDocument, private configService: ConfigService) {}
+    constructor(
+        private dynamoDbClient: DynamoDBDocument,
+        private configService: ConfigService,
+    ) {}
 
     public async getSession(sessionId: string | undefined): Promise<SessionItem> {
         const getSessionCommand = new GetCommand({
