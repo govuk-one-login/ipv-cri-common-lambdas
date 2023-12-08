@@ -10,7 +10,10 @@ import { CriAuditConfig } from "../../types/cri-audit-config";
 
 export class AuditService {
     private auditConfig: CriAuditConfig | undefined;
-    constructor(private readonly getAuditConfig: () => CriAuditConfig, private readonly sqsClient: SQSClient) {}
+    constructor(
+        private readonly getAuditConfig: () => CriAuditConfig,
+        private readonly sqsClient: SQSClient,
+    ) {}
 
     public async sendAuditEvent(eventType: AuditEventType, context: AuditEventContext) {
         if (!this.auditConfig) {
