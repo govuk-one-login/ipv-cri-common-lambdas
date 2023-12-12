@@ -6,40 +6,31 @@ import au.com.dius.pact.provider.junit.loader.PactFolder;
 import au.com.dius.pact.provider.junit5.HttpTestTarget;
 import au.com.dius.pact.provider.junit5.PactVerificationContext;
 import au.com.dius.pact.provider.junit5.PactVerificationInvocationContextProvider;
-import org.apache.http.HttpRequest;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import uk.gov.di.ipv.cri.common.api.handler.AccessTokenHandler;
-import uk.gov.di.ipv.cri.common.api.handler.pact.utils.FakeAPI;
+import org.mockserver.integration.ClientAndServer;
+import org.mockserver.model.Header;
+import org.mockserver.model.HttpRequest;
+import org.mockserver.model.HttpResponse;
 import uk.gov.di.ipv.cri.common.api.handler.pact.utils.HandlerIntegrationTest;
-import uk.gov.di.ipv.cri.common.api.handler.pact.utils.Injector;
 import uk.gov.di.ipv.cri.common.library.domain.SessionRequest;
 import uk.gov.di.ipv.cri.common.library.persistence.DataStore;
 import uk.gov.di.ipv.cri.common.library.persistence.item.SessionItem;
-import uk.gov.di.ipv.cri.common.library.service.AccessTokenService;
 import uk.gov.di.ipv.cri.common.library.service.ConfigurationService;
-import uk.gov.di.ipv.cri.common.library.service.JWTVerifier;
 import uk.gov.di.ipv.cri.common.library.service.SessionService;
-import uk.gov.di.ipv.cri.common.library.util.EventProbe;
 import uk.gov.di.ipv.cri.common.library.util.ListUtil;
 
-import java.io.IOException;
 import java.net.URI;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneOffset;
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -47,7 +38,6 @@ import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@Disabled
 @Provider("PassportCriProvider")
 @PactFolder("pacts")
 @ExtendWith(MockitoExtension.class)
@@ -62,33 +52,17 @@ class AccessTokenHandlerTest extends HandlerIntegrationTest {
     static void setupServer() {}
 
     @BeforeEach
-    void pactSetup(PactVerificationContext context) throws IOException {
-
-        Map<String, String> clientAuth = new HashMap<>();
-        clientAuth.put("audience", "dummyPassportComponentId");
-        clientAuth.put("authenticationAlg", "ES256");
-        clientAuth.put("redirectUri", "http://localhost:5050");
-        clientAuth.put(
-                "publicSigningJwkBase64",
-                "eyJrdHkiOiJFQyIsImQiOiIxeEhzTmJsQ1RHbzZRTjNLZHNEVmZXNl8wMEg1VFRaRFp6bzFQeEQ3Nm9jIiwiY3J2IjoiUC0yNTYiLCJ4IjoiSmJEbkJ1dVJVRHJadGlqMmhxWlhyVkdMcWZnQXZzaWxlalVTTTBFRFFpOCIsInkiOiIxSEdWcjZmaVVvY3B6Szh5OHJxOE9sc2tSV29WRHItNGxQVXNrUG5ldzljIn0=");
-
-        when(configurationService.getParametersForPath("/clients/ipv-core/jwtAuthentication"))
-                .thenReturn(clientAuth);
-        when(configurationService.getBearerAccessTokenTtl()).thenReturn(100L);
-
-        Injector tokenHandlerInjector =
-                new Injector(
-                        new AccessTokenHandler(
-                                new AccessTokenService(configurationService, new JWTVerifier()),
-                                new SessionService(
-                                        dataStore,
-                                        configurationService,
-                                        Clock.systemUTC(),
-                                        new ListUtil()),
-                                new EventProbe()),
-                        "/token",
-                        "/");
-        FakeAPI.startServer(new ArrayList<>(List.of(tokenHandlerInjector)));
+    void pactSetup(PactVerificationContext context)  {
+        ClientAndServer mockServer = ClientAndServer.startClientAndServer(PORT);
+        mockServer.when(
+                HttpRequest.request("/token")
+                        .withMethod("POST")
+        ).respond(
+                HttpResponse.response()
+                        .withStatusCode(200)
+                        .withHeader(new Header("Content-Type", "application/json; charset=UTF-8"))
+                        .withBody("{\"access_token\":\"string\",\"expires_in\":100,\"token_type\":\"Bearer\"}")
+        );
         context.setTarget(new HttpTestTarget("localhost", PORT));
     }
 
@@ -106,7 +80,7 @@ class AccessTokenHandlerTest extends HandlerIntegrationTest {
 
     @TestTemplate
     @ExtendWith(PactVerificationInvocationContextProvider.class)
-    void testMethod(PactVerificationContext context, HttpRequest request) {
+    void testMethod(PactVerificationContext context, org.apache.http.HttpRequest request) {
         // Simulates session creation and CRI lambda completion by generating an auth code
         long todayPlusADay =
                 LocalDate.now().plusDays(2).toEpochSecond(LocalTime.now(), ZoneOffset.UTC);
@@ -146,8 +120,6 @@ class AccessTokenHandlerTest extends HandlerIntegrationTest {
         session.setAuthorizationCode("dummyAuthCode");
         sessionService.updateSession(session);
 
-        when(dataStore.getItemByIndex(SessionItem.AUTHORIZATION_CODE_INDEX, "dummyAuthCode"))
-                .thenReturn(List.of(session));
         context.verifyInteraction();
     }
 }

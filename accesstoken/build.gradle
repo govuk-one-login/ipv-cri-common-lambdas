@@ -16,6 +16,7 @@ dependencies {
 
 	aspect configurations.powertools
 
+	testImplementation 'org.mock-server:mockserver-netty:5.11.1'
 	testImplementation configurations.tests
 	testRuntimeOnly configurations.test_runtime
 }
