@@ -17,7 +17,6 @@ import org.mockserver.integration.ClientAndServer;
 import org.mockserver.model.Header;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.model.HttpResponse;
-import uk.gov.di.ipv.cri.common.api.handler.pact.utils.HandlerIntegrationTest;
 import uk.gov.di.ipv.cri.common.library.domain.SessionRequest;
 import uk.gov.di.ipv.cri.common.library.persistence.DataStore;
 import uk.gov.di.ipv.cri.common.library.persistence.item.SessionItem;
@@ -41,7 +40,7 @@ import static org.mockito.Mockito.when;
 @Provider("PassportCriProvider")
 @PactFolder("pacts")
 @ExtendWith(MockitoExtension.class)
-class AccessTokenHandlerTest extends HandlerIntegrationTest {
+class AccessTokenHandlerTest {
 
     private static final int PORT = 5050;
 
