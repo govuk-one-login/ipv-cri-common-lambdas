@@ -411,7 +411,6 @@ Resources:
       Handler: audit-event-consumer-handler.lambdaHandler
       CodeUri: ../../lambdas
       Runtime: nodejs18.x
-      FunctionName: !Sub "${AWS::StackName}-AuditEventConsumerFunction"
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-audit-event-consumer"
@@ -473,7 +472,6 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: ../../session
-      FunctionName: !Sub "${AWS::StackName}-SessionFunction"
       Handler: uk.gov.di.ipv.cri.common.api.handler.SessionHandler::handleRequest
       Environment:
         Variables:
@@ -536,7 +534,6 @@ Resources:
       Handler: session-handler.lambdaHandler
       Runtime: nodejs18.x
       CodeUri: ../../lambdas
-      FunctionName: !Sub "${AWS::StackName}-SessionFunctionTS"
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-sessionTS"
@@ -602,7 +599,6 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: ../../authorization
-      FunctionName: !Sub "${AWS::StackName}-AuthorizationFunction"
       Handler: uk.gov.di.ipv.cri.common.api.handler.AuthorizationHandler::handleRequest
       Environment:
         Variables:
@@ -639,7 +635,6 @@ Resources:
       Handler: authorization-handler.lambdaHandler
       CodeUri: ../../lambdas
       Runtime: nodejs18.x
-      FunctionName: !Sub "${AWS::StackName}-AuthorizationFunctionTS"
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-authorizationTS"
@@ -695,7 +690,6 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: ../../accesstoken
-      FunctionName: !Sub "${AWS::StackName}-AccessTokenFunction"
       Handler: uk.gov.di.ipv.cri.common.api.handler.AccessTokenHandler::handleRequest
       Environment:
         Variables:
@@ -727,7 +721,6 @@ Resources:
       Handler: access-token-handler.lambdaHandler
       CodeUri: ../../lambdas
       Runtime: nodejs18.x
-      FunctionName: !Sub "${AWS::StackName}-AccessTokenFunctionTS"
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-access-token-2"
@@ -1299,7 +1292,6 @@ Resources:
       Handler: create-auth-code-handler.lambdaHandler
       CodeUri: ../../lambdas
       Runtime: nodejs18.x
-      FunctionName: !Sub "${AWS::StackName}-CreateAuthCodeFunction"
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-create-auth-code"
