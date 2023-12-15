@@ -4,17 +4,25 @@ import { JwtVerifier, JwtVerifierFactory } from "../../../../src/common/security
 import * as jose from "jose";
 import { importJWK, JWTHeaderParameters, jwtVerify } from "jose";
 import { JwkKeyExportOptions } from "crypto";
+
 jest.mock("jose", () => ({
     importJWK: jest.fn(),
     jwtVerify: jest.fn(),
 }));
+
+type JwkKeyExtendedExportOptions = JwkKeyExportOptions & {
+    algorithms: string[];
+    audience: string;
+    issuer: string;
+    subject: string;
+};
 
 describe("jwt-verifier.ts", () => {
     let logger: Logger;
     describe("JwtVerifier", () => {
         let signingPublicJwk: jose.JWK;
         let jwtVerifierConfig: JwtVerificationConfig;
-        let jwtVerifyOptions: JwkKeyExportOptions;
+        let jwtVerifyOptions: JwkKeyExtendedExportOptions;
 
         beforeEach(() => {
             signingPublicJwk = {
@@ -33,7 +41,7 @@ describe("jwt-verifier.ts", () => {
                 audience: "some-audience",
                 issuer: "some-issuer",
                 subject: "some-subject",
-            } as unknown as JwkKeyExportOptions;
+            } as unknown as JwkKeyExtendedExportOptions;
         });
 
         describe("verify", () => {
@@ -55,8 +63,7 @@ describe("jwt-verifier.ts", () => {
             it("should succeed with a JWT that has signing key in config but not in JWK", async () => {
                 delete signingPublicJwk.alg;
                 jwtVerifierConfig.jwtSigningAlgorithm = "ECDSA";
-                const untypedJwtVerifyOptions = jwtVerifyOptions as any;
-                untypedJwtVerifyOptions.algorithms = ["ECDSA"];
+                jwtVerifyOptions.algorithms = ["ECDSA"];
 
                 const encodedJwt = Buffer.from("example.encoded.jwt");
                 jest.spyOn(global.Buffer, "from").mockReturnValueOnce(encodedJwt);
@@ -209,7 +216,7 @@ describe("jwt-verifier.ts", () => {
                 expect(payload).toBeNull();
                 expect(logger.error).toHaveBeenCalledWith(
                     "JWT verification failed",
-                    Error("Unexpected token � in JSON at position 0"),
+                    expect.objectContaining({ message: expect.stringMatching(/Unexpected token '?�'?/) }),
                 );
             });
             it("should return null and log an error if one of JWT verification Options is invalid", async () => {
@@ -218,7 +225,8 @@ describe("jwt-verifier.ts", () => {
                     audience: "some-audience",
                     issuer: "some-issuer",
                     subject: "some-subject",
-                } as unknown as JwkKeyExportOptions;
+                };
+
                 const encodedJwt = Buffer.from("example.encoded.jwt");
                 jest.spyOn(global.Buffer, "from").mockReturnValueOnce(encodedJwt);
                 jest.spyOn(global.JSON, "parse").mockReturnValueOnce(signingPublicJwk);
