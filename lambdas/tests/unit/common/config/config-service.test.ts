@@ -5,6 +5,9 @@ import { ClientConfigKey, CommonConfigKey } from "../../../../src/types/config-k
 
 jest.mock("@aws-lambda-powertools/parameters/ssm");
 
+const ssmProvider = jest.mocked(SSMProvider).prototype;
+jest.spyOn(ssmProvider, "getParametersByName");
+
 describe("ConfigService", () => {
     const mockUrl = "https://sqs.eu-west-2.amazonaws.com/123456789/txma-infrastructure-AuditEventQueue";
     let ssmClient: SSMClient;
@@ -23,12 +26,9 @@ describe("ConfigService", () => {
         jest.spyOn(global.Date, "now").mockReturnValue(1675382400000);
 
         it("should get the session expiration", async () => {
-            const mockGetParametersByName = jest.fn().mockResolvedValue({
+            ssmProvider.getParametersByName.mockResolvedValue({
                 "/di-ipv-cri-common-lambdas/SessionTtl": "100",
             });
-            (SSMProvider.prototype.getParametersByName as jest.MockedFunction<any>).mockImplementation(
-                mockGetParametersByName,
-            );
 
             await configService.init([CommonConfigKey.SESSION_TABLE_NAME]);
             const epoch = configService.getSessionExpirationEpoch();
@@ -38,13 +38,10 @@ describe("ConfigService", () => {
 
     describe("init", () => {
         it("should initialise the default config", async () => {
-            const mockGetParametersByName = jest.fn().mockResolvedValue({});
-            (SSMProvider.prototype.getParametersByName as jest.MockedFunction<any>).mockImplementation(
-                mockGetParametersByName,
-            );
+            ssmProvider.getParametersByName.mockResolvedValue({});
             await configService.init([CommonConfigKey.SESSION_TABLE_NAME]);
 
-            expect(mockGetParametersByName).toBeCalledWith(
+            expect(ssmProvider.getParametersByName).toBeCalledWith(
                 {
                     "/di-ipv-cri-common-lambdas/SessionTableName": {},
                 },
@@ -63,17 +60,15 @@ describe("ConfigService", () => {
         });
 
         it("should throw an error for an invalid client ID", async () => {
-            const mockGetParametersByName = jest.fn().mockResolvedValue({
+            ssmProvider.getParametersByName.mockResolvedValue({
                 _errors: [],
             });
-            (SSMProvider.prototype.getParametersByName as jest.MockedFunction<any>).mockImplementation(
-                mockGetParametersByName,
-            );
 
             await expect(configService.initClientConfig("test", [ClientConfigKey.JWT_ISSUER])).rejects.toThrowError(
                 "No client config found. Invalid client id encountered: test",
             );
-            expect(mockGetParametersByName).toBeCalledWith(
+
+            expect(ssmProvider.getParametersByName).toBeCalledWith(
                 {
                     "/di-ipv-cri-common-lambdas/clients/test/jwtAuthentication/issuer": {},
                 },
@@ -84,17 +79,15 @@ describe("ConfigService", () => {
         });
 
         it("should throw an error for invalid parameters", async () => {
-            const mockGetParametersByName = jest.fn().mockResolvedValue({
+            ssmProvider.getParametersByName.mockResolvedValue({
                 _errors: ["invalid-param"],
             });
-            (SSMProvider.prototype.getParametersByName as jest.MockedFunction<any>).mockImplementation(
-                mockGetParametersByName,
-            );
 
             await expect(configService.initClientConfig("test", [ClientConfigKey.JWT_ISSUER])).rejects.toThrowError(
                 "Couldn't retrieve SSM parameters: invalid-param",
             );
-            expect(mockGetParametersByName).toBeCalledWith(
+
+            expect(ssmProvider.getParametersByName).toBeCalledWith(
                 {
                     "/di-ipv-cri-common-lambdas/clients/test/jwtAuthentication/issuer": {},
                 },
@@ -105,14 +98,13 @@ describe("ConfigService", () => {
         });
 
         it("should successfully initialise the client config", async () => {
-            const mockGetParametersByName = jest.fn().mockResolvedValue({
+            ssmProvider.getParametersByName.mockResolvedValue({
                 "/di-ipv-cri-common-lambdas/clients/test/jwtAuthentication/issuer": "test",
             });
-            (SSMProvider.prototype.getParametersByName as jest.MockedFunction<any>).mockImplementation(
-                mockGetParametersByName,
-            );
+
             await configService.initClientConfig("test", [ClientConfigKey.JWT_ISSUER]);
-            expect(mockGetParametersByName).toBeCalledWith(
+
+            expect(ssmProvider.getParametersByName).toBeCalledWith(
                 {
                     "/di-ipv-cri-common-lambdas/clients/test/jwtAuthentication/issuer": {},
                 },
@@ -124,45 +116,39 @@ describe("ConfigService", () => {
         });
 
         it("should fail to initialise the client config when name suffix is empty", async () => {
-            const mockGetParametersByName = jest.fn().mockResolvedValue({
+            ssmProvider.getParametersByName.mockResolvedValue({
                 "": "session-cic-common-cri-api-local",
             });
-            (SSMProvider.prototype.getParametersByName as jest.MockedFunction<any>).mockImplementation(
-                mockGetParametersByName,
-            );
+
             await expect(() => configService.initClientConfig("test", [ClientConfigKey.JWT_ISSUER])).rejects.toThrow(
                 "NameSuffix may not be a valid string or the parameter is not found in the parameter store",
             );
+
             expect(configService.hasClientConfig("test")).toBe(false);
         });
 
         it("should fail to initialise the client config when value is empty", async () => {
-            const mockGetParametersByName = jest.fn().mockResolvedValue({
+            ssmProvider.getParametersByName.mockResolvedValue({
                 "/di-ipv-cri-common-lambdas/clients/test/jwtAuthentication/issuer": "",
             });
-            (SSMProvider.prototype.getParametersByName as jest.MockedFunction<any>).mockImplementation(
-                mockGetParametersByName,
-            );
 
             await expect(() => configService.initClientConfig("test", [ClientConfigKey.JWT_ISSUER])).rejects.toThrow(
                 "The value of the parameter maybe undefined or empty",
             );
 
-            expect(mockGetParametersByName).toHaveBeenCalledTimes(1);
+            expect(ssmProvider.getParametersByName).toHaveBeenCalledTimes(1);
             expect(configService.hasClientConfig("test")).toBe(false);
         });
     });
 
     describe("hasClientConfig", () => {
         it("should return true for existing client config", async () => {
-            const mockGetParametersByName = jest.fn().mockResolvedValue({
+            ssmProvider.getParametersByName.mockResolvedValue({
                 "/di-ipv-cri-common-lambdas/SessionTableName": "session-cic-common-cri-api-local",
             });
-            (SSMProvider.prototype.getParametersByName as jest.MockedFunction<any>).mockImplementation(
-                mockGetParametersByName,
-            );
 
             await configService.initClientConfig("client-id", [ClientConfigKey.JWT_ISSUER]);
+
             expect(configService.hasClientConfig("client-id")).toBe(true);
         });
 
@@ -173,18 +159,15 @@ describe("ConfigService", () => {
 
     describe("getClientConfig", () => {
         it("returns the client config if available", async () => {
-            const mockGetParametersByName = jest.fn().mockResolvedValue({
+            ssmProvider.getParametersByName.mockResolvedValue({
                 "/di-ipv-cri-common-lambdas/SessionTableName": "session-cic-common-cri-api-local",
             });
-            (SSMProvider.prototype.getParametersByName as jest.MockedFunction<any>).mockImplementation(
-                mockGetParametersByName,
-            );
 
             await configService.initClientConfig("client-id", [ClientConfigKey.JWT_ISSUER]);
-            const mockMap = new Map<string, string>();
-            mockMap.set("SessionTableName", "session-cic-common-cri-api-local");
 
-            expect(configService.getClientConfig("client-id")).toEqual(mockMap);
+            expect(configService.getClientConfig("client-id")).toEqual(
+                new Map([["SessionTableName", "session-cic-common-cri-api-local"]]),
+            );
         });
 
         it("throws no configuration for client id error when config is unavialable", () => {
@@ -196,18 +179,14 @@ describe("ConfigService", () => {
 
     describe("getConfigEntry", () => {
         it("should successfully return the config", async () => {
-            const mockGetParametersByName = jest.fn().mockResolvedValue({
+            ssmProvider.getParametersByName.mockResolvedValue({
                 "/di-ipv-cri-common-lambdas/SessionTableName": ["session-cic-common-cri-api-local"],
             });
-            (SSMProvider.prototype.getParametersByName as jest.MockedFunction<any>).mockImplementation(
-                mockGetParametersByName,
-            );
 
             await configService.init([CommonConfigKey.SESSION_TABLE_NAME]);
-
             const response = configService.getConfigEntry(CommonConfigKey.SESSION_TABLE_NAME);
 
-            expect(mockGetParametersByName).toBeCalledWith(
+            expect(ssmProvider.getParametersByName).toBeCalledWith(
                 {
                     "/di-ipv-cri-common-lambdas/SessionTableName": {},
                 },
@@ -251,11 +230,7 @@ describe("ConfigService", () => {
                 SQS_AUDIT_EVENT_QUEUE_URL: mockUrl,
             };
 
-            const mockGetParametersByName = jest.fn().mockResolvedValue({});
-            (SSMProvider.prototype.getParametersByName as jest.MockedFunction<any>).mockImplementation(
-                mockGetParametersByName,
-            );
-
+            ssmProvider.getParametersByName.mockResolvedValue({});
             await configService.init([CommonConfigKey.SESSION_TABLE_NAME]);
 
             expect(() => configService.getAuditConfig()).toThrowError(
@@ -271,16 +246,13 @@ describe("ConfigService", () => {
                 SQS_AUDIT_EVENT_QUEUE_URL: mockUrl,
             };
 
-            const mockGetParametersByName = jest.fn().mockResolvedValue({
+            ssmProvider.getParametersByName.mockResolvedValue({
                 "/di-ipv-cri-common-lambdas/verifiable-credential/issuer": "session-cic-common-cri-api-local",
             });
-            (SSMProvider.prototype.getParametersByName as jest.MockedFunction<any>).mockImplementation(
-                mockGetParametersByName,
-            );
 
             await configService.init([CommonConfigKey.VC_ISSUER]);
 
-            expect(mockGetParametersByName).toBeCalledWith(
+            expect(ssmProvider.getParametersByName).toBeCalledWith(
                 {
                     "/di-ipv-cri-common-lambdas/verifiable-credential/issuer": {},
                 },
