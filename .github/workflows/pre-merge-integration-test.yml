@@ -6,6 +6,7 @@ on:
       - reopened
       - ready_for_review
       - synchronize
+  workflow_dispatch:
 
 jobs:
   deploy:
