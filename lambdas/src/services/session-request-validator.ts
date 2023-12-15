@@ -21,7 +21,7 @@ export class SessionRequestValidator {
             );
         }
 
-        const scope = payload["scope"] as string;
+        // const scope = payload["scope"] as string;
         const state = payload["state"] as string;
 
         if (payload.client_id !== requestBodyClientId) {
