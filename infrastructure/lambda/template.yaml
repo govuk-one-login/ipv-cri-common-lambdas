@@ -54,8 +54,6 @@ Conditions:
   IsDevEnvironment: !Equals
     - !Ref Environment
     - dev
-  IsNotDevEnvironment: !Not
-    - Condition: IsDevEnvironment
   IsDevPlatformDeploy: !Equals
     - !FindInMap [CriVpcMapping, !Ref CriIdentifier, !Ref Environment]
     - "di-devplatform-deploy"
