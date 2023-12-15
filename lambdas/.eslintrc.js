@@ -1,8 +1,14 @@
 module.exports = {
+    root: true,
     parser: "@typescript-eslint/parser",
     parserOptions: {
-        ecmaVersion: 2022, // Allows for the parsing of modern ECMAScript features
+        tsconfigRootDir: __dirname,
+        project: ["./tsconfig.eslint.json", "./tsconfig.json"],
         sourceType: "module",
+        ecmaVersion: 2022,
+        ecmaFeatures: {
+            impliedStrict: true,
+        },
     },
     env: {
         node: true,
@@ -13,8 +19,9 @@ module.exports = {
         sinon: true,
         expect: true,
     },
-    root: true,
-    extends: ["eslint:recommended", "prettier", "plugin:@typescript-eslint/recommended"],
+    plugins: ["@typescript-eslint"],
+    extends: ["prettier", "eslint:recommended", "plugin:prettier/recommended", "plugin:@typescript-eslint/recommended"],
+    ignorePatterns: ["node_modules", ".aws-sam", "build", "dist", "dotenv", "coverage"],
     rules: {
         "no-console": 2,
         "padding-line-between-statements": ["error", { blankLine: "any", prev: "*", next: "*" }],
