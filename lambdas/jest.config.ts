@@ -1,18 +1,12 @@
-/*
- * For a detailed explanation regarding each configuration property and type check, visit:
- * https://jestjs.io/docs/configuration
- */
+import type { Config } from "jest";
 
 export default {
-    transform: {
-        "^.+\\.ts?$": "ts-jest",
-    },
+    preset: "ts-jest",
     clearMocks: true,
-    collectCoverage: true,
-    collectCoverageFrom: ["src/**/*.{js,ts}", "!**/tests/**", "!src/types/**"],
-    coverageDirectory: "coverage",
-    coverageProvider: "v8",
-    coveragePathIgnorePatterns: ["src/handlers/create-auth-code-handler.ts", "config.ts", "node_modules/"],
+    modulePaths: ["<rootDir>/src"],
+    collectCoverageFrom: ["<rootDir>/src/**/*"],
+    testMatch: ["<rootDir>/tests/**/*.test.ts"],
+    setupFiles: ["<rootDir>/setEnvVars.js"],
     coverageThreshold: {
         global: {
             statements: 95,
@@ -33,8 +27,4 @@ export default {
             lines: 100,
         },
     },
-    testMatch: ["**/tests/**/*.test.ts"],
-    preset: "ts-jest",
-    testEnvironment: "node",
-    setupFiles: ["<rootDir>/setEnvVars.js"],
-};
+} satisfies Config;
