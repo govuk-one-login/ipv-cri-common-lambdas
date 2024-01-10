@@ -94,7 +94,6 @@ Globals:
       - !Ref CodeSigningConfigArn
       - !Ref AWS::NoValue
     Timeout: 30 # seconds
-    Runtime: java11
     AutoPublishAlias: live
     Tracing: Active
     MemorySize: !FindInMap [MemorySizeMapping, Environment, !Ref "Environment"]
@@ -124,10 +123,6 @@ Globals:
           - '{{resolve:secretsmanager:${SecretArn}:SecretString:DT_TENANT}}'
           - SecretArn: !FindInMap [ EnvironmentConfiguration, !Ref Environment, dynatraceSecretArn ]
         DT_OPEN_TELEMETRY_ENABLE_INTEGRATION: "true"
-    Layers:
-      - !Sub
-        - '{{resolve:secretsmanager:${SecretArn}:SecretString:JAVA_LAYER}}'
-        - SecretArn: !FindInMap [ EnvironmentConfiguration, !Ref Environment, dynatraceSecretArn ]
 
 Mappings:
   EnvironmentConfiguration:
@@ -445,6 +440,10 @@ Resources:
       CodeUri: ../../lambdas
       Runtime: nodejs18.x
       FunctionName: !Sub "${AWS::StackName}-AuditEventConsumerFunction"
+      Layers:
+        - !Sub
+          - '{{resolve:secretsmanager:${SecretArn}:SecretString:NODEJS_LAYER}}'
+          - SecretArn: !FindInMap [ EnvironmentConfiguration, !Ref Environment, dynatraceSecretArn ]
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-audit-event-consumer"
@@ -505,9 +504,14 @@ Resources:
   SessionFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ../../session
       FunctionName: !Sub "${AWS::StackName}-SessionFunction"
+      CodeUri: ../../session
       Handler: uk.gov.di.ipv.cri.common.api.handler.SessionHandler::handleRequest
+      Runtime: java11
+      Layers:
+        - !Sub
+          - '{{resolve:secretsmanager:${SecretArn}:SecretString:JAVA_LAYER}}'
+          - SecretArn: !FindInMap [ EnvironmentConfiguration, !Ref Environment, dynatraceSecretArn ]
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-session"
@@ -566,10 +570,14 @@ Resources:
   SessionFunctionTS:
     Type: AWS::Serverless::Function
     Properties:
+      FunctionName: !Sub "${AWS::StackName}-SessionFunctionTS"
+      CodeUri: ../../lambdas
       Handler: session-handler.lambdaHandler
       Runtime: nodejs18.x
-      CodeUri: ../../lambdas
-      FunctionName: !Sub "${AWS::StackName}-SessionFunctionTS"
+      Layers:
+        - !Sub
+          - '{{resolve:secretsmanager:${SecretArn}:SecretString:NODEJS_LAYER}}'
+          - SecretArn: !FindInMap [ EnvironmentConfiguration, !Ref Environment, dynatraceSecretArn ]
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-sessionTS"
@@ -616,7 +624,6 @@ Resources:
           - src/handlers/session-handler.ts
         External:
           - "@aws-sdk/*"
-
   SessionFunctionTSLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
@@ -634,9 +641,14 @@ Resources:
   AuthorizationFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ../../authorization
       FunctionName: !Sub "${AWS::StackName}-AuthorizationFunction"
+      CodeUri: ../../authorization
       Handler: uk.gov.di.ipv.cri.common.api.handler.AuthorizationHandler::handleRequest
+      Runtime: java11
+      Layers:
+        - !Sub
+          - '{{resolve:secretsmanager:${SecretArn}:SecretString:JAVA_LAYER}}'
+          - SecretArn: !FindInMap [ EnvironmentConfiguration, !Ref Environment, dynatraceSecretArn ]
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-authorization"
@@ -669,10 +681,14 @@ Resources:
   AuthorizationFunctionTS:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: authorization-handler.lambdaHandler
-      CodeUri: ../../lambdas
-      Runtime: nodejs18.x
       FunctionName: !Sub "${AWS::StackName}-AuthorizationFunctionTS"
+      CodeUri: ../../lambdas
+      Handler: authorization-handler.lambdaHandler
+      Runtime: nodejs18.x
+      Layers:
+        - !Sub
+          - '{{resolve:secretsmanager:${SecretArn}:SecretString:NODEJS_LAYER}}'
+          - SecretArn: !FindInMap [ EnvironmentConfiguration, !Ref Environment, dynatraceSecretArn ]
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-authorizationTS"
@@ -727,9 +743,14 @@ Resources:
   AccessTokenFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ../../accesstoken
       FunctionName: !Sub "${AWS::StackName}-AccessTokenFunction"
+      CodeUri: ../../accesstoken
       Handler: uk.gov.di.ipv.cri.common.api.handler.AccessTokenHandler::handleRequest
+      Runtime: java11
+      Layers:
+        - !Sub
+          - '{{resolve:secretsmanager:${SecretArn}:SecretString:JAVA_LAYER}}'
+          - SecretArn: !FindInMap [ EnvironmentConfiguration, !Ref Environment, dynatraceSecretArn ]
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-access-token"
@@ -757,10 +778,14 @@ Resources:
   AccessTokenFunctionTS:
     Type: AWS::Serverless::Function
     Properties:
+      FunctionName: !Sub "${AWS::StackName}-AccessTokenFunctionTS"
       Handler: access-token-handler.lambdaHandler
       CodeUri: ../../lambdas
       Runtime: nodejs18.x
-      FunctionName: !Sub "${AWS::StackName}-AccessTokenFunctionTS"
+      Layers:
+        - !Sub
+          - '{{resolve:secretsmanager:${SecretArn}:SecretString:NODEJS_LAYER}}'
+          - SecretArn: !FindInMap [ EnvironmentConfiguration, !Ref Environment, dynatraceSecretArn ]
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-access-token-2"
@@ -1329,10 +1354,14 @@ Resources:
     Type: AWS::Serverless::Function
     Condition: IsDevEnvironment
     Properties:
-      Handler: create-auth-code-handler.lambdaHandler
-      CodeUri: ../../lambdas
-      Runtime: nodejs18.x
       FunctionName: !Sub "${AWS::StackName}-CreateAuthCodeFunction"
+      CodeUri: ../../lambdas
+      Handler: create-auth-code-handler.lambdaHandler
+      Runtime: nodejs18.x
+      Layers:
+        - !Sub
+          - '{{resolve:secretsmanager:${SecretArn}:SecretString:NODEJS_LAYER}}'
+          - SecretArn: !FindInMap [ EnvironmentConfiguration, !Ref Environment, dynatraceSecretArn ]
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-create-auth-code"
