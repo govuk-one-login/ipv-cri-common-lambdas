@@ -72,3 +72,9 @@ Run the either KBV or ADDRESS front-end and ensure the you start the stub as wel
 `STACK_NAME=di-ipv-cri-common-api-your-stack-name CRI_DEV=kbv-cri-dev ENVIRONMENT=dev API_GATEWAY_ID_PRIVATE=xxxx IPV_CORE_STUB_BASIC_AUTH_USER=xxxx IPV_CORE_STUB_BASIC_AUTH_PASSWORD=xxxx IPV_CORE_STUB_URL="http://localhost:8085" gradle integration-tests:cucumber
 
 `
+
+## Check repo for secrets
+
+Run `detect-secrets scan --baseline .secrets.baseline` to check for potential leaked secrets.
+
+Use the keyword and secret exclusion lists in the baseline file to prevent the utility from flagging up specific strings.
