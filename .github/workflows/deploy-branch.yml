@@ -69,6 +69,7 @@ jobs:
           sam-deployment-bucket: ${{ vars.DEPLOYMENT_ARTIFACTS_BUCKET }}
           aws-role-arn: ${{ vars.DEPLOYMENT_ROLE_ARN }}
           stack-name-prefix: preview-common-lambdas
+          stack-name-length-limit: 37
           cache-key: common-lambdas
           s3-prefix: preview
           pull-repository: true
