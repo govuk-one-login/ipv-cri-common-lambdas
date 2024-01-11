@@ -16,12 +16,15 @@
         "jose": "4.13.1"
     },
     "scripts": {
-        "unit": "jest --config=jest.config.ts",
-        "lint:prettier": "prettier --check src tests",
-        "lint:eslint": "eslint .",
-        "lint": "npm run lint:prettier && npm run lint:eslint",
-        "compile": "tsc",
-        "test": "npm run compile && npm run unit"
+        "lint": "eslint .",
+        "lint:fix": "eslint . --fix",
+        "unit": "jest --silent",
+        "test": "npm run unit --",
+        "test:coverage": "npm run unit -- --coverage",
+        "sam:validate": "cd ../infrastructure/lambda && sam validate && sam validate --lint",
+        "sam:build": "npm run sam:validate && sam build --template ../../infrastructure/lambda/template.yaml --cached --parallel",
+        "deploy": "../deploy.sh",
+        "compile": "tsc"
     },
     "devDependencies": {
         "@types/aws-lambda": "8.10.114",
