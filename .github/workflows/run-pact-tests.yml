@@ -58,7 +58,7 @@ jobs:
         run: ./gradlew pactTests jacocoTestReport --build-cache --parallel -x spotlessApply -x spotlessCheck
 
       - name: Archive pact test results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: pact-test-reports
