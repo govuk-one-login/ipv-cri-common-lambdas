@@ -1,0 +1,57 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Client Configuration Parameter Resources
+Parameters:
+  Id:
+    Type: String
+    Description: The ClientId
+  ParentStackName:
+    Type: String
+  Issuer:
+    Type: String
+    Description: Issuer Url
+  RedirectUrl:
+    Type: String
+    Description: Redirect Url 
+  Audience:
+    Type: String
+    Description: Audience Url
+  Base64PublicSigningJwk:
+    Type: String
+    Description: Base64 encoded public signing key jwk
+    Default: "ewogICAgImt0eSI6ICJFQyIsCiAgICAidXNlIjogInNpZyIsCiAgICAiY3J2IjogIlAtMjU2IiwKICAgICJraWQiOiAiaXB2LWNvcmUtc3R1Yi0yLWZyb20tbWtqd2sub3JnIiwKICAgICJ4IjogImszOXVLYWNTdWtRQnJNWnJIRFRCVVpzbGl2cFhLRE5aVGc2aW5DSHdyTGMiLAogICAgInkiOiAiOEY4TG5RN3dHOWh4c1Q0YXgwQXR5N2lNR0l5aVlfWUdwM19xSVp6S28xQSIsCiAgICAiYWxnIjogIkVTMjU2Igp9"
+  AuthenticationAlg:
+    Type: String
+    Description: Authentication Algorithm
+    Default: ES256
+
+Resources:
+  AudienceParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${ParentStackName}/clients/${Id}/jwtAuthentication/audience"
+      Type: String
+      Value: !Ref Audience
+  IssuerParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${ParentStackName}/clients/${Id}/jwtAuthentication/issuer"
+      Type: String
+      Value: !Ref Issuer
+  RedirectURIParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${ParentStackName}/clients/${Id}/jwtAuthentication/redirectUri"
+      Type: String
+      Value: !Ref RedirectUrl
+  PublicSigningJwkBase64Parameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${ParentStackName}/clients/${Id}/jwtAuthentication/publicSigningJwkBase64"
+      Type: String
+      Value: !Ref Base64PublicSigningJwk
+  AuthenticationAlgParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${ParentStackName}/clients/${Id}/jwtAuthentication/authenticationAlg"
+      Type: String
+      Value: !Ref AuthenticationAlg
