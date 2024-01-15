@@ -147,7 +147,7 @@ Mappings:
     <<: *MappingsBase
   VerifiableCredentialIssuerMapping:
     <<: *MappingsBase
-    
+
   EnvironmentConfiguration:
     dev:
       dynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
@@ -239,9 +239,11 @@ Mappings:
       production: "https://identity.account.gov.uk"
 
 Resources:
-  ##############################
-  # Stub Audit Event Consumer  #
-  ##############################
+  ####################################################################
+  #
+  # Stub Audit Event Consumer  
+  #
+  #####################################################################
 
   AuditEventConsumerFunction:
     Type: AWS::Serverless::Function
@@ -309,10 +311,12 @@ Resources:
       FunctionName: !Ref AuditEventConsumerFunction
 
   #########################################################################
-  # Common OAuth Lambdas                                                  #
-  # FunctionNames are hard-coded for use in the private-api.yaml file     #
-  # Which all CRI's the use common-lambda reference                       #
+  #
+  # Common OAuth Lambdas and associated resources                                                  
+  # FunctionNames are hard-coded for use in the private-api.yaml file     
+  # Which all CRI's the use common-lambda reference                       
   # They should therefore not be removed
+  #
   ########################################################################
 
   SessionFunction:
@@ -746,308 +750,6 @@ Resources:
       Value: !FindInMap [SessionTtlMapping, Environment, !Ref "Environment"]
       Description: default time to live for a session item (seconds)
 
-  ##################################################################################################
-  # ipv-core-stub-aws-build client configuration
-  #################################################################################################
-  IPVCoreStubAwsBuildAudienceParameter:
-    Condition: IsStubEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub /${AWS::StackName}/clients/ipv-core-stub-aws-build/jwtAuthentication/audience
-      Type: String
-      Value: !If
-        - IsProdEnvironment
-        - !Sub
-          - "https://${Domain}.account.gov.uk"
-          - Domain: !FindInMap [CriAudienceMapping, !Ref CriIdentifier, domain]
-        - !Sub
-          - "https://${Domain}.${Environment}.account.gov.uk"
-          - Domain: !FindInMap [CriAudienceMapping, !Ref CriIdentifier, domain]
-
-  IPVCoreStubAwsBuildIssuerParameter:
-    Condition: IsStubEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build/jwtAuthentication/issuer"
-      Type: String
-      Value: "https://cri.core.build.stubs.account.gov.uk"
-
-  IPVCoreStubAwsBuildPublicSigningJwkBase64Parameter:
-    Condition: IsStubEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build/jwtAuthentication/publicSigningJwkBase64"
-      Type: String
-      Value: "ewogICAgImt0eSI6ICJFQyIsCiAgICAidXNlIjogInNpZyIsCiAgICAiY3J2IjogIlAtMjU2IiwKICAgICJraWQiOiAiaXB2LWNvcmUtc3R1Yi0yLWZyb20tbWtqd2sub3JnIiwKICAgICJ4IjogImszOXVLYWNTdWtRQnJNWnJIRFRCVVpzbGl2cFhLRE5aVGc2aW5DSHdyTGMiLAogICAgInkiOiAiOEY4TG5RN3dHOWh4c1Q0YXgwQXR5N2lNR0l5aVlfWUdwM19xSVp6S28xQSIsCiAgICAiYWxnIjogIkVTMjU2Igp9"
-  
-  IPVCoreStubAwsBuildRedirectURIParameter:
-    Condition: IsStubEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build/jwtAuthentication/redirectUri"
-      Type: String
-      Value: "https://cri.core.build.stubs.account.gov.uk/callback"
-  
-  IPVCoreStubAwsBuildAuthenticationAlgParameter:
-    Condition: IsStubEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build/jwtAuthentication/authenticationAlg"
-      Type: String
-      Value: ES256
-
-  #################################################################################################
-  # ipv-core-stub-pre-prod-aws-build client configuration
-  #################################################################################################
-  IPVCoreStubPreProdAwsBuildAudienceParameter:
-    Condition: IsProdEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod-aws-build/jwtAuthentication/audience"
-      Type: String
-      Value: !If
-        - IsProdEnvironment
-        - !Sub
-          - "https://${Domain}.account.gov.uk"
-          - Domain: !FindInMap [CriAudienceMapping, !Ref CriIdentifier, domain]
-        - !Sub
-          - "https://${Domain}.${Environment}.account.gov.uk"
-          - Domain: !FindInMap [CriAudienceMapping, !Ref CriIdentifier, domain]
-  
-  IPVCoreStubPreProdAwsBuildIssuerParameter:
-    Condition: IsProdEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod-aws-build/jwtAuthentication/issuer"
-      Type: String
-      Value: "https://cri-preprod.core.build.stubs.account.gov.uk"
-
-  IPVCoreStubPreProdAwsBuildPublicSigningJwkBase64Parameter:
-    Condition: IsProdEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod-aws-build/jwtAuthentication/publicSigningJwkBase64"
-      Type: String
-      Value: "ewogICAgImt0eSI6ICJFQyIsCiAgICAidXNlIjogInNpZyIsCiAgICAiY3J2IjogIlAtMjU2IiwKICAgICJraWQiOiAiaXB2LWNvcmUtc3R1Yi0yLWZyb20tbWtqd2sub3JnIiwKICAgICJ4IjogImszOXVLYWNTdWtRQnJNWnJIRFRCVVpzbGl2cFhLRE5aVGc2aW5DSHdyTGMiLAogICAgInkiOiAiOEY4TG5RN3dHOWh4c1Q0YXgwQXR5N2lNR0l5aVlfWUdwM19xSVp6S28xQSIsCiAgICAiYWxnIjogIkVTMjU2Igp9"
-  
-  IPVCoreStubPreProdAwsBuildRedirectURIParameter:
-    Condition: IsProdEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod-aws-build/jwtAuthentication/redirectUri"
-      Type: String
-      Value: "https://cri-preprod.core.build.stubs.account.gov.uk/callback"
-
-  IPVCoreStubPreProdAwsBuildAuthenticationAlgParameter:
-    Condition: IsProdEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod-aws-build/jwtAuthentication/authenticationAlg"
-      Type: String
-      Value: ES256
-
-  #################################################################################################
-  # ipv-core-stub-aws-prod client configuration
-  #################################################################################################
-  IPVCoreStubAwsProdAudienceParameter:
-    Condition: IsStubEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod/jwtAuthentication/audience"
-      Type: String
-      Value: !If
-        - IsProdEnvironment
-        - !Sub
-          - "https://${Domain}.account.gov.uk"
-          - Domain: !FindInMap [CriAudienceMapping, !Ref CriIdentifier, domain]
-        - !Sub
-          - "https://${Domain}.${Environment}.account.gov.uk"
-          - Domain: !FindInMap [CriAudienceMapping, !Ref CriIdentifier, domain]
-  IPVCoreStubAwsProdIssuerParameter:
-    Condition: IsStubEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod/jwtAuthentication/issuer"
-      Type: String
-      Value: "https://cri.core.stubs.account.gov.uk"
-
-  IPVCoreStubAwsProdPublicSigningJwkBase64Parameter:
-    Condition: IsStubEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod/jwtAuthentication/publicSigningJwkBase64"
-      Type: String
-      Value: "ewogICAgImt0eSI6ICJFQyIsCiAgICAidXNlIjogInNpZyIsCiAgICAiY3J2IjogIlAtMjU2IiwKICAgICJraWQiOiAiaXB2LWNvcmUtc3R1Yi0yLWZyb20tbWtqd2sub3JnIiwKICAgICJ4IjogImszOXVLYWNTdWtRQnJNWnJIRFRCVVpzbGl2cFhLRE5aVGc2aW5DSHdyTGMiLAogICAgInkiOiAiOEY4TG5RN3dHOWh4c1Q0YXgwQXR5N2lNR0l5aVlfWUdwM19xSVp6S28xQSIsCiAgICAiYWxnIjogIkVTMjU2Igp9"
-
-  IPVCoreStubAwsProdRedirectURIParameter:
-    Condition: IsStubEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod/jwtAuthentication/redirectUri"
-      Type: String
-      Value: "https://cri.core.stubs.account.gov.uk/callback"
-
-  IPVCoreStubAwsProdAuthenticationAlgParameter:
-    Condition: IsStubEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod/jwtAuthentication/authenticationAlg"
-      Type: String
-      Value: ES256
-
-  #################################################################################################
-  # ipv-core-stub client configuration
-  #################################################################################################
-  IPVCoreStubAudienceParameter:
-    Condition: IsStubEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub/jwtAuthentication/audience"
-      Type: String
-      Value: !If
-        - IsProdEnvironment
-        - !Sub
-          - "https://${Domain}.account.gov.uk"
-          - Domain: !FindInMap [CriAudienceMapping, !Ref CriIdentifier, domain]
-        - !Sub
-          - "https://${Domain}.${Environment}.account.gov.uk"
-          - Domain: !FindInMap [CriAudienceMapping, !Ref CriIdentifier, domain]
-  IPVCoreStubIssuerParameter:
-    Condition: IsStubEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub/jwtAuthentication/issuer"
-      Type: String
-      Value: "https://di-ipv-core-stub.london.cloudapps.digital"
-
-  IPVCoreStubPublicSigningJwkBase64Parameter:
-    Condition: IsStubEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub/jwtAuthentication/publicSigningJwkBase64"
-      Type: String
-      Value: "ewogICAgImt0eSI6ICJFQyIsCiAgICAidXNlIjogInNpZyIsCiAgICAiY3J2IjogIlAtMjU2IiwKICAgICJraWQiOiAiaXB2LWNvcmUtc3R1Yi0yLWZyb20tbWtqd2sub3JnIiwKICAgICJ4IjogImszOXVLYWNTdWtRQnJNWnJIRFRCVVpzbGl2cFhLRE5aVGc2aW5DSHdyTGMiLAogICAgInkiOiAiOEY4TG5RN3dHOWh4c1Q0YXgwQXR5N2lNR0l5aVlfWUdwM19xSVp6S28xQSIsCiAgICAiYWxnIjogIkVTMjU2Igp9"
-
-  IPVCoreStubRedirectURIParameter:
-    Condition: IsStubEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub/jwtAuthentication/redirectUri"
-      Type: String
-      Value: "https://di-ipv-core-stub.london.cloudapps.digital/callback"
-
-  IPVCoreStubAuthenticationAlgParameter:
-    Condition: IsStubEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub/jwtAuthentication/authenticationAlg"
-      Type: String
-      Value: ES256
-
-  #################################################################################################
-  # ipv-core-stub-pre-prod client configuration
-  #################################################################################################
-  IPVCoreStubPreProdAudienceParameter:
-    Condition: IsProdEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod/jwtAuthentication/audience"
-      Type: String
-      Value: !If
-        - IsProdEnvironment
-        - !Sub
-          - "https://${Domain}.account.gov.uk"
-          - Domain: !FindInMap [CriAudienceMapping, !Ref CriIdentifier, domain]
-        - !Sub
-          - "https://${Domain}.${Environment}.account.gov.uk"
-          - Domain: !FindInMap [CriAudienceMapping, !Ref CriIdentifier, domain]
-  IPVCoreStubPreProdIssuerParameter:
-    Condition: IsProdEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod/jwtAuthentication/issuer"
-      Type: String
-      Value: "https://cri-preprod.core.stubs.account.gov.uk"
-  IPVCoreStubPreProdPublicSigningJwkBase64Parameter:
-    Condition: IsProdEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod/jwtAuthentication/publicSigningJwkBase64"
-      Type: String
-      Value: "ewogICAgImt0eSI6ICJFQyIsCiAgICAidXNlIjogInNpZyIsCiAgICAiY3J2IjogIlAtMjU2IiwKICAgICJraWQiOiAiaXB2LWNvcmUtc3R1Yi0yLWZyb20tbWtqd2sub3JnIiwKICAgICJ4IjogImszOXVLYWNTdWtRQnJNWnJIRFRCVVpzbGl2cFhLRE5aVGc2aW5DSHdyTGMiLAogICAgInkiOiAiOEY4TG5RN3dHOWh4c1Q0YXgwQXR5N2lNR0l5aVlfWUdwM19xSVp6S28xQSIsCiAgICAiYWxnIjogIkVTMjU2Igp9"
-  IPVCoreStubPreProdRedirectURIParameter:
-    Condition: IsProdEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod/jwtAuthentication/redirectUri"
-      Type: String
-      Value: "https://cri-preprod.core.stubs.account.gov.uk/callback"
-  IPVCoreStubPreProdAuthenticationAlgParameter:
-    Condition: IsProdLikeEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod/jwtAuthentication/authenticationAlg"
-      Type: String
-      Value: ES256
-
-  #################################################################################################
-  # ipv-core client configuration
-  #################################################################################################
-  IPVCore1AudienceParameter:
-    Condition: IsProdLikeEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core/jwtAuthentication/audience"
-      Type: String
-      Value: !If
-        - IsProdEnvironment
-        - !Sub
-          - "https://${Domain}.account.gov.uk"
-          - Domain: !FindInMap [CriAudienceMapping, !Ref CriIdentifier, domain]
-        - !Sub
-          - "https://${Domain}.${Environment}.account.gov.uk"
-          - Domain: !FindInMap [CriAudienceMapping, !Ref CriIdentifier, domain]
-  IPVCore1IssuerParameter:
-    Condition: IsProdLikeEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core/jwtAuthentication/issuer"
-      Type: String
-      Value: !FindInMap [IPVCore1IssuerMapping, Environment, !Ref "Environment"]
-      
-  IPVCore1PublicSigningJwkBase64Parameter:
-    Condition: IsProdLikeEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core/jwtAuthentication/publicSigningJwkBase64"
-      Type: String
-      Value: 
-        !FindInMap [
-          IPVCore1PublicSigningJwkBase64Mapping,
-          Environment,
-          !Ref Environment 
-        ]
-  IPVCore1RedirectURIParameter:
-    Condition: IsProdLikeEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core/jwtAuthentication/redirectUri"
-      Type: String
-      Value:
-        !FindInMap [
-          IPVCore1RedirectURIMapping,
-          !Ref CriIdentifier,
-          !Ref Environment,
-        ]
-
-  AuthRequestKmsEncryptionKeyIdParameter:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/AuthRequestKmsEncryptionKeyId"
-      Type: String
-      Value: !ImportValue core-infrastructure-CriDecryptionKey1Id
-      Description: The (KMS) encryption key identifier for decrypting authorisation requests
-  
   VerifiableCredentialIssuerParameter:
     Type: AWS::SSM::Parameter
     Properties:
@@ -1072,14 +774,6 @@ Resources:
                 domain,
               ]
       Description: Issuer of the Verifiable Credential
-
-  VerifiableCredentialKmsSigningKeyParameter:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/verifiableCredentialKmsSigningKeyId"
-      Type: String
-      Value: !ImportValue core-infrastructure-CriVcSigningKey1Id
-      Description: Verifiable Credential Key Id
 
   SessionFunctionPermission:
     Type: AWS::Lambda::Permission
@@ -1235,6 +929,175 @@ Resources:
     Properties:
       LogGroupName: !Sub /aws/apigateway/${AWS::StackName}-${PreMergeDevOnlyApi}-private-AccessLogs
       RetentionInDays: 7
+
+  ########################################################################################################
+  #
+  # KMS Keys to decrypt JWE and to sign JWT (VC)
+  # 
+  # AuthRequestKmsEncryptionKeyIdParameter: Parameter with KMS Key to decrypt the JWE
+  # VerifiableCredentialKmsSigningKeyParameter: Parameter with KMS Key to sign the VerifiableCredential (VC)
+  ##########################################################################################################
+  VerifiableCredentialKmsSigningKeyParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/verifiableCredentialKmsSigningKeyId"
+      Type: String
+      Value: !ImportValue core-infrastructure-CriVcSigningKey1Id
+      Description: Verifiable Credential Key Id
+
+  AuthRequestKmsEncryptionKeyIdParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/AuthRequestKmsEncryptionKeyId"
+      Type: String
+      Value: !ImportValue core-infrastructure-CriDecryptionKey1Id
+      Description: The (KMS) encryption key identifier for decrypting authorisation requests
+
+  ################################################################################################
+  # Configuration for clients used by CRI'S
+  ################################################################################################
+  # 
+  # ipv-core-stub-aws-build client configuration
+  #
+  #################################################################################################
+  IPVCoreStubAwsBuildClient:
+    Condition: IsStubEnvironment
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: ./clientConfiguration.yaml
+      Parameters:
+        Id: ipv-core-stub-aws-build
+        ParentStackName: !Ref "AWS::StackName"
+        Issuer: "https://cri.core.build.stubs.account.gov.uk"
+        RedirectUrl: https://cri.core.build.stubs.account.gov.uk/callback
+        Audience: !If
+          - IsProdEnvironment
+          - !Sub
+            - "https://${Domain}.account.gov.uk"
+            - Domain:
+                !FindInMap [CriAudienceMapping, !Ref CriIdentifier, domain]
+          - !Sub
+            - "https://${Domain}.${Environment}.account.gov.uk"
+            - Domain:
+                !FindInMap [CriAudienceMapping, !Ref CriIdentifier, domain]
+
+  #################################################################################################
+  #
+  # ipv-core-stub-pre-prod-aws-build client configuration
+  #
+  #################################################################################################
+  IPVCoreStubPreProdAwsBuildClient:
+    Condition: IsProdEnvironment
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: ./clientConfiguration.yaml
+      Parameters:
+        Id: ipv-core-stub-pre-prod-aws-build
+        ParentStackName: !Ref "AWS::StackName"
+        Issuer: "https://cri-preprod.core.build.stubs.account.gov.uk"
+        RedirectUrl: "https://cri-preprod.core.build.stubs.account.gov.uk/callback"
+        Audience: !If
+          - IsProdEnvironment
+          - !Sub
+            - "https://${Domain}.account.gov.uk"
+            - Domain:
+                !FindInMap [CriAudienceMapping, !Ref CriIdentifier, domain]
+          - !Sub
+            - "https://${Domain}.${Environment}.account.gov.uk"
+            - Domain:
+                !FindInMap [CriAudienceMapping, !Ref CriIdentifier, domain]
+
+  #################################################################################################
+  #
+  # ipv-core-stub-aws-prod client configuration
+  #
+  #################################################################################################
+  IPVCoreStubAwsProdClient:
+    Condition: IsStubEnvironment
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: ./clientConfiguration.yaml
+      Parameters:
+        Id: ipv-core-stub-aws-prod
+        ParentStackName: !Ref "AWS::StackName"
+        Issuer: "https://cri.core.stubs.account.gov.uk"
+        RedirectUrl: "https://cri.core.stubs.account.gov.uk/callback"
+        Audience: !If
+          - IsProdEnvironment
+          - !Sub
+            - "https://${Domain}.account.gov.uk"
+            - Domain:
+                !FindInMap [CriAudienceMapping, !Ref CriIdentifier, domain]
+          - !Sub
+            - "https://${Domain}.${Environment}.account.gov.uk"
+            - Domain:
+                !FindInMap [CriAudienceMapping, !Ref CriIdentifier, domain]
+
+  #################################################################################################
+  #
+  # ipv-core-stub-pre-prod client configuration
+  #
+  #################################################################################################
+  IPVCoreStubPreProdClient:
+    Condition: IsProdEnvironment
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: ./clientConfiguration.yaml
+      Parameters:
+        Id: ipv-core-stub-pre-prod
+        ParentStackName: !Ref "AWS::StackName"
+        Issuer: "https://cri-preprod.core.stubs.account.gov.uk"
+        RedirectUrl: "https://cri-preprod.core.stubs.account.gov.uk/callback"
+        Audience: !If
+          - IsProdEnvironment
+          - !Sub
+            - "https://${Domain}.account.gov.uk"
+            - Domain:
+                !FindInMap [CriAudienceMapping, !Ref CriIdentifier, domain]
+          - !Sub
+            - "https://${Domain}.${Environment}.account.gov.uk"
+            - Domain:
+                !FindInMap [CriAudienceMapping, !Ref CriIdentifier, domain]
+
+  #################################################################################################
+  #
+  # ipv-core client configuration
+  #
+  #################################################################################################
+  IPVCore1StubAwsProdClient:
+    Condition: IsProdLikeEnvironment
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: ./clientConfiguration.yaml
+      Parameters:
+        Id: ipv-core
+        ParentStackName: !Ref "AWS::StackName"
+        Issuer:
+          !FindInMap [IPVCore1IssuerMapping, Environment, !Ref Environment]
+        RedirectUrl:
+          !FindInMap [
+            IPVCore1RedirectURIMapping,
+            !Ref CriIdentifier,
+            !Ref Environment,
+          ]
+        Audience: !If
+          - IsProdEnvironment
+          - !Sub
+            - "https://${Domain}.account.gov.uk"
+            - Domain:
+                !FindInMap [CriAudienceMapping, !Ref CriIdentifier, domain]
+          - !Sub
+            - "https://${Domain}.${Environment}.account.gov.uk"
+            - Domain:
+                !FindInMap [CriAudienceMapping, !Ref CriIdentifier, domain]
+        Base64PublicSigningJwk:
+          !FindInMap [
+            IPVCore1PublicSigningJwkBase64Mapping,
+            Environment,
+            !Ref Environment,
+          ]
+  
+  ####################################################################################################
 
 Outputs:
   StackName:
