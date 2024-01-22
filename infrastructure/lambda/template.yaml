@@ -1443,6 +1443,57 @@ Resources:
       LogGroupName: !Sub /aws/apigateway/${AWS::StackName}-${PreMergeDevOnlyApi}-private-AccessLogs
       RetentionInDays: 7
 
+
+  ##################################################################################################
+  # ipv-core-stub-aws-prod_3rdparty clientId configuration
+  #################################################################################################
+  IPVCoreStubAwsProd3rdPartyAudienceParameter:
+    Condition: IsStubEnvironment
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub /${AWS::StackName}/clients/ipv-core-stub-aws-prod_3rdparty/jwtAuthentication/audience
+      Type: String
+      Value: !If
+        - IsProdEnvironment
+        - !Sub
+          - "https://${Domain}.account.gov.uk"
+          - Domain: !FindInMap [CriAudienceMapping, !Ref CriIdentifier, domain]
+        - !Sub
+          - "https://${Domain}.${Environment}.account.gov.uk"
+          - Domain: !FindInMap [CriAudienceMapping, !Ref CriIdentifier, domain]
+
+  IPVCoreStubAwsProd3rdPartyIssuerParameter:
+    Condition: IsStubEnvironment
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod_3rdparty/jwtAuthentication/issuer"
+      Type: String
+      Value: "https://cri.core.stubs.account.gov.uk"
+
+  IPVCoreStubAwsProd3rdPartyPublicSigningJwkBase64Parameter:
+    Condition: IsStubEnvironment
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod_3rdparty/jwtAuthentication/publicSigningJwkBase64"
+      Type: String
+      Value: "ewogICAgImt0eSI6ICJFQyIsCiAgICAidXNlIjogInNpZyIsCiAgICAiY3J2IjogIlAtMjU2IiwKICAgICJraWQiOiAiaXB2LWNvcmUtc3R1Yi0yLWZyb20tbWtqd2sub3JnIiwKICAgICJ4IjogImszOXVLYWNTdWtRQnJNWnJIRFRCVVpzbGl2cFhLRE5aVGc2aW5DSHdyTGMiLAogICAgInkiOiAiOEY4TG5RN3dHOWh4c1Q0YXgwQXR5N2lNR0l5aVlfWUdwM19xSVp6S28xQSIsCiAgICAiYWxnIjogIkVTMjU2Igp9"
+
+  IPVCoreStubAwsProd3rdPartyRedirectURIParameter:
+    Condition: IsStubEnvironment
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod_3rdparty/jwtAuthentication/redirectUri"
+      Type: String
+      Value: "https://cri.core.stubs.account.gov.uk/callback"
+
+  IPVCoreStubAwsProd3rdPartyAuthenticationAlgParameter:
+    Condition: IsStubEnvironment
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod_3rdparty/jwtAuthentication/authenticationAlg"
+      Type: String
+      Value: ES256
+
 Outputs:
   StackName:
     Description: "CloudFormation stack name"
