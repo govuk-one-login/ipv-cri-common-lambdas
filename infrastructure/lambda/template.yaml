@@ -1456,14 +1456,6 @@ Resources:
       Value:
         !FindInMap [CriAudienceMapping, !Ref CriIdentifier, !Ref Environment]
 
-  IPVCoreStubAwsProd3rdPartyIssuerParameter:
-    Condition: IsStubEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod_3rdparty/jwtAuthentication/issuer"
-      Type: String
-      Value: "https://cri.core.stubs.account.gov.uk"
-
   IPVCoreStubAwsProd3rdPartyPublicSigningJwkBase64Parameter:
     Condition: IsStubEnvironment
     Type: AWS::SSM::Parameter
@@ -1472,13 +1464,21 @@ Resources:
       Type: String
       Value: "ewogICAgImt0eSI6ICJFQyIsCiAgICAidXNlIjogInNpZyIsCiAgICAiY3J2IjogIlAtMjU2IiwKICAgICJraWQiOiAiaXB2LWNvcmUtc3R1Yi0yLWZyb20tbWtqd2sub3JnIiwKICAgICJ4IjogImszOXVLYWNTdWtRQnJNWnJIRFRCVVpzbGl2cFhLRE5aVGc2aW5DSHdyTGMiLAogICAgInkiOiAiOEY4TG5RN3dHOWh4c1Q0YXgwQXR5N2lNR0l5aVlfWUdwM19xSVp6S28xQSIsCiAgICAiYWxnIjogIkVTMjU2Igp9"
 
+  IPVCoreStubAwsProd3rdPartyIssuerParameter:
+    Condition: IsStubEnvironment
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod_3rdparty/jwtAuthentication/issuer"
+      Type: String
+      Value: "https://cri-3rdparty.core.stubs.account.gov.uk"
+
   IPVCoreStubAwsProd3rdPartyRedirectURIParameter:
     Condition: IsStubEnvironment
     Type: AWS::SSM::Parameter
     Properties:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod_3rdparty/jwtAuthentication/redirectUri"
       Type: String
-      Value: "https://cri.core.stubs.account.gov.uk/callback"
+      Value: "https://cri-3rdparty.core.stubs.account.gov.uk/callback"
 
   IPVCoreStubAwsProd3rdPartyAuthenticationAlgParameter:
     Condition: IsStubEnvironment
