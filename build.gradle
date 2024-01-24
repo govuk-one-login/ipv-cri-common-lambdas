@@ -64,9 +64,10 @@ subprojects {
 	}
 
 	repositories {
-		maven {
-			url 'https://gds.jfrog.io/artifactory/di-allowed-repos'
-		}
+		mavenCentral()
+		//maven {
+		//	url 'https://gds.jfrog.io/artifactory/di-allowed-repos'
+		//}
 	}
 
 	configurations {
