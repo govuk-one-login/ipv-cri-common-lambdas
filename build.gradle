@@ -26,10 +26,9 @@ ext {
 }
 
 repositories {
-	mavenCentral()
-	//maven {
-	//	url 'https://gds.jfrog.io/artifactory/di-allowed-repos'
-	//}
+	maven {
+		url 'https://gds.jfrog.io/artifactory/di-allowed-repos'
+	}
 }
 
 spotless {
@@ -65,10 +64,9 @@ subprojects {
 	}
 
 	repositories {
-		mavenCentral()
-		//maven {
-		//	url 'https://gds.jfrog.io/artifactory/di-allowed-repos'
-		//}
+		maven {
+			url 'https://gds.jfrog.io/artifactory/di-allowed-repos'
+		}
 	}
 
 	configurations {
