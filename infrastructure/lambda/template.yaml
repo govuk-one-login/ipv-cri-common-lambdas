@@ -746,6 +746,202 @@ Resources:
       Value: !FindInMap [SessionTtlMapping, Environment, !Ref "Environment"]
       Description: default time to live for a session item (seconds)
 
+  AuthRequestKmsEncryptionKeyIdParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/AuthRequestKmsEncryptionKeyId"
+      Type: String
+      Value: !ImportValue core-infrastructure-CriDecryptionKey1Id
+      Description: The (KMS) encryption key identifier for decrypting authorisation requests
+  
+  VerifiableCredentialIssuerParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/verifiable-credential/issuer"
+      Type: String
+      Value: !If
+        - IsProdEnvironment
+        - !Sub
+          - "https://${Domain}.account.gov.uk"
+          - Domain:
+              !FindInMap [
+                VerifiableCredentialIssuerMapping,
+                !Ref CriIdentifier,
+                domain,
+              ]
+        - !Sub
+          - "https://${Domain}.${Environment}.account.gov.uk"
+          - Domain:
+              !FindInMap [
+                VerifiableCredentialIssuerMapping,
+                !Ref CriIdentifier,
+                domain,
+              ]
+      Description: Issuer of the Verifiable Credential
+
+  VerifiableCredentialKmsSigningKeyParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/verifiableCredentialKmsSigningKeyId"
+      Type: String
+      Value: !ImportValue core-infrastructure-CriVcSigningKey1Id
+      Description: Verifiable Credential Key Id
+
+  SessionFunctionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt SessionFunction.Arn
+      Principal: apigateway.amazonaws.com
+
+  SessionFunctionTSPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt SessionFunctionTS.Arn
+      Principal: apigateway.amazonaws.com
+
+  AccessTokenFunctionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt AccessTokenFunction.Arn
+      Principal: apigateway.amazonaws.com
+
+  AuthorizationFunctionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt AuthorizationFunction.Arn
+      Principal: apigateway.amazonaws.com
+
+  AuthorizationFunctionTSPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt AuthorizationFunctionTS.Arn
+      Principal: apigateway.amazonaws.com
+
+  LoggingKmsKey:
+    Type: AWS::KMS::Key
+    Properties:
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
+            Action:
+              - kms:*
+            Resource: "*"
+          - Effect: Allow
+            Principal:
+              Service: !Sub "logs.${AWS::Region}.amazonaws.com"
+            Action:
+              - "kms:Encrypt*"
+              - "kms:Decrypt*"
+              - "kms:ReEncrypt*"
+              - "kms:GenerateDataKey*"
+              - "kms:Describe*"
+            Resource: "*"
+            Condition:
+              ArnLike:
+                "kms:EncryptionContext:aws:logs:arn": !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*"
+
+  CreateAuthCodeFunction:
+    Type: AWS::Serverless::Function
+    Condition: IsDevEnvironment
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-CreateAuthCodeFunction" # DO NOT Remove
+      CodeUri: ../../lambdas
+      Handler: create-auth-code-handler.lambdaHandler
+      Runtime: nodejs18.x
+      Layers:
+        - !Sub
+          - '{{resolve:secretsmanager:${SecretArn}:SecretString:NODEJS_LAYER}}'
+          - SecretArn: !FindInMap [ EnvironmentConfiguration, !Ref Environment, dynatraceSecretArn ]
+      Environment:
+        Variables:
+          POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-create-auth-code"
+      Policies:
+        - DynamoDBWritePolicy:
+            TableName:
+              Ref: SessionTable
+        - Statement:
+            - Effect: Allow
+              Action:
+                - ssm:GetParameters
+              Resource:
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/SessionTableName"
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/clients/*"
+    Metadata: # Manage esbuild properties
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: "node18"
+        Sourcemap: true # Enabling source maps will create the required NODE_OPTIONS environment variables on your lambda function during sam build
+        EntryPoints:
+          - src/handlers/create-auth-code-handler.ts
+        External:
+          - "@aws-sdk/*"
+
+  CreateAuthCodeFunctionPermission:
+    Type: AWS::Lambda::Permission
+    Condition: IsDevEnvironment
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt CreateAuthCodeFunction.Arn
+      Principal: apigateway.amazonaws.com
+
+  PreMergeDevOnlyApi:
+    Type: AWS::Serverless::Api
+    Condition: IsDevEnvironment
+    Properties:
+      Description: CRI API Gateway for pre-merge testing in dev only
+      MethodSettings:
+        - LoggingLevel: INFO
+          ResourcePath: "/*"
+          HttpMethod: "*"
+          ThrottlingRateLimit: 5
+          ThrottlingBurstLimit: 10
+      AccessLogSetting:
+        DestinationArn: !Sub "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${PreMergeDevOnlyApiAccessLogGroup}"
+        Format: >-
+          {
+          "requestId":"$context.requestId",
+          "ip":"$context.identity.sourceIp",
+          "requestTime":"$context.requestTime",
+          "httpMethod":"$context.httpMethod",
+          "path":"$context.path",
+          "routeKey":"$context.routeKey",
+          "status":"$context.status",
+          "protocol":"$context.protocol",
+          "responseLatency":"$context.responseLatency",
+          "responseLength":"$context.responseLength"
+          }
+      Name: !Sub "common-lambdas-${AWS::StackName}"
+      StageName: !Ref Environment
+      DefinitionBody:
+        openapi: "3.0.1" # workaround to get `sam validate` to work
+        paths: # workaround to get `sam validate` to work
+          /never-created:
+            options: {} # workaround to get `sam validate` to work
+        Fn::Transform:
+          Name: AWS::Include
+          Parameters:
+            Location: "./pre-merge-api.yaml"
+      OpenApiVersion: 3.0.1
+      EndpointConfiguration:
+        Type: REGIONAL
+
+  PreMergeDevOnlyApiAccessLogGroup:
+    Type: AWS::Logs::LogGroup
+    Condition: IsDevEnvironment
+    Properties:
+      LogGroupName: !Sub /aws/apigateway/${AWS::StackName}-${PreMergeDevOnlyApi}-private-AccessLogs
+      RetentionInDays: 7
+
   ##################################################################################################
   # ipv-core-stub-aws-build client configuration
   #################################################################################################
@@ -1040,203 +1236,6 @@ Resources:
           !Ref Environment,
         ]
 
-  AuthRequestKmsEncryptionKeyIdParameter:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/AuthRequestKmsEncryptionKeyId"
-      Type: String
-      Value: !ImportValue core-infrastructure-CriDecryptionKey1Id
-      Description: The (KMS) encryption key identifier for decrypting authorisation requests
-  
-  VerifiableCredentialIssuerParameter:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/verifiable-credential/issuer"
-      Type: String
-      Value: !If
-        - IsProdEnvironment
-        - !Sub
-          - "https://${Domain}.account.gov.uk"
-          - Domain:
-              !FindInMap [
-                VerifiableCredentialIssuerMapping,
-                !Ref CriIdentifier,
-                domain,
-              ]
-        - !Sub
-          - "https://${Domain}.${Environment}.account.gov.uk"
-          - Domain:
-              !FindInMap [
-                VerifiableCredentialIssuerMapping,
-                !Ref CriIdentifier,
-                domain,
-              ]
-      Description: Issuer of the Verifiable Credential
-
-  VerifiableCredentialKmsSigningKeyParameter:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/verifiableCredentialKmsSigningKeyId"
-      Type: String
-      Value: !ImportValue core-infrastructure-CriVcSigningKey1Id
-      Description: Verifiable Credential Key Id
-
-  SessionFunctionPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      Action: lambda:InvokeFunction
-      FunctionName: !GetAtt SessionFunction.Arn
-      Principal: apigateway.amazonaws.com
-
-  SessionFunctionTSPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      Action: lambda:InvokeFunction
-      FunctionName: !GetAtt SessionFunctionTS.Arn
-      Principal: apigateway.amazonaws.com
-
-  AccessTokenFunctionPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      Action: lambda:InvokeFunction
-      FunctionName: !GetAtt AccessTokenFunction.Arn
-      Principal: apigateway.amazonaws.com
-
-  AuthorizationFunctionPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      Action: lambda:InvokeFunction
-      FunctionName: !GetAtt AuthorizationFunction.Arn
-      Principal: apigateway.amazonaws.com
-
-  AuthorizationFunctionTSPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      Action: lambda:InvokeFunction
-      FunctionName: !GetAtt AuthorizationFunctionTS.Arn
-      Principal: apigateway.amazonaws.com
-
-  LoggingKmsKey:
-    Type: AWS::KMS::Key
-    Properties:
-      EnableKeyRotation: true
-      KeyPolicy:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
-            Action:
-              - kms:*
-            Resource: "*"
-          - Effect: Allow
-            Principal:
-              Service: !Sub "logs.${AWS::Region}.amazonaws.com"
-            Action:
-              - "kms:Encrypt*"
-              - "kms:Decrypt*"
-              - "kms:ReEncrypt*"
-              - "kms:GenerateDataKey*"
-              - "kms:Describe*"
-            Resource: "*"
-            Condition:
-              ArnLike:
-                "kms:EncryptionContext:aws:logs:arn": !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*"
-
-  CreateAuthCodeFunction:
-    Type: AWS::Serverless::Function
-    Condition: IsDevEnvironment
-    Properties:
-      FunctionName: !Sub "${AWS::StackName}-CreateAuthCodeFunction" # DO NOT Remove
-      CodeUri: ../../lambdas
-      Handler: create-auth-code-handler.lambdaHandler
-      Runtime: nodejs18.x
-      Layers:
-        - !Sub
-          - '{{resolve:secretsmanager:${SecretArn}:SecretString:NODEJS_LAYER}}'
-          - SecretArn: !FindInMap [ EnvironmentConfiguration, !Ref Environment, dynatraceSecretArn ]
-      Environment:
-        Variables:
-          POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-create-auth-code"
-      Policies:
-        - DynamoDBWritePolicy:
-            TableName:
-              Ref: SessionTable
-        - Statement:
-            - Effect: Allow
-              Action:
-                - ssm:GetParameters
-              Resource:
-                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/SessionTableName"
-                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/clients/*"
-    Metadata: # Manage esbuild properties
-      BuildMethod: esbuild
-      BuildProperties:
-        Minify: true
-        Target: "node18"
-        Sourcemap: true # Enabling source maps will create the required NODE_OPTIONS environment variables on your lambda function during sam build
-        EntryPoints:
-          - src/handlers/create-auth-code-handler.ts
-        External:
-          - "@aws-sdk/*"
-
-  CreateAuthCodeFunctionPermission:
-    Type: AWS::Lambda::Permission
-    Condition: IsDevEnvironment
-    Properties:
-      Action: lambda:InvokeFunction
-      FunctionName: !GetAtt CreateAuthCodeFunction.Arn
-      Principal: apigateway.amazonaws.com
-
-  PreMergeDevOnlyApi:
-    Type: AWS::Serverless::Api
-    Condition: IsDevEnvironment
-    Properties:
-      Description: CRI API Gateway for pre-merge testing in dev only
-      MethodSettings:
-        - LoggingLevel: INFO
-          ResourcePath: "/*"
-          HttpMethod: "*"
-          ThrottlingRateLimit: 5
-          ThrottlingBurstLimit: 10
-      AccessLogSetting:
-        DestinationArn: !Sub "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${PreMergeDevOnlyApiAccessLogGroup}"
-        Format: >-
-          {
-          "requestId":"$context.requestId",
-          "ip":"$context.identity.sourceIp",
-          "requestTime":"$context.requestTime",
-          "httpMethod":"$context.httpMethod",
-          "path":"$context.path",
-          "routeKey":"$context.routeKey",
-          "status":"$context.status",
-          "protocol":"$context.protocol",
-          "responseLatency":"$context.responseLatency",
-          "responseLength":"$context.responseLength"
-          }
-      Name: !Sub "common-lambdas-${AWS::StackName}"
-      StageName: !Ref Environment
-      DefinitionBody:
-        openapi: "3.0.1" # workaround to get `sam validate` to work
-        paths: # workaround to get `sam validate` to work
-          /never-created:
-            options: {} # workaround to get `sam validate` to work
-        Fn::Transform:
-          Name: AWS::Include
-          Parameters:
-            Location: "./pre-merge-api.yaml"
-      OpenApiVersion: 3.0.1
-      EndpointConfiguration:
-        Type: REGIONAL
-
-  PreMergeDevOnlyApiAccessLogGroup:
-    Type: AWS::Logs::LogGroup
-    Condition: IsDevEnvironment
-    Properties:
-      LogGroupName: !Sub /aws/apigateway/${AWS::StackName}-${PreMergeDevOnlyApi}-private-AccessLogs
-      RetentionInDays: 7
-
-
   ##################################################################################################
   # ipv-core-stub-aws-prod_3rdparty clientId configuration
   #################################################################################################
@@ -1246,8 +1245,14 @@ Resources:
     Properties:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod_3rdparty/jwtAuthentication/audience"
       Type: String
-      Value:
-        !FindInMap [CriAudienceMapping, !Ref CriIdentifier, !Ref Environment]
+      Value: !If
+        - IsProdEnvironment
+        - !Sub
+          - "https://${Domain}.account.gov.uk"
+          - Domain: !FindInMap [CriAudienceMapping, !Ref CriIdentifier, domain]
+        - !Sub
+          - "https://${Domain}.${Environment}.account.gov.uk"
+          - Domain: !FindInMap [CriAudienceMapping, !Ref CriIdentifier, domain]
 
   IPVCoreStubAwsProd3rdPartyPublicSigningJwkBase64Parameter:
     Condition: IsStubEnvironment
@@ -1290,8 +1295,14 @@ Resources:
     Properties:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build_3rdparty/jwtAuthentication/audience"
       Type: String
-      Value:
-        !FindInMap [CriAudienceMapping, !Ref CriIdentifier, !Ref Environment]
+      Value: !If
+        - IsProdEnvironment
+        - !Sub
+          - "https://${Domain}.account.gov.uk"
+          - Domain: !FindInMap [CriAudienceMapping, !Ref CriIdentifier, domain]
+        - !Sub
+          - "https://${Domain}.${Environment}.account.gov.uk"
+          - Domain: !FindInMap [CriAudienceMapping, !Ref CriIdentifier, domain]
 
   IPVCoreStubAwsBuild3rdPartyPublicSigningJwkBase64Parameter:
     Condition: IsStubEnvironment
