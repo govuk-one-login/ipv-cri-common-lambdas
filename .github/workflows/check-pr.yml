@@ -16,15 +16,16 @@ jobs:
     name: Unit tests
     uses: ./.github/workflows/run-unit-tests-java.yml
 
-  # Will fail until GitHub has permissions to access the pact broker
-  #  pact-tests:
-  #    name: Pact tests
-  #    uses: ./.github/workflows/run-pact-tests.yml
-  #    secrets:
-  #      github-token: ${{ secrets.GITHUB_TOKEN }}
-  #      pact-broker-host: ${{ secrets.PACT_BROKER_HOST }}
-  #      pact-broker-username: ${{ secrets.PACT_BROKER_USERNAME }}
-  #      pact-broker-password: ${{ secrets.PACT_BROKER_PASSWORD }}
+#   Will fail until GitHub has permissions to access the pact broker
+#    pact-tests:
+#      name: Pact tests
+#      uses: ./.github/workflows/run-pact-tests.yml
+#      secrets:
+#        github-token: ${{ secrets.GITHUB_TOKEN }}
+#        pact-broker-host: ${{ secrets.PACT_BROKER_HOST }}
+#        pact-broker-username: ${{ secrets.PACT_BROKER_USERNAME }}
+#        pact-broker-password: ${{ secrets.PACT_BROKER_PASSWORD }}
+#        cri-under-test: ${{ secrets.CRI_UNDER_TEST }}
 
   deploy:
     name: Preview
