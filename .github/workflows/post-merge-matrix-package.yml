@@ -36,7 +36,7 @@ jobs:
       - name: Setup Gradle
         uses: gradle/gradle-build-action@v2
         with:
-          gradle-version: 7.4.2
+          gradle-version: 7.5.1
 
       - name: Setup SAM
         uses: aws-actions/setup-sam@v2

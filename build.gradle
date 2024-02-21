@@ -137,8 +137,9 @@ subprojects {
 				"org.mockito:mockito-inline:${dependencyVersions.mockito}",
 				"org.hamcrest:hamcrest:2.2"
 
-		pact_tests 'au.com.dius:pact-jvm-provider-junit5:4.0.10',
-				'software.amazon.awssdk:dynamodb:2.21.24'
+		pact_tests "au.com.dius.pact.provider:junit5:4.5.8",
+				"au.com.dius.pact:provider:4.5.8",
+				"software.amazon.awssdk:dynamodb:2.21.24"
 
 		test_runtime "org.junit.jupiter:junit-jupiter-engine:${dependencyVersions.junit}"
 
