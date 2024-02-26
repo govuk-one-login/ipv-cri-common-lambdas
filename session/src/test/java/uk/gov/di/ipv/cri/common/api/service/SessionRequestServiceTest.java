@@ -162,8 +162,11 @@ class SessionRequestServiceTest {
         requestBody.put("client_id", "some-client-id");
         requestBody.put("request", "some.jwt.value");
         String request = requestBody.toString();
-        String birthdaySharedClaim =
-                "{\"@context\":[\"https:\\/\\/www.w3.org\\/2018\\/credentials\\/v1\",\"https:\\/\\/vocab.london.cloudapps.digital\\/contexts\\/identity-v1.jsonld\"],\"name\":[{\"nameParts\":[{\"type\":\"GivenName\",\"value\":\"KENNETH\"},{\"type\":\"FamilyName\",\"value\":\"DECERQUEIRA\"}]}],\"birthDate\":[{\"value\":\"1965-00-00\"}],\"address\":[{\"buildingNumber\":\"8\",\"streetName\":\"HADLEY ROAD\",\"postalCode\":\"BA2 5AA\",\"validFrom\":\"2021-01-01\"}]}";
+        Map<String, Object> birthdaySharedClaim =
+                new ObjectMapper()
+                        .readValue(
+                                "{\"@context\":[\"https:\\/\\/www.w3.org\\/2018\\/credentials\\/v1\",\"https:\\/\\/vocab.london.cloudapps.digital\\/contexts\\/identity-v1.jsonld\"],\"name\":[{\"nameParts\":[{\"type\":\"GivenName\",\"value\":\"KENNETH\"},{\"type\":\"FamilyName\",\"value\":\"DECERQUEIRA\"}]}],\"birthDate\":[{\"value\":\"1965-00-00\"}],\"address\":[{\"buildingNumber\":\"8\",\"streetName\":\"HADLEY ROAD\",\"postalCode\":\"BA2 5AA\",\"validFrom\":\"2021-01-01\"}]}",
+                                Map.class);
 
         SignedJWT signedJWT =
                 new SignedJWTBuilder()
@@ -179,7 +182,9 @@ class SessionRequestServiceTest {
                         SessionValidationException.class,
                         () -> sessionRequestService.validateSessionRequest(request));
 
-        assertThat(exception.getCause().getMessage(), not(containsString(birthdaySharedClaim)));
+        assertThat(
+                exception.getCause().getMessage(),
+                not(containsString(objectMapper.writeValueAsString(birthdaySharedClaim))));
         assertThat(
                 exception.getCause().getMessage(),
                 containsString(
@@ -195,6 +200,7 @@ class SessionRequestServiceTest {
         requestBody.put("client_id", "ipv-core");
         requestBody.put("request", "some.jwt.value");
         String testRequestBody = requestBody.toString();
+
         SignedJWTBuilder signedJWTBuilder =
                 new SignedJWTBuilder()
                         .setPrivateKeyFile("signing_ec.pk8")

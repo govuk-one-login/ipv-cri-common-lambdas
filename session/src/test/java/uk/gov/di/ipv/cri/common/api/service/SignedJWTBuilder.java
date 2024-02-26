@@ -1,5 +1,7 @@
 package uk.gov.di.ipv.cri.common.api.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
@@ -46,7 +48,7 @@ class SignedJWTBuilder {
     private boolean includeSharedClaims = false;
     private String persistentSessionId = "persistentSessionIdTest";
     private String clientSessionId = "clientSessionIdTest";
-    private Object sharedClaims = null;
+    private Map<String, Object> sharedClaims = null;
 
     SignedJWTBuilder setNow(Instant now) {
         this.now = now;
@@ -103,7 +105,7 @@ class SignedJWTBuilder {
         return this;
     }
 
-    SignedJWTBuilder setSharedClaims(Object sharedClaims) {
+    SignedJWTBuilder setSharedClaims(Map<String, Object> sharedClaims) {
         this.sharedClaims = sharedClaims;
         return this;
     }
@@ -152,7 +154,9 @@ class SignedJWTBuilder {
                 jwtClaimSetBuilder.subject(ipv_session_id);
             }
             if (Objects.isNull(sharedClaims) && includeSharedClaims) {
-                jwtClaimSetBuilder.claim("shared_claims", SHARED_CLAIMS);
+                jwtClaimSetBuilder.claim(
+                        "shared_claims", new ObjectMapper().readValue(SHARED_CLAIMS, Map.class));
+
             } else {
                 if (Objects.nonNull(sharedClaims)) {
                     jwtClaimSetBuilder.claim("shared_claims", this.sharedClaims);
@@ -173,6 +177,8 @@ class SignedJWTBuilder {
             return signedJWT;
         } catch (JOSEException e) {
             throw new IllegalStateException(e);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
         }
     }
 

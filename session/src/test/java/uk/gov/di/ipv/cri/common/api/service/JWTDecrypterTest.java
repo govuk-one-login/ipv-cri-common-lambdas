@@ -43,7 +43,8 @@ class JWTDecrypterTest {
                         any(Base64URL.class),
                         any(Base64URL.class),
                         any(Base64URL.class),
-                        any(Base64URL.class)))
+                        any(Base64URL.class),
+                        any(byte[].class)))
                 .thenReturn(decryptedJWT);
 
         SignedJWT decryptedSignedJWT = this.jwtDecrypter.decrypt(encryptedJWT);
@@ -55,7 +56,8 @@ class JWTDecrypterTest {
                         any(Base64URL.class),
                         any(Base64URL.class),
                         any(Base64URL.class),
-                        any(Base64URL.class));
+                        any(Base64URL.class),
+                        any(byte[].class));
         JWEHeader actualHeader = headerArgumentCaptor.getValue();
         assertEquals(JWEAlgorithm.RSA_OAEP_256.getName(), actualHeader.getAlgorithm().getName());
         assertEquals(
