@@ -3,6 +3,7 @@ package uk.gov.di.ipv.cri.common.api.service;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWEAlgorithm;
 import com.nimbusds.jose.JWEHeader;
+import com.nimbusds.jose.crypto.impl.AAD;
 import com.nimbusds.jose.util.Base64URL;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
@@ -62,7 +63,9 @@ class KMSRSADecrypterTest {
 
         when(mockKmsClient.decrypt(any(DecryptRequest.class))).thenReturn(decryptResponse);
 
-        byte[] result = this.kmsRsaDecrypter.decrypt(header, encryptedKey, iv, cipherText, authTag);
+        byte[] result =
+                this.kmsRsaDecrypter.decrypt(
+                        header, encryptedKey, iv, cipherText, authTag, AAD.compute(header));
         SignedJWT signedJWT = SignedJWT.parse(new String(result, StandardCharsets.UTF_8));
         JWTClaimsSet claims = signedJWT.getJWTClaimsSet();
 
@@ -89,7 +92,12 @@ class KMSRSADecrypterTest {
                 JOSEException.class,
                 () ->
                         this.kmsRsaDecrypter.decrypt(
-                                header, null, testBase64URL, testBase64URL, testBase64URL),
+                                header,
+                                null,
+                                testBase64URL,
+                                testBase64URL,
+                                testBase64URL,
+                                AAD.compute(header)),
                 "Missing JWE encrypted key");
     }
 
@@ -101,7 +109,12 @@ class KMSRSADecrypterTest {
                 JOSEException.class,
                 () ->
                         this.kmsRsaDecrypter.decrypt(
-                                header, testBase64URL, null, testBase64URL, testBase64URL),
+                                header,
+                                testBase64URL,
+                                null,
+                                testBase64URL,
+                                testBase64URL,
+                                AAD.compute(header)),
                 "Missing JWE initialization vector (IV)");
     }
 
@@ -113,7 +126,12 @@ class KMSRSADecrypterTest {
                 JOSEException.class,
                 () ->
                         this.kmsRsaDecrypter.decrypt(
-                                header, testBase64URL, testBase64URL, testBase64URL, null),
+                                header,
+                                testBase64URL,
+                                testBase64URL,
+                                testBase64URL,
+                                null,
+                                AAD.compute(header)),
                 "Missing JWE authentication tag");
     }
 
@@ -125,7 +143,12 @@ class KMSRSADecrypterTest {
                 JOSEException.class,
                 () ->
                         this.kmsRsaDecrypter.decrypt(
-                                header, testBase64URL, testBase64URL, testBase64URL, testBase64URL),
+                                header,
+                                testBase64URL,
+                                testBase64URL,
+                                testBase64URL,
+                                testBase64URL,
+                                AAD.compute(header)),
                 "Unsupported JWE algorithm ECDH-1PU+A256KW, must be RSA-OAEP-256");
     }
 

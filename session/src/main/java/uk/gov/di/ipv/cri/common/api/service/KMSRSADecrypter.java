@@ -46,7 +46,8 @@ class KMSRSADecrypter implements JWEDecrypter {
             Base64URL encryptedKey,
             Base64URL iv,
             Base64URL cipherText,
-            Base64URL authTag)
+            Base64URL authTag,
+            byte[] aad)
             throws JOSEException {
         // Validate required JWE parts
         if (Objects.isNull(encryptedKey)) {
@@ -78,7 +79,7 @@ class KMSRSADecrypter implements JWEDecrypter {
         SecretKey cek = new SecretKeySpec(decryptResponse.plaintext().asByteArray(), "AES");
 
         return ContentCryptoProvider.decrypt(
-                header, encryptedKey, iv, cipherText, authTag, cek, getJCAContext());
+                header, null, encryptedKey, iv, cipherText, authTag, cek, getJCAContext());
     }
 
     @Override

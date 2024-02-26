@@ -14,14 +14,14 @@ ext {
 
 		aws_lambda_events_version: "3.11.0",
 		jackson_version          : "2.13.1",
-		nimbusds_oauth_version   : "9.25",
-		nimbusds_jwt_version     : "9.15.1",
+		nimbusds_oauth_version   : "11.2",
+		nimbusds_jwt_version     : "9.36",
 		protobuf_version         : "3.19.4",
 		junit                    : "5.10.1",
 		mockito                  : "4.3.1",
 		glassfish_version        : "3.0.3",
 		powertools_version       : "1.12.3",
-		cri_common_lib           : "1.4.3"
+		cri_common_lib           : "1.5.6"
 	]
 }
 
