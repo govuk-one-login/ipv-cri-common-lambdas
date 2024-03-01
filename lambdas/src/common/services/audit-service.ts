@@ -28,12 +28,14 @@ export class AuditService {
             throw new Error("Audit event type not specified");
         }
         const auditEventUser: AuditEventUser = this.createAuditEventUser(context.sessionItem, context.clientIpAddress);
+        const timestamp = Date.now();
         return {
             component_id: this.auditConfig?.issuer as string,
             event_name: `${this.auditConfig?.auditEventNamePrefix}_${eventType}`,
             extensions: context?.extensions ?? undefined,
             restricted: context?.personIdentity ?? undefined,
-            timestamp: Math.floor(Date.now() / 1000),
+            timestamp: Math.floor(timestamp / 1000),
+            event_timestamp_ms: timestamp,
             user: auditEventUser,
         };
     }

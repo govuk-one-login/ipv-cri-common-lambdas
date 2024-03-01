@@ -33,6 +33,7 @@ export interface AuditEventUser {
 
 export interface AuditEvent {
     timestamp: number;
+    event_timestamp_ms: number;
     event_name: string;
     component_id: string;
     restricted?: PersonIdentity;
