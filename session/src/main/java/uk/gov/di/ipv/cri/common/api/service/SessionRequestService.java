@@ -48,6 +48,7 @@ public class SessionRequestService {
                                         SharedClaims.class,
                                         new PiiRedactingDeserializer<>(
                                                 sensitiveFields, SharedClaims.class)));
+
         this.jwtVerifier = new JWTVerifier();
         this.configurationService = new ConfigurationService();
         this.jwtDecrypter =
@@ -118,7 +119,8 @@ public class SessionRequestService {
             if (jwtClaims.getClaims().containsKey(SHARED_CLAIMS_NAME)) {
                 SharedClaims sharedClaims =
                         this.objectMapper.readValue(
-                                jwtClaims.getClaim(SHARED_CLAIMS_NAME).toString(),
+                                objectMapper.writeValueAsString(
+                                        jwtClaims.getClaim(SHARED_CLAIMS_NAME)),
                                 SharedClaims.class);
                 sessionRequest.setSharedClaims(sharedClaims);
             }
