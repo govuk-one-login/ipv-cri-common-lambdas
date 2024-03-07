@@ -158,7 +158,7 @@ describe("session-service", () => {
             };
             jest.spyOn(configService, "getConfigEntry").mockReturnValue("session-table-name");
             jest.spyOn(configService, "getBearerAccessTokenExpirationEpoch").mockReturnValueOnce(1675382400000);
-            await sessionService.createAccessTokenCode(sessionItem as SessionItem, accessToken);
+            await sessionService.createAccessTokenCodeAndRemoveAuthCode(sessionItem as SessionItem, accessToken);
 
             expect(mockUpdateCommand).toHaveBeenCalledWith({
                 TableName: "session-table-name",

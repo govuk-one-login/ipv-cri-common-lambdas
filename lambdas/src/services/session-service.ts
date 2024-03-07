@@ -79,12 +79,13 @@ export class SessionService {
         return dateToCheck < Math.floor(Date.now() / 1000);
     }
 
-    public async createAccessTokenCode(sessionItem: SessionItem, accessToken: BearerAccessToken) {
+    public async createAccessTokenCodeAndRemoveAuthCode(sessionItem: SessionItem, accessToken: BearerAccessToken) {
         const updateSessionCommand = new UpdateCommand({
             TableName: this.getSessionTableName(),
             Key: { sessionId: sessionItem.sessionId },
             UpdateExpression:
-                "SET accessToken=:accessTokenCode, accessTokenExpiryDate=:accessTokenExpiry REMOVE authorizationCode",
+                "SET accessToken=:accessTokenCode, accessTokenExpiryDate=:accessTokenExpiry " +
+                "REMOVE authorizationCode",
             ExpressionAttributeValues: {
                 ":accessTokenCode": `${accessToken.token_type} ${accessToken.access_token}`,
                 ":accessTokenExpiry": this.configService.getBearerAccessTokenExpirationEpoch(),
