@@ -55,7 +55,7 @@ export class AccessTokenLambda implements LambdaInterface {
             logger.info("JWT signature verified");
 
             const accessTokenResponse = await this.bearerAccessTokenFactory.create();
-            await this.sessionService.createAccessTokenCode(sessionItem, accessTokenResponse);
+            await this.sessionService.createAccessTokenCodeAndRemoveAuthCode(sessionItem, accessTokenResponse);
 
             logger.info("Access token created");
             metrics.addMetric(ACCESS_TOKEN, MetricUnits.Count, 1);
