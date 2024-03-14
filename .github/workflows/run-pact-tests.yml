@@ -2,6 +2,8 @@ name: Unit pact tests
 
 on:
   workflow_call:
+    inputs:
+      CRI_UNDER_TEST: { required: true, type: string }
     secrets:
       github-token: { required: true }
       pact-broker-host: { required: true }
@@ -22,7 +24,6 @@ jobs:
   run-pact-tests:
     name: Java
     runs-on: ubuntu-latest
-    environment: pact-tests
     steps:
       - name: Pull repository
         uses: actions/checkout@v4
@@ -30,7 +31,7 @@ jobs:
       - name: Set up Gradle
         uses: gradle/gradle-build-action@v2
         with:
-          gradle-version: 7.4.2
+          gradle-version: 7.5.1
 
       - name: Set up JDK
         uses: actions/setup-java@v4
@@ -55,13 +56,5 @@ jobs:
           PACT_BROKER_HOST: ${{ secrets.pact-broker-host }}
           PACT_BROKER_USERNAME: ${{ secrets.pact-broker-username }}
           PACT_BROKER_PASSWORD: ${{ secrets.pact-broker-password }}
+          CRI_UNDER_TEST: ${{ inputs.CRI_UNDER_TEST }}
         run: ./gradlew pactTests jacocoTestReport --build-cache --parallel -x spotlessApply -x spotlessCheck
-
-      - name: Archive pact test results
-        uses: actions/upload-artifact@v3
-        if: failure()
-        with:
-          name: pact-test-reports
-          retention-days: 5
-          path: |
-            **/*/build/reports/tests/pactTests

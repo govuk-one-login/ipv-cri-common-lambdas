@@ -1,13 +1,13 @@
 package uk.gov.di.ipv.cri.common.api.handler.pact;
 
-import au.com.dius.pact.provider.junit.Provider;
-import au.com.dius.pact.provider.junit.State;
-import au.com.dius.pact.provider.junit.loader.PactBroker;
-import au.com.dius.pact.provider.junit.loader.PactBrokerAuth;
 import au.com.dius.pact.provider.junit5.HttpTestTarget;
 import au.com.dius.pact.provider.junit5.PactVerificationContext;
 import au.com.dius.pact.provider.junit5.PactVerificationInvocationContextProvider;
-import org.apache.http.HttpRequest;
+import au.com.dius.pact.provider.junitsupport.Provider;
+import au.com.dius.pact.provider.junitsupport.State;
+import au.com.dius.pact.provider.junitsupport.loader.PactBroker;
+import au.com.dius.pact.provider.junitsupport.loader.PactBrokerAuth;
+import org.apache.hc.core5.http.HttpRequest;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -51,10 +51,9 @@ import static org.mockito.Mockito.when;
 // @PactFolder("pacts")
 // For local tests the pact details will need set as environment variables
 @Tag("Pact")
-@Provider("PassportCriProvider")
+@Provider("${CRI_UNDER_TEST}")
 @PactBroker(
-        host = "${PACT_BROKER_HOST}",
-        scheme = "https",
+        url = "https://${PACT_BROKER_HOST}",
         authentication =
                 @PactBrokerAuth(
                         username = "${PACT_BROKER_USERNAME}",
