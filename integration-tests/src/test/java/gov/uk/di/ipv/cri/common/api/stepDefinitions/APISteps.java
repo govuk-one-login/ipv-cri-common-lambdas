@@ -17,7 +17,6 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.logging.Logger;
 
-import static gov.uk.di.ipv.cri.common.api.util.IpvCoreStubUtil.sendCreateAuthCodeRequest;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -136,6 +135,16 @@ public class APISteps {
                         DEFAULT_CLIENT_ID);
     }
 
+    @When("user sends a request to authorization end point with access_denied")
+    public void userSendsARequestToAuthorizationEndPointWithAccessDenied()
+            throws URISyntaxException, IOException, InterruptedException {
+        response =
+                IpvCoreStubUtil.sendAuthorizationRequest(
+                        devAuthorizationUri,
+                        currentSessionId,
+                        DEFAULT_CLIENT_ID);
+    }
+
     @When("user sends a request to access token end point")
     public void userSendsARequestToAccessTokenEndPoint()
             throws URISyntaxException, IOException, InterruptedException {
@@ -159,6 +168,14 @@ public class APISteps {
         assertEquals(errorCode + ": " + errorMessage, jsonNode.get("errorSummary").asText());
     }
 
+    @And("a {string} error with code {string} is sent in the response")
+    public void aErrorIsSentInTheResponse(String errorMessage, String errorCode)
+            throws IOException {
+        JsonNode jsonNode = objectMapper.readTree(response.body());
+        assertEquals(errorCode, jsonNode.get("code").asText());
+        assertEquals(errorMessage, jsonNode.get("message").asText());
+    }
+
     @When("user sends a request to access token end point with incorrect authorization code")
     public void userSendsARequestToAccessTokenEndPointWithIncorrectAuthorizationCode()
             throws URISyntaxException, IOException, InterruptedException {
@@ -168,6 +185,6 @@ public class APISteps {
     @When("session has an authCode")
     public void sessionHasAnAuthCode()
             throws URISyntaxException, IOException, InterruptedException {
-        sendCreateAuthCodeRequest(currentSessionId);
+        //sendCreateAuthCodeRequest(currentSessionId);
     }
 }

@@ -43,6 +43,14 @@ export class AuthorizationLambda implements LambdaInterface {
             );
             logger.info("Session validated");
 
+            if(!sessionItem.authorizationCode){
+                return {
+                            statusCode: 403,
+                            body: JSON.stringify({code:"access_denied", message:"Authorization permission denied"})
+
+                }
+            }
+
             const authorizationResponse = {
                 state: {
                     value: event.queryStringParameters?.["state"],
