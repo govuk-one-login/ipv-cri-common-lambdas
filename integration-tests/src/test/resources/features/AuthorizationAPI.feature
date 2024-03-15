@@ -50,3 +50,21 @@ Feature: Authorization API
       |Java                       |TS                      |
       |TS                         |TS                      |
       |TS                         |Java                    |
+
+  @access_denied
+  Scenario Outline: access-denied is returned on /authorization endpoint
+    Given authorization JAR for test user 681
+    And Session lambda implementation is in '<SessionLambdaImplementation>'
+    When user sends a request to session API
+    Then user gets a session id
+    When session has an authCode
+    And Authorisation lambda implementation is in '<AuthLambdaImplementation>'
+    When user sends a request to authorization end point with access_denied
+    Then expect a status code of 403 in the response
+    And a "Authorization permission denied" error with code "access_denied" is sent in the response
+    Examples:
+      |SessionLambdaImplementation|AuthLambdaImplementation|
+      |Java                       |Java                    |
+      |Java                       |TS                      |
+      |TS                         |TS                      |
+      |TS                         |Java                    |
