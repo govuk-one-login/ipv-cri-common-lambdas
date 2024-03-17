@@ -17,6 +17,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.logging.Logger;
 
+import static gov.uk.di.ipv.cri.common.api.util.IpvCoreStubUtil.sendCreateAuthCodeRequest;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -140,9 +141,7 @@ public class APISteps {
             throws URISyntaxException, IOException, InterruptedException {
         response =
                 IpvCoreStubUtil.sendAuthorizationRequest(
-                        devAuthorizationUri,
-                        currentSessionId,
-                        DEFAULT_CLIENT_ID);
+                        devAuthorizationUri, currentSessionId, DEFAULT_CLIENT_ID);
     }
 
     @When("user sends a request to access token end point")
@@ -185,6 +184,6 @@ public class APISteps {
     @When("session has an authCode")
     public void sessionHasAnAuthCode()
             throws URISyntaxException, IOException, InterruptedException {
-        //sendCreateAuthCodeRequest(currentSessionId);
+        sendCreateAuthCodeRequest(currentSessionId);
     }
 }
