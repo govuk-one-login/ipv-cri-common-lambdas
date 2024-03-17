@@ -20,6 +20,7 @@ import {
     ServerError,
     SessionNotFoundError,
     SessionValidationError,
+    AccessDeniedError
 } from "../../../src/common/utils/errors";
 import getSessionByIdMiddleware from "../../../src/middlewares/session/get-session-by-id-middleware";
 import { ClientConfigKey, CommonConfigKey } from "../../../src/types/config-keys";
@@ -168,6 +169,47 @@ describe("authorization-handler.ts", () => {
             });
         });
 
+        describe("authorization request returns access_denied", () => {
+            let metricsSpyAddMetrics: jest.SpyInstance;
+            let loggerSpyError: jest.SpyInstance;
+            let queryString = {};
+            beforeEach(() => {
+                metricsSpyAddMetrics = jest.spyOn(metrics.prototype, "addMetric");
+                loggerSpyError = jest.spyOn(logger.prototype, "error");
+                const accessDeniedError = new AccessDeniedError();
+                jest.spyOn(sessionService, "getSession").mockRejectedValueOnce(accessDeniedError);
+                queryString = {
+                    client_id: "1",
+                    redirect_uri: "http://123.com",
+                    response_type: "test",
+                } as APIGatewayProxyEventQueryStringParameters;
+            });
+            it("should return 403 status code and return body with access_denied", async () => {
+                const queryString = {
+                    client_id: "1",
+                    redirect_uri: "http://123.com"
+                } as APIGatewayProxyEventQueryStringParameters;
+                const authorizationCode = "";
+                const output = await lambdaHandler(
+                    {
+                        body: body,
+                        headers: headers,
+                        queryStringParameters: queryString,
+                    } as unknown as APIGatewayProxyEvent,
+                    {} as Context,
+                );
+
+                expect(output.statusCode).toBe(403);
+                expect(output.body).toContain("Access Denied");
+
+                expect(loggerSpyError).toBeCalledWith(
+                    "Authorization Lambda error occurred: 1029: Access Denied",
+                    expect.any(AccessDeniedError),
+                );
+                expect(metricsSpyAddMetrics).toBeCalledWith("authorization_sent", "Count", 0);
+            });
+        });
+
         describe("authorization request has missing attributes", () => {
             let metricsSpyAddMetrics: jest.SpyInstance;
             let loggerSpyError: jest.SpyInstance;
@@ -175,6 +217,7 @@ describe("authorization-handler.ts", () => {
                 metricsSpyAddMetrics = jest.spyOn(metrics.prototype, "addMetric");
                 loggerSpyError = jest.spyOn(logger.prototype, "error");
             });
+
             it("should fail validation when response_type is missing from queryString", async () => {
                 const queryString = {
                     client_id: "1",

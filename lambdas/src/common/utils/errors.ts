@@ -145,3 +145,11 @@ export class SessionExpiredError extends BaseError {
         this.code = 1028;
     }
 }
+
+export class AccessDeniedError extends BaseError {
+    constructor() {
+        super("Access Denied");
+        this.statusCode = 403;
+        this.code = 1029;
+    }
+}
