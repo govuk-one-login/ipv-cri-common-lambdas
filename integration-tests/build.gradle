@@ -25,6 +25,7 @@ dependencies {
 	testImplementation "org.apache.httpcomponents:httpclient:$apacheHttpClient"
 	testImplementation "org.junit.jupiter:junit-jupiter-api:$junitJupiterapi"
 	testImplementation "com.fasterxml.jackson.core:jackson-databind:$jacksonDatabind"
+	testImplementation "org.junit.jupiter:junit-jupiter-engine:$junitJupiterapi"
 }
 
 configurations {
