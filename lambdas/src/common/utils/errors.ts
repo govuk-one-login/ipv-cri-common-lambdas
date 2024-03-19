@@ -37,20 +37,13 @@ export abstract class BaseError extends Error {
         super(message);
     }
     getErrorSummary() {
-        if (this.code) {
-            return this.code + ": " + this.message;
-        } else {
-            return this.message;
-        }
+        return this.code ? this.code + ": " + this.message : this.message;
     }
 
     getErrorDetails() {
         const error = this.getErrorSummary();
-        if (this.details) {
-            return error + " - " + this.details;
-        } else {
-            return error;
-        }
+
+        return this.details ? error + " - " + this.details : error;
     }
 }
 

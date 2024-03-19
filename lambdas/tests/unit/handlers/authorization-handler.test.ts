@@ -20,7 +20,7 @@ import {
     ServerError,
     SessionNotFoundError,
     SessionValidationError,
-    AccessDeniedError
+    AccessDeniedError,
 } from "../../../src/common/utils/errors";
 import getSessionByIdMiddleware from "../../../src/middlewares/session/get-session-by-id-middleware";
 import { ClientConfigKey, CommonConfigKey } from "../../../src/types/config-keys";
@@ -144,9 +144,9 @@ describe("authorization-handler.ts", () => {
 
                 expect(output.statusCode).toBe(200);
                 expect(output.body).not.toBeNull();
-                expect(loggerSpyInfo).toBeCalledWith("Session found");
-                expect(loggerSpyAppendkeys).toBeCalledWith({ govuk_signin_journey_id: "1" });
-                expect(metricsSpyAddMetrics).toBeCalledWith("authorization_sent", "Count", 1);
+                expect(loggerSpyInfo).toHaveBeenCalledWith("Session found");
+                expect(loggerSpyAppendkeys).toHaveBeenCalledWith({ govuk_signin_journey_id: "1" });
+                expect(metricsSpyAddMetrics).toHaveBeenCalledWith("authorization_sent", "Count", 1);
             });
 
             it("should pass with log message and metrics sent", async () => {
@@ -163,50 +163,58 @@ describe("authorization-handler.ts", () => {
                     {} as Context,
                 );
 
-                expect(loggerSpyInfo).toBeCalledWith("Session found");
-                expect(loggerSpyAppendkeys).toBeCalledWith({ govuk_signin_journey_id: "1" });
-                expect(metricsSpyAddMetrics).toBeCalledWith("authorization_sent", "Count", 1);
+                expect(loggerSpyInfo).toHaveBeenCalledWith("Session found");
+                expect(loggerSpyAppendkeys).toHaveBeenCalledWith({ govuk_signin_journey_id: "1" });
+                expect(metricsSpyAddMetrics).toHaveBeenCalledWith("authorization_sent", "Count", 1);
             });
         });
 
         describe("authorization request returns access_denied", () => {
             let metricsSpyAddMetrics: jest.SpyInstance;
             let loggerSpyError: jest.SpyInstance;
-            let queryString = {};
+            const sessionItem: Partial<SessionItem> = {
+                sessionId: "abc",
+                authorizationCodeExpiryDate: 1,
+                clientId: "1",
+                clientSessionId: "1",
+                redirectUri: "http://123.com",
+                accessTokenExpiryDate: 0,
+                authorizationCode: undefined,
+            };
             beforeEach(() => {
                 metricsSpyAddMetrics = jest.spyOn(metrics.prototype, "addMetric");
                 loggerSpyError = jest.spyOn(logger.prototype, "error");
-                const accessDeniedError = new AccessDeniedError();
-                jest.spyOn(sessionService, "getSession").mockRejectedValueOnce(accessDeniedError);
-                queryString = {
-                    client_id: "1",
-                    redirect_uri: "http://123.com",
-                    response_type: "test",
-                } as APIGatewayProxyEventQueryStringParameters;
+                jest.spyOn(sessionService, "getSession").mockReturnValueOnce(
+                    Promise.resolve(sessionItem as SessionItem),
+                );
             });
             it("should return 403 status code and return body with access_denied", async () => {
-                const queryString = {
-                    client_id: "1",
-                    redirect_uri: "http://123.com"
-                } as APIGatewayProxyEventQueryStringParameters;
-                const authorizationCode = "";
-                const output = await lambdaHandler(
+                const result = await lambdaHandler(
                     {
                         body: body,
                         headers: headers,
-                        queryStringParameters: queryString,
+                        queryStringParameters: {
+                            client_id: "1",
+                            redirect_uri: "http://123.com",
+                            response_type: "a_response_type",
+                        },
                     } as unknown as APIGatewayProxyEvent,
                     {} as Context,
                 );
 
-                expect(output.statusCode).toBe(403);
-                expect(output.body).toContain("Access Denied");
-
-                expect(loggerSpyError).toBeCalledWith(
+                expect(result).toEqual({
+                    statusCode: 403,
+                    body: JSON.stringify({
+                        message: "Access Denied",
+                        code: 1029,
+                        errorSummary: "1029: Access Denied",
+                    }),
+                });
+                expect(loggerSpyError).toHaveBeenCalledWith(
                     "Authorization Lambda error occurred: 1029: Access Denied",
                     expect.any(AccessDeniedError),
                 );
-                expect(metricsSpyAddMetrics).toBeCalledWith("authorization_sent", "Count", 0);
+                expect(metricsSpyAddMetrics).toHaveBeenCalledWith("authorization_sent", "Count", 0);
             });
         });
 
@@ -236,11 +244,11 @@ describe("authorization-handler.ts", () => {
                 expect(output.statusCode).toBe(400);
                 expect(output.body).toContain("Session Validation Exception");
 
-                expect(loggerSpyError).toBeCalledWith(
+                expect(loggerSpyError).toHaveBeenCalledWith(
                     "Authorization Lambda error occurred: 1019: Session Validation Exception - Missing response_type parameter",
                     expect.any(SessionValidationError),
                 );
-                expect(metricsSpyAddMetrics).toBeCalledWith("authorization_sent", "Count", 0);
+                expect(metricsSpyAddMetrics).toHaveBeenCalledWith("authorization_sent", "Count", 0);
             });
             it("should fail validation when the redirect_uri is missing from from queryString", async () => {
                 const queryString = {
@@ -260,11 +268,11 @@ describe("authorization-handler.ts", () => {
                 expect(output.statusCode).toBe(400);
                 expect(output.body).toContain("Session Validation Exception");
 
-                expect(loggerSpyError).toBeCalledWith(
+                expect(loggerSpyError).toHaveBeenCalledWith(
                     "Authorization Lambda error occurred: 1019: Session Validation Exception - Missing redirect_uri parameter",
                     expect.any(SessionValidationError),
                 );
-                expect(metricsSpyAddMetrics).toBeCalledWith("authorization_sent", "Count", 0);
+                expect(metricsSpyAddMetrics).toHaveBeenCalledWith("authorization_sent", "Count", 0);
             });
             it("should fail validation should fail when the client_id is missing", async () => {
                 const queryString = {
@@ -284,11 +292,11 @@ describe("authorization-handler.ts", () => {
                 expect(output.statusCode).toBe(400);
                 expect(output.body).toContain("Session Validation Exception");
 
-                expect(loggerSpyError).toBeCalledWith(
+                expect(loggerSpyError).toHaveBeenCalledWith(
                     "Authorization Lambda error occurred: 1019: Session Validation Exception - Missing client_id parameter",
                     expect.any(SessionValidationError),
                 );
-                expect(metricsSpyAddMetrics).toBeCalledWith("authorization_sent", "Count", 0);
+                expect(metricsSpyAddMetrics).toHaveBeenCalledWith("authorization_sent", "Count", 0);
             });
         });
 
@@ -304,11 +312,11 @@ describe("authorization-handler.ts", () => {
                 );
                 expect(output.statusCode).toBe(400);
                 expect(output.body).toContain("Invalid request: Missing session-id header");
-                expect(loggerSpyError).toBeCalledWith(
+                expect(loggerSpyError).toHaveBeenCalledWith(
                     "Authorization Lambda error occurred: Invalid request: Missing session-id header",
                     expect.any(InvalidRequestError),
                 );
-                expect(metricsSpyAddMetrics).toBeCalledWith("authorization_sent", "Count", 0);
+                expect(metricsSpyAddMetrics).toHaveBeenCalledWith("authorization_sent", "Count", 0);
             });
             it("should should fail when no existing session is found for the current request", async () => {
                 const metricsSpyAddMetrics = jest.spyOn(metrics.prototype, "addMetric");
@@ -326,11 +334,11 @@ describe("authorization-handler.ts", () => {
                 );
                 expect(output.statusCode).toBe(400);
                 expect(output.body).toContain(`Could not find session item with id: ${sessionId}`);
-                expect(loggerSpyError).toBeCalledWith(
+                expect(loggerSpyError).toHaveBeenCalledWith(
                     "Authorization Lambda error occurred: 1029: Could not find session item with id: 1",
                     sessionNotFound,
                 );
-                expect(metricsSpyAddMetrics).toBeCalledWith("authorization_sent", "Count", 0);
+                expect(metricsSpyAddMetrics).toHaveBeenCalledWith("authorization_sent", "Count", 0);
             });
 
             it("should should fail when a server error occurs", async () => {
@@ -348,8 +356,11 @@ describe("authorization-handler.ts", () => {
                 );
                 expect(output.statusCode).toBe(500);
                 expect(output.body).toContain("Server error");
-                expect(loggerSpyError).toBeCalledWith("Authorization Lambda error occurred: Server error", serverError);
-                expect(metricsSpyAddMetrics).toBeCalledWith("authorization_sent", "Count", 0);
+                expect(loggerSpyError).toHaveBeenCalledWith(
+                    "Authorization Lambda error occurred: Server error",
+                    serverError,
+                );
+                expect(metricsSpyAddMetrics).toHaveBeenCalledWith("authorization_sent", "Count", 0);
             });
         });
     });
