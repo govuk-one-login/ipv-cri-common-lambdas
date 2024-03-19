@@ -887,6 +887,19 @@ Resources:
               - "sessionId"
               - "subject"
             ProjectionType: "INCLUDE"
+        - IndexName: "access-token-index-with-event-data"
+          KeySchema:
+            - AttributeName: "accessToken"
+              KeyType: "HASH"
+          Projection:
+            NonKeyAttributes:
+              - "sessionId"
+              - "subject"
+              - "persistentSessionId"
+              - "clientSessionId"
+              - "clientIpAddress"
+              - "clientId"
+            ProjectionType: "INCLUDE"
       TimeToLiveSpecification:
         AttributeName: expiryDate
         Enabled: true
