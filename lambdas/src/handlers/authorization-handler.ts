@@ -7,7 +7,7 @@ import { ConfigService } from "../common/config/config-service";
 import { AuthorizationRequestValidator } from "../services/auth-request-validator";
 import { AwsClientType, createClient } from "../common/aws-client-factory";
 import { ClientConfigKey, CommonConfigKey } from "../types/config-keys";
-import { errorPayload } from "../common/utils/errors";
+import { AccessDeniedError, errorPayload } from "../common/utils/errors";
 import { logger, metrics, tracer as _tracer } from "../common/utils/power-tool";
 import errorMiddleware from "../middlewares/error/error-middleware";
 import initialiseConfigMiddleware from "../middlewares/config/initialise-config-middleware";
@@ -43,12 +43,8 @@ export class AuthorizationLambda implements LambdaInterface {
             );
             logger.info("Session validated");
 
-            if(!sessionItem.authorizationCode){
-                return {
-                            statusCode: 403,
-                            body: JSON.stringify({code:"access_denied", message:"Authorization permission denied"})
-
-                }
+            if (!sessionItem.authorizationCode) {
+                throw new AccessDeniedError();
             }
 
             const authorizationResponse = {
