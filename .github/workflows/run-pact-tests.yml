@@ -10,10 +10,6 @@ on:
       pact-broker-username: { required: true }
       pact-broker-password: { required: true }
 
-concurrency:
-  group: pact-tests-${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
-  cancel-in-progress: true
-
 defaults:
   run:
     shell: bash

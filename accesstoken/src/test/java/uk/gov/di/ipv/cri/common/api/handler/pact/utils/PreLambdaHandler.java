@@ -17,6 +17,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -108,6 +109,15 @@ class PreLambdaHandler implements HttpHandler {
         Headers requestHeaders = request.getRequestHeaders();
 
         String requestId = UUID.randomUUID().toString();
+
+        if (requestBody.contains("dummyInvalidAuthCode")) {
+            // replicate bad request
+            String[] jwtComponents = requestBody.split("&");
+            requestBody =
+                    Arrays.stream(jwtComponents)
+                            .filter(x -> !x.contains("dummyInvalidAuthCode"))
+                            .collect(Collectors.joining("&"));
+        }
 
         APIGatewayProxyRequestEvent apiGatewayProxyRequestEvent =
                 new APIGatewayProxyRequestEvent()
