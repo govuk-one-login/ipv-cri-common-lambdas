@@ -37,20 +37,13 @@ export abstract class BaseError extends Error {
         super(message);
     }
     getErrorSummary() {
-        if (this.code) {
-            return this.code + ": " + this.message;
-        } else {
-            return this.message;
-        }
+        return this.code ? this.code + ": " + this.message : this.message;
     }
 
     getErrorDetails() {
         const error = this.getErrorSummary();
-        if (this.details) {
-            return error + " - " + this.details;
-        } else {
-            return error;
-        }
+
+        return this.details ? error + " - " + this.details : error;
     }
 }
 
@@ -143,5 +136,13 @@ export class SessionExpiredError extends BaseError {
         super("Session expired");
         this.statusCode = 403;
         this.code = 1028;
+    }
+}
+
+export class AccessDeniedError extends BaseError {
+    constructor() {
+        super("Access Denied");
+        this.statusCode = 403;
+        this.code = 1029;
     }
 }
