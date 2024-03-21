@@ -57,21 +57,27 @@ If you have not installed `pre-commit` then please do so [here](https://pre-comm
 
 ## Run Cucumber tests
 
-Below runs and uses the PAAS stub as default
+Below runs by using the AWS stub, with the following defaults:
 
-`STACK_NAME=di-ipv-cri-common-api-your-stack-name ENVIRONMENT=dev API_GATEWAY_ID_PRIVATE=xxxx IPV_CORE_STUB_BASIC_AUTH_USER=xxxx IPV_CORE_STUB_BASIC_AUTH_PASSWORD=xxxx IPV_CORE_STUB_URL="https://di-ipv-core-stub.london.cloudapps.digital" gradle integration-tests:cucumber
+- DEFAULT_CLIENT_ID="ipv-core-stub-aws-build"
+- ENVIRONMENT=DEV
+- CRI_DEV=common-lambda-dev
 
-`Below runs overriding default PAAS stub by using the AWS stub`
-STACK_NAME=di-ipv-cri-common-api-your-stack-name ENVIRONMENT=dev API_GATEWAY_ID_PRIVATE=xxxx IPV_CORE_STUB_BASIC_AUTH_USER=xxxx IPV_CORE_STUB_BASIC_AUTH_PASSWORD=xxxx IPV_CORE_STUB_URL="https://cri.core.build.stubs.account.gov.uk" DEFAULT_CLIENT_ID=ipv-core-stub-aws-build gradle integration-tests:cucumber
+NOTE: Since this is defaulting `CRI_DEV=common-lambda-dev` 
+`common-lambda-dev` is configured in https://github.com/govuk-one-login/ipv-config/blob/main/stubs/di-ipv-core-stub/cris-dev.yaml#L42
+and contains keys configured for the common lambda account `di-ipv-cri-common-dev` 
+
+STACK_NAME=di-ipv-cri-common-api-your-stack-name ENVIRONMENT=dev API_GATEWAY_ID_PRIVATE=xxxx IPV_CORE_STUB_BASIC_AUTH_USER=xxxx IPV_CORE_STUB_BASIC_AUTH_PASSWORD=xxxx IPV_CORE_STUB_URL="https://cri.core.build.stubs.account.gov.uk" gradle integration-tests:cucumber
 `
 
 You can run against local host as follows:
 
-Run the either KBV or ADDRESS front-end and ensure the you start the stub as well
-
-`STACK_NAME=di-ipv-cri-common-api-your-stack-name CRI_DEV=kbv-cri-dev ENVIRONMENT=dev API_GATEWAY_ID_PRIVATE=xxxx IPV_CORE_STUB_BASIC_AUTH_USER=xxxx IPV_CORE_STUB_BASIC_AUTH_PASSWORD=xxxx IPV_CORE_STUB_URL="http://localhost:8085" gradle integration-tests:cucumber
-
 `
+STACK_NAME=di-ipv-cri-common-api-your-stack-name ENVIRONMENT=dev API_GATEWAY_ID_PRIVATE=xxxx IPV_CORE_STUB_BASIC_AUTH_USER=xxxx IPV_CORE_STUB_BASIC_AUTH_PASSWORD=xxxx IPV_CORE_STUB_URL="http://localhost:8085" gradle integration-tests:cucumber
+`
+
+NOTE: The common-lambda stack has an extra `/pre-merge-create-auth-code` which also it to create an authorization code to test
+certain parts, since it is not a CRI itself.
 
 ## Check repo for secrets
 
