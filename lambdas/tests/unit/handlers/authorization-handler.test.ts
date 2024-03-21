@@ -205,13 +205,13 @@ describe("authorization-handler.ts", () => {
                 expect(result).toEqual({
                     statusCode: 403,
                     body: JSON.stringify({
-                        message: "Access Denied",
-                        code: 1029,
-                        errorSummary: "1029: Access Denied",
+                        message: "Authorization permission denied",
+                        code: "access_denied",
+                        errorSummary: "access_denied: Authorization permission denied",
                     }),
                 });
                 expect(loggerSpyError).toHaveBeenCalledWith(
-                    "Authorization Lambda error occurred: 1029: Access Denied",
+                    "Authorization Lambda error occurred: access_denied: Authorization permission denied",
                     expect.any(AccessDeniedError),
                 );
                 expect(metricsSpyAddMetrics).toHaveBeenCalledWith("authorization_sent", "Count", 0);
