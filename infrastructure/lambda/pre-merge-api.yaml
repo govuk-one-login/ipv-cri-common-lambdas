@@ -50,6 +50,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AuthorizationResponse"
+        "403":
+          description: "403 response"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         "400":
           description: "400 response"
           content:
@@ -81,6 +87,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AuthorizationResponse"
+        "403":
+          description: "403 response"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         "400":
           description: "400 response"
           content:
