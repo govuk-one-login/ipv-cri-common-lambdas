@@ -18,7 +18,7 @@ import static gov.uk.di.ipv.cri.common.api.stepDefinitions.APISteps.devAccessTok
 public class IpvCoreStubUtil {
 
     private static final String CRI_DEV =
-            Optional.ofNullable(System.getenv("CRI_DEV")).orElse("common-lambda-dev");
+            System.getenv().getOrDefault("CRI_DEV", "common-lambda-dev");
     private static final String API_GATEWAY_ID_PRIVATE = "API_GATEWAY_ID_PRIVATE";
 
     public static String getPrivateApiEndpoint() {
