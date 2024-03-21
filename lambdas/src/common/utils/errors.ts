@@ -31,7 +31,7 @@ export abstract class BaseError extends Error {
     constructor(
         public readonly message: string,
         public statusCode?: number,
-        public code?: number,
+        public code?: number | string,
         public readonly details?: string,
     ) {
         super(message);
@@ -141,8 +141,8 @@ export class SessionExpiredError extends BaseError {
 
 export class AccessDeniedError extends BaseError {
     constructor() {
-        super("Access Denied");
+        super("Authorization permission denied");
         this.statusCode = 403;
-        this.code = 1029;
+        this.code = "access_denied";
     }
 }
