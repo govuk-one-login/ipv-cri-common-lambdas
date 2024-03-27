@@ -17,13 +17,11 @@ jobs:
     uses: ./.github/workflows/run-unit-tests-java.yml
 
   pact-tests:
-    # Disabled until all contracts are deployed to the broker
-    if: false
     name: Pact tests
     strategy:
       fail-fast: false
       matrix:
-        CRI_PROVIDER: ["PassportCriProvider"]
+        CRI_PROVIDER: ["PassportTokenProvider","DrivingLicenceTokenProvider","FraudTokenProvider"]
     uses: ./.github/workflows/run-pact-tests.yml
     with:
       CRI_UNDER_TEST: ${{ matrix.CRI_PROVIDER }}
