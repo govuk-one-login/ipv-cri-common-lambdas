@@ -9,3 +9,7 @@ updates:
       - dependabot
     commit-message:
       prefix: BAU
+  - package-ecosystem: "gradle" 
+    directory: "/" 
+    schedule:
+      interval: "daily"
