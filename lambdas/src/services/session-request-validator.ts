@@ -4,6 +4,7 @@ import { SessionRequestValidationConfig } from "../types/session-request-validat
 import { ClientConfigKey } from "../types/config-keys";
 import { Logger } from "@aws-lambda-powertools/logger";
 import { SessionValidationError } from "../common/utils/errors";
+import { EvidenceRequest } from "./evidence_request";
 
 export class SessionRequestValidator {
     constructor(
@@ -21,9 +22,15 @@ export class SessionRequestValidator {
             );
         }
 
+        const evidenceRequested = payload["evidence_requested"] as EvidenceRequest;
         const state = payload["state"] as string;
 
-        if (payload.client_id !== requestBodyClientId) {
+        if (evidenceRequested && evidenceRequested?.scoringPolicy !== "gpg45") {
+            throw new SessionValidationError(
+                "Session Validation Exception",
+                "Invalid request: scoringPolicy in evidence_requested does not equal gpg45",
+            );
+        } else if (payload.client_id !== requestBodyClientId) {
             throw new SessionValidationError(
                 "Session Validation Exception",
                 `Invalid request: JWT validation/verification failed: Mismatched client_id in request body (${requestBodyClientId}) & jwt (${payload.client_id})`,

@@ -1,3 +1,5 @@
+import { EvidenceRequest } from "../services/evidence_request";
+
 export interface SessionRequestSummary {
     clientId: string;
     redirectUri: string;
@@ -6,4 +8,5 @@ export interface SessionRequestSummary {
     clientSessionId: string;
     clientIpAddress: string | null;
     state: string;
+    evidenceRequested?: EvidenceRequest;
 }
