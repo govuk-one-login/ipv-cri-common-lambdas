@@ -21,7 +21,6 @@ export class SessionRequestValidator {
             );
         }
 
-        // const scope = payload["scope"] as string;
         const state = payload["state"] as string;
 
         if (payload.client_id !== requestBodyClientId) {
@@ -39,9 +38,6 @@ export class SessionRequestValidator {
                 "Session Validation Exception",
                 `Invalid request: JWT validation/verification failed: Redirect uri ${payload.redirect_uri} does not match configuration uri ${expectedRedirectUri}`,
             );
-            //uncomment once core add the scope into claims
-            //} else if (!payload.scope || !scope.toLowerCase().includes("openid")) {
-            //    throw new SessionValidationError("Session Validation Exception", "Invalid scope parameter");
         } else if (!state) {
             throw new SessionValidationError("Session Validation Exception", "Invalid state parameter");
         }
@@ -58,7 +54,6 @@ export class SessionRequestValidator {
                 JwtVerifier.ClaimNames.SUBJECT,
                 JwtVerifier.ClaimNames.NOT_BEFORE,
                 JwtVerifier.ClaimNames.STATE,
-                //JwtVerifier.ClaimNames.SCOPE, //uncomment once core add the scope into claims
             ]),
             new Map([
                 [JwtVerifier.ClaimNames.AUDIENCE, expectedAudience],
