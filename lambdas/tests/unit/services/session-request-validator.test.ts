@@ -161,18 +161,19 @@ describe("session-request-validator.ts", () => {
             await expect(payload).toEqual(jwtPayload);
         });
 
-        xit("should fail to validate the jwt if scope is not openid", async () => {
+        it("should fail to validate the evidence_requested is included and scoringPolicy is not gpg45", async () => {
             const client_id = "request-client-id";
             const redirect_uri = "redirect-uri";
-            const scope = "test";
             const state = "state";
 
             jest.spyOn(jwtVerifier.prototype, "verify").mockReturnValue(
-                Promise.resolve({
+                await Promise.resolve({
                     client_id: client_id,
                     redirect_uri: redirect_uri,
-                    scope: scope,
                     state: state,
+                    evidence_requested: {
+                        scoringPolicy: "invalid-scoring-policy",
+                    },
                     shared_claims: personIdentity,
                 } as JWTPayload),
             );
@@ -182,9 +183,46 @@ describe("session-request-validator.ts", () => {
             ).rejects.toThrow(
                 expect.objectContaining({
                     message: "Session Validation Exception",
-                    details: "Invalid scope parameter",
+                    details: "Invalid request: scoringPolicy in evidence_requested does not equal gpg45",
                 }),
             );
+        });
+
+        it("should pass when the evidence_requested is included and scoringPolicy is gpg45", async () => {
+            const client_id = "request-client-id";
+            const redirect_uri = "redirect-uri";
+            const state = "state";
+
+            jest.spyOn(jwtVerifier.prototype, "verify").mockReturnValue(
+                await Promise.resolve({
+                    client_id: client_id,
+                    redirect_uri: redirect_uri,
+                    state: state,
+                    evidence_requested: {
+                        scoringPolicy: "gpg45",
+                    },
+                    shared_claims: personIdentity,
+                } as JWTPayload),
+            );
+
+            await expect(async () => sessionRequestValidator.validateJwt(Buffer.from("test-jwt"), client_id)).resolves;
+        });
+
+        it("should pass when the there is no evidence_requested", async () => {
+            const client_id = "request-client-id";
+            const redirect_uri = "redirect-uri";
+            const state = "state";
+
+            jest.spyOn(jwtVerifier.prototype, "verify").mockReturnValue(
+                await Promise.resolve({
+                    client_id: client_id,
+                    redirect_uri: redirect_uri,
+                    state: state,
+                    shared_claims: personIdentity,
+                } as JWTPayload),
+            );
+
+            await expect(async () => sessionRequestValidator.validateJwt(Buffer.from("test-jwt"), client_id)).resolves;
         });
 
         xit("should fail to validate the jwt if scope is missing", async () => {
