@@ -27,3 +27,21 @@ it.only("will only run this test in this file",() => );
 ```
 
 Note that if you dont specify Jest to run just the file with the test, then it will also run the other files in parallel.
+
+## how to deploy
+
+set up your AWS accounts using:
+```
+aws configure sso
+```
+
+Then login via the terminal with he name of the account you wish to access/work on: 
+```
+aws sso login --profile <profile-name>
+```
+
+Then using the following command in the terminal, you can deploy the stack. 
+```
+AWS_PROFILE=<profile-name> ./deploy.sh 
+```
+the deploy does allow for arguments to change the names and identifiers that it will use to execute the set-up.
