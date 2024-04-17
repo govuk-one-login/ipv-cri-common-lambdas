@@ -8,6 +8,11 @@ The NodeJS lambdas are stores inside the Lambdas directory. Each individual `han
 
 This endpoint takes grant_type, code, client_assertion_type, client_assertion and redirect_uri with content type application/x-www-form-urlencoded and returns Access Token
 
+## How to setup project
+
+To run all tests, run `npm install`. 
+
+
 ## How to run tests
 
 To run all tests, run `npm run test`. This will compile and run all tests in the `/tests` directory.

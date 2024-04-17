@@ -12,7 +12,7 @@ export enum ClaimNames {
     ISSUED_AT = "iat",
     JWT_ID = "jti",
     REDIRECT_URI = "redirect_uri",
-    SCOPE = "scope",
+    EVIDENCE_REQUESTED = "evidence_requested",
     STATE = "state",
 }
 
