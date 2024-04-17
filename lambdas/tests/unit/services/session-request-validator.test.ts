@@ -99,13 +99,11 @@ describe("session-request-validator.ts", () => {
         });
 
         it("should successfully validate the jwt", async () => {
-            const scope = "openid";
             const state = "state";
             jest.spyOn(jwtVerifier.prototype, "verify").mockReturnValue(
                 Promise.resolve({
                     client_id: "request-client-id",
                     redirect_uri: "redirect-uri",
-                    scope: scope,
                     state: state,
                     shared_claims: personIdentity,
                 } as JWTPayload),
@@ -117,7 +115,6 @@ describe("session-request-validator.ts", () => {
             expect(response).toEqual({
                 client_id: "request-client-id",
                 redirect_uri: "redirect-uri",
-                scope: scope,
                 state: state,
                 shared_claims: personIdentity,
             });
@@ -146,7 +143,6 @@ describe("session-request-validator.ts", () => {
             const jwtPayload = {
                 client_id: client_id,
                 redirect_uri: "redirect-uri",
-                scope: "openid",
                 state: "state",
                 shared_claims: personIdentity,
             } as JWTPayload;
@@ -224,41 +220,14 @@ describe("session-request-validator.ts", () => {
 
             await expect(async () => sessionRequestValidator.validateJwt(Buffer.from("test-jwt"), client_id)).resolves;
         });
-
-        xit("should fail to validate the jwt if scope is missing", async () => {
-            const client_id = "request-client-id";
-            const redirect_uri = "redirect-uri";
-            const state = "state";
-
-            jest.spyOn(jwtVerifier.prototype, "verify").mockReturnValue(
-                Promise.resolve({
-                    client_id: client_id,
-                    redirect_uri: redirect_uri,
-                    state: state,
-                    shared_claims: personIdentity,
-                } as JWTPayload),
-            );
-
-            await expect(async () =>
-                sessionRequestValidator.validateJwt(Buffer.from("test-jwt"), client_id),
-            ).rejects.toThrow(
-                expect.objectContaining({
-                    message: "Session Validation Exception",
-                    details: "Invalid scope parameter",
-                }),
-            );
-        });
-
         it("should fail to validate the jwt if state is missing", async () => {
             const client_id = "request-client-id";
             const redirect_uri = "redirect-uri";
-            const scope = "openid";
 
             jest.spyOn(jwtVerifier.prototype, "verify").mockReturnValue(
                 Promise.resolve({
                     client_id: client_id,
                     redirect_uri: redirect_uri,
-                    scope: scope,
                     shared_claims: personIdentity,
                 } as JWTPayload),
             );
