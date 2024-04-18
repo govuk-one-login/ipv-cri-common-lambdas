@@ -24,6 +24,7 @@ import initialiseClientConfigMiddleware from "../middlewares/config/initialise-c
 import validateJwtMiddleware from "../middlewares/jwt/validate-jwt-middleware";
 import setGovUkSigningJourneyIdMiddleware from "../middlewares/session/set-gov-uk-signing-journey-id-middleware";
 import { ConfigService } from "../common/config/config-service";
+import { EvidenceRequest } from "../services/evidence_request";
 
 const dynamoDbClient = createClient(AwsClientType.DYNAMO);
 const sqsClient = createClient(AwsClientType.SQS);
@@ -88,6 +89,7 @@ export class SessionLambda implements LambdaInterface {
             redirectUri: jwtPayload["redirect_uri"] as string,
             state: jwtPayload["state"] as string,
             subject: jwtPayload.sub as string,
+            evidenceRequested: jwtPayload["evidence_requested"] as EvidenceRequest,
         };
     }
     private async sendAuditEvent(

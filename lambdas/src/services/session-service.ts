@@ -110,6 +110,7 @@ export class SessionService {
                 clientSessionId: sessionRequest.clientSessionId,
                 clientIpAddress: sessionRequest.clientIpAddress,
                 attemptCount: 0,
+                evidenceRequest: sessionRequest.evidenceRequested,
             },
         });
         await this.dynamoDbClient.send(putSessionCommand);
