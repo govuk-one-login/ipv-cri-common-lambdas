@@ -8,6 +8,11 @@ The NodeJS lambdas are stores inside the Lambdas directory. Each individual `han
 
 This endpoint takes grant_type, code, client_assertion_type, client_assertion and redirect_uri with content type application/x-www-form-urlencoded and returns Access Token
 
+## How to setup project
+
+To run all tests, run `npm install`. 
+
+
 ## How to run tests
 
 To run all tests, run `npm run test`. This will compile and run all tests in the `/tests` directory.
@@ -27,3 +32,21 @@ it.only("will only run this test in this file",() => );
 ```
 
 Note that if you dont specify Jest to run just the file with the test, then it will also run the other files in parallel.
+
+## how to deploy
+
+set up your AWS accounts using:
+```
+aws configure sso
+```
+
+Then login via the terminal with he name of the account you wish to access/work on: 
+```
+aws sso login --profile <profile-name>
+```
+
+Then using the following command in the terminal, you can deploy the stack. 
+```
+AWS_PROFILE=<profile-name> ./deploy.sh 
+```
+the deploy does allow for arguments to change the names and identifiers that it will use to execute the set-up.
