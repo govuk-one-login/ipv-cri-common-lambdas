@@ -1,4 +1,4 @@
-import { PersonIdentity } from "./person-identity";
+import { TxMAPersonIdentity } from "./person-identity";
 
 export enum AuditEventType {
     START = "START", // Before a session is written to the Session table
@@ -18,7 +18,7 @@ export interface AuditEventSession {
 
 export interface AuditEventContext {
     sessionItem: AuditEventSession;
-    personIdentity?: PersonIdentity;
+    personIdentity?: TxMAPersonIdentity;
     extensions?: unknown;
     clientIpAddress: string | undefined;
 }
@@ -36,7 +36,7 @@ export interface AuditEvent {
     event_timestamp_ms: number;
     event_name: string;
     component_id: string;
-    restricted?: PersonIdentity;
+    restricted?: TxMAPersonIdentity;
     user: AuditEventUser;
     extensions?: unknown;
 }
