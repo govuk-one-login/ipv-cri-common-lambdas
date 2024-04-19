@@ -316,6 +316,29 @@ describe("SessionLambda", () => {
         });
     });
 
+    it("should send the audit event with device_information if it exists", async () => {
+        const spy = jest.spyOn(auditService.prototype, "sendAuditEvent");
+        await lambdaHandler(
+            { ...mockEvent, headers: { ...mockEvent.headers, "txma-audit-encoded": "encodedHeader" } },
+            {} as Context,
+        );
+
+        expect(spy).toHaveBeenCalledWith(AuditEventType.START, {
+            clientIpAddress: "test-client-ip-address",
+            sessionItem: {
+                sessionId: "test-session-id",
+                subject: "test-sub",
+                persistentSessionId: "test-persistent-session-id",
+                clientSessionId: "test-journey-id",
+            },
+            personIdentity: {
+                device_information: {
+                    encoded: "encodedHeader",
+                },
+            },
+        });
+    });
+
     it("should successfully register the metrics", async () => {
         const dimensionSpy = jest.spyOn(metrics.prototype, "addDimension");
         const metricSpy = jest.spyOn(metrics.prototype, "addMetric");

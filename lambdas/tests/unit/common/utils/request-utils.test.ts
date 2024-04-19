@@ -1,5 +1,9 @@
 import { APIGatewayProxyEvent, APIGatewayProxyEventHeaders } from "aws-lambda";
-import { getClientIpAddress, getSessionId } from "../../../../src/common/utils/request-utils";
+import {
+    getClientIpAddress,
+    getEncodedDeviceInformation,
+    getSessionId,
+} from "../../../../src/common/utils/request-utils";
 import { InvalidRequestError } from "../../../../src/common/utils/errors";
 
 describe("request-utils", () => {
@@ -35,6 +39,40 @@ describe("request-utils", () => {
             expect(result).toBeUndefined;
         });
     });
+
+    describe("getEncodedDeviceInformation", () => {
+        test("returns the value of txma-audit-encode header", () => {
+            const result = getEncodedDeviceInformation({
+                headers: {
+                    "txma-audit-encoded": "encodedInformation",
+                },
+            } as unknown as APIGatewayProxyEvent);
+            expect(result).toBe("encodedInformation");
+        });
+        test("returns the value of txma-audit-encoded when corresponding event header is uppercase", () => {
+            const result = getEncodedDeviceInformation({
+                headers: {
+                    "txma-audit-encoded": "encodedInformation",
+                },
+            } as unknown as APIGatewayProxyEvent);
+            expect(result).toBe("encodedInformation");
+        });
+        test("return undefined if txma-audit-encoded header is not present", () => {
+            const result = getEncodedDeviceInformation({
+                headers: {},
+            } as unknown as APIGatewayProxyEvent);
+            expect(result).toBeUndefined;
+        });
+        test("returns undefined, if another header is present instead of txma-audit-encoded", () => {
+            const result = getEncodedDeviceInformation({
+                headers: {
+                    encoded: "12345",
+                },
+            } as unknown as APIGatewayProxyEvent);
+            expect(result).toBeUndefined;
+        });
+    });
+
     describe("getSessionId", () => {
         test("returns the value of session-id header", () => {
             const result = getSessionId({
@@ -70,6 +108,7 @@ describe("request-utils", () => {
             ).toThrow("Invalid request: Missing session-id header");
         });
     });
+
     describe("matching headers", () => {
         test("getSessionId throws an error if there are multiple session-id headers", () => {
             const event: Partial<APIGatewayProxyEvent> = {
