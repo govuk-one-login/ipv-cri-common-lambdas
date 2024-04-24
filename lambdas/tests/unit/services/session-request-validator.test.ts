@@ -157,6 +157,60 @@ describe("session-request-validator.ts", () => {
             await expect(payload).toEqual(jwtPayload);
         });
 
+        it("should pass when strength score is 2 and cri is di-ipv-check-hmrc-api", async () => {
+            const client_id = "request-client-id";
+            const redirect_uri = "redirect-uri";
+            const state = "state";
+
+            const previousCriIdentifier = process.env.CRI_IDENTIFIER;
+            process.env.CRI_IDENTIFIER = "di-ipv-cri-check-hmrc-api";
+
+            jest.spyOn(jwtVerifier.prototype, "verify").mockReturnValue(
+                await Promise.resolve({
+                    client_id: client_id,
+                    redirect_uri: redirect_uri,
+                    state: state,
+                    evidence_requested: {
+                        scoringPolicy: "gpg45",
+                        strengthScore: 2,
+                    },
+                    shared_claims: personIdentity,
+                } as JWTPayload),
+            );
+
+            await expect(async () => sessionRequestValidator.validateJwt(Buffer.from("test-jwt"), client_id)).resolves;
+
+            process.env.CRI_IDENTIFIER = previousCriIdentifier;
+        });
+
+        it("should fail when strength score not 2 and cri is di-ipv-check-hmrc-api", async () => {
+            const client_id = "request-client-id";
+            const redirect_uri = "redirect-uri";
+            const state = "state";
+
+            const previousCriIdentifier = process.env.CRI_IDENTIFIER;
+            process.env.CRI_IDENTIFIER = "di-ipv-cri-check-hmrc-api";
+
+            jest.spyOn(jwtVerifier.prototype, "verify").mockReturnValue(
+                await Promise.resolve({
+                    client_id: client_id,
+                    redirect_uri: redirect_uri,
+                    state: state,
+                    evidence_requested: {
+                        scoringPolicy: "gpg45",
+                        strengthScore: 1,
+                    },
+                    shared_claims: personIdentity,
+                } as JWTPayload),
+            );
+
+            await expect(async () =>
+                sessionRequestValidator.validateJwt(Buffer.from("test-jwt"), client_id),
+            ).rejects.toThrow(new Error("Session Validation Exception"));
+
+            process.env.CRI_IDENTIFIER = previousCriIdentifier;
+        });
+
         it("should fail to validate the evidence_requested is included and scoringPolicy is not gpg45", async () => {
             const client_id = "request-client-id";
             const redirect_uri = "redirect-uri";
