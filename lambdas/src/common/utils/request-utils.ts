@@ -23,6 +23,11 @@ const getHeaderValue = (event: APIGatewayProxyEvent, desiredHeader: string) => {
 export const getClientIpAddress = (event: APIGatewayProxyEvent) => {
     return getHeaderValue(event, "x-forwarded-for");
 };
+
+export const getEncodedDeviceInformation = (event: APIGatewayProxyEvent) => {
+    return getHeaderValue(event, "txma-audit-encoded");
+};
+
 export const getSessionId = (event: APIGatewayProxyEvent) => {
     const sessionIdHeader = getHeaderValue(event, "session-id");
     if (!sessionIdHeader) {

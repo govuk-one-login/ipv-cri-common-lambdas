@@ -34,3 +34,12 @@ export interface PersonIdentity {
     birthDate: BirthDate[];
     address: Address[];
 }
+
+export interface TxMAPersonIdentity {
+    name?: Name[];
+    birthDate?: BirthDate[];
+    address?: Address[];
+    device_information?: {
+        encoded: string;
+    };
+}
