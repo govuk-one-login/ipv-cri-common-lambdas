@@ -6,12 +6,17 @@ import { Logger } from "@aws-lambda-powertools/logger";
 import { SessionValidationError } from "../common/utils/errors";
 import { EvidenceRequest } from "./evidence_request";
 
+const strengthScore: { [key: string]: number } = {
+    "di-ipv-cri-check-hmrc-api": 2,
+};
+
 export class SessionRequestValidator {
     constructor(
         private validationConfig: SessionRequestValidationConfig,
         private jwtVerifier: JwtVerifier,
     ) {}
     async validateJwt(jwt: Buffer, requestBodyClientId: string): Promise<JWTPayload> {
+        const criIdentifier = process.env.CRI_IDENTIFIER || "";
         const expectedRedirectUri = this.validationConfig.expectedJwtRedirectUri;
 
         const payload = await this.verifyJwtSignature(jwt);
@@ -25,11 +30,20 @@ export class SessionRequestValidator {
         const evidenceRequested = payload["evidence_requested"] as EvidenceRequest;
         const state = payload["state"] as string;
 
-        if (evidenceRequested && evidenceRequested?.scoringPolicy !== "gpg45") {
-            throw new SessionValidationError(
-                "Session Validation Exception",
-                "Invalid request: scoringPolicy in evidence_requested does not equal gpg45",
-            );
+        if (evidenceRequested) {
+            if (evidenceRequested.scoringPolicy && evidenceRequested.scoringPolicy !== "gpg45") {
+                throw new SessionValidationError(
+                    "Session Validation Exception",
+                    "Invalid request: scoringPolicy in evidence_requested does not equal gpg45",
+                );
+            }
+            if (evidenceRequested.strengthScore && evidenceRequested.strengthScore !== strengthScore[criIdentifier]) {
+                throw new SessionValidationError(
+                    "Session Validation Exception",
+                    "Invalid request: strengthScore in evidence_requested does not equal " +
+                        strengthScore[criIdentifier],
+                );
+            }
         } else if (payload.client_id !== requestBodyClientId) {
             throw new SessionValidationError(
                 "Session Validation Exception",
