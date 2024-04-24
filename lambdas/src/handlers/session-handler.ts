@@ -13,7 +13,7 @@ import { AuditEventType } from "../types/audit-event";
 import { SessionRequestSummary } from "../types/session-request-summary";
 import { JWTPayload } from "jose";
 import { AwsClientType, createClient } from "../common/aws-client-factory";
-import { getClientIpAddress } from "../common/utils/request-utils";
+import { getClientIpAddress, getEncodedDeviceInformation } from "../common/utils/request-utils";
 import { errorPayload } from "../common/utils/errors";
 import { logger, metrics, tracer as _tracer } from "../common/utils/power-tool";
 import errorMiddleware from "../middlewares/error/error-middleware";
@@ -47,6 +47,7 @@ export class SessionLambda implements LambdaInterface {
 
             logger.info("Session lambda triggered");
             const clientIpAddress = getClientIpAddress(event);
+            const encodedDeviceInformation = getEncodedDeviceInformation(event);
             const sessionRequestSummary = this.createSessionRequestSummary(jwtPayload, clientIpAddress);
             const sessionId: string = await this.sessionService.saveSession(sessionRequestSummary);
             logger.info("Session created");
@@ -59,7 +60,7 @@ export class SessionLambda implements LambdaInterface {
                 logger.info("Personal identity created");
             }
 
-            await this.sendAuditEvent(sessionId, sessionRequestSummary, clientIpAddress);
+            await this.sendAuditEvent(sessionId, sessionRequestSummary, clientIpAddress, encodedDeviceInformation);
             metrics.addDimension("issuer", sessionRequestSummary.clientId);
             metrics.addMetric(SESSION_CREATED_METRIC, MetricUnits.Count, 1);
 
@@ -96,6 +97,7 @@ export class SessionLambda implements LambdaInterface {
         sessionId: string,
         sessionRequest: SessionRequestSummary,
         clientIpAddress: string | undefined,
+        encodedDeviceInformation?: string,
     ) {
         await this.auditService.sendAuditEvent(AuditEventType.START, {
             clientIpAddress: clientIpAddress,
@@ -105,6 +107,13 @@ export class SessionLambda implements LambdaInterface {
                 persistentSessionId: sessionRequest.persistentSessionId,
                 clientSessionId: sessionRequest.clientSessionId,
             },
+            ...(encodedDeviceInformation && {
+                personIdentity: {
+                    device_information: {
+                        encoded: encodedDeviceInformation,
+                    },
+                },
+            }),
         });
     }
 }
