@@ -2,7 +2,7 @@ import middy from "@middy/core";
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { LambdaInterface } from "@aws-lambda-powertools/commons";
 import { MetricUnits } from "@aws-lambda-powertools/metrics";
-import { ClientConfigKey, CommonConfigKey } from "../types/config-keys";
+import { ClientConfigKey, CommonConfigKey, ConfigKey } from "../types/config-keys";
 import { SessionService } from "../services/session-service";
 import { JweDecrypter } from "../services/security/jwe-decrypter";
 import { PersonIdentityService } from "../services/person-identity-service";
@@ -29,7 +29,7 @@ import { EvidenceRequest } from "../services/evidence_request";
 const dynamoDbClient = createClient(AwsClientType.DYNAMO);
 const sqsClient = createClient(AwsClientType.SQS);
 const kmsClient = createClient(AwsClientType.KMS);
-
+const criIdentifier = process.env.CRI_IDENTIFIER || "";
 const SESSION_CREATED_METRIC = "session_created";
 
 export class SessionLambda implements LambdaInterface {
@@ -96,7 +96,7 @@ export class SessionLambda implements LambdaInterface {
     private async sendAuditEvent(
         sessionId: string,
         sessionRequest: SessionRequestSummary,
-        clientIpAddress: string | undefined,
+        clientIpAddress?: string,
         encodedDeviceInformation?: string,
     ) {
         await this.auditService.sendAuditEvent(AuditEventType.START, {
@@ -157,6 +157,7 @@ export const lambdaHandler = middy(handlerClass.handler.bind(handlerClass))
                 ClientConfigKey.JWT_REDIRECT_URI,
                 ClientConfigKey.JWT_SIGNING_ALGORITHM,
             ],
+            client_absolute_paths: [{ prefix: criIdentifier, suffix: ConfigKey.STRENGTH_SCORE }],
         }),
     )
     .use(validateJwtMiddleware(logger, { configService: configService, jwtValidatorFactory: jwtValidatorFactory }))

@@ -13,3 +13,12 @@ export enum ClientConfigKey {
     JWT_REDIRECT_URI = "redirectUri",
     JWT_SIGNING_ALGORITHM = "authenticationAlg",
 }
+
+export enum ConfigKey {
+    STRENGTH_SCORE = "strengthScore",
+}
+
+export interface AbsoluteParameterPath {
+    prefix: string;
+    suffix: string;
+}
