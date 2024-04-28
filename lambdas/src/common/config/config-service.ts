@@ -23,21 +23,37 @@ export class ConfigService {
     }
 
     public async initClientConfig(clientId: string, paramNameSuffixes: ClientConfigKey[]) {
+        const parameterPrefix = `clients/${clientId}/jwtAuthentication`;
         if (!clientId) {
             throw new Error("Undefined clientId supplied");
         }
         const ssmParamNames: string[] = paramNameSuffixes.map((paramNameSuffix) => {
-            return this.getParameterName(`clients/${clientId}/jwtAuthentication/${paramNameSuffix}`);
+            return this.getParameterName(`${parameterPrefix}/${paramNameSuffix}`);
         });
         const ssmParameters = await this.getParameters(ssmParamNames);
         if (ssmParameters.length === 0) {
             throw new Error(`No client config found. Invalid client id encountered: ${clientId}`);
         }
-        const clientConfigEntries: Map<string, string> = new Map<string, string>();
+        await this.getParametersByAbsolutePath(ssmParameters, clientId);
+    }
+
+    public async initConfigUsingAbsolutePath(clientId: string, parameterPrefix: string, paramNameSuffix: string) {
+        const ssmParameters = await this.getParameters([`/${parameterPrefix}/${paramNameSuffix}`]);
+        if (ssmParameters.length === 0) {
+            throw new Error(`Invalid parameter beginning with ${parameterPrefix} encountered`);
+        }
+        await this.getParametersByAbsolutePath(ssmParameters, clientId);
+    }
+
+    private async getParametersByAbsolutePath(ssmParameters: Parameter[], identifier: string) {
+        const clientConfigEntries: Map<string, string> =
+            this.clientConfigurations.get(identifier) || new Map<string, string>();
+
         ssmParameters.forEach(({ Name, Value }) => {
             clientConfigEntries.set(...this.validateNameSuffix(Name, Value));
         });
-        this.clientConfigurations.set(clientId, clientConfigEntries);
+
+        this.clientConfigurations.set(identifier, clientConfigEntries);
     }
 
     public hasClientConfig(clientId: string): boolean {
@@ -120,7 +136,6 @@ export class ConfigService {
             Object.fromEntries(ssmParamNames.map((parameter) => [parameter, {}])),
             { maxAge: PARAMETER_TTL, throwOnError: false },
         );
-
         if (errors?.length) {
             throw new Error(`Couldn't retrieve SSM parameters: ${errors.join(", ")}`);
         }
