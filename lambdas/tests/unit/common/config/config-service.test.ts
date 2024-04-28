@@ -1,7 +1,7 @@
 import { SSMClient } from "@aws-sdk/client-ssm";
 import { SSMProvider } from "@aws-lambda-powertools/parameters/ssm";
 import { ConfigService } from "../../../../src/common/config/config-service";
-import { ClientConfigKey, CommonConfigKey } from "../../../../src/types/config-keys";
+import { ClientConfigKey, CommonConfigKey, ConfigKey } from "../../../../src/types/config-keys";
 
 jest.mock("@aws-lambda-powertools/parameters/ssm");
 
@@ -141,6 +141,52 @@ describe("ConfigService", () => {
         });
     });
 
+    describe("initConfigUsingAbsolutePath", () => {
+        it("should successfully initialise the client config", async () => {
+            ssmProvider.getParametersByName.mockResolvedValue({
+                "/di-ipv-cri-check-hmrc-api/strengthScore": "2",
+            });
+
+            await configService.initConfigUsingAbsolutePath(
+                "test",
+                "di-ipv-cri-check-hmrc-api",
+                ConfigKey.STRENGTH_SCORE,
+            );
+
+            expect(ssmProvider.getParametersByName).toBeCalledWith(
+                {
+                    "/di-ipv-cri-check-hmrc-api/strengthScore": {},
+                },
+                expect.objectContaining({
+                    maxAge: 300,
+                }),
+            );
+            expect(configService.hasClientConfig("test")).toBe(true);
+        });
+
+        it("should throw an error for an invalid client ID", async () => {
+            ssmProvider.getParametersByName.mockResolvedValue({
+                _errors: [],
+            });
+
+            expect(
+                configService.initConfigUsingAbsolutePath(
+                    "test",
+                    "di-ipv-cri-check-hmrc-api",
+                    ConfigKey.STRENGTH_SCORE,
+                ),
+            ).rejects.toThrowError("Invalid parameter beginning with di-ipv-cri-check-hmrc-api encountered");
+
+            expect(ssmProvider.getParametersByName).toBeCalledWith(
+                {
+                    "/di-ipv-cri-check-hmrc-api/strengthScore": {},
+                },
+                expect.objectContaining({
+                    maxAge: 300,
+                }),
+            );
+        });
+    });
     describe("hasClientConfig", () => {
         it("should return true for existing client config", async () => {
             ssmProvider.getParametersByName.mockResolvedValue({

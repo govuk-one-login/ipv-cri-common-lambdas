@@ -1,23 +1,20 @@
 import { JwtVerifier } from "../common/security/jwt-verifier";
 import { JWTPayload } from "jose";
 import { SessionRequestValidationConfig } from "../types/session-request-validation-config";
-import { ClientConfigKey } from "../types/config-keys";
+import { ClientConfigKey, ConfigKey } from "../types/config-keys";
 import { Logger } from "@aws-lambda-powertools/logger";
 import { SessionValidationError } from "../common/utils/errors";
 import { EvidenceRequest } from "./evidence_request";
-
-const strengthScore: { [key: string]: number } = {
-    "di-ipv-cri-check-hmrc-api": 2,
-};
-
+import { EvidenceRequestConfig } from "../types/evidence-requested-config";
 export class SessionRequestValidator {
     constructor(
         private validationConfig: SessionRequestValidationConfig,
         private jwtVerifier: JwtVerifier,
+        private evidenceRequest?: EvidenceRequestConfig,
     ) {}
     async validateJwt(jwt: Buffer, requestBodyClientId: string): Promise<JWTPayload> {
-        const criIdentifier = process.env.CRI_IDENTIFIER || "";
         const expectedRedirectUri = this.validationConfig.expectedJwtRedirectUri;
+        const configuredStrengthScore = this.evidenceRequest?.strengthScore;
 
         const payload = await this.verifyJwtSignature(jwt);
         if (!payload) {
@@ -30,20 +27,17 @@ export class SessionRequestValidator {
         const evidenceRequested = payload["evidence_requested"] as EvidenceRequest;
         const state = payload["state"] as string;
 
-        if (evidenceRequested) {
-            if (evidenceRequested.scoringPolicy && evidenceRequested.scoringPolicy !== "gpg45") {
-                throw new SessionValidationError(
-                    "Session Validation Exception",
-                    "Invalid request: scoringPolicy in evidence_requested does not equal gpg45",
-                );
-            }
-            if (evidenceRequested.strengthScore && evidenceRequested.strengthScore !== strengthScore[criIdentifier]) {
-                throw new SessionValidationError(
-                    "Session Validation Exception",
-                    "Invalid request: strengthScore in evidence_requested does not equal " +
-                        strengthScore[criIdentifier],
-                );
-            }
+        if (evidenceRequested && evidenceRequested.scoringPolicy !== "gpg45") {
+            throw new SessionValidationError(
+                "Session Validation Exception",
+                "Invalid request: scoringPolicy in evidence_requested does not equal gpg45",
+            );
+        }
+        if (evidenceRequested && evidenceRequested.strengthScore !== configuredStrengthScore) {
+            throw new SessionValidationError(
+                "Session Validation Exception",
+                `Invalid request: strengthScore in evidence_requested does not equal ${configuredStrengthScore}`,
+            );
         } else if (payload.client_id !== requestBodyClientId) {
             throw new SessionValidationError(
                 "Session Validation Exception",
@@ -100,6 +94,9 @@ export class SessionRequestValidatorFactory {
                 },
                 this.logger,
             ),
+            {
+                strengthScore: Number(criClientConfig.get(ConfigKey.STRENGTH_SCORE)),
+            } as EvidenceRequestConfig,
         );
     }
 }
