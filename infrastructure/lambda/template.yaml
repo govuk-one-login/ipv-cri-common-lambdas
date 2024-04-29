@@ -1032,7 +1032,7 @@ Resources:
   EvidenceRequestedStrengthScoreParameter:
     Type: AWS::SSM::Parameter
     Properties:
-      Name: !Sub "/${CriIdentifier}/strengthScore"
+      Name: !Sub "/${AWS::StackName}/${CriIdentifier}/strengthScore"
       Type: String
       Value: !FindInMap [EvidenceRequestedMapping, !Ref CriIdentifier, "strengthScore"]
       Description: The CRI supported strength score
