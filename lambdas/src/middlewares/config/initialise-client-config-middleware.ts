@@ -1,21 +1,29 @@
 import { MiddlewareObj, Request } from "@middy/core";
 import { ConfigService } from "../../common/config/config-service";
-import { ClientConfigKey } from "../../types/config-keys";
+import { AbsoluteParameterPath, ClientConfigKey } from "../../types/config-keys";
 
 const defaults = {};
 
 const initialiseClientConfigMiddleware = (opts: {
     configService: ConfigService;
     client_config_keys: ClientConfigKey[];
+    client_absolute_paths?: [AbsoluteParameterPath];
 }): MiddlewareObj => {
     const options = { ...defaults, ...opts };
 
     const before = async (request: Request) => {
         const event_body = request.event.body;
-        if (!options.configService.hasClientConfig(event_body.clientId)) {
-            await options.configService.initClientConfig(event_body.clientId, options.client_config_keys);
-        }
+        const clientId = event_body.clientId;
 
+        if (!options.configService.hasClientConfig(clientId)) {
+            await options.configService.initClientConfig(clientId, options.client_config_keys);
+
+            if (options.client_absolute_paths) {
+                for (const param of options.client_absolute_paths) {
+                    await options.configService.initConfigUsingAbsolutePath(clientId, param.prefix, param.suffix);
+                }
+            }
+        }
         await request.event;
     };
 
