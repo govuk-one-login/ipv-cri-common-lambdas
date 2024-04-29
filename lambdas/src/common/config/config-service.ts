@@ -4,7 +4,7 @@ import { CriAuditConfig } from "../../types/cri-audit-config";
 import { ClientConfigKey, CommonConfigKey } from "../../types/config-keys";
 import { SSMProvider } from "@aws-lambda-powertools/parameters/ssm";
 
-const PARAMETER_PREFIX = process.env.AWS_STACK_NAME || "";
+const AWS_STACK_NAME_PREFIX = process.env.AWS_STACK_NAME || "";
 const AUTHORIZATION_CODE_TTL = parseNumber(process.env.AUTHORIZATION_CODE_TTL) || 600;
 const PARAMETER_TTL = parseNumber(process.env.POWERTOOLS_PARAMETERS_MAX_AGE) || 300;
 const ACCESS_TOKEN_TTL = parseNumber(process.env.ACCESS_TOKEN_TTL_IN_SECS) || 3600;
@@ -37,8 +37,10 @@ export class ConfigService {
         await this.getParametersByAbsolutePath(ssmParameters, clientId);
     }
 
-    public async initConfigUsingAbsolutePath(clientId: string, parameterPrefix: string, paramNameSuffix: string) {
-        const ssmParameters = await this.getParameters([`/${parameterPrefix}/${paramNameSuffix}`]);
+    public async initConfigWithCriIdentifierInPath(clientId: string, parameterPrefix: string, paramNameSuffix: string) {
+        const ssmParameters = await this.getParameters([
+            `/${AWS_STACK_NAME_PREFIX}/${parameterPrefix}/${paramNameSuffix}`,
+        ]);
         if (ssmParameters.length === 0) {
             throw new Error(`Invalid parameter beginning with ${parameterPrefix} encountered`);
         }
@@ -68,7 +70,7 @@ export class ConfigService {
     }
 
     public getConfigEntry(key: CommonConfigKey) {
-        const paramName = `/${PARAMETER_PREFIX}/${key}`;
+        const paramName = `/${AWS_STACK_NAME_PREFIX}/${key}`;
         if (!this.configEntries.has(paramName)) {
             throw new Error(`Missing SSM parameter ${paramName}`);
         }
@@ -110,7 +112,7 @@ export class ConfigService {
     }
 
     private getParameterName(parameterNameSuffix: string) {
-        return `/${PARAMETER_PREFIX}/${parameterNameSuffix}`;
+        return `/${AWS_STACK_NAME_PREFIX}/${parameterNameSuffix}`;
     }
 
     private validateNameSuffix(nameSuffix?: string, nameSuffixValue?: string): [string, string] {

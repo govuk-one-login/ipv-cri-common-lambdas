@@ -18,7 +18,7 @@ export enum ConfigKey {
     STRENGTH_SCORE = "strengthScore",
 }
 
-export interface AbsoluteParameterPath {
+export interface ParameterPath {
     prefix: string;
     suffix: string;
 }
