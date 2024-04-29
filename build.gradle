@@ -11,7 +11,7 @@ java {
 
 ext {
 	dependencyVersions = [
-
+// test
 		aws_lambda_events_version: "3.11.0",
 		jackson_version          : "2.13.1",
 		nimbusds_oauth_version   : "11.2",
