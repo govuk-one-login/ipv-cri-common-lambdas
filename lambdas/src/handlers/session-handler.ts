@@ -60,7 +60,13 @@ export class SessionLambda implements LambdaInterface {
                 logger.info("Personal identity created");
             }
 
-            await this.sendAuditEvent(sessionId, sessionRequestSummary, clientIpAddress, encodedDeviceInformation);
+            await this.sendAuditEvent(
+                sessionId,
+                sessionRequestSummary,
+                clientIpAddress,
+                encodedDeviceInformation,
+                jwtPayload["evidence_requested"] as string,
+            );
             metrics.addDimension("issuer", sessionRequestSummary.clientId);
             metrics.addMetric(SESSION_CREATED_METRIC, MetricUnits.Count, 1);
 
@@ -78,10 +84,7 @@ export class SessionLambda implements LambdaInterface {
         }
     }
 
-    private createSessionRequestSummary(
-        jwtPayload: JWTPayload,
-        clientIpAddress: string | undefined,
-    ): SessionRequestSummary {
+    private createSessionRequestSummary(jwtPayload: JWTPayload, clientIpAddress?: string): SessionRequestSummary {
         return {
             clientId: jwtPayload["client_id"] as string,
             clientIpAddress: clientIpAddress as string,
@@ -93,11 +96,13 @@ export class SessionLambda implements LambdaInterface {
             evidenceRequested: jwtPayload["evidence_requested"] as EvidenceRequest,
         };
     }
+
     private async sendAuditEvent(
         sessionId: string,
         sessionRequest: SessionRequestSummary,
         clientIpAddress?: string,
         encodedDeviceInformation?: string,
+        evidenceRequested?: string,
     ) {
         await this.auditService.sendAuditEvent(AuditEventType.START, {
             clientIpAddress: clientIpAddress,
@@ -111,6 +116,13 @@ export class SessionLambda implements LambdaInterface {
                 personIdentity: {
                     device_information: {
                         encoded: encodedDeviceInformation,
+                    },
+                },
+            }),
+            ...(evidenceRequested && {
+                extensions: {
+                    evidence: {
+                        context: "identity_check",
                     },
                 },
             }),
