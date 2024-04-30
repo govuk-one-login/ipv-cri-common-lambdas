@@ -669,7 +669,7 @@ Resources:
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/AuthRequestKmsEncryptionKeyId"
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/PersonIdentityTableName"
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/verifiable-credential/issuer"
-                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${CriIdentifier}/strengthScore"
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/${CriIdentifier}/strengthScore"
         - Statement:
             - Sid: auditEventQueueKmsEncryptionKeyPermission
               Effect: Allow
@@ -1032,7 +1032,7 @@ Resources:
   EvidenceRequestedStrengthScoreParameter:
     Type: AWS::SSM::Parameter
     Properties:
-      Name: !Sub "/${CriIdentifier}/strengthScore"
+      Name: !Sub "/${AWS::StackName}/${CriIdentifier}/strengthScore"
       Type: String
       Value: !FindInMap [EvidenceRequestedMapping, !Ref CriIdentifier, "strengthScore"]
       Description: The CRI supported strength score
