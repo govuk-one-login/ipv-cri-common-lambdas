@@ -3,7 +3,7 @@ import middy from "@middy/core";
 import { injectLambdaContext, Logger } from "@aws-lambda-powertools/logger";
 import { Metrics, MetricUnits } from "@aws-lambda-powertools/metrics";
 import { APIGatewayProxyEvent, APIGatewayProxyEventHeaders, Context } from "aws-lambda";
-import { ClientConfigKey, CommonConfigKey } from "../../../src/types/config-keys";
+import { ClientConfigKey, CommonConfigKey, ConfigKey } from "../../../src/types/config-keys";
 import { ConfigService } from "../../../src/common/config/config-service";
 import { AuditService } from "../../../src/common/services/audit-service";
 import { AuditEventType } from "../../../src/types/audit-event";
@@ -316,6 +316,37 @@ describe("SessionLambda", () => {
         });
     });
 
+    it("should send the audit event", async () => {
+        const spy = jest.spyOn(auditService.prototype, "sendAuditEvent");
+        await lambdaHandler(mockEvent, {} as Context);
+        jest.spyOn(sessionRequestValidator.prototype, "validateJwt").mockReturnValue(
+            new Promise<JWTPayload>((res) =>
+                res({
+                    client_id: "test-client-id",
+                    govuk_signin_journey_id: "test-journey-id",
+                    persistent_session_id: "test-persistent-session-id",
+                    redirect_uri: "test-redirect-uri",
+                    state: "test-state",
+                    sub: "test-sub",
+                    shared_claims: mockPerson,
+                    evidence_requested: {
+                        scoringPolicy: "gpg45",
+                        strengthScore: 1,
+                    },
+                } as JWTPayload),
+            ),
+        );
+        expect(spy).toHaveBeenCalledWith(AuditEventType.START, {
+            clientIpAddress: "test-client-ip-address",
+            sessionItem: {
+                sessionId: "test-session-id",
+                subject: "test-sub",
+                persistentSessionId: "test-persistent-session-id",
+                clientSessionId: "test-journey-id",
+            },
+        });
+    });
+
     it("should send the audit event with device_information if it exists", async () => {
         const spy = jest.spyOn(auditService.prototype, "sendAuditEvent");
         await lambdaHandler(
@@ -367,5 +398,93 @@ describe("SessionLambda", () => {
         );
         expect(result.statusCode).toBe(500);
         expect(result.body).toContain("1025: Request failed due to a server error");
+    });
+
+    describe("SessionLambda has evidenceRequested", () => {
+        const previousCriIdentifier = process.env.CRI_IDENTIFIER as string;
+        beforeEach(() => {
+            process.env.CRI_IDENTIFIER = "di-ipv-cri-check-hmrc-api";
+
+            lambdaHandler = middy(sessionLambda.handler.bind(sessionLambda))
+                .use(
+                    errorMiddleware(logger.prototype, metrics.prototype, {
+                        metric_name: SESSION_CREATED_METRIC,
+                        message: "Session Lambda error occurred",
+                    }),
+                )
+                .use(injectLambdaContext(logger.prototype, { clearState: true }))
+                .use(
+                    initialiseConfigMiddleware({
+                        configService: configService.prototype,
+                        config_keys: [
+                            CommonConfigKey.SESSION_TABLE_NAME,
+                            CommonConfigKey.SESSION_TTL,
+                            CommonConfigKey.PERSON_IDENTITY_TABLE_NAME,
+                            CommonConfigKey.DECRYPTION_KEY_ID,
+                            CommonConfigKey.VC_ISSUER,
+                        ],
+                    }),
+                )
+                .use(decryptJweMiddleware(logger.prototype, { jweDecrypter: jweDecrypter.prototype }))
+                .use(
+                    initialiseClientConfigMiddleware({
+                        configService: configService.prototype,
+                        client_config_keys: [
+                            ClientConfigKey.JWT_AUDIENCE,
+                            ClientConfigKey.JWT_ISSUER,
+                            ClientConfigKey.JWT_PUBLIC_SIGNING_KEY,
+                            ClientConfigKey.JWT_REDIRECT_URI,
+                            ClientConfigKey.JWT_SIGNING_ALGORITHM,
+                        ],
+                        client_absolute_paths: [{ prefix: previousCriIdentifier, suffix: ConfigKey.STRENGTH_SCORE }],
+                    }),
+                )
+                .use(
+                    validateJwtMiddleware(logger.prototype, {
+                        configService: configService.prototype,
+                        jwtValidatorFactory: sessionRequestValidatorFactory.prototype,
+                    }),
+                )
+                .use(setGovUkSigningJourneyIdMiddleware(logger.prototype));
+            process.env.CRI_IDENTIFIER = previousCriIdentifier;
+            jest.spyOn(sessionRequestValidator.prototype, "validateJwt").mockReturnValue(
+                new Promise<JWTPayload>((res) =>
+                    res({
+                        client_id: "test-client-id",
+                        govuk_signin_journey_id: "test-journey-id",
+                        persistent_session_id: "test-persistent-session-id",
+                        redirect_uri: "test-redirect-uri",
+                        state: "test-state",
+                        sub: "test-sub",
+                        shared_claims: mockPerson,
+                        evidence_requested: {
+                            scoringPolicy: "gpg45",
+                            strengthScore: 2,
+                        },
+                    } as JWTPayload),
+                ),
+            );
+        });
+        it("should send the audit event with context scope identity_check given a request with evidence_requested", async () => {
+            const spy = jest.spyOn(auditService.prototype, "sendAuditEvent");
+            process.env.CRI_IDENTIFIER = "di-ipv-cri-check-hmrc-api";
+
+            await lambdaHandler(mockEvent, {} as Context);
+
+            expect(spy).toHaveBeenCalledWith(AuditEventType.START, {
+                clientIpAddress: "test-client-ip-address",
+                sessionItem: {
+                    sessionId: "test-session-id",
+                    subject: "test-sub",
+                    persistentSessionId: "test-persistent-session-id",
+                    clientSessionId: "test-journey-id",
+                },
+                extensions: {
+                    evidence: {
+                        context: "identity_check",
+                    },
+                },
+            });
+        });
     });
 });

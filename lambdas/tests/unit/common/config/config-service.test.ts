@@ -147,7 +147,7 @@ describe("ConfigService", () => {
                 "/di-ipv-cri-check-hmrc-api/strengthScore": "2",
             });
 
-            await configService.initConfigUsingAbsolutePath(
+            await configService.initConfigWithCriIdentifierInPath(
                 "test",
                 "di-ipv-cri-check-hmrc-api",
                 ConfigKey.STRENGTH_SCORE,
@@ -155,7 +155,7 @@ describe("ConfigService", () => {
 
             expect(ssmProvider.getParametersByName).toBeCalledWith(
                 {
-                    "/di-ipv-cri-check-hmrc-api/strengthScore": {},
+                    "/di-ipv-cri-common-lambdas/di-ipv-cri-check-hmrc-api/strengthScore": {},
                 },
                 expect.objectContaining({
                     maxAge: 300,
@@ -170,7 +170,7 @@ describe("ConfigService", () => {
             });
 
             expect(
-                configService.initConfigUsingAbsolutePath(
+                configService.initConfigWithCriIdentifierInPath(
                     "test",
                     "di-ipv-cri-check-hmrc-api",
                     ConfigKey.STRENGTH_SCORE,
@@ -179,7 +179,7 @@ describe("ConfigService", () => {
 
             expect(ssmProvider.getParametersByName).toBeCalledWith(
                 {
-                    "/di-ipv-cri-check-hmrc-api/strengthScore": {},
+                    "/di-ipv-cri-common-lambdas/di-ipv-cri-check-hmrc-api/strengthScore": {},
                 },
                 expect.objectContaining({
                     maxAge: 300,
