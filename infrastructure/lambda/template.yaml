@@ -52,6 +52,9 @@ Conditions:
   IsDevEnvironment: !Equals
     - !Ref Environment
     - dev
+  IsDevOrBuildEnvironment: !Or
+    - !Equals [ !Ref Environment, dev ]
+    - !Equals [ !Ref Environment, build ]
   IsDevPlatformDeploy: !Equals
     - !FindInMap [CriVpcMapping, !Ref CriIdentifier, !Ref Environment]
     - "di-devplatform-deploy"
@@ -148,6 +151,7 @@ Globals:
         DT_OPEN_TELEMETRY_ENABLE_INTEGRATION: "true"
 
 Mappings:
+
   EnvironmentConfiguration:
     dev:
       dynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
@@ -473,7 +477,45 @@ Mappings:
 
 
 Resources:
-  
+
+  #############################
+  # SPIKE - New consumer queue
+  #############################
+
+  AuditEventQueue:
+    Type: AWS::SQS::Queue
+    Condition: IsDevOrBuildEnvironment
+    Properties:
+      MessageRetentionPeriod: 604800 # 7 days
+      KmsMasterKeyId: !Ref AuditEventQueueEncryptionKeyAlias
+      RedriveAllowPolicy:
+        redrivePermission: denyAll
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt AuditEventDeadLetterQueue.Arn
+        maxReceiveCount: 10
+
+  AuditEventDeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Condition: IsDevOrBuildEnvironment
+    Properties:
+      MessageRetentionPeriod: 604800 # 7 days
+      KmsMasterKeyId: !Ref AuditEventQueueEncryptionKeyAlias
+
+  AuditEventQueueEncryptionKey:
+    Type: AWS::KMS::Key
+    Condition: IsDevOrBuildEnvironment
+    Properties:
+      Description: Symmetric key used to encrypt audit messages at rest in SQS
+      EnableKeyRotation: true
+      KeySpec: SYMMETRIC_DEFAULT
+
+  AuditEventQueueEncryptionKeyAlias:
+    Type: AWS::KMS::Alias
+    Condition: IsDevOrBuildEnvironment
+    Properties:
+      AliasName: !Sub alias/${AWS::StackName}/auditEventQueueEncryptionKey
+      TargetKeyId: !Ref AuditEventQueueEncryptionKey
+
   #########################
   # Common OAuth Lambdas  #
   #########################
@@ -1567,9 +1609,22 @@ Resources:
       Value: ES256
 
 Outputs:
-  StackName:
-    Description: "CloudFormation stack name"
-    Value: !Sub "${AWS::StackName}"
+  AuditEventQueueArn:
+    Value: !Ref AuditEventQueue
+    Export:
+      Name: !Sub ${AWS::StackName}-AuditEventQueueArn
+  AuditEventQueueUrl:
+    Value: !GetAtt AuditEventQueue.QueueUrl
+    Export:
+      Name: !Sub ${AWS::StackName}-AuditEventQueueUrl
+  AuditEventQueueName:
+    Value: !GetAtt AuditEventQueue.QueueName
+    Export:
+      Name: !Sub ${AWS::StackName}-AuditEventQueueName
+  AuditEventQueueEncryptionKeyArn:
+    Value: !GetAtt AuditEventQueueEncryptionKey.Arn
+    Export:
+      Name: !Sub ${AWS::StackName}-AuditEventQueueEncryptionKeyArn
   PreMergeDevOnlyApiId:
     Condition: IsDevEnvironment
     Description: "API GatewayID of the dev-only common lambdas API"
