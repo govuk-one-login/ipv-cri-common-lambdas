@@ -49,6 +49,52 @@ describe("SessionLambda", () => {
     let sessionRequestValidatorFactory: jest.MockedObjectDeep<typeof SessionRequestValidatorFactory>;
 
     const mockPerson: PersonIdentity = {
+        socialSecurityRecord: [
+            {
+                personalNumber: "AA000003D",
+            },
+        ],
+        name: [
+            {
+                nameParts: [
+                    {
+                        type: "firstName",
+                        value: "Jane",
+                    },
+                    {
+                        type: "lastName",
+                        value: "Doe",
+                    },
+                ],
+            },
+        ],
+        birthDate: [
+            {
+                value: "2023-01-01",
+            },
+        ],
+        address: [
+            {
+                uprn: 0,
+                organisationName: "N/A",
+                departmentName: "N/A",
+                subBuildingName: "N/A",
+                buildingNumber: "1",
+                buildingName: "N/A",
+                dependentStreetName: "N/A",
+                streetName: "Test Street",
+                doubleDependentAddressLocality: "N/A",
+                dependentAddressLocality: "N/A",
+                addressLocality: "N/A",
+                postalCode: "AA1 1AA",
+                addressCountry: "UK",
+                validFrom: "2022-01",
+                validUntil: "2023-01",
+            },
+        ],
+    };
+
+    const mockPersonNoSocialSecurityRecord: PersonIdentity = {
         name: [
             {
                 nameParts: [
@@ -484,6 +530,87 @@ describe("SessionLambda", () => {
                         context: "identity_check",
                     },
                 },
+            });
+        });
+    });
+
+    describe("SessionLambda has evidenceRequested with missing socialSecurityRecord", () => {
+        const previousCriIdentifier = process.env.CRI_IDENTIFIER as string;
+        beforeEach(() => {
+            process.env.CRI_IDENTIFIER = "di-ipv-cri-check-hmrc-api";
+
+            lambdaHandler = middy(sessionLambda.handler.bind(sessionLambda))
+                .use(
+                    errorMiddleware(logger.prototype, metrics.prototype, {
+                        metric_name: SESSION_CREATED_METRIC,
+                        message: "Session Lambda error occurred",
+                    }),
+                )
+                .use(injectLambdaContext(logger.prototype, { clearState: true }))
+                .use(
+                    initialiseConfigMiddleware({
+                        configService: configService.prototype,
+                        config_keys: [
+                            CommonConfigKey.SESSION_TABLE_NAME,
+                            CommonConfigKey.SESSION_TTL,
+                            CommonConfigKey.PERSON_IDENTITY_TABLE_NAME,
+                            CommonConfigKey.DECRYPTION_KEY_ID,
+                            CommonConfigKey.VC_ISSUER,
+                        ],
+                    }),
+                )
+                .use(decryptJweMiddleware(logger.prototype, { jweDecrypter: jweDecrypter.prototype }))
+                .use(
+                    initialiseClientConfigMiddleware({
+                        configService: configService.prototype,
+                        client_config_keys: [
+                            ClientConfigKey.JWT_AUDIENCE,
+                            ClientConfigKey.JWT_ISSUER,
+                            ClientConfigKey.JWT_PUBLIC_SIGNING_KEY,
+                            ClientConfigKey.JWT_REDIRECT_URI,
+                            ClientConfigKey.JWT_SIGNING_ALGORITHM,
+                        ],
+                        client_absolute_paths: [{ prefix: previousCriIdentifier, suffix: ConfigKey.STRENGTH_SCORE }],
+                    }),
+                )
+                .use(
+                    validateJwtMiddleware(logger.prototype, {
+                        configService: configService.prototype,
+                        jwtValidatorFactory: sessionRequestValidatorFactory.prototype,
+                    }),
+                )
+                .use(setGovUkSigningJourneyIdMiddleware(logger.prototype));
+            process.env.CRI_IDENTIFIER = previousCriIdentifier;
+            jest.spyOn(sessionRequestValidator.prototype, "validateJwt").mockReturnValue(
+                new Promise<JWTPayload>((res) =>
+                    res({
+                        client_id: "test-client-id",
+                        govuk_signin_journey_id: "test-journey-id",
+                        persistent_session_id: "test-persistent-session-id",
+                        redirect_uri: "test-redirect-uri",
+                        state: "test-state",
+                        sub: "test-sub",
+                        shared_claims: mockPersonNoSocialSecurityRecord,
+                        evidence_requested: {
+                            scoringPolicy: "gpg45",
+                            strengthScore: 2,
+                        },
+                    } as JWTPayload),
+                ),
+            );
+        });
+        it("should send start audit event with context scope identity_check given a request with evidence_requested an no socialSecurityRecord", async () => {
+            const saveSpy = jest.spyOn(sessionService.prototype, "saveSessionDetails");
+
+            process.env.CRI_IDENTIFIER = "di-ipv-cri-check-hmrc-api";
+
+            await lambdaHandler(mockEvent, {} as Context);
+
+            expect(saveSpy).toHaveBeenCalledWith({
+                sessionId: "test-session-id",
+                subject: "test-sub",
+                persistentSessionId: "test-persistent-session-id",
+                clientSessionId: "test-journey-id",
             });
         });
     });
