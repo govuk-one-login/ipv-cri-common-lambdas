@@ -1,12 +1,13 @@
 import { DynamoDBDocument, PutCommand } from "@aws-sdk/lib-dynamodb";
 import { ConfigService } from "../common/config/config-service";
 import { CommonConfigKey } from "../types/config-keys";
-import { Address, BirthDate, Name, PersonIdentity } from "../types/person-identity";
+import { Address, BirthDate, Name, PersonIdentity, SocialSecurityRecord } from "../types/person-identity";
 import {
     PersonIdentityAddress,
     PersonIdentityDateOfBirth,
     PersonIdentityItem,
     PersonIdentityName,
+    PersonIdentitySocialSecurityRecord,
 } from "../types/person-identity-item";
 
 export class PersonIdentityService {
@@ -40,6 +41,7 @@ export class PersonIdentityService {
             birthDates: this.mapBirthDates(sharedClaims.birthDate),
             expiryDate: sessionExpirationEpoch,
             names: this.mapNames(sharedClaims.name),
+            socialSecurityRecord: this.mapNino(sharedClaims.socialSecurityRecord),
         };
     }
     private mapAddresses(addresses: Address[]): PersonIdentityAddress[] {
@@ -71,5 +73,8 @@ export class PersonIdentityService {
                 value: namePart.value,
             })),
         }));
+    }
+    private mapNino(socialSecurityRecord: SocialSecurityRecord[]): PersonIdentitySocialSecurityRecord[] {
+        return socialSecurityRecord?.map((record) => ({ personalNumber: record.personalNumber }));
     }
 }

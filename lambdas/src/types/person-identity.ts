@@ -1,3 +1,7 @@
+export interface SocialSecurityRecord {
+    personalNumber?: string;
+}
+
 export interface NamePart {
     type: string;
     value: string;
@@ -30,6 +34,7 @@ export interface Address {
 }
 
 export interface PersonIdentity {
+    socialSecurityRecord?: SocialSecurityRecord[];
     name: Name[];
     birthDate: BirthDate[];
     address: Address[];
