@@ -67,7 +67,8 @@ public class APISteps {
             throws URISyntaxException, IOException, InterruptedException {
         LOG.info("DEV_SESSION_URI is --------" + devSessionUri);
         response = IpvCoreStubUtil.sendSessionRequest(devSessionUri, sessionRequestBody);
-        responseBodyMap = objectMapper.readValue(response.body(), new TypeReference<>() {});
+        responseBodyMap = objectMapper.readValue(response.body(), new TypeReference<>() {
+        });
     }
 
     @Then("user gets a session id")
@@ -81,7 +82,8 @@ public class APISteps {
     public void user_sends_an_empty_request_to_session_end_point()
             throws URISyntaxException, IOException, InterruptedException {
         response = IpvCoreStubUtil.sendSessionRequest(devSessionUri, "");
-        responseBodyMap = objectMapper.readValue(response.body(), new TypeReference<>() {});
+        responseBodyMap = objectMapper.readValue(response.body(), new TypeReference<>() {
+        });
     }
 
     @Then("expect a status code of {int} in the response")
@@ -92,7 +94,8 @@ public class APISteps {
     @And("the request body has no {word}")
     public void remove_key(String key) throws IOException {
         Map<String, String> map =
-                objectMapper.readValue(sessionRequestBody, new TypeReference<>() {});
+                objectMapper.readValue(sessionRequestBody, new TypeReference<>() {
+                });
         map.remove(key);
         sessionRequestBody = objectMapper.writeValueAsString(map);
     }
