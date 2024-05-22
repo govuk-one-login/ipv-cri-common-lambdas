@@ -81,3 +81,4 @@ jobs:
             cri:deployment-source=github-actions
           parameters: |
             Environment=dev
+            CreateMockTxmaResourcesOverride=true

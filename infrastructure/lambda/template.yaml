@@ -34,7 +34,7 @@ Parameters:
     Description: "The stack containing the TXMA infrastructure"
     Type: String
     Default: txma-infrastructure
-  CreateMockTxmaResources:
+  CreateMockTxmaResourcesOverride:
     Description: "Mock TXMA SQS Queue"
     Type: String
     Default: "false"
@@ -71,7 +71,7 @@ Conditions:
   CreateMockTxmaResources:
     Fn::And:
       - !Condition IsDevEnvironment
-      - !Equals [!Ref CreateMockTxmaResources, "true"]
+      - !Equals [!Ref CreateMockTxmaResourcesOverride, "true"]
 
   IsCSLSDisabled: !And
     - !Not
