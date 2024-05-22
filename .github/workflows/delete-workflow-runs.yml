@@ -1,0 +1,28 @@
+name: Delete workflow runs
+on:
+  push:
+    branches: [ delete-workflow-runs ]
+
+concurrency:
+  group: delete-workflow-runs
+  cancel-in-progress: false
+
+jobs:
+  delete-workflow-runs:
+    name: Delete workflow runs
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      contents: read
+    steps:
+      # https://github.com/Mattraks/delete-workflow-runs
+      - name: Delete workflow runs
+        uses: Mattraks/delete-workflow-runs@v2
+        with:
+          token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          delete_workflow_pattern: pages-build-deployment
+          # delete_workflow_by_state_pattern: deleted
+          keep_minimum_runs: 0
+          retain_days: 0
+          dry_run: true
