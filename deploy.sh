@@ -31,5 +31,6 @@ sam deploy --stack-name "$stack_name" \
   cri:deployment-source=manual \
   --parameter-overrides \
   Environment=dev \
+  CreateMockTxmaResources=true \
   ${audit_event_name_prefix:+AuditEventNamePrefix=$audit_event_name_prefix} \
   ${cri_identifier:+CriIdentifier=$cri_identifier}
