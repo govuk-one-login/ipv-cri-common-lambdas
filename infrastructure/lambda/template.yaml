@@ -503,7 +503,7 @@ Resources:
         - DynamoDBWritePolicy:
             TableName: !Ref PersonIdentityTable
         - SQSSendMessagePolicy:
-            QueueName: !If [CreateMockTxmaResources, !GetAtt MockAuditEventQueue.QueueName, !ImportValue AuditEventQueueName]
+            QueueName: !ImportValue AuditEventQueueName
         - KMSDecryptPolicy:
             KeyId: !ImportValue core-infrastructure-CriDecryptionKey1Id
         - Statement:
