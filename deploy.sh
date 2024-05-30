@@ -12,10 +12,20 @@ if ! [[ "$stack_name" ]]; then
   echo "» Using stack name '$stack_name'"
 fi
 
+if [ -z "$audit_event_name_prefix" ]
+then
+  audit_event_name_prefix="/common-cri-parameters/AuditEventNamePrefix"
+fi
+
+if [ -z "$cri_identifier" ]
+then
+  cri_identifier="/common-cri-parameters/CriIdentifier"
+fi
+
 sam validate -t infrastructure/lambda/template.yaml
 sam validate -t infrastructure/lambda/template.yaml --lint
 
-sam build -t infrastructure/lambda/template.yaml --cached --parallel
+sam build -t infrastructure/lambda/template.yaml --no-cached --parallel
 
 sam deploy --stack-name "$stack_name" \
   --no-fail-on-empty-changeset \
@@ -27,9 +37,10 @@ sam deploy --stack-name "$stack_name" \
   --tags \
   cri:component=ipv-cri-common-lambdas \
   cri:stack-type=dev \
-  cri:application=Orange \
+  cri:application=Lime \
   cri:deployment-source=manual \
   --parameter-overrides \
   Environment=dev \
+  CreateMockTxmaResourcesOverride=true \
   ${audit_event_name_prefix:+AuditEventNamePrefix=$audit_event_name_prefix} \
   ${cri_identifier:+CriIdentifier=$cri_identifier}
