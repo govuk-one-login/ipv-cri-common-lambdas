@@ -1,5 +1,5 @@
 export interface SocialSecurityRecord {
-    personalNumber?: string;
+    personalNumber: string;
 }
 
 export interface NamePart {
