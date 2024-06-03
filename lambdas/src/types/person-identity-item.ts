@@ -39,5 +39,5 @@ export interface PersonIdentityItem {
     names: PersonIdentityName[];
     birthDates: PersonIdentityDateOfBirth[];
     expiryDate: number;
-    socialSecurityRecord: PersonIdentitySocialSecurityRecord[];
+    socialSecurityRecord?: PersonIdentitySocialSecurityRecord[];
 }

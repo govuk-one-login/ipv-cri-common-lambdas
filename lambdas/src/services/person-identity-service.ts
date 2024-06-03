@@ -74,7 +74,7 @@ export class PersonIdentityService {
             })),
         }));
     }
-    private mapNino(socialSecurityRecord: SocialSecurityRecord[]): PersonIdentitySocialSecurityRecord[] {
-        return socialSecurityRecord?.map((record) => ({ personalNumber: record.personalNumber }));
+    private mapNino(socialSecurityRecord?: SocialSecurityRecord[]): PersonIdentitySocialSecurityRecord[] | undefined {
+        return socialSecurityRecord?.map((record) => ({ personalNumber: record?.personalNumber }));
     }
 }

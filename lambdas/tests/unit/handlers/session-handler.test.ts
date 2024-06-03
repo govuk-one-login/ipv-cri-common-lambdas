@@ -49,11 +49,6 @@ describe("SessionLambda", () => {
     let sessionRequestValidatorFactory: jest.MockedObjectDeep<typeof SessionRequestValidatorFactory>;
 
     const mockPerson: PersonIdentity = {
-        socialSecurityRecord: [
-            {
-                personalNumber: "AA000003D",
-            },
-        ],
         name: [
             {
                 nameParts: [
@@ -94,46 +89,12 @@ describe("SessionLambda", () => {
         ],
     };
 
-    const mockPersonNoSocialSecurityRecord: PersonIdentity = {
-        name: [
-            {
-                nameParts: [
-                    {
-                        type: "firstName",
-                        value: "Jane",
-                    },
-                    {
-                        type: "lastName",
-                        value: "Doe",
-                    },
-                ],
-            },
-        ],
-        birthDate: [
-            {
-                value: "2023-01-01",
-            },
-        ],
-        address: [
-            {
-                uprn: 0,
-                organisationName: "N/A",
-                departmentName: "N/A",
-                subBuildingName: "N/A",
-                buildingNumber: "1",
-                buildingName: "N/A",
-                dependentStreetName: "N/A",
-                streetName: "Test Street",
-                doubleDependentAddressLocality: "N/A",
-                dependentAddressLocality: "N/A",
-                addressLocality: "N/A",
-                postalCode: "AA1 1AA",
-                addressCountry: "UK",
-                validFrom: "2022-01",
-                validUntil: "2023-01",
-            },
-        ],
-    };
+    const mockPersonWithSocialSecurityRecord: PersonIdentity = { ...mockPerson };
+    mockPersonWithSocialSecurityRecord.socialSecurityRecord = [
+        {
+            personalNumber: "AA000003D",
+        },
+    ];
 
     const mockMap = new Map<string, string>();
 
@@ -502,7 +463,7 @@ describe("SessionLambda", () => {
                         redirect_uri: "test-redirect-uri",
                         state: "test-state",
                         sub: "test-sub",
-                        shared_claims: mockPerson,
+                        shared_claims: mockPersonWithSocialSecurityRecord,
                         evidence_requested: {
                             scoringPolicy: "gpg45",
                             strengthScore: 2,
@@ -531,6 +492,62 @@ describe("SessionLambda", () => {
                     },
                 },
             });
+        });
+        it("should save to the session with socialSecurityRecord included", async () => {
+            const saveSpy = jest.spyOn(personIdentityService.prototype, "savePersonIdentity");
+
+            process.env.CRI_IDENTIFIER = "ipv-cri-kbv-hmrc-api";
+
+            await lambdaHandler(mockEvent, {} as Context);
+
+            expect(saveSpy).toHaveBeenCalledWith(
+                {
+                    address: [
+                        {
+                            addressCountry: "UK",
+                            addressLocality: "N/A",
+                            buildingName: "N/A",
+                            buildingNumber: "1",
+                            departmentName: "N/A",
+                            dependentAddressLocality: "N/A",
+                            dependentStreetName: "N/A",
+                            doubleDependentAddressLocality: "N/A",
+                            organisationName: "N/A",
+                            postalCode: "AA1 1AA",
+                            streetName: "Test Street",
+                            subBuildingName: "N/A",
+                            uprn: 0,
+                            validFrom: "2022-01",
+                            validUntil: "2023-01",
+                        },
+                    ],
+                    birthDate: [
+                        {
+                            value: "2023-01-01",
+                        },
+                    ],
+                    name: [
+                        {
+                            nameParts: [
+                                {
+                                    type: "firstName",
+                                    value: "Jane",
+                                },
+                                {
+                                    type: "lastName",
+                                    value: "Doe",
+                                },
+                            ],
+                        },
+                    ],
+                    socialSecurityRecord: [
+                        {
+                            personalNumber: "AA000003D",
+                        },
+                    ],
+                },
+                "test-session-id",
+            );
         });
     });
 
@@ -590,7 +607,7 @@ describe("SessionLambda", () => {
                         redirect_uri: "test-redirect-uri",
                         state: "test-state",
                         sub: "test-sub",
-                        shared_claims: mockPersonNoSocialSecurityRecord,
+                        shared_claims: mockPerson,
                         evidence_requested: {
                             scoringPolicy: "gpg45",
                             strengthScore: 2,
@@ -599,19 +616,56 @@ describe("SessionLambda", () => {
                 ),
             );
         });
-        it("should send start audit event with context scope identity_check given a request with evidence_requested an no socialSecurityRecord", async () => {
-            const saveSpy = jest.spyOn(sessionService.prototype, "saveSessionDetails");
+        it("should save to the session with no socialSecurityRecord included", async () => {
+            const saveSpy = jest.spyOn(personIdentityService.prototype, "savePersonIdentity");
 
-            process.env.CRI_IDENTIFIER = "di-ipv-cri-check-hmrc-api";
+            process.env.CRI_IDENTIFIER = "ipv-cri-kbv-hmrc-api";
 
             await lambdaHandler(mockEvent, {} as Context);
 
-            expect(saveSpy).toHaveBeenCalledWith({
-                sessionId: "test-session-id",
-                subject: "test-sub",
-                persistentSessionId: "test-persistent-session-id",
-                clientSessionId: "test-journey-id",
-            });
+            expect(saveSpy).toHaveBeenCalledWith(
+                {
+                    address: [
+                        {
+                            addressCountry: "UK",
+                            addressLocality: "N/A",
+                            buildingName: "N/A",
+                            buildingNumber: "1",
+                            departmentName: "N/A",
+                            dependentAddressLocality: "N/A",
+                            dependentStreetName: "N/A",
+                            doubleDependentAddressLocality: "N/A",
+                            organisationName: "N/A",
+                            postalCode: "AA1 1AA",
+                            streetName: "Test Street",
+                            subBuildingName: "N/A",
+                            uprn: 0,
+                            validFrom: "2022-01",
+                            validUntil: "2023-01",
+                        },
+                    ],
+                    birthDate: [
+                        {
+                            value: "2023-01-01",
+                        },
+                    ],
+                    name: [
+                        {
+                            nameParts: [
+                                {
+                                    type: "firstName",
+                                    value: "Jane",
+                                },
+                                {
+                                    type: "lastName",
+                                    value: "Doe",
+                                },
+                            ],
+                        },
+                    ],
+                },
+                "test-session-id",
+            );
         });
     });
 });
