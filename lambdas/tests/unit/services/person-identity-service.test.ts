@@ -44,6 +44,11 @@ describe("PersonIdentityService", () => {
     const sessionId = "test-session-id";
 
     const mockPerson: PersonIdentity = {
+        socialSecurityRecord: [
+            {
+                personalNumber: "AA000003D",
+            },
+        ],
         name: [
             {
                 nameParts: [
@@ -111,12 +116,14 @@ describe("PersonIdentityService", () => {
                 birthDates: mockPerson.birthDate,
                 expiryDate: 1675382400,
                 names: mockPerson.name,
+                socialSecurityRecord: mockPerson.socialSecurityRecord,
             },
         });
     });
 
     it("should avoid formatting blank identities", async () => {
         const newMockPerson: PersonIdentity = {
+            socialSecurityRecord: [],
             name: [],
             birthDate: [],
             address: [],
@@ -131,6 +138,7 @@ describe("PersonIdentityService", () => {
                 birthDates: [],
                 expiryDate: 1675382400,
                 names: [],
+                socialSecurityRecord: [],
             },
         });
     });

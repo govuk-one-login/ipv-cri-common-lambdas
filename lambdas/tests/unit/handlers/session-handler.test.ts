@@ -89,6 +89,13 @@ describe("SessionLambda", () => {
         ],
     };
 
+    const mockPersonWithSocialSecurityRecord: PersonIdentity = { ...mockPerson };
+    mockPersonWithSocialSecurityRecord.socialSecurityRecord = [
+        {
+            personalNumber: "AA000003D",
+        },
+    ];
+
     const mockMap = new Map<string, string>();
 
     const mockEvent = {
@@ -456,7 +463,7 @@ describe("SessionLambda", () => {
                         redirect_uri: "test-redirect-uri",
                         state: "test-state",
                         sub: "test-sub",
-                        shared_claims: mockPerson,
+                        shared_claims: mockPersonWithSocialSecurityRecord,
                         evidence_requested: {
                             scoringPolicy: "gpg45",
                             strengthScore: 2,
@@ -485,6 +492,180 @@ describe("SessionLambda", () => {
                     },
                 },
             });
+        });
+        it("should save to the session with socialSecurityRecord included", async () => {
+            const saveSpy = jest.spyOn(personIdentityService.prototype, "savePersonIdentity");
+
+            process.env.CRI_IDENTIFIER = "ipv-cri-kbv-hmrc-api";
+
+            await lambdaHandler(mockEvent, {} as Context);
+
+            expect(saveSpy).toHaveBeenCalledWith(
+                {
+                    address: [
+                        {
+                            addressCountry: "UK",
+                            addressLocality: "N/A",
+                            buildingName: "N/A",
+                            buildingNumber: "1",
+                            departmentName: "N/A",
+                            dependentAddressLocality: "N/A",
+                            dependentStreetName: "N/A",
+                            doubleDependentAddressLocality: "N/A",
+                            organisationName: "N/A",
+                            postalCode: "AA1 1AA",
+                            streetName: "Test Street",
+                            subBuildingName: "N/A",
+                            uprn: 0,
+                            validFrom: "2022-01",
+                            validUntil: "2023-01",
+                        },
+                    ],
+                    birthDate: [
+                        {
+                            value: "2023-01-01",
+                        },
+                    ],
+                    name: [
+                        {
+                            nameParts: [
+                                {
+                                    type: "firstName",
+                                    value: "Jane",
+                                },
+                                {
+                                    type: "lastName",
+                                    value: "Doe",
+                                },
+                            ],
+                        },
+                    ],
+                    socialSecurityRecord: [
+                        {
+                            personalNumber: "AA000003D",
+                        },
+                    ],
+                },
+                "test-session-id",
+            );
+        });
+    });
+
+    describe("SessionLambda has evidenceRequested with missing socialSecurityRecord", () => {
+        const previousCriIdentifier = process.env.CRI_IDENTIFIER as string;
+        beforeEach(() => {
+            process.env.CRI_IDENTIFIER = "di-ipv-cri-check-hmrc-api";
+
+            lambdaHandler = middy(sessionLambda.handler.bind(sessionLambda))
+                .use(
+                    errorMiddleware(logger.prototype, metrics.prototype, {
+                        metric_name: SESSION_CREATED_METRIC,
+                        message: "Session Lambda error occurred",
+                    }),
+                )
+                .use(injectLambdaContext(logger.prototype, { clearState: true }))
+                .use(
+                    initialiseConfigMiddleware({
+                        configService: configService.prototype,
+                        config_keys: [
+                            CommonConfigKey.SESSION_TABLE_NAME,
+                            CommonConfigKey.SESSION_TTL,
+                            CommonConfigKey.PERSON_IDENTITY_TABLE_NAME,
+                            CommonConfigKey.DECRYPTION_KEY_ID,
+                            CommonConfigKey.VC_ISSUER,
+                        ],
+                    }),
+                )
+                .use(decryptJweMiddleware(logger.prototype, { jweDecrypter: jweDecrypter.prototype }))
+                .use(
+                    initialiseClientConfigMiddleware({
+                        configService: configService.prototype,
+                        client_config_keys: [
+                            ClientConfigKey.JWT_AUDIENCE,
+                            ClientConfigKey.JWT_ISSUER,
+                            ClientConfigKey.JWT_PUBLIC_SIGNING_KEY,
+                            ClientConfigKey.JWT_REDIRECT_URI,
+                            ClientConfigKey.JWT_SIGNING_ALGORITHM,
+                        ],
+                        client_absolute_paths: [{ prefix: previousCriIdentifier, suffix: ConfigKey.STRENGTH_SCORE }],
+                    }),
+                )
+                .use(
+                    validateJwtMiddleware(logger.prototype, {
+                        configService: configService.prototype,
+                        jwtValidatorFactory: sessionRequestValidatorFactory.prototype,
+                    }),
+                )
+                .use(setGovUkSigningJourneyIdMiddleware(logger.prototype));
+            process.env.CRI_IDENTIFIER = previousCriIdentifier;
+            jest.spyOn(sessionRequestValidator.prototype, "validateJwt").mockReturnValue(
+                new Promise<JWTPayload>((res) =>
+                    res({
+                        client_id: "test-client-id",
+                        govuk_signin_journey_id: "test-journey-id",
+                        persistent_session_id: "test-persistent-session-id",
+                        redirect_uri: "test-redirect-uri",
+                        state: "test-state",
+                        sub: "test-sub",
+                        shared_claims: mockPerson,
+                        evidence_requested: {
+                            scoringPolicy: "gpg45",
+                            strengthScore: 2,
+                        },
+                    } as JWTPayload),
+                ),
+            );
+        });
+        it("should save to the session with no socialSecurityRecord included", async () => {
+            const saveSpy = jest.spyOn(personIdentityService.prototype, "savePersonIdentity");
+
+            process.env.CRI_IDENTIFIER = "ipv-cri-kbv-hmrc-api";
+
+            await lambdaHandler(mockEvent, {} as Context);
+
+            expect(saveSpy).toHaveBeenCalledWith(
+                {
+                    address: [
+                        {
+                            addressCountry: "UK",
+                            addressLocality: "N/A",
+                            buildingName: "N/A",
+                            buildingNumber: "1",
+                            departmentName: "N/A",
+                            dependentAddressLocality: "N/A",
+                            dependentStreetName: "N/A",
+                            doubleDependentAddressLocality: "N/A",
+                            organisationName: "N/A",
+                            postalCode: "AA1 1AA",
+                            streetName: "Test Street",
+                            subBuildingName: "N/A",
+                            uprn: 0,
+                            validFrom: "2022-01",
+                            validUntil: "2023-01",
+                        },
+                    ],
+                    birthDate: [
+                        {
+                            value: "2023-01-01",
+                        },
+                    ],
+                    name: [
+                        {
+                            nameParts: [
+                                {
+                                    type: "firstName",
+                                    value: "Jane",
+                                },
+                                {
+                                    type: "lastName",
+                                    value: "Doe",
+                                },
+                            ],
+                        },
+                    ],
+                },
+                "test-session-id",
+            );
         });
     });
 });

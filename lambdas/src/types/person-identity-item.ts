@@ -1,3 +1,7 @@
+export interface PersonIdentitySocialSecurityRecord {
+    personalNumber: string;
+}
+
 export interface PersonIdentityNamePart {
     type: string;
     value: string;
@@ -35,4 +39,5 @@ export interface PersonIdentityItem {
     names: PersonIdentityName[];
     birthDates: PersonIdentityDateOfBirth[];
     expiryDate: number;
+    socialSecurityRecord?: PersonIdentitySocialSecurityRecord[];
 }
