@@ -17,11 +17,8 @@ export class PersonIdentityService {
     ) {}
 
     public async savePersonIdentity(sharedClaims: PersonIdentity, sessionId: string): Promise<string> {
-        const personIdentityItem = this.createPersonIdentityItem(
-            sharedClaims,
-            sessionId,
-            +this.configService.getConfigEntry(CommonConfigKey.SESSION_TTL),
-        );
+        const sessionExpirationEpoch = this.configService.getSessionExpirationEpoch();
+        const personIdentityItem = this.createPersonIdentityItem(sharedClaims, sessionId, sessionExpirationEpoch);
 
         const putSessionCommand = new PutCommand({
             TableName: this.configService.getConfigEntry(CommonConfigKey.PERSON_IDENTITY_TABLE_NAME),
