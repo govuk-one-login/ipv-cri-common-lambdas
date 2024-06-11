@@ -36,8 +36,8 @@ describe("PersonIdentityService", () => {
     jest.spyOn(mockConfigService.prototype, "getConfigEntry").mockImplementation((key: CommonConfigKey) => {
         if (key === CommonConfigKey.PERSON_IDENTITY_TABLE_NAME) {
             return "PersonIdentityTable";
-        } else {
-            return "1675382400";
+        } else if (key === CommonConfigKey.SESSION_TTL) {
+            return 7200;
         }
     });
 
@@ -106,6 +106,7 @@ describe("PersonIdentityService", () => {
     });
 
     it("should correctly format personal identity information", async () => {
+        const expectedExpiry: number = Math.floor((Date.now() + 7200 * 1000) / 1000);
         await personIdentityService.savePersonIdentity(mockPerson, sessionId);
 
         expect(mockPutCommand).toHaveBeenCalledWith({
@@ -114,7 +115,7 @@ describe("PersonIdentityService", () => {
                 sessionId: "test-session-id",
                 addresses: mockPerson.address,
                 birthDates: mockPerson.birthDate,
-                expiryDate: 1675382400,
+                expiryDate: expectedExpiry,
                 names: mockPerson.name,
                 socialSecurityRecord: mockPerson.socialSecurityRecord,
             },
@@ -122,6 +123,7 @@ describe("PersonIdentityService", () => {
     });
 
     it("should avoid formatting blank identities", async () => {
+        const expectedExpiry: number = Math.floor((Date.now() + 7200 * 1000) / 1000);
         const newMockPerson: PersonIdentity = {
             socialSecurityRecord: [],
             name: [],
@@ -136,7 +138,7 @@ describe("PersonIdentityService", () => {
                 sessionId: "test-session-id",
                 addresses: [],
                 birthDates: [],
-                expiryDate: 1675382400,
+                expiryDate: expectedExpiry,
                 names: [],
                 socialSecurityRecord: [],
             },
