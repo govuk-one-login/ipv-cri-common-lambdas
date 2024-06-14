@@ -1,19 +1,12 @@
-# di-ipv-cri-common-lambdas
+# di-ipv-cri-common-lambdas: DI IPV Credential Issuer Common Lambdas
 
-DI IPV Credential Issuer Common Lambdas
+This repository is the home for common CRI Lambdas supporting Cloud Formation infrastructure which is shared or sensitive. If you are making changes to this repo please update [RELEASE_NOTES](./RELEASE_NOTES.md) so that teams can check for changes before re-deploying.
 
-This code runs inside its own Repo
+The code in this repository is deployed and promoted through the environments using GitHub actions and the dev platform team implementation.
 
-This repository is the home for common CRI Lambdas supporting Cloud Formation infrastructure which is shared or sensitive.
+The automated deployments are triggered on a push to main after PR approval and GitHub secrets determine deployments.
 
-The code in this repository is deployed and promoted through the environments using GitHub actions and
-the dev platform team implementation.
-
-The automated deployments are triggered on a push to main after PR approval.
-
-GitHub secrets are required for deployment.
-
-Required GitHub secrets:
+## Required GitHub secrets:
 
 Common CRI secrets for dev environments:
 
