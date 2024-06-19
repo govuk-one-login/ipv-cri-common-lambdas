@@ -16,6 +16,7 @@ export enum ClientConfigKey {
 
 export enum ConfigKey {
     STRENGTH_SCORE = "strengthScore",
+    CRI_EVIDENCE_PROPERTIES = "evidenceProperties",
 }
 
 export interface ParameterPath {

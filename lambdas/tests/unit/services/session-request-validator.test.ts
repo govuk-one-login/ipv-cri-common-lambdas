@@ -8,6 +8,7 @@ import {
 import { ClientConfigKey } from "../../../src/types/config-keys";
 import { PersonIdentity } from "../../../src/types/person-identity";
 import { SessionRequestValidationConfig } from "../../../src/types/session-request-validation-config";
+import { CRIEvidenceProperties } from "../../../src/services/cri_evidence_properties";
 
 describe("session-request-validator.ts", () => {
     const logger = new Logger();
@@ -294,6 +295,136 @@ describe("session-request-validator.ts", () => {
                     details: "Invalid state parameter",
                 }),
             );
+        });
+    });
+
+    describe("sessionRequestValidator for di-ipv-cri-kbv-api", () => {
+        let sessionRequestValidator: SessionRequestValidator;
+        let sessionRequestValidationConfig: SessionRequestValidationConfig;
+        const jwtVerifier = jest.mocked(JwtVerifier);
+
+        beforeEach(() => {
+            sessionRequestValidationConfig = {
+                expectedJwtRedirectUri: "redirect-uri",
+            } as SessionRequestValidationConfig;
+
+            sessionRequestValidator = new SessionRequestValidator(
+                sessionRequestValidationConfig,
+                jwtVerifier.prototype,
+                undefined,
+                { verificationScore: [1, 2] } as CRIEvidenceProperties,
+            );
+        });
+
+        it("should pass when strengthScore is 1 and cri is di-ipv-cri-kbv-api", async () => {
+            const client_id = "request-client-id";
+            const redirect_uri = "redirect-uri";
+            const state = "state";
+
+            const previousCriIdentifier = process.env.CRI_IDENTIFIER;
+            process.env.CRI_IDENTIFIER = "di-ipv-cri-kbv-api";
+
+            jest.spyOn(jwtVerifier.prototype, "verify").mockReturnValue(
+                await Promise.resolve({
+                    client_id: client_id,
+                    redirect_uri: redirect_uri,
+                    state: state,
+                    evidence_requested: {
+                        scoringPolicy: "gpg45",
+                        verificationScore: 1,
+                    },
+                    shared_claims: personIdentity,
+                } as JWTPayload),
+            );
+
+            await expect(
+                sessionRequestValidator.validateJwt(Buffer.from("test-jwt"), client_id),
+            ).resolves.not.toThrow();
+
+            process.env.CRI_IDENTIFIER = previousCriIdentifier;
+        });
+
+        it("should pass when verifcationScore is 2 and cri is di-ipv-cri-kbv-api", async () => {
+            const client_id = "request-client-id";
+            const redirect_uri = "redirect-uri";
+            const state = "state";
+
+            const previousCriIdentifier = process.env.CRI_IDENTIFIER;
+            process.env.CRI_IDENTIFIER = "di-ipv-cri-kbv-api";
+
+            jest.spyOn(jwtVerifier.prototype, "verify").mockReturnValue(
+                await Promise.resolve({
+                    client_id: client_id,
+                    redirect_uri: redirect_uri,
+                    state: state,
+                    evidence_requested: {
+                        scoringPolicy: "gpg45",
+                        verificationScore: 2,
+                    },
+                    shared_claims: personIdentity,
+                } as JWTPayload),
+            );
+
+            await expect(
+                sessionRequestValidator.validateJwt(Buffer.from("test-jwt"), client_id),
+            ).resolves.not.toThrow();
+
+            process.env.CRI_IDENTIFIER = previousCriIdentifier;
+        });
+
+        it("should pass when verifcationScore is not included in evidence_requested and cri is di-ipv-cri-kbv-api", async () => {
+            const client_id = "request-client-id";
+            const redirect_uri = "redirect-uri";
+            const state = "state";
+
+            const previousCriIdentifier = process.env.CRI_IDENTIFIER;
+            process.env.CRI_IDENTIFIER = "di-ipv-cri-kbv-api";
+
+            jest.spyOn(jwtVerifier.prototype, "verify").mockReturnValue(
+                await Promise.resolve({
+                    client_id: client_id,
+                    redirect_uri: redirect_uri,
+                    state: state,
+                    evidence_requested: {
+                        scoringPolicy: "gpg45",
+                    },
+                    shared_claims: personIdentity,
+                } as JWTPayload),
+            );
+
+            await expect(
+                sessionRequestValidator.validateJwt(Buffer.from("test-jwt"), client_id),
+            ).resolves.not.toThrow();
+
+            process.env.CRI_IDENTIFIER = previousCriIdentifier;
+        });
+
+        it("should fail when verifcationScore is not 1,2 or empty and cri is di-ipv-cri-kbv-api", async () => {
+            const client_id = "request-client-id";
+            const redirect_uri = "redirect-uri";
+            const state = "state";
+
+            const previousCriIdentifier = process.env.CRI_IDENTIFIER;
+            process.env.CRI_IDENTIFIER = "di-ipv-cri-kbv-api";
+
+            jest.spyOn(jwtVerifier.prototype, "verify").mockReturnValue(
+                await Promise.resolve({
+                    client_id: client_id,
+                    redirect_uri: redirect_uri,
+                    state: state,
+                    evidence_requested: {
+                        scoringPolicy: "gpg45",
+                        verificationScore: 3,
+                    },
+                    shared_claims: personIdentity,
+                } as JWTPayload),
+            );
+
+            await expect(async () =>
+                sessionRequestValidator.validateJwt(Buffer.from("test-jwt"), client_id),
+            ).rejects.toThrow(new Error("Session Validation Exception"));
+
+            process.env.CRI_IDENTIFIER = previousCriIdentifier;
         });
     });
 

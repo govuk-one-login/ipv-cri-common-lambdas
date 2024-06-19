@@ -169,7 +169,10 @@ export const lambdaHandler = middy(handlerClass.handler.bind(handlerClass))
                 ClientConfigKey.JWT_REDIRECT_URI,
                 ClientConfigKey.JWT_SIGNING_ALGORITHM,
             ],
-            client_absolute_paths: [{ prefix: criIdentifier, suffix: ConfigKey.STRENGTH_SCORE }],
+            client_absolute_paths: [
+                { prefix: criIdentifier, suffix: ConfigKey.STRENGTH_SCORE },
+                { prefix: criIdentifier, suffix: ConfigKey.CRI_EVIDENCE_PROPERTIES },
+            ],
         }),
     )
     .use(validateJwtMiddleware(logger, { configService: configService, jwtValidatorFactory: jwtValidatorFactory }))
