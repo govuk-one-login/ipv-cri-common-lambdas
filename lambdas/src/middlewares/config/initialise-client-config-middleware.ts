@@ -7,7 +7,7 @@ const defaults = {};
 const initialiseClientConfigMiddleware = (opts: {
     configService: ConfigService;
     client_config_keys: ClientConfigKey[];
-    client_absolute_paths?: [ParameterPath];
+    client_absolute_paths?: ParameterPath[];
 }): MiddlewareObj => {
     const options = { ...defaults, ...opts };
 
