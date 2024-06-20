@@ -3,6 +3,7 @@ import { Parameter } from "aws-sdk/clients/ssm";
 import { CriAuditConfig } from "../../types/cri-audit-config";
 import { ClientConfigKey, CommonConfigKey } from "../../types/config-keys";
 import { SSMProvider } from "@aws-lambda-powertools/parameters/ssm";
+import { logger } from "../utils/power-tool";
 
 const AWS_STACK_NAME_PREFIX = process.env.AWS_STACK_NAME || "";
 const AUTHORIZATION_CODE_TTL = parseNumber(process.env.AUTHORIZATION_CODE_TTL) || 600;
@@ -34,22 +35,22 @@ export class ConfigService {
         if (ssmParameters.length === 0) {
             throw new Error(`No client config found. Invalid client id encountered: ${clientId}`);
         }
-        await this.getParametersByAbsolutePath(ssmParameters, clientId);
+        await this.setParametersByAbsolutePath(ssmParameters, clientId);
     }
 
     public async initConfigWithCriIdentifierInPath(clientId: string, parameterPrefix: string, paramNameSuffix: string) {
-        const ssmParameters = await this.getParameters([
-            `/${AWS_STACK_NAME_PREFIX}/${parameterPrefix}/${paramNameSuffix}`,
-        ]);
+        const ssmParameters = await this.getCriIdentifierParameters([`/${parameterPrefix}/${paramNameSuffix}`]);
         if (ssmParameters.length === 0) {
-            throw new Error(`Invalid parameter beginning with ${parameterPrefix} encountered`);
+            logger.info(`Invalid parameter beginning with ${parameterPrefix} encountered`);
         }
-        await this.getParametersByAbsolutePath(ssmParameters, clientId);
+        await this.setParametersByAbsolutePath(ssmParameters, clientId);
     }
 
-    private async getParametersByAbsolutePath(ssmParameters: Parameter[], identifier: string) {
+    private async setParametersByAbsolutePath(ssmParameters: Parameter[], identifier: string) {
         const clientConfigEntries: Map<string, string> =
             this.clientConfigurations.get(identifier) || new Map<string, string>();
+
+        if (ssmParameters.length === 0) return;
 
         ssmParameters.forEach(({ Name, Value }) => {
             clientConfigEntries.set(...this.validateNameSuffix(Name, Value));
@@ -131,6 +132,19 @@ export class ConfigService {
         const ssmParamNames = paramNameSuffixes.map((p) => this.getParameterName(p));
         const ssmParameters = await this.getParameters(ssmParamNames);
         ssmParameters?.forEach((p) => this.configEntries.set(p.Name as string, p.Value as string));
+    }
+
+    private async getCriIdentifierParameters(ssmParamNames: string[]): Promise<Parameter[]> {
+        const { _errors: errors, ...parameters } = await this.ssmProvider.getParametersByName<string>(
+            Object.fromEntries(ssmParamNames.map((parameter) => [parameter, {}])),
+            { maxAge: PARAMETER_TTL, throwOnError: false },
+        );
+        if (errors?.length) {
+            logger.info(`Couldn't retrieve SSM parameters: ${errors.join(", ")}`);
+            return Promise.resolve([]);
+        }
+
+        return Object.entries(parameters).map(([name, value]) => ({ Name: name, Value: value }));
     }
 
     private async getParameters(ssmParamNames: string[]): Promise<Parameter[]> {
