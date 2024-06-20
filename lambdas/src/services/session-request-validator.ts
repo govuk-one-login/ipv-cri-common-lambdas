@@ -10,12 +10,11 @@ export class SessionRequestValidator {
     constructor(
         private validationConfig: SessionRequestValidationConfig,
         private jwtVerifier: JwtVerifier,
-        private strengthScore?: number,
         private criEvidenceProperties?: CRIEvidenceProperties,
     ) {}
     async validateJwt(jwt: Buffer, requestBodyClientId: string): Promise<JWTPayload> {
         const expectedRedirectUri = this.validationConfig.expectedJwtRedirectUri;
-        const configuredStrengthScore = this.strengthScore;
+        const configuredStrengthScore = Number(this.criEvidenceProperties?.strengthScore);
 
         const payload = await this.verifyJwtSignature(jwt);
         if (!payload) {
@@ -28,25 +27,21 @@ export class SessionRequestValidator {
         const evidenceRequested = payload["evidence_requested"] as EvidenceRequest;
         const state = payload["state"] as string;
 
-        if (evidenceRequested && evidenceRequested.scoringPolicy !== "gpg45") {
+        if (evidenceRequested && evidenceRequested?.scoringPolicy !== "gpg45") {
             throw new SessionValidationError(
                 "Session Validation Exception",
                 "Invalid request: scoringPolicy in evidence_requested does not equal gpg45",
             );
         }
-        if (evidenceRequested && evidenceRequested.strengthScore !== configuredStrengthScore) {
+        if (evidenceRequested && evidenceRequested?.strengthScore !== configuredStrengthScore) {
             throw new SessionValidationError(
                 "Session Validation Exception",
                 `Invalid request: strengthScore in evidence_requested does not equal ${configuredStrengthScore}`,
             );
-        } else if (
-            evidenceRequested?.verificationScore &&
-            this.criEvidenceProperties?.verificationScore &&
-            !this.criEvidenceProperties.verificationScore.includes(evidenceRequested.verificationScore)
-        ) {
+        } else if (this.validateVerificationScore(evidenceRequested)) {
             throw new SessionValidationError(
                 "Session Validation Exception",
-                `Invalid request: verificationScore in evidence_requested is not configured in CRI - ${this.criEvidenceProperties.verificationScore}`,
+                `Invalid request: verificationScore in evidence_requested is not configured in CRI - ${this?.criEvidenceProperties?.verificationScore}`,
             );
         } else if (payload.client_id !== requestBodyClientId) {
             throw new SessionValidationError(
@@ -69,6 +64,17 @@ export class SessionRequestValidator {
 
         return payload;
     }
+    private validateVerificationScore(evidenceRequested: EvidenceRequest) {
+        return (
+            evidenceRequested &&
+            evidenceRequested?.verificationScore &&
+            this.criEvidenceProperties?.verificationScore &&
+            !this.criEvidenceProperties.verificationScore
+                .map((i) => Number(i))
+                .includes(evidenceRequested?.verificationScore)
+        );
+    }
+
     private async verifyJwtSignature(jwt: Buffer): Promise<JWTPayload | null> {
         const expectedIssuer = this.validationConfig.expectedJwtIssuer;
         const expectedAudience = this.validationConfig.expectedJwtAudience;
@@ -104,7 +110,6 @@ export class SessionRequestValidatorFactory {
                 },
                 this.logger,
             ),
-            Number(criClientConfig.get(ConfigKey.STRENGTH_SCORE)),
             JSON.parse(criClientConfig.get(ConfigKey.CRI_EVIDENCE_PROPERTIES) ?? "{}") as CRIEvidenceProperties,
         );
     }

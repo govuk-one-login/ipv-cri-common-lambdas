@@ -311,7 +311,6 @@ describe("session-request-validator.ts", () => {
             sessionRequestValidator = new SessionRequestValidator(
                 sessionRequestValidationConfig,
                 jwtVerifier.prototype,
-                undefined,
                 { verificationScore: [1, 2] } as CRIEvidenceProperties,
             );
         });
@@ -344,7 +343,7 @@ describe("session-request-validator.ts", () => {
             process.env.CRI_IDENTIFIER = previousCriIdentifier;
         });
 
-        it("should pass when verifcationScore is 2 and cri is di-ipv-cri-kbv-api", async () => {
+        it("should pass when verificationScore is 2 and cri is di-ipv-cri-kbv-api", async () => {
             const client_id = "request-client-id";
             const redirect_uri = "redirect-uri";
             const state = "state";
