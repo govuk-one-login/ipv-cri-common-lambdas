@@ -33,7 +33,11 @@ export class SessionRequestValidator {
                 "Invalid request: scoringPolicy in evidence_requested does not equal gpg45",
             );
         }
-        if (evidenceRequested && evidenceRequested?.strengthScore !== configuredStrengthScore) {
+        if (
+            evidenceRequested?.strengthScore &&
+            configuredStrengthScore &&
+            evidenceRequested.strengthScore !== configuredStrengthScore
+        ) {
             throw new SessionValidationError(
                 "Session Validation Exception",
                 `Invalid request: strengthScore in evidence_requested does not equal ${configuredStrengthScore}`,
