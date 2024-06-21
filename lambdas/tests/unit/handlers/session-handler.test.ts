@@ -444,7 +444,6 @@ describe("SessionLambda", () => {
                             ClientConfigKey.JWT_SIGNING_ALGORITHM,
                         ],
                         client_absolute_paths: [
-                            { prefix: previousCriIdentifier, suffix: ConfigKey.STRENGTH_SCORE },
                             { prefix: previousCriIdentifier, suffix: ConfigKey.CRI_EVIDENCE_PROPERTIES },
                         ],
                     }),
@@ -591,7 +590,6 @@ describe("SessionLambda", () => {
                             ClientConfigKey.JWT_SIGNING_ALGORITHM,
                         ],
                         client_absolute_paths: [
-                            { prefix: previousCriIdentifier, suffix: ConfigKey.STRENGTH_SCORE },
                             { prefix: previousCriIdentifier, suffix: ConfigKey.CRI_EVIDENCE_PROPERTIES },
                         ],
                     }),
