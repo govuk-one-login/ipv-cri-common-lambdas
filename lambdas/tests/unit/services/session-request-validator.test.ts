@@ -27,7 +27,7 @@ describe("session-request-validator.ts", () => {
         });
 
         it("should return an error on JWT verification failure", async () => {
-            jest.spyOn(jwtVerifier.prototype, "verify").mockReturnValue(Promise.resolve(null));
+            jest.spyOn(jwtVerifier.prototype, "verify").mockResolvedValue(null);
 
             await expect(
                 sessionRequestValidator.validateJwt(Buffer.from("test-jwt"), "request-client-id"),
@@ -39,13 +39,11 @@ describe("session-request-validator.ts", () => {
             );
         });
 
-        it("should return anerror on mismatched client ID", async () => {
-            jest.spyOn(jwtVerifier.prototype, "verify").mockReturnValue(
-                Promise.resolve({
-                    client_id: "payload-client-id",
-                    shared_claims: personIdentity,
-                } as JWTPayload),
-            );
+        it("should return an error on mismatched client ID", async () => {
+            jest.spyOn(jwtVerifier.prototype, "verify").mockResolvedValue({
+                client_id: "payload-client-id",
+                shared_claims: personIdentity,
+            } as JWTPayload);
 
             await expect(
                 sessionRequestValidator.validateJwt(Buffer.from("test-jwt"), "request-client-id"),
@@ -59,12 +57,10 @@ describe("session-request-validator.ts", () => {
         });
 
         it("should return an error on failure to retrieve redirect URI", async () => {
-            jest.spyOn(jwtVerifier.prototype, "verify").mockReturnValue(
-                Promise.resolve({
-                    client_id: "request-client-id",
-                    shared_claims: personIdentity,
-                } as JWTPayload),
-            );
+            jest.spyOn(jwtVerifier.prototype, "verify").mockResolvedValue({
+                client_id: "request-client-id",
+                shared_claims: personIdentity,
+            } as JWTPayload);
 
             await expect(
                 sessionRequestValidator.validateJwt(Buffer.from("test-jwt"), "request-client-id"),
@@ -78,13 +74,12 @@ describe("session-request-validator.ts", () => {
         });
 
         it("should return an error on mismatched redirect URI", async () => {
-            jest.spyOn(jwtVerifier.prototype, "verify").mockReturnValue(
-                Promise.resolve({
-                    client_id: "request-client-id",
-                    redirect_uri: "wrong-redirect-uri",
-                    shared_claims: personIdentity,
-                } as JWTPayload),
-            );
+            jest.spyOn(jwtVerifier.prototype, "verify").mockResolvedValue({
+                client_id: "request-client-id",
+                redirect_uri: "wrong-redirect-uri",
+                shared_claims: personIdentity,
+            } as JWTPayload);
+
             mockMap.set(ClientConfigKey.JWT_REDIRECT_URI, "redirect-uri");
             sessionRequestValidator = sessionRequestValidatorFactory.create(mockMap);
 
@@ -101,14 +96,13 @@ describe("session-request-validator.ts", () => {
 
         it("should successfully validate the jwt", async () => {
             const state = "state";
-            jest.spyOn(jwtVerifier.prototype, "verify").mockReturnValue(
-                Promise.resolve({
-                    client_id: "request-client-id",
-                    redirect_uri: "redirect-uri",
-                    state: state,
-                    shared_claims: personIdentity,
-                } as JWTPayload),
-            );
+            jest.spyOn(jwtVerifier.prototype, "verify").mockResolvedValue({
+                client_id: "request-client-id",
+                redirect_uri: "redirect-uri",
+                state: state,
+                shared_claims: personIdentity,
+            } as JWTPayload);
+
             mockMap.set(ClientConfigKey.JWT_REDIRECT_URI, "redirect-uri");
             sessionRequestValidator = sessionRequestValidatorFactory.create(mockMap);
 
@@ -122,7 +116,7 @@ describe("session-request-validator.ts", () => {
         });
     });
 
-    describe("sessionRequestValidator", () => {
+    describe("sessionRequestValidator for di-ipv-cri-check-hmrc-api", () => {
         let sessionRequestValidator: SessionRequestValidator;
         let sessionRequestValidationConfig: SessionRequestValidationConfig;
         const jwtVerifier = jest.mocked(JwtVerifier);
@@ -149,14 +143,14 @@ describe("session-request-validator.ts", () => {
                 shared_claims: personIdentity,
             } as JWTPayload;
 
-            jest.spyOn(jwtVerifier.prototype, "verify").mockReturnValue(Promise.resolve(jwtPayload));
+            jest.spyOn(jwtVerifier.prototype, "verify").mockResolvedValue(jwtPayload);
 
             const payload = (await sessionRequestValidator.validateJwt(
                 Buffer.from("test-jwt"),
                 client_id,
             )) as JWTPayload;
 
-            await expect(payload).toEqual(jwtPayload);
+            expect(payload).toEqual(jwtPayload);
         });
 
         it("should pass when strength score is 2 and cri is di-ipv-check-hmrc-api", async () => {
@@ -167,20 +161,22 @@ describe("session-request-validator.ts", () => {
             const previousCriIdentifier = process.env.CRI_IDENTIFIER;
             process.env.CRI_IDENTIFIER = "di-ipv-cri-check-hmrc-api";
 
-            jest.spyOn(jwtVerifier.prototype, "verify").mockReturnValue(
-                await Promise.resolve({
-                    client_id: client_id,
-                    redirect_uri: redirect_uri,
-                    state: state,
-                    evidence_requested: {
-                        scoringPolicy: "gpg45",
-                        strengthScore: 2,
-                    },
-                    shared_claims: personIdentity,
-                } as JWTPayload),
-            );
+            jest.spyOn(jwtVerifier.prototype, "verify").mockResolvedValue({
+                client_id: client_id,
+                redirect_uri: redirect_uri,
+                state: state,
+                evidence_requested: {
+                    scoringPolicy: "gpg45",
+                    strengthScore: 2,
+                },
+                shared_claims: personIdentity,
+            } as JWTPayload);
 
-            await expect(async () => sessionRequestValidator.validateJwt(Buffer.from("test-jwt"), client_id)).resolves;
+            await expect(sessionRequestValidator.validateJwt(Buffer.from("test-jwt"), client_id)).resolves.toEqual(
+                expect.objectContaining({
+                    evidence_requested: { scoringPolicy: "gpg45", strengthScore: 2 },
+                }),
+            );
 
             process.env.CRI_IDENTIFIER = previousCriIdentifier;
         });
@@ -193,18 +189,16 @@ describe("session-request-validator.ts", () => {
             const previousCriIdentifier = process.env.CRI_IDENTIFIER;
             process.env.CRI_IDENTIFIER = "di-ipv-cri-check-hmrc-api";
 
-            jest.spyOn(jwtVerifier.prototype, "verify").mockReturnValue(
-                await Promise.resolve({
-                    client_id: client_id,
-                    redirect_uri: redirect_uri,
-                    state: state,
-                    evidence_requested: {
-                        scoringPolicy: "gpg45",
-                        strengthScore: 1,
-                    },
-                    shared_claims: personIdentity,
-                } as JWTPayload),
-            );
+            jest.spyOn(jwtVerifier.prototype, "verify").mockResolvedValue({
+                client_id: client_id,
+                redirect_uri: redirect_uri,
+                state: state,
+                evidence_requested: {
+                    scoringPolicy: "gpg45",
+                    strengthScore: 1,
+                },
+                shared_claims: personIdentity,
+            } as JWTPayload);
 
             await expect(async () =>
                 sessionRequestValidator.validateJwt(Buffer.from("test-jwt"), client_id),
@@ -230,9 +224,7 @@ describe("session-request-validator.ts", () => {
                 } as JWTPayload),
             );
 
-            await expect(async () =>
-                sessionRequestValidator.validateJwt(Buffer.from("test-jwt"), client_id),
-            ).rejects.toThrow(
+            await expect(sessionRequestValidator.validateJwt(Buffer.from("test-jwt"), client_id)).rejects.toThrow(
                 expect.objectContaining({
                     message: "Session Validation Exception",
                     details: "Invalid request: scoringPolicy in evidence_requested does not equal gpg45",
@@ -245,19 +237,21 @@ describe("session-request-validator.ts", () => {
             const redirect_uri = "redirect-uri";
             const state = "state";
 
-            jest.spyOn(jwtVerifier.prototype, "verify").mockReturnValue(
-                await Promise.resolve({
-                    client_id: client_id,
-                    redirect_uri: redirect_uri,
-                    state: state,
-                    evidence_requested: {
-                        scoringPolicy: "gpg45",
-                    },
-                    shared_claims: personIdentity,
-                } as JWTPayload),
-            );
+            jest.spyOn(jwtVerifier.prototype, "verify").mockResolvedValue({
+                client_id: client_id,
+                redirect_uri: redirect_uri,
+                state: state,
+                evidence_requested: {
+                    scoringPolicy: "gpg45",
+                },
+                shared_claims: personIdentity,
+            } as JWTPayload);
 
-            await expect(async () => sessionRequestValidator.validateJwt(Buffer.from("test-jwt"), client_id)).resolves;
+            await expect(sessionRequestValidator.validateJwt(Buffer.from("test-jwt"), client_id)).resolves.toEqual(
+                expect.objectContaining({
+                    evidence_requested: { scoringPolicy: "gpg45" },
+                }),
+            );
         });
 
         it("should pass when the there is no evidence_requested", async () => {
@@ -265,32 +259,31 @@ describe("session-request-validator.ts", () => {
             const redirect_uri = "redirect-uri";
             const state = "state";
 
-            jest.spyOn(jwtVerifier.prototype, "verify").mockReturnValue(
-                await Promise.resolve({
-                    client_id: client_id,
-                    redirect_uri: redirect_uri,
-                    state: state,
-                    shared_claims: personIdentity,
-                } as JWTPayload),
-            );
+            jest.spyOn(jwtVerifier.prototype, "verify").mockResolvedValue({
+                client_id: client_id,
+                redirect_uri: redirect_uri,
+                state: state,
+                shared_claims: personIdentity,
+            } as JWTPayload);
 
-            await expect(async () => sessionRequestValidator.validateJwt(Buffer.from("test-jwt"), client_id)).resolves;
+            await expect(sessionRequestValidator.validateJwt(Buffer.from("test-jwt"), client_id)).resolves.toEqual({
+                client_id: "request-client-id",
+                redirect_uri: "redirect-uri",
+                shared_claims: {},
+                state: "state",
+            });
         });
         it("should fail to validate the jwt if state is missing", async () => {
             const client_id = "request-client-id";
             const redirect_uri = "redirect-uri";
 
-            jest.spyOn(jwtVerifier.prototype, "verify").mockReturnValue(
-                Promise.resolve({
-                    client_id: client_id,
-                    redirect_uri: redirect_uri,
-                    shared_claims: personIdentity,
-                } as JWTPayload),
-            );
+            jest.spyOn(jwtVerifier.prototype, "verify").mockResolvedValue({
+                client_id: client_id,
+                redirect_uri: redirect_uri,
+                shared_claims: personIdentity,
+            } as JWTPayload);
 
-            await expect(async () =>
-                sessionRequestValidator.validateJwt(Buffer.from("test-jwt"), client_id),
-            ).rejects.toThrow(
+            await expect(sessionRequestValidator.validateJwt(Buffer.from("test-jwt"), client_id)).rejects.toThrow(
                 expect.objectContaining({
                     message: "Session Validation Exception",
                     details: "Invalid state parameter",
@@ -316,7 +309,7 @@ describe("session-request-validator.ts", () => {
             );
         });
 
-        it("should pass when strengthScore is 1 and cri is di-ipv-cri-kbv-api", async () => {
+        it("should pass when verificationScore is 1 and cri is di-ipv-cri-kbv-api", async () => {
             const client_id = "request-client-id";
             const redirect_uri = "redirect-uri";
             const state = "state";
@@ -324,22 +317,22 @@ describe("session-request-validator.ts", () => {
             const previousCriIdentifier = process.env.CRI_IDENTIFIER;
             process.env.CRI_IDENTIFIER = "di-ipv-cri-kbv-api";
 
-            jest.spyOn(jwtVerifier.prototype, "verify").mockReturnValue(
-                await Promise.resolve({
-                    client_id: client_id,
-                    redirect_uri: redirect_uri,
-                    state: state,
-                    evidence_requested: {
-                        scoringPolicy: "gpg45",
-                        verificationScore: 1,
-                    },
-                    shared_claims: personIdentity,
-                } as JWTPayload),
-            );
+            jest.spyOn(jwtVerifier.prototype, "verify").mockResolvedValue({
+                client_id: client_id,
+                redirect_uri: redirect_uri,
+                state: state,
+                evidence_requested: {
+                    scoringPolicy: "gpg45",
+                    verificationScore: 1,
+                },
+                shared_claims: personIdentity,
+            } as JWTPayload);
 
-            await expect(
-                sessionRequestValidator.validateJwt(Buffer.from("test-jwt"), client_id),
-            ).resolves.not.toThrow();
+            await expect(sessionRequestValidator.validateJwt(Buffer.from("test-jwt"), client_id)).resolves.toEqual(
+                expect.objectContaining({
+                    evidence_requested: { scoringPolicy: "gpg45", verificationScore: 1 },
+                }),
+            );
 
             process.env.CRI_IDENTIFIER = previousCriIdentifier;
         });
@@ -352,27 +345,27 @@ describe("session-request-validator.ts", () => {
             const previousCriIdentifier = process.env.CRI_IDENTIFIER;
             process.env.CRI_IDENTIFIER = "di-ipv-cri-kbv-api";
 
-            jest.spyOn(jwtVerifier.prototype, "verify").mockReturnValue(
-                await Promise.resolve({
-                    client_id: client_id,
-                    redirect_uri: redirect_uri,
-                    state: state,
-                    evidence_requested: {
-                        scoringPolicy: "gpg45",
-                        verificationScore: 2,
-                    },
-                    shared_claims: personIdentity,
-                } as JWTPayload),
-            );
+            jest.spyOn(jwtVerifier.prototype, "verify").mockResolvedValue({
+                client_id: client_id,
+                redirect_uri: redirect_uri,
+                state: state,
+                evidence_requested: {
+                    scoringPolicy: "gpg45",
+                    verificationScore: 2,
+                },
+                shared_claims: personIdentity,
+            } as JWTPayload);
 
-            await expect(
-                sessionRequestValidator.validateJwt(Buffer.from("test-jwt"), client_id),
-            ).resolves.not.toThrow();
+            await expect(sessionRequestValidator.validateJwt(Buffer.from("test-jwt"), client_id)).resolves.toEqual(
+                expect.objectContaining({
+                    evidence_requested: { scoringPolicy: "gpg45", verificationScore: 2 },
+                }),
+            );
 
             process.env.CRI_IDENTIFIER = previousCriIdentifier;
         });
 
-        it("should pass when verifcationScore is not included in evidence_requested and cri is di-ipv-cri-kbv-api", async () => {
+        it("should pass when verificationScore is 2 and cri is di-ipv-cri-kbv-api and configured with strengthScore & verificationScore", async () => {
             const client_id = "request-client-id";
             const redirect_uri = "redirect-uri";
             const state = "state";
@@ -380,26 +373,33 @@ describe("session-request-validator.ts", () => {
             const previousCriIdentifier = process.env.CRI_IDENTIFIER;
             process.env.CRI_IDENTIFIER = "di-ipv-cri-kbv-api";
 
-            jest.spyOn(jwtVerifier.prototype, "verify").mockReturnValue(
-                await Promise.resolve({
-                    client_id: client_id,
-                    redirect_uri: redirect_uri,
-                    state: state,
-                    evidence_requested: {
-                        scoringPolicy: "gpg45",
-                    },
-                    shared_claims: personIdentity,
-                } as JWTPayload),
+            sessionRequestValidator = new SessionRequestValidator(
+                sessionRequestValidationConfig,
+                jwtVerifier.prototype,
+                { strengthScore: 2, verificationScore: [1, 2] } as CRIEvidenceProperties,
             );
 
-            await expect(
-                sessionRequestValidator.validateJwt(Buffer.from("test-jwt"), client_id),
-            ).resolves.not.toThrow();
+            jest.spyOn(jwtVerifier.prototype, "verify").mockResolvedValue({
+                client_id: client_id,
+                redirect_uri: redirect_uri,
+                state: state,
+                evidence_requested: {
+                    scoringPolicy: "gpg45",
+                    verificationScore: 2,
+                },
+                shared_claims: personIdentity,
+            } as JWTPayload);
+
+            await expect(sessionRequestValidator.validateJwt(Buffer.from("test-jwt"), client_id)).resolves.toEqual(
+                expect.objectContaining({
+                    evidence_requested: { scoringPolicy: "gpg45", verificationScore: 2 },
+                }),
+            );
 
             process.env.CRI_IDENTIFIER = previousCriIdentifier;
         });
 
-        it("should fail when verifcationScore is not 1,2 or empty and cri is di-ipv-cri-kbv-api", async () => {
+        it("should pass when verificationScore is not included in evidence_requested and cri is di-ipv-cri-kbv-api", async () => {
             const client_id = "request-client-id";
             const redirect_uri = "redirect-uri";
             const state = "state";
@@ -407,18 +407,43 @@ describe("session-request-validator.ts", () => {
             const previousCriIdentifier = process.env.CRI_IDENTIFIER;
             process.env.CRI_IDENTIFIER = "di-ipv-cri-kbv-api";
 
-            jest.spyOn(jwtVerifier.prototype, "verify").mockReturnValue(
-                await Promise.resolve({
-                    client_id: client_id,
-                    redirect_uri: redirect_uri,
-                    state: state,
-                    evidence_requested: {
-                        scoringPolicy: "gpg45",
-                        verificationScore: 3,
-                    },
-                    shared_claims: personIdentity,
-                } as JWTPayload),
+            jest.spyOn(jwtVerifier.prototype, "verify").mockResolvedValue({
+                client_id: client_id,
+                redirect_uri: redirect_uri,
+                state: state,
+                evidence_requested: {
+                    scoringPolicy: "gpg45",
+                },
+                shared_claims: personIdentity,
+            } as JWTPayload);
+
+            await expect(sessionRequestValidator.validateJwt(Buffer.from("test-jwt"), client_id)).resolves.toEqual(
+                expect.objectContaining({
+                    evidence_requested: { scoringPolicy: "gpg45" },
+                }),
             );
+
+            process.env.CRI_IDENTIFIER = previousCriIdentifier;
+        });
+
+        it("should fail when verificationScore is not 1,2 or empty and cri is di-ipv-cri-kbv-api", async () => {
+            const client_id = "request-client-id";
+            const redirect_uri = "redirect-uri";
+            const state = "state";
+
+            const previousCriIdentifier = process.env.CRI_IDENTIFIER;
+            process.env.CRI_IDENTIFIER = "di-ipv-cri-kbv-api";
+
+            jest.spyOn(jwtVerifier.prototype, "verify").mockResolvedValue({
+                client_id: client_id,
+                redirect_uri: redirect_uri,
+                state: state,
+                evidence_requested: {
+                    scoringPolicy: "gpg45",
+                    verificationScore: 3,
+                },
+                shared_claims: personIdentity,
+            } as JWTPayload);
 
             await expect(async () =>
                 sessionRequestValidator.validateJwt(Buffer.from("test-jwt"), client_id),
