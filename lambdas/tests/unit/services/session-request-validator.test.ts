@@ -135,6 +135,7 @@ describe("session-request-validator.ts", () => {
             sessionRequestValidator = new SessionRequestValidator(
                 sessionRequestValidationConfig,
                 jwtVerifier.prototype,
+                { strengthScore: 2 } as CRIEvidenceProperties,
             );
         });
 
