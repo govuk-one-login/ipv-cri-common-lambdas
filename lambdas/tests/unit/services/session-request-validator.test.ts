@@ -292,7 +292,7 @@ describe("session-request-validator.ts", () => {
         });
     });
 
-    describe("sessionRequestValidator for di-ipv-cri-kbv-api", () => {
+    describe("isValidVerificationScore tests", () => {
         let sessionRequestValidator: SessionRequestValidator;
         let sessionRequestValidationConfig: SessionRequestValidationConfig;
         const jwtVerifier = jest.mocked(JwtVerifier);
@@ -309,13 +309,10 @@ describe("session-request-validator.ts", () => {
             );
         });
 
-        it("should pass when verificationScore is 1 and cri is di-ipv-cri-kbv-api", async () => {
+        it("should pass when evidence_requested verificationScore is 1 and CRIEvidenceProperties verficiation score contains 1", async () => {
             const client_id = "request-client-id";
             const redirect_uri = "redirect-uri";
             const state = "state";
-
-            const previousCriIdentifier = process.env.CRI_IDENTIFIER;
-            process.env.CRI_IDENTIFIER = "di-ipv-cri-kbv-api";
 
             jest.spyOn(jwtVerifier.prototype, "verify").mockResolvedValue({
                 client_id: client_id,
@@ -333,17 +330,12 @@ describe("session-request-validator.ts", () => {
                     evidence_requested: { scoringPolicy: "gpg45", verificationScore: 1 },
                 }),
             );
-
-            process.env.CRI_IDENTIFIER = previousCriIdentifier;
         });
 
-        it("should pass when verificationScore is 2 and cri is di-ipv-cri-kbv-api", async () => {
+        it("should pass when evidence_requested verificationScore is 2 and CRIEvidenceProperties verficiation score contains 2", async () => {
             const client_id = "request-client-id";
             const redirect_uri = "redirect-uri";
             const state = "state";
-
-            const previousCriIdentifier = process.env.CRI_IDENTIFIER;
-            process.env.CRI_IDENTIFIER = "di-ipv-cri-kbv-api";
 
             jest.spyOn(jwtVerifier.prototype, "verify").mockResolvedValue({
                 client_id: client_id,
@@ -361,17 +353,12 @@ describe("session-request-validator.ts", () => {
                     evidence_requested: { scoringPolicy: "gpg45", verificationScore: 2 },
                 }),
             );
-
-            process.env.CRI_IDENTIFIER = previousCriIdentifier;
         });
 
-        it("should pass when verificationScore is 2 and cri is di-ipv-cri-kbv-api and configured with strengthScore & verificationScore", async () => {
+        it("should pass when evidence_requested verificationScore and strength score match CRIEvidenceProperties", async () => {
             const client_id = "request-client-id";
             const redirect_uri = "redirect-uri";
             const state = "state";
-
-            const previousCriIdentifier = process.env.CRI_IDENTIFIER;
-            process.env.CRI_IDENTIFIER = "di-ipv-cri-kbv-api";
 
             sessionRequestValidator = new SessionRequestValidator(
                 sessionRequestValidationConfig,
@@ -395,17 +382,12 @@ describe("session-request-validator.ts", () => {
                     evidence_requested: { scoringPolicy: "gpg45", verificationScore: 2 },
                 }),
             );
-
-            process.env.CRI_IDENTIFIER = previousCriIdentifier;
         });
 
-        it("should pass when verificationScore is not included in evidence_requested and cri is di-ipv-cri-kbv-api", async () => {
+        it("should pass when evidence_requested verificationScore is not included", async () => {
             const client_id = "request-client-id";
             const redirect_uri = "redirect-uri";
             const state = "state";
-
-            const previousCriIdentifier = process.env.CRI_IDENTIFIER;
-            process.env.CRI_IDENTIFIER = "di-ipv-cri-kbv-api";
 
             jest.spyOn(jwtVerifier.prototype, "verify").mockResolvedValue({
                 client_id: client_id,
@@ -422,17 +404,12 @@ describe("session-request-validator.ts", () => {
                     evidence_requested: { scoringPolicy: "gpg45" },
                 }),
             );
-
-            process.env.CRI_IDENTIFIER = previousCriIdentifier;
         });
 
-        it("should fail when verificationScore is not 1,2 or empty and cri is di-ipv-cri-kbv-api", async () => {
+        it("should fail when evidence_requested verificationScore is 3 and CRIEvidenceProperties verficiation score only contains 1 and 2", async () => {
             const client_id = "request-client-id";
             const redirect_uri = "redirect-uri";
             const state = "state";
-
-            const previousCriIdentifier = process.env.CRI_IDENTIFIER;
-            process.env.CRI_IDENTIFIER = "di-ipv-cri-kbv-api";
 
             jest.spyOn(jwtVerifier.prototype, "verify").mockResolvedValue({
                 client_id: client_id,
@@ -448,8 +425,6 @@ describe("session-request-validator.ts", () => {
             await expect(async () =>
                 sessionRequestValidator.validateJwt(Buffer.from("test-jwt"), client_id),
             ).rejects.toThrow(new Error("Session Validation Exception"));
-
-            process.env.CRI_IDENTIFIER = previousCriIdentifier;
         });
     });
 
