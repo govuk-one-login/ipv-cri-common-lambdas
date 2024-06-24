@@ -14,7 +14,7 @@ export class SessionRequestValidator {
     ) {}
     async validateJwt(jwt: Buffer, requestBodyClientId: string): Promise<JWTPayload> {
         const expectedRedirectUri = this.validationConfig.expectedJwtRedirectUri;
-        const configuredStrengthScore = Number(this.criEvidenceProperties?.strengthScore);
+        const configuredStrengthScore = this.criEvidenceProperties?.strengthScore;
 
         const payload = await this.verifyJwtSignature(jwt);
         if (!payload) {
@@ -27,18 +27,18 @@ export class SessionRequestValidator {
         const evidenceRequested = payload["evidence_requested"] as EvidenceRequest;
         const state = payload["state"] as string;
 
-        if (evidenceRequested && evidenceRequested?.scoringPolicy !== "gpg45") {
+        if (evidenceRequested && evidenceRequested.scoringPolicy !== "gpg45") {
             throw new SessionValidationError(
                 "Session Validation Exception",
                 "Invalid request: scoringPolicy in evidence_requested does not equal gpg45",
             );
         }
-        if (this.validateStrengthScore(configuredStrengthScore, evidenceRequested)) {
+        if (!this.isValidStrengthScore(configuredStrengthScore, evidenceRequested)) {
             throw new SessionValidationError(
                 "Session Validation Exception",
                 `Invalid request: strengthScore in evidence_requested does not equal ${configuredStrengthScore}`,
             );
-        } else if (this.validateVerificationScore(evidenceRequested)) {
+        } else if (!this.isValidVerificationScore(evidenceRequested)) {
             throw new SessionValidationError(
                 "Session Validation Exception",
                 `Invalid request: verificationScore in evidence_requested is not configured in CRI - ${this?.criEvidenceProperties?.verificationScore}`,
@@ -64,19 +64,19 @@ export class SessionRequestValidator {
 
         return payload;
     }
-    private validateStrengthScore(configuredStrengthScore: number, evidenceRequested: EvidenceRequest) {
+    private isValidStrengthScore(configuredStrengthScore: number | undefined, evidenceRequested: EvidenceRequest) {
         return (
-            configuredStrengthScore &&
-            evidenceRequested?.strengthScore &&
-            evidenceRequested.strengthScore !== configuredStrengthScore
+            !configuredStrengthScore ||
+            !evidenceRequested?.strengthScore ||
+            evidenceRequested.strengthScore === configuredStrengthScore
         );
     }
 
-    private validateVerificationScore(evidenceRequested: EvidenceRequest) {
+    private isValidVerificationScore(evidenceRequested: EvidenceRequest) {
         return (
-            evidenceRequested?.verificationScore &&
-            this.criEvidenceProperties?.verificationScore &&
-            !this.criEvidenceProperties.verificationScore
+            !evidenceRequested?.verificationScore ||
+            !this.criEvidenceProperties?.verificationScore ||
+            this.criEvidenceProperties.verificationScore
                 .map((i) => Number(i))
                 .includes(evidenceRequested?.verificationScore)
         );

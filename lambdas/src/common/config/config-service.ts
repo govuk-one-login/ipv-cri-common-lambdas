@@ -42,6 +42,7 @@ export class ConfigService {
         const ssmParameters = await this.getCriIdentifierParameters([`/${parameterPrefix}/${paramNameSuffix}`]);
         if (ssmParameters.length === 0) {
             logger.info(`Invalid parameter beginning with ${parameterPrefix} encountered`);
+            return;
         }
         await this.setParametersByAbsolutePath(ssmParameters, clientId);
     }
@@ -49,8 +50,6 @@ export class ConfigService {
     private async setParametersByAbsolutePath(ssmParameters: Parameter[], identifier: string) {
         const clientConfigEntries: Map<string, string> =
             this.clientConfigurations.get(identifier) || new Map<string, string>();
-
-        if (ssmParameters.length === 0) return;
 
         ssmParameters.forEach(({ Name, Value }) => {
             clientConfigEntries.set(...this.validateNameSuffix(Name, Value));
