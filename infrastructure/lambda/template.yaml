@@ -66,11 +66,12 @@ Conditions:
           - "none"
   IsCSLSDisabled: !And
     - !Not
-      - !Or
-        - !Equals [!Ref CriIdentifier, "di-ipv-cri-check-hmrc-api"]
-        - !Equals [!Ref CriIdentifier, "di-ipv-cri-kbv-hmrc-api"]
+      - !Equals [!Ref CriIdentifier, "di-ipv-cri-kbv-hmrc-api"]
     - !Not
       - !Equals [!Ref Environment, "dev"]
+  UseNewCSLSDestinationArn: !Equals
+    - !Ref CriIdentifier
+    - "di-ipv-cri-check-hmrc-api"
 
 Globals:
   Function:
@@ -554,7 +555,10 @@ Resources:
     Type: AWS::Logs::SubscriptionFilter
     Condition: IsCSLSDisabled
     Properties:
-      DestinationArn: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython"
+      DestinationArn: !If
+        - UseNewCSLSDestinationArn
+        - "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2"
+        - "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython"
       FilterPattern: ""
       LogGroupName: !Ref SessionFunctionLogGroup
 
@@ -634,7 +638,10 @@ Resources:
     Type: AWS::Logs::SubscriptionFilter
     Condition: IsCSLSDisabled
     Properties:
-      DestinationArn: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython"
+      DestinationArn: !If
+        - UseNewCSLSDestinationArn
+        - "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2"
+        - "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython"
       FilterPattern: ""
       LogGroupName: !Ref SessionFunctionTSLogGroup
 
@@ -738,7 +745,10 @@ Resources:
     Type: AWS::Logs::SubscriptionFilter
     Condition: IsCSLSDisabled
     Properties:
-      DestinationArn: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython"
+      DestinationArn: !If
+        - UseNewCSLSDestinationArn
+        - "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2"
+        - "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython"
       FilterPattern: ""
       LogGroupName: !Ref AuthorizationFunctionLogGroup
 
@@ -746,7 +756,10 @@ Resources:
     Type: AWS::Logs::SubscriptionFilter
     Condition: IsCSLSDisabled
     Properties:
-      DestinationArn: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython"
+      DestinationArn: !If
+        - UseNewCSLSDestinationArn
+        - "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2"
+        - "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython"
       FilterPattern: ""
       LogGroupName: !Ref AuthorizationFunctionTSLogGroup
 
@@ -860,7 +873,10 @@ Resources:
     Type: AWS::Logs::SubscriptionFilter
     Condition: IsCSLSDisabled
     Properties:
-      DestinationArn: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython"
+      DestinationArn: !If
+        - UseNewCSLSDestinationArn
+        - "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2"
+        - "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython" 
       FilterPattern: ""
       LogGroupName: !Ref AccessTokenFunctionLogGroup
 
@@ -868,7 +884,10 @@ Resources:
     Type: AWS::Logs::SubscriptionFilter
     Condition: IsCSLSDisabled
     Properties:
-      DestinationArn: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython"
+      DestinationArn: !If
+        - UseNewCSLSDestinationArn
+        - "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2"
+        - "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython" 
       FilterPattern: ""
       LogGroupName: !Ref AccessTokenTSFunctionLogGroup
 
