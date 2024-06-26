@@ -5,16 +5,16 @@ import { ClientConfigKey, ConfigKey } from "../types/config-keys";
 import { Logger } from "@aws-lambda-powertools/logger";
 import { SessionValidationError } from "../common/utils/errors";
 import { EvidenceRequest } from "./evidence_request";
-import { EvidenceRequestConfig } from "../types/evidence-requested-config";
+import { CRIEvidenceProperties } from "./cri_evidence_properties";
 export class SessionRequestValidator {
     constructor(
         private validationConfig: SessionRequestValidationConfig,
         private jwtVerifier: JwtVerifier,
-        private evidenceRequest?: EvidenceRequestConfig,
+        private criEvidenceProperties?: CRIEvidenceProperties,
     ) {}
     async validateJwt(jwt: Buffer, requestBodyClientId: string): Promise<JWTPayload> {
         const expectedRedirectUri = this.validationConfig.expectedJwtRedirectUri;
-        const configuredStrengthScore = this.evidenceRequest?.strengthScore;
+        const configuredStrengthScore = this.criEvidenceProperties?.strengthScore;
 
         const payload = await this.verifyJwtSignature(jwt);
         if (!payload) {
@@ -33,10 +33,15 @@ export class SessionRequestValidator {
                 "Invalid request: scoringPolicy in evidence_requested does not equal gpg45",
             );
         }
-        if (evidenceRequested && evidenceRequested.strengthScore !== configuredStrengthScore) {
+        if (!this.isValidStrengthScore(configuredStrengthScore, evidenceRequested)) {
             throw new SessionValidationError(
                 "Session Validation Exception",
                 `Invalid request: strengthScore in evidence_requested does not equal ${configuredStrengthScore}`,
+            );
+        } else if (!this.isValidVerificationScore(evidenceRequested)) {
+            throw new SessionValidationError(
+                "Session Validation Exception",
+                `Invalid request: verificationScore in evidence_requested is not configured in CRI - ${this?.criEvidenceProperties?.verificationScore}`,
             );
         } else if (payload.client_id !== requestBodyClientId) {
             throw new SessionValidationError(
@@ -59,6 +64,24 @@ export class SessionRequestValidator {
 
         return payload;
     }
+    private isValidStrengthScore(configuredStrengthScore: number | undefined, evidenceRequested: EvidenceRequest) {
+        return (
+            !configuredStrengthScore ||
+            !evidenceRequested?.strengthScore ||
+            evidenceRequested.strengthScore === configuredStrengthScore
+        );
+    }
+
+    private isValidVerificationScore(evidenceRequested: EvidenceRequest) {
+        return (
+            !evidenceRequested?.verificationScore ||
+            !this.criEvidenceProperties?.verificationScore ||
+            this.criEvidenceProperties.verificationScore
+                .map((i) => Number(i))
+                .includes(evidenceRequested?.verificationScore)
+        );
+    }
+
     private async verifyJwtSignature(jwt: Buffer): Promise<JWTPayload | null> {
         const expectedIssuer = this.validationConfig.expectedJwtIssuer;
         const expectedAudience = this.validationConfig.expectedJwtAudience;
@@ -94,9 +117,7 @@ export class SessionRequestValidatorFactory {
                 },
                 this.logger,
             ),
-            {
-                strengthScore: Number(criClientConfig.get(ConfigKey.STRENGTH_SCORE)),
-            } as EvidenceRequestConfig,
+            JSON.parse(criClientConfig.get(ConfigKey.CRI_EVIDENCE_PROPERTIES) ?? "{}") as CRIEvidenceProperties,
         );
     }
 }

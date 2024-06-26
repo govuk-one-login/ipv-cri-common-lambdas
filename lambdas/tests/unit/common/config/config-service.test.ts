@@ -150,12 +150,12 @@ describe("ConfigService", () => {
             await configService.initConfigWithCriIdentifierInPath(
                 "test",
                 "di-ipv-cri-check-hmrc-api",
-                ConfigKey.STRENGTH_SCORE,
+                ConfigKey.CRI_EVIDENCE_PROPERTIES,
             );
 
             expect(ssmProvider.getParametersByName).toBeCalledWith(
                 {
-                    "/di-ipv-cri-common-lambdas/di-ipv-cri-check-hmrc-api/strengthScore": {},
+                    "/di-ipv-cri-check-hmrc-api/evidence-properties": {},
                 },
                 expect.objectContaining({
                     maxAge: 300,
@@ -169,17 +169,15 @@ describe("ConfigService", () => {
                 _errors: [],
             });
 
-            expect(
-                configService.initConfigWithCriIdentifierInPath(
-                    "test",
-                    "di-ipv-cri-check-hmrc-api",
-                    ConfigKey.STRENGTH_SCORE,
-                ),
-            ).rejects.toThrowError("Invalid parameter beginning with di-ipv-cri-check-hmrc-api encountered");
+            configService.initConfigWithCriIdentifierInPath(
+                "test",
+                "di-ipv-cri-check-hmrc-api",
+                ConfigKey.CRI_EVIDENCE_PROPERTIES,
+            );
 
             expect(ssmProvider.getParametersByName).toBeCalledWith(
                 {
-                    "/di-ipv-cri-common-lambdas/di-ipv-cri-check-hmrc-api/strengthScore": {},
+                    "/di-ipv-cri-check-hmrc-api/evidence-properties": {},
                 },
                 expect.objectContaining({
                     maxAge: 300,
