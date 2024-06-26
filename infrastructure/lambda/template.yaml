@@ -454,25 +454,6 @@ Mappings:
       staging: "https://review-hc.staging.account.gov.uk"
       integration: "https://review-hc.integration.account.gov.uk"
       production: "https://review-hc.account.gov.uk"
-  
-  EvidenceRequestedMapping:
-    di-ipv-cri-check-hmrc-api:
-      strengthScore: 2
-    di-ipv-cri-address-api:
-      strengthScore: 0
-    di-ipv-cri-toy-api:
-      strengthScore: 0
-    di-ipv-cri-fraud-api:
-      strengthScore: 2
-    di-ipv-cri-kbv-api:
-      strengthScore: 2
-    di-ipv-cri-dl-api:
-      strengthScore: 3
-    di-ipv-cri-passport-api:
-      strengthScore: 4
-    di-ipv-cri-kbv-hmrc-api:
-      strengthScore: 2
-
 
 Resources:
 
@@ -609,7 +590,7 @@ Resources:
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/AuthRequestKmsEncryptionKeyId"
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/PersonIdentityTableName"
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/verifiable-credential/issuer"
-                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/${CriIdentifier}/strengthScore"
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${CriIdentifier}/evidence-properties"
         - Statement:
             - Sid: auditEventQueueKmsEncryptionKeyPermission
               Effect: Allow
@@ -983,14 +964,6 @@ Resources:
       Type: String
       Value: !FindInMap [SessionTtlMapping, Environment, !Ref "Environment"]
       Description: default time to live for a session item (seconds)
-
-  EvidenceRequestedStrengthScoreParameter:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/${CriIdentifier}/strengthScore"
-      Type: String
-      Value: !FindInMap [EvidenceRequestedMapping, !Ref CriIdentifier, "strengthScore"]
-      Description: The CRI supported strength score
 
   IPVCoreStubAwsProdAuthenticationAlgParameter:
     Condition: IsStubEnvironment

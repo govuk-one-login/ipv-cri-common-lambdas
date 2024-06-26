@@ -443,7 +443,9 @@ describe("SessionLambda", () => {
                             ClientConfigKey.JWT_REDIRECT_URI,
                             ClientConfigKey.JWT_SIGNING_ALGORITHM,
                         ],
-                        client_absolute_paths: [{ prefix: previousCriIdentifier, suffix: ConfigKey.STRENGTH_SCORE }],
+                        client_absolute_paths: [
+                            { prefix: previousCriIdentifier, suffix: ConfigKey.CRI_EVIDENCE_PROPERTIES },
+                        ],
                     }),
                 )
                 .use(
@@ -587,7 +589,9 @@ describe("SessionLambda", () => {
                             ClientConfigKey.JWT_REDIRECT_URI,
                             ClientConfigKey.JWT_SIGNING_ALGORITHM,
                         ],
-                        client_absolute_paths: [{ prefix: previousCriIdentifier, suffix: ConfigKey.STRENGTH_SCORE }],
+                        client_absolute_paths: [
+                            { prefix: previousCriIdentifier, suffix: ConfigKey.CRI_EVIDENCE_PROPERTIES },
+                        ],
                     }),
                 )
                 .use(
