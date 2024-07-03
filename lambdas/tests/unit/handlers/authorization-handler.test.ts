@@ -29,6 +29,7 @@ import errorMiddleware from "../../../src/middlewares/error/error-middleware";
 import { Context } from "aws-lambda";
 import setGovUkSigningJourneyIdMiddleware from "../../../src/middlewares/session/set-gov-uk-signing-journey-id-middleware";
 import initialiseClientConfigMiddleware from "../../../src/middlewares/config/initialise-client-config-middleware";
+import setRequestedVerificationScoreMiddleware from "../../../src/middlewares/session/set-requested-verification-score-middleware";
 
 jest.mock("../../../src/common/config/config-service");
 jest.mock("@aws-lambda-powertools/metrics");
@@ -100,7 +101,8 @@ describe("authorization-handler.ts", () => {
                         client_config_keys: [ClientConfigKey.JWT_REDIRECT_URI],
                     }),
                 )
-                .use(setGovUkSigningJourneyIdMiddleware(logger.prototype));
+                .use(setGovUkSigningJourneyIdMiddleware(logger.prototype))
+                .use(setRequestedVerificationScoreMiddleware(logger.prototype));
 
             const sessionItem: Partial<SessionItem> = {
                 sessionId: "abc",

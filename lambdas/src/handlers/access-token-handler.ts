@@ -21,6 +21,7 @@ import getSessionByIdMiddleware from "../middlewares/session/get-session-by-id-m
 import errorMiddleware from "../middlewares/error/error-middleware";
 import { ConfigService } from "../common/config/config-service";
 import initialiseClientConfigMiddleware from "../middlewares/config/initialise-client-config-middleware";
+import setRequestedVerificationScoreMiddleware from "../middlewares/session/set-requested-verification-score-middleware";
 const dynamoDbClient = createClient(AwsClientType.DYNAMO);
 const ACCESS_TOKEN = "accesstoken";
 
@@ -107,4 +108,5 @@ export const lambdaHandler = middy(handlerClass.handler.bind(handlerClass))
         }),
     )
     .use(getSessionByIdMiddleware({ sessionService: sessionService }))
-    .use(setGovUkSigningJourneyIdMiddleware(logger));
+    .use(setGovUkSigningJourneyIdMiddleware(logger))
+    .use(setRequestedVerificationScoreMiddleware(logger));

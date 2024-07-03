@@ -24,6 +24,7 @@ import decryptJweMiddleware from "../../../src/middlewares/jwt/decrypt-jwe-middl
 import validateJwtMiddleware from "../../../src/middlewares/jwt/validate-jwt-middleware";
 import setGovUkSigningJourneyIdMiddleware from "../../../src/middlewares/session/set-gov-uk-signing-journey-id-middleware";
 import initialiseClientConfigMiddleware from "../../../src/middlewares/config/initialise-client-config-middleware";
+import setRequestedVerificationScoreMiddleware from "../../../src/middlewares/session/set-requested-verification-score-middleware";
 
 jest.mock("@aws-sdk/lib-dynamodb");
 jest.mock("@aws-sdk/client-ssm");
@@ -170,7 +171,8 @@ describe("SessionLambda", () => {
                     jwtValidatorFactory: sessionRequestValidatorFactory.prototype,
                 }),
             )
-            .use(setGovUkSigningJourneyIdMiddleware(logger.prototype));
+            .use(setGovUkSigningJourneyIdMiddleware(logger.prototype))
+            .use(setRequestedVerificationScoreMiddleware(logger.prototype));
 
         jest.spyOn(jweDecrypter.prototype, "decryptJwe").mockResolvedValue(Buffer.from("test-data"));
         jest.spyOn(personIdentityService.prototype, "savePersonIdentity").mockImplementation();
@@ -454,7 +456,8 @@ describe("SessionLambda", () => {
                         jwtValidatorFactory: sessionRequestValidatorFactory.prototype,
                     }),
                 )
-                .use(setGovUkSigningJourneyIdMiddleware(logger.prototype));
+                .use(setGovUkSigningJourneyIdMiddleware(logger.prototype))
+                .use(setRequestedVerificationScoreMiddleware(logger.prototype));
             process.env.CRI_IDENTIFIER = previousCriIdentifier;
             jest.spyOn(sessionRequestValidator.prototype, "validateJwt").mockReturnValue(
                 new Promise<JWTPayload>((res) =>
@@ -469,6 +472,7 @@ describe("SessionLambda", () => {
                         evidence_requested: {
                             scoringPolicy: "gpg45",
                             strengthScore: 2,
+                            verificationScore: 2,
                         },
                     } as JWTPayload),
                 ),
@@ -600,7 +604,8 @@ describe("SessionLambda", () => {
                         jwtValidatorFactory: sessionRequestValidatorFactory.prototype,
                     }),
                 )
-                .use(setGovUkSigningJourneyIdMiddleware(logger.prototype));
+                .use(setGovUkSigningJourneyIdMiddleware(logger.prototype))
+                .use(setRequestedVerificationScoreMiddleware(logger.prototype));
             process.env.CRI_IDENTIFIER = previousCriIdentifier;
             jest.spyOn(sessionRequestValidator.prototype, "validateJwt").mockReturnValue(
                 new Promise<JWTPayload>((res) =>
