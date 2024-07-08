@@ -21,6 +21,7 @@ import getSessionByAuthCodeMiddleware from "../../../src/middlewares/session/get
 import getSessionByIdMiddleware from "../../../src/middlewares/session/get-session-by-id-middleware";
 import setGovUkSigningJourneyIdMiddleware from "../../../src/middlewares/session/set-gov-uk-signing-journey-id-middleware";
 import { CommonConfigKey } from "../../../src/types/config-keys";
+import setRequestedVerificationScoreMiddleware from "../../../src/middlewares/session/set-requested-verification-score-middleware";
 
 jest.mock("../../../src/common/config/config-service");
 jest.mock("../../../src/common/security/jwt-verifier");
@@ -98,7 +99,8 @@ describe("access-token-handler.ts", () => {
             )
             .use(getSessionByAuthCodeMiddleware({ sessionService: sessionService }))
             .use(getSessionByIdMiddleware({ sessionService: sessionService }))
-            .use(setGovUkSigningJourneyIdMiddleware(logger));
+            .use(setGovUkSigningJourneyIdMiddleware(logger))
+            .use(setRequestedVerificationScoreMiddleware(logger));
     });
 
     describe("Handler", () => {
