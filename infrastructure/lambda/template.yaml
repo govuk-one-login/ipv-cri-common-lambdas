@@ -401,9 +401,9 @@ Mappings:
       integration: "https://identity.integration.account.gov.uk/credential-issuer/callback?id=nino"
       production: "https://identity.account.gov.uk/credential-issuer/callback?id=checkHmrc"
     di-ipv-cri-kbv-hmrc-api:
-      staging: "https://identity.staging.account.gov.uk/credential-issuer/callback?id=kbvHmrc"
-      integration: "https://identity.integration.account.gov.uk/credential-issuer/callback?id=kbvHmrc"
-      production: "https://identity.account.gov.uk/credential-issuer/callback?id=kbvHmrc"
+      staging: "https://identity.staging.account.gov.uk/credential-issuer/callback?id=hmrcKbv"
+      integration: "https://identity.integration.account.gov.uk/credential-issuer/callback?id=hmrcKbv"
+      production: "https://identity.account.gov.uk/credential-issuer/callback?id=hmrcKbv"
 
   VerifiableCredentialIssuerMapping:
     di-ipv-cri-address-api:
