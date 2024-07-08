@@ -16,6 +16,7 @@ import { SessionItem } from "../types/session-item";
 import { injectLambdaContext } from "@aws-lambda-powertools/logger/lib/middleware/middy";
 import setGovUkSigningJourneyIdMiddleware from "../middlewares/session/set-gov-uk-signing-journey-id-middleware";
 import initialiseClientConfigMiddleware from "../middlewares/config/initialise-client-config-middleware";
+import setRequestedVerificationScoreMiddleware from "../middlewares/session/set-requested-verification-score-middleware";
 
 const dynamoDbClient = createClient(AwsClientType.DYNAMO);
 const ssmClient = createClient(AwsClientType.SSM);
@@ -93,4 +94,5 @@ export const lambdaHandler = middy(handlerClass.handler.bind(handlerClass))
             client_config_keys: [ClientConfigKey.JWT_REDIRECT_URI],
         }),
     )
-    .use(setGovUkSigningJourneyIdMiddleware(logger));
+    .use(setGovUkSigningJourneyIdMiddleware(logger))
+    .use(setRequestedVerificationScoreMiddleware(logger));
