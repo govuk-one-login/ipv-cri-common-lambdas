@@ -6,10 +6,7 @@ import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.logging.log4j.Level;
-import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.http.HttpStatusCode;
-import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.lambda.powertools.logging.CorrelationIdPathConstants;
 import software.amazon.lambda.powertools.logging.Logging;
 import software.amazon.lambda.powertools.metrics.Metrics;
@@ -29,6 +26,7 @@ import uk.gov.di.ipv.cri.common.library.service.ConfigurationService;
 import uk.gov.di.ipv.cri.common.library.service.PersonIdentityService;
 import uk.gov.di.ipv.cri.common.library.service.SessionService;
 import uk.gov.di.ipv.cri.common.library.util.ApiGatewayResponseGenerator;
+import uk.gov.di.ipv.cri.common.library.util.ClientProviderFactory;
 import uk.gov.di.ipv.cri.common.library.util.EventProbe;
 
 import java.time.Clock;
@@ -54,20 +52,29 @@ public class SessionHandler
 
     @ExcludeFromGeneratedCoverageReport
     public SessionHandler() {
-        ConfigurationService configurationService = new ConfigurationService();
-        this.sessionService = new SessionService();
-        this.sessionRequestService = new SessionRequestService();
-        this.personIdentityService = new PersonIdentityService();
+        ClientProviderFactory clientProviderFactory = new ClientProviderFactory();
+        ConfigurationService configurationService =
+                new ConfigurationService(
+                        clientProviderFactory.getSSMProvider(),
+                        clientProviderFactory.getSecretsProvider());
+        ObjectMapper sharedObjectMapper = new ObjectMapper();
+        this.sessionService =
+                new SessionService(
+                        configurationService, clientProviderFactory.getDynamoDbEnhancedClient());
+        this.sessionRequestService =
+                new SessionRequestService(
+                        configurationService,
+                        clientProviderFactory.getKMSClient(),
+                        sharedObjectMapper);
+        this.personIdentityService =
+                new PersonIdentityService(
+                        configurationService, clientProviderFactory.getDynamoDbEnhancedClient());
         this.eventProbe = new EventProbe();
         this.auditService =
                 new AuditService(
-                        SqsClient.builder()
-                                .credentialsProvider(
-                                        EnvironmentVariableCredentialsProvider.create())
-                                .region(Region.of(System.getenv("AWS_REGION")))
-                                .build(),
+                        clientProviderFactory.getSqsClient(),
                         configurationService,
-                        new ObjectMapper(),
+                        sharedObjectMapper,
                         new AuditEventFactory(configurationService, Clock.systemUTC()));
     }
 

@@ -19,16 +19,18 @@ import uk.gov.di.ipv.cri.common.library.exception.SessionExpiredException;
 import uk.gov.di.ipv.cri.common.library.exception.SessionNotFoundException;
 import uk.gov.di.ipv.cri.common.library.persistence.item.SessionItem;
 import uk.gov.di.ipv.cri.common.library.service.AccessTokenService;
+import uk.gov.di.ipv.cri.common.library.service.ConfigurationService;
 import uk.gov.di.ipv.cri.common.library.service.SessionService;
 import uk.gov.di.ipv.cri.common.library.util.ApiGatewayResponseGenerator;
+import uk.gov.di.ipv.cri.common.library.util.ClientProviderFactory;
 import uk.gov.di.ipv.cri.common.library.util.EventProbe;
 
 public class AccessTokenHandler
         implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
 
-    private final EventProbe eventProbe;
-    private final AccessTokenService accessTokenService;
-    private final SessionService sessionService;
+    private EventProbe eventProbe;
+    private AccessTokenService accessTokenService;
+    private SessionService sessionService;
     static final String METRIC_NAME_ACCESS_TOKEN = "accesstoken";
 
     public AccessTokenHandler(
@@ -42,7 +44,16 @@ public class AccessTokenHandler
 
     @ExcludeFromGeneratedCoverageReport
     public AccessTokenHandler() {
-        this(new AccessTokenService(), new SessionService(), new EventProbe());
+        ClientProviderFactory clientProviderFactory = new ClientProviderFactory();
+        ConfigurationService configurationService =
+                new ConfigurationService(
+                        clientProviderFactory.getSSMProvider(),
+                        clientProviderFactory.getSecretsProvider());
+        this.accessTokenService = new AccessTokenService(configurationService);
+        this.sessionService =
+                new SessionService(
+                        configurationService, clientProviderFactory.getDynamoDbEnhancedClient());
+        this.eventProbe = new EventProbe();
     }
 
     @Override

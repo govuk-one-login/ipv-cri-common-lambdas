@@ -1,7 +1,6 @@
 package uk.gov.di.ipv.cri.common.api.service;
 
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest;
-import uk.gov.di.ipv.cri.common.library.annotations.ExcludeFromGeneratedCoverageReport;
 import uk.gov.di.ipv.cri.common.library.exception.SessionValidationException;
 import uk.gov.di.ipv.cri.common.library.persistence.item.SessionItem;
 import uk.gov.di.ipv.cri.common.library.service.ConfigurationService;
@@ -12,11 +11,6 @@ import java.util.Map;
 public class AuthorizationValidatorService {
 
     private final ConfigurationService configurationService;
-
-    @ExcludeFromGeneratedCoverageReport
-    public AuthorizationValidatorService() {
-        this.configurationService = new ConfigurationService();
-    }
 
     public AuthorizationValidatorService(ConfigurationService configurationService) {
         this.configurationService = configurationService;

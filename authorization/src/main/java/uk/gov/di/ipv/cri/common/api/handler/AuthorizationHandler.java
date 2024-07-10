@@ -19,8 +19,10 @@ import uk.gov.di.ipv.cri.common.library.error.ErrorResponse;
 import uk.gov.di.ipv.cri.common.library.error.OauthErrorResponse;
 import uk.gov.di.ipv.cri.common.library.exception.SessionValidationException;
 import uk.gov.di.ipv.cri.common.library.persistence.item.SessionItem;
+import uk.gov.di.ipv.cri.common.library.service.ConfigurationService;
 import uk.gov.di.ipv.cri.common.library.service.SessionService;
 import uk.gov.di.ipv.cri.common.library.util.ApiGatewayResponseGenerator;
+import uk.gov.di.ipv.cri.common.library.util.ClientProviderFactory;
 import uk.gov.di.ipv.cri.common.library.util.EventProbe;
 
 import java.util.Collections;
@@ -37,13 +39,23 @@ public class AuthorizationHandler
     private static final String HEADER_SESSION_ID = "session-id";
     public static final String EVENT_AUTHORIZATION_SENT = "authorization_sent";
     public static final String EVENT_NO_AUTHORIZATION_CODE = "no_authorization_code";
-    private final SessionService sessionService;
-    private final EventProbe eventProbe;
-    private final AuthorizationValidatorService authorizationValidatorService;
+    private SessionService sessionService;
+    private EventProbe eventProbe;
+    private AuthorizationValidatorService authorizationValidatorService;
 
     @ExcludeFromGeneratedCoverageReport
     public AuthorizationHandler() {
-        this(new SessionService(), new EventProbe(), new AuthorizationValidatorService());
+        ClientProviderFactory clientProviderFactory = new ClientProviderFactory();
+        ConfigurationService configurationService =
+                new ConfigurationService(
+                        clientProviderFactory.getSSMProvider(),
+                        clientProviderFactory.getSecretsProvider());
+        this.sessionService =
+                new SessionService(
+                        configurationService, clientProviderFactory.getDynamoDbEnhancedClient());
+        this.eventProbe = new EventProbe();
+        this.authorizationValidatorService =
+                new AuthorizationValidatorService(configurationService);
     }
 
     public AuthorizationHandler(
