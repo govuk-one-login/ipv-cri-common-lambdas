@@ -7,6 +7,8 @@ plugins {
 dependencies {
 	implementation configurations.cri_common_lib,
 			configurations.aws,
+			configurations.aws_crt_client,
+			configurations.dynamodb,
 			configurations.lambda,
 			configurations.nimbus,
 			configurations.jackson

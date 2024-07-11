@@ -30,10 +30,6 @@ class KMSRSADecrypter implements JWEDecrypter {
     private final KmsClient kmsClient;
     private final String keyId;
 
-    KMSRSADecrypter(String keyId) {
-        this(keyId, KmsClient.builder().build());
-    }
-
     KMSRSADecrypter(String keyId, KmsClient kmsClient) {
         this.keyId = keyId;
         this.kmsClient = kmsClient;

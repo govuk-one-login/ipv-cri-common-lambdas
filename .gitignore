@@ -50,6 +50,8 @@ build
 *.env
 integration-tests/target
 
+# vscode
+.vscode
 
 accesstoken/bin/
 authorization/bin/

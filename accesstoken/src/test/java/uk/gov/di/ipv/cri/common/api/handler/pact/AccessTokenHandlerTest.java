@@ -31,7 +31,6 @@ import uk.gov.di.ipv.cri.common.library.service.ConfigurationService;
 import uk.gov.di.ipv.cri.common.library.service.JWTVerifier;
 import uk.gov.di.ipv.cri.common.library.service.SessionService;
 import uk.gov.di.ipv.cri.common.library.util.EventProbe;
-import uk.gov.di.ipv.cri.common.library.util.ListUtil;
 
 import java.io.IOException;
 import java.net.URI;
@@ -93,10 +92,7 @@ class AccessTokenHandlerTest {
                         new AccessTokenHandler(
                                 new AccessTokenService(configurationService, new JWTVerifier()),
                                 new SessionService(
-                                        dataStore,
-                                        configurationService,
-                                        Clock.systemUTC(),
-                                        new ListUtil()),
+                                        dataStore, configurationService, Clock.systemUTC()),
                                 new EventProbe()),
                         "/token",
                         "/");
@@ -163,8 +159,7 @@ class AccessTokenHandlerTest {
         sessionRequest.setClientId("ipv-core");
 
         SessionService sessionService =
-                new SessionService(
-                        dataStore, configurationService, Clock.systemUTC(), new ListUtil());
+                new SessionService(dataStore, configurationService, Clock.systemUTC());
         ArgumentCaptor<SessionItem> sessionItemArgumentCaptor =
                 ArgumentCaptor.forClass(SessionItem.class);
 
