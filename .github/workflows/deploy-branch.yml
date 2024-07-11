@@ -23,6 +23,8 @@ jobs:
     name: Build SAM app
     runs-on: ubuntu-latest
     permissions: {}
+    outputs:
+      sha_short: ${{ steps.vars.outputs.sha_short }}    
     steps:
       - name: Pull repository
         uses: actions/checkout@v4
@@ -39,12 +41,17 @@ jobs:
           distribution: zulu
           cache: gradle
 
+      - name: Get short-sha
+        id: vars
+        run: |
+          echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
       - name: Build SAM application
         uses: govuk-one-login/github-actions/sam/build-application@cf644c0d66c41259bfe2509852d1211e3f01f44d
         id: build
         with:
           template: infrastructure/lambda/template.yaml
-          cache-key: common-lambdas
+          cache-name: common-lambdas-${{ steps.vars.outputs.sha_short }}
           pull-repository: false
 
   deploy:
@@ -70,7 +77,7 @@ jobs:
           aws-role-arn: ${{ vars.DEPLOYMENT_ROLE_ARN }}
           stack-name-prefix: preview-common-lambdas
           stack-name-length-limit: 37
-          cache-key: common-lambdas
+          cache-name: common-lambdas-${{ needs.build.outputs.sha_short}}
           s3-prefix: preview
           pull-repository: true
           delete-failed-stack: true

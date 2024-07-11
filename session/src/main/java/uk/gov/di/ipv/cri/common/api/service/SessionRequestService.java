@@ -7,6 +7,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
+import software.amazon.awssdk.services.kms.KmsClient;
 import uk.gov.di.ipv.cri.common.api.domain.RawSessionRequest;
 import uk.gov.di.ipv.cri.common.library.annotations.ExcludeFromGeneratedCoverageReport;
 import uk.gov.di.ipv.cri.common.library.domain.SessionRequest;
@@ -38,8 +39,12 @@ public class SessionRequestService {
     private final List<String> sensitiveFields = List.of("name", "birthDate", "address");
 
     @ExcludeFromGeneratedCoverageReport
-    public SessionRequestService() {
-        this.objectMapper = new ObjectMapper();
+    public SessionRequestService(
+            ConfigurationService configurationService,
+            KmsClient kmsClient,
+            ObjectMapper objectMapper) {
+        this.configurationService = configurationService;
+        this.objectMapper = objectMapper;
         this.objectMapper
                 .registerModule(new JavaTimeModule())
                 .registerModule(
@@ -48,12 +53,11 @@ public class SessionRequestService {
                                         SharedClaims.class,
                                         new PiiRedactingDeserializer<>(
                                                 sensitiveFields, SharedClaims.class)));
-
         this.jwtVerifier = new JWTVerifier();
-        this.configurationService = new ConfigurationService();
         this.jwtDecrypter =
                 new JWTDecrypter(
-                        new KMSRSADecrypter(this.configurationService.getKmsEncryptionKeyId()));
+                        new KMSRSADecrypter(
+                                this.configurationService.getKmsEncryptionKeyId(), kmsClient));
     }
 
     public SessionRequestService(
