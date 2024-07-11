@@ -16,7 +16,7 @@ ext {
 	cucumberVersion = '7.7.0'
 	junitJupiterapi = '5.9.0'
 	jacksonDatabind = '2.9.5'
-	apacheHttpClient = '4.5.13'
+	apacheHttpClient = '4.5.14'
 }
 
 dependencies {
