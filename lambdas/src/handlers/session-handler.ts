@@ -66,7 +66,7 @@ export class SessionLambda implements LambdaInterface {
                 sessionRequestSummary,
                 clientIpAddress,
                 encodedDeviceInformation,
-                jwtPayload["evidence_requested"] as string,
+                jwtPayload["evidence_requested"] as EvidenceRequest,
             );
             metrics.addDimension("issuer", sessionRequestSummary.clientId);
             metrics.addMetric(SESSION_CREATED_METRIC, MetricUnits.Count, 1);
@@ -103,7 +103,7 @@ export class SessionLambda implements LambdaInterface {
         sessionRequest: SessionRequestSummary,
         clientIpAddress?: string,
         encodedDeviceInformation?: string,
-        evidenceRequested?: string,
+        evidenceRequested?: EvidenceRequest,
     ) {
         await this.auditService.sendAuditEvent(AuditEventType.START, {
             clientIpAddress: clientIpAddress,
@@ -125,6 +125,11 @@ export class SessionLambda implements LambdaInterface {
                     evidence: {
                         context: "identity_check",
                     },
+                    ...(evidenceRequested.verificationScore && {
+                        evidence_requested: {
+                            verificationScore: evidenceRequested.verificationScore,
+                        },
+                    }),
                 },
             }),
         });
