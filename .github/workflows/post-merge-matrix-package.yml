@@ -160,7 +160,7 @@ jobs:
 
       - name: Deploy SAM app
         if: matrix.ENABLED == 'true'
-        uses: alphagov/di-devplatform-upload-action@v3.2
+        uses: alphagov/di-devplatform-upload-action@v3.3
         with:
           artifact-bucket-name: "${{ secrets[matrix.ARTIFACT_SOURCE_BUCKET_NAME_SECRET] }}"
           signing-profile-name: "${{ secrets[matrix.SIGNING_PROFILE_NAME] }}"
@@ -267,7 +267,7 @@ jobs:
 
       - name: Deploy SAM app
         if: matrix.ENABLED == 'true'
-        uses: alphagov/di-devplatform-upload-action@v3.2
+        uses: alphagov/di-devplatform-upload-action@v3.3
         with:
           artifact-bucket-name: "${{ secrets[matrix.ARTIFACT_SOURCE_BUCKET_NAME_SECRET] }}"
           signing-profile-name: "${{ secrets[matrix.SIGNING_PROFILE_NAME] }}"
