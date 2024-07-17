@@ -478,7 +478,48 @@ describe("SessionLambda", () => {
                 ),
             );
         });
-        it("should send the audit event with context scope identity_check given a request with evidence_requested", async () => {
+        it("should send the audit event with context scope identity_check and verificationScore when verificationScore present in evidence_requested", async () => {
+            const spy = jest.spyOn(auditService.prototype, "sendAuditEvent");
+            process.env.CRI_IDENTIFIER = "di-ipv-cri-check-hmrc-api";
+
+            await lambdaHandler(mockEvent, {} as Context);
+
+            expect(spy).toHaveBeenCalledWith(AuditEventType.START, {
+                clientIpAddress: "test-client-ip-address",
+                sessionItem: {
+                    sessionId: "test-session-id",
+                    subject: "test-sub",
+                    persistentSessionId: "test-persistent-session-id",
+                    clientSessionId: "test-journey-id",
+                },
+                extensions: {
+                    evidence: {
+                        context: "identity_check",
+                    },
+                    evidence_requested: {
+                        verificationScore: 2,
+                    },
+                },
+            });
+        });
+        it("should send the audit event with only the context scope identity_check when evidence_requested has no verificationScore", async () => {
+            jest.spyOn(sessionRequestValidator.prototype, "validateJwt").mockReturnValue(
+                new Promise<JWTPayload>((res) =>
+                    res({
+                        client_id: "test-client-id",
+                        govuk_signin_journey_id: "test-journey-id",
+                        persistent_session_id: "test-persistent-session-id",
+                        redirect_uri: "test-redirect-uri",
+                        state: "test-state",
+                        sub: "test-sub",
+                        shared_claims: mockPersonWithSocialSecurityRecord,
+                        evidence_requested: {
+                            scoringPolicy: "gpg45",
+                            strengthScore: 2,
+                        },
+                    } as JWTPayload),
+                ),
+            );
             const spy = jest.spyOn(auditService.prototype, "sendAuditEvent");
             process.env.CRI_IDENTIFIER = "di-ipv-cri-check-hmrc-api";
 
