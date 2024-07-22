@@ -1,5 +1,4 @@
-import { SSMClient } from "@aws-sdk/client-ssm";
-import { Parameter } from "aws-sdk/clients/ssm";
+import { SSMClient, Parameter } from "@aws-sdk/client-ssm";
 import { CriAuditConfig } from "../../types/cri-audit-config";
 import { ClientConfigKey, CommonConfigKey } from "../../types/config-keys";
 import { SSMProvider } from "@aws-lambda-powertools/parameters/ssm";
