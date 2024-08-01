@@ -53,4 +53,14 @@ jobs:
           PACT_BROKER_USERNAME: ${{ secrets.pact-broker-username }}
           PACT_BROKER_PASSWORD: ${{ secrets.pact-broker-password }}
           CRI_UNDER_TEST: ${{ inputs.CRI_UNDER_TEST }}
+          LOG_LEVEL: "TRACE"
         run: ./gradlew pactTests jacocoTestReport --build-cache --parallel -x spotlessApply -x spotlessCheck
+
+      - name: Archive pact test results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pact-test-reports
+          retention-days: 5
+          path: |
+            **/*/build/reports/tests/pactTests
