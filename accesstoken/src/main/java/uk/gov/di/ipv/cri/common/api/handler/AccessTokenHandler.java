@@ -79,6 +79,7 @@ public class AccessTokenHandler
                     HttpStatusCode.OK, accessTokenResponse.toJSONObject());
         } catch (AccessTokenValidationException e) {
             eventProbe.log(Level.ERROR, e).counterMetric(METRIC_NAME_ACCESS_TOKEN, 0d);
+            // this is what's being thrown
             return ApiGatewayResponseGenerator.proxyJsonResponse(
                     HttpStatusCode.BAD_REQUEST, ErrorResponse.TOKEN_VALIDATION_ERROR);
         } catch (SessionExpiredException e) {
