@@ -1,0 +1,196 @@
+{
+  "consumer": {
+    "name": "IpvCoreBack"
+  },
+  "interactions": [
+    {
+      "_id": "3cd52e55c3e8fb49233c74b8021898e3db04f611",
+      "description": "Valid auth code",
+      "providerStates": [
+        {
+          "name": "dummyAuthCode is a valid authorization code"
+        },
+        {
+          "name": "dummyApiKey is a valid api key"
+        },
+        {
+          "name": "dummyPassportComponentId is the passport CRI component ID"
+        },
+        {
+          "name": "Passport CRI uses CORE_BACK_SIGNING_PRIVATE_KEY_JWK to validate core signatures"
+        }
+      ],
+      "request": {
+        "body": "client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion-type%3Ajwt-bearer&code=dummyAuthCode&grant_type=authorization_code&redirect_uri=https%3A%2F%2Fidentity.staging.account.gov.uk%2Fcredential-issuer%2Fcallback%3Fid%3DukPassport&client_assertion=eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiJ9.eyJpc3MiOiJpcHYtY29yZSIsInN1YiI6Imlwdi1jb3JlIiwiYXVkIjoiZHVtbXlQYXNzcG9ydENvbXBvbmVudElkIiwiZXhwIjo0MDcwOTA5NzAwLCJqdGkiOiJTY25GNGRHWHRoWllYU181azg1T2JFb1NVMDRXLUgzcWFfcDZucHYyWlVZIn0.8_p0JKL8REQI7GXwqMs2qdKyDNstjUDv0RUgZc37LmdtFvIib317AbSbC9tM_J_YXI6pmhksuLvZJ_3fFNOJtg",
+        "headers": {
+          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+          "x-api-key": "dummyApiKey"
+        },
+        "method": "POST",
+        "path": "/token"
+      },
+      "response": {
+        "body": {
+          "access_token": "string",
+          "expires_in": 100,
+          "token_type": "Bearer"
+        },
+        "generators": {
+          "body": {
+            "$.access_token": {
+              "size": 20,
+              "type": "RandomString"
+            },
+            "$.expires_in": {
+              "max": 2147483647,
+              "min": 0,
+              "type": "RandomInt"
+            }
+          }
+        },
+        "headers": {
+          "Content-Type": "application/json; charset=UTF-8"
+        },
+        "matchingRules": {
+          "body": {
+            "$.access_token": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.expires_in": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "integer"
+                }
+              ]
+            }
+          },
+          "header": {
+            "Content-Type": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "regex",
+                  "regex": "application/json(;\\s?charset=[\\w\\-]+)?"
+                }
+              ]
+            }
+          }
+        },
+        "status": 200
+      }
+    }
+  ],
+  "metadata": {
+    "pact-jvm": {
+      "version": "4.6.5"
+    },
+    "pactSpecification": {
+      "version": "3.0.0"
+    }
+  },
+  "provider": {
+    "name": "PassportTokenProvider"
+  },
+  "createdAt": "2024-08-02T09:46:26+00:00",
+  "_links": {
+    "self": {
+      "title": "Pact",
+      "name": "Pact between IpvCoreBack (106bf939bf28bca486773c6a4c4627827c0dce2f) and PassportTokenProvider",
+      "href": "https://pactbroker-onelogin.account.gov.uk/pacts/provider/PassportTokenProvider/consumer/IpvCoreBack/version/106bf939bf28bca486773c6a4c4627827c0dce2f"
+    },
+    "pb:consumer": {
+      "title": "Consumer",
+      "name": "IpvCoreBack",
+      "href": "https://pactbroker-onelogin.account.gov.uk/pacticipants/IpvCoreBack"
+    },
+    "pb:consumer-version": {
+      "title": "Consumer version",
+      "name": "106bf939bf28bca486773c6a4c4627827c0dce2f",
+      "href": "https://pactbroker-onelogin.account.gov.uk/pacticipants/IpvCoreBack/versions/106bf939bf28bca486773c6a4c4627827c0dce2f"
+    },
+    "pb:provider": {
+      "title": "Provider",
+      "name": "PassportTokenProvider",
+      "href": "https://pactbroker-onelogin.account.gov.uk/pacticipants/PassportTokenProvider"
+    },
+    "pb:pact-version": {
+      "title": "Pact content version permalink",
+      "name": "26e8b2808040ae1f7b124b4949fb953b605a3e9f",
+      "href": "https://pactbroker-onelogin.account.gov.uk/pacts/provider/PassportTokenProvider/consumer/IpvCoreBack/pact-version/26e8b2808040ae1f7b124b4949fb953b605a3e9f"
+    },
+    "pb:latest-pact-version": {
+      "title": "Latest version of this pact",
+      "href": "https://pactbroker-onelogin.account.gov.uk/pacts/provider/PassportTokenProvider/consumer/IpvCoreBack/latest"
+    },
+    "pb:all-pact-versions": {
+      "title": "All versions of this pact",
+      "href": "https://pactbroker-onelogin.account.gov.uk/pacts/provider/PassportTokenProvider/consumer/IpvCoreBack/versions"
+    },
+    "pb:latest-untagged-pact-version": {
+      "title": "Latest untagged version of this pact",
+      "href": "https://pactbroker-onelogin.account.gov.uk/pacts/provider/PassportTokenProvider/consumer/IpvCoreBack/latest-untagged"
+    },
+    "pb:latest-tagged-pact-version": {
+      "title": "Latest tagged version of this pact",
+      "href": "https://pactbroker-onelogin.account.gov.uk/pacts/provider/PassportTokenProvider/consumer/IpvCoreBack/latest/{tag}",
+      "templated": true
+    },
+    "pb:previous-distinct": {
+      "title": "Previous distinct version of this pact",
+      "href": "https://pactbroker-onelogin.account.gov.uk/pacts/provider/PassportTokenProvider/consumer/IpvCoreBack/version/106bf939bf28bca486773c6a4c4627827c0dce2f/previous-distinct"
+    },
+    "pb:diff-previous-distinct": {
+      "title": "Diff with previous distinct version of this pact",
+      "href": "https://pactbroker-onelogin.account.gov.uk/pacts/provider/PassportTokenProvider/consumer/IpvCoreBack/version/106bf939bf28bca486773c6a4c4627827c0dce2f/diff/previous-distinct"
+    },
+    "pb:diff": {
+      "title": "Diff with another specified version of this pact",
+      "href": "https://pactbroker-onelogin.account.gov.uk/pacts/provider/PassportTokenProvider/consumer/IpvCoreBack/pact-version/26e8b2808040ae1f7b124b4949fb953b605a3e9f/diff/pact-version/{pactVersion}",
+      "templated": true
+    },
+    "pb:pact-webhooks": {
+      "title": "Webhooks for the pact between IpvCoreBack and PassportTokenProvider",
+      "href": "https://pactbroker-onelogin.account.gov.uk/webhooks/provider/PassportTokenProvider/consumer/IpvCoreBack"
+    },
+    "pb:consumer-webhooks": {
+      "title": "Webhooks for all pacts with provider PassportTokenProvider",
+      "href": "https://pactbroker-onelogin.account.gov.uk/webhooks/consumer/PassportTokenProvider"
+    },
+    "pb:tag-prod-version": {
+      "title": "PUT to this resource to tag this consumer version as 'production'",
+      "href": "https://pactbroker-onelogin.account.gov.uk/pacticipants/IpvCoreBack/versions/106bf939bf28bca486773c6a4c4627827c0dce2f/tags/prod"
+    },
+    "pb:tag-version": {
+      "title": "PUT to this resource to tag this consumer version",
+      "href": "https://pactbroker-onelogin.account.gov.uk/pacticipants/IpvCoreBack/versions/106bf939bf28bca486773c6a4c4627827c0dce2f/tags/{tag}"
+    },
+    "pb:publish-verification-results": {
+      "title": "Publish verification results",
+      "href": "https://pactbroker-onelogin.account.gov.uk/pacts/provider/PassportTokenProvider/consumer/IpvCoreBack/pact-version/26e8b2808040ae1f7b124b4949fb953b605a3e9f/verification-results"
+    },
+    "pb:latest-verification-results": {
+      "href": "https://pactbroker-onelogin.account.gov.uk/pacts/provider/PassportTokenProvider/consumer/IpvCoreBack/pact-version/26e8b2808040ae1f7b124b4949fb953b605a3e9f/verification-results/latest"
+    },
+    "pb:triggered-webhooks": {
+      "title": "Webhooks triggered by the publication of this pact",
+      "href": "https://pactbroker-onelogin.account.gov.uk/pacts/provider/PassportTokenProvider/consumer/IpvCoreBack/version/106bf939bf28bca486773c6a4c4627827c0dce2f/triggered-webhooks"
+    },
+    "pb:matrix-for-consumer-version": {
+      "title": "View matrix rows for the consumer version to which this pact belongs",
+      "href": "https://pactbroker-onelogin.account.gov.uk/matrix?q[][pacticipant]=IpvCoreBack&q[][version]=106bf939bf28bca486773c6a4c4627827c0dce2f&latestby=cvpv"
+    },
+    "curies": [
+      {
+        "name": "pb",
+        "href": "https://pactbroker-onelogin.account.gov.uk/doc/{rel}?context=pact",
+        "templated": true
+      }
+    ]
+  }
+}
