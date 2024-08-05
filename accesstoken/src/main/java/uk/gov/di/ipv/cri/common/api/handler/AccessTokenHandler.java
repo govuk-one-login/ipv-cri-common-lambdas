@@ -61,63 +61,35 @@ public class AccessTokenHandler
     @Metrics(captureColdStart = true)
     public APIGatewayProxyResponseEvent handleRequest(
             APIGatewayProxyRequestEvent input, Context context) {
-
-        System.out.println("🍎 CAITLIN");
-        System.out.println(input.getBody());
         try {
             TokenRequest tokenRequest = accessTokenService.createTokenRequest(input.getBody());
-            System.out.println("🍎 1");
-
             String authCode = accessTokenService.getAuthorizationCode(tokenRequest);
-            System.out.println("🍎 2");
-
             SessionItem sessionItem = sessionService.getSessionByAuthorisationCode(authCode);
-            System.out.println("🍎 3");
-
             eventProbe
                     .addJourneyIdToLoggingContext(sessionItem.getClientSessionId())
                     .log(Level.INFO, "found session");
-            System.out.println("🍎 4");
-            System.out.println(tokenRequest);
-            System.out.println(sessionItem);
-
             accessTokenService.validateTokenRequest(tokenRequest, sessionItem);
-            System.out.println("🍎 5");
-
             AccessTokenResponse accessTokenResponse = accessTokenService.createToken(tokenRequest);
-            System.out.println("🍎 6");
-
             accessTokenService.updateSessionAccessToken(sessionItem, accessTokenResponse);
-            System.out.println("🍎 7");
-
             sessionService.updateSession(sessionItem);
-            System.out.println("🍎 8");
 
             eventProbe.counterMetric(METRIC_NAME_ACCESS_TOKEN);
 
             return ApiGatewayResponseGenerator.proxyJsonResponse(
                     HttpStatusCode.OK, accessTokenResponse.toJSONObject());
         } catch (AccessTokenValidationException e) {
-            System.out.println("🍎 AccessTokenValidationException");
-
             eventProbe.log(Level.ERROR, e).counterMetric(METRIC_NAME_ACCESS_TOKEN, 0d);
             return ApiGatewayResponseGenerator.proxyJsonResponse(
                     HttpStatusCode.BAD_REQUEST, ErrorResponse.TOKEN_VALIDATION_ERROR);
         } catch (SessionExpiredException e) {
-            System.out.println("🍎 SessionExpiredException");
-
             eventProbe.log(Level.ERROR, e).counterMetric(METRIC_NAME_ACCESS_TOKEN, 0d);
             return ApiGatewayResponseGenerator.proxyJsonResponse(
                     HttpStatusCode.FORBIDDEN, ErrorResponse.SESSION_EXPIRED);
         } catch (AuthorizationCodeExpiredException e) {
-            System.out.println("🍎 AuthorizationCodeExpiredException");
-
             eventProbe.log(Level.ERROR, e).counterMetric(METRIC_NAME_ACCESS_TOKEN, 0d);
             return ApiGatewayResponseGenerator.proxyJsonResponse(
                     HttpStatusCode.FORBIDDEN, ErrorResponse.AUTHORIZATION_CODE_EXPIRED);
         } catch (SessionNotFoundException e) {
-            System.out.println("🍎 SessionNotFoundException");
-
             eventProbe.log(Level.ERROR, e).counterMetric(METRIC_NAME_ACCESS_TOKEN, 0d);
             return ApiGatewayResponseGenerator.proxyJsonResponse(
                     HttpStatusCode.FORBIDDEN, ErrorResponse.ACCESS_TOKEN_EXPIRED);
