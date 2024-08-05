@@ -5,7 +5,8 @@ import au.com.dius.pact.provider.junit5.PactVerificationContext;
 import au.com.dius.pact.provider.junit5.PactVerificationInvocationContextProvider;
 import au.com.dius.pact.provider.junitsupport.Provider;
 import au.com.dius.pact.provider.junitsupport.State;
-import au.com.dius.pact.provider.junitsupport.loader.PactFolder;
+import au.com.dius.pact.provider.junitsupport.loader.PactBroker;
+import au.com.dius.pact.provider.junitsupport.loader.PactBrokerAuth;
 import au.com.dius.pact.provider.junitsupport.loader.SelectorBuilder;
 import org.apache.hc.core5.http.HttpRequest;
 import org.junit.jupiter.api.AfterEach;
@@ -50,17 +51,16 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 // For static tests against potential new contracts
-@PactFolder("pacts")
+// @PactFolder("pacts")
 // For local tests the pact details will need set as environment variables
 @Tag("Pact")
-// @Provider("PassportTokenProvider")
-@Provider("AddressCriTokenProvider")
-// @PactBroker(
-//         url = "https://${PACT_BROKER_HOST}",
-//         authentication =
-//                 @PactBrokerAuth(
-//                         username = "${PACT_BROKER_USERNAME}",
-//                         password = "${PACT_BROKER_PASSWORD}"))
+@Provider("${CRI_UNDER_TEST}")
+@PactBroker(
+        url = "https://${PACT_BROKER_HOST}",
+        authentication =
+                @PactBrokerAuth(
+                        username = "${PACT_BROKER_USERNAME}",
+                        password = "${PACT_BROKER_PASSWORD}"))
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 class AccessTokenHandlerTest {
@@ -72,11 +72,9 @@ class AccessTokenHandlerTest {
 
     @au.com.dius.pact.provider.junitsupport.loader.PactBrokerConsumerVersionSelectors
     public static SelectorBuilder consumerVersionSelectors() {
-
         // Select Pacts for consumers deployed to production with branch 'FEAT-123'
         return new SelectorBuilder()
-                // .tag(System.getenv("PassportTokenProvider"))
-                .tag(System.getenv("AddressCriTokenProvider"))
+                .tag(System.getenv("CRI_UNDER_TEST"))
                 .branch("main", "IpvCoreBack")
                 .deployedOrReleased();
     }
@@ -88,6 +86,7 @@ class AccessTokenHandlerTest {
 
     @BeforeEach
     void pactSetup(PactVerificationContext context) throws IOException {
+
         Injector tokenHandlerInjector =
                 new Injector(
                         new AccessTokenHandler(
