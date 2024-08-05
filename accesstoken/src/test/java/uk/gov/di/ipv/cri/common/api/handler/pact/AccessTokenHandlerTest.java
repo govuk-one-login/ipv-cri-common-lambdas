@@ -129,6 +129,11 @@ class AccessTokenHandlerTest {
         mockingAuthenticationConfig("dummyDrivingLicenceComponentId");
     }
 
+    @State("dummyAddressComponentId is the address CRI component ID")
+    void componentIdIsSetToAddressCri() {
+        mockingAuthenticationConfig("dummyAddressComponentId");
+    }
+
     @State("Passport CRI uses CORE_BACK_SIGNING_PRIVATE_KEY_JWK to validate core signatures")
     void passportIsUsingExpectedSigningKey() {}
 
@@ -140,6 +145,11 @@ class AccessTokenHandlerTest {
 
     @State("Driving licence CRI uses CORE_BACK_SIGNING_PRIVATE_KEY_JWK to validate core signatures")
     void drivingLicenceIsUsingExpectedSigningKey() {}
+
+    @State("Address CRI uses CORE_BACK_SIGNING_PRIVATE_KEY_JWK to validate core signatures")
+    void addressIsUsingExpectedSigningKey() {
+        // no set up required but step must exist
+    }
 
     @State("dummyAuthCode is a valid authorization code")
     void validAuthorisationCodeSupplied() {
@@ -200,9 +210,9 @@ class AccessTokenHandlerTest {
                 .thenReturn(List.of(session));
     }
 
-    private void mockingAuthenticationConfig(String dummyFraudComponentId) {
+    private void mockingAuthenticationConfig(String dummyComponentId) {
         Map<String, String> clientAuth = new HashMap<>();
-        clientAuth.put("audience", dummyFraudComponentId);
+        clientAuth.put("audience", dummyComponentId);
         clientAuth.put("authenticationAlg", "ES256");
         clientAuth.put("redirectUri", "http://localhost:5050");
         clientAuth.put(
