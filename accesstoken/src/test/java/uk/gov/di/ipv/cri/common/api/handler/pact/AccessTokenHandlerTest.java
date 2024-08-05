@@ -147,7 +147,9 @@ class AccessTokenHandlerTest {
     void drivingLicenceIsUsingExpectedSigningKey() {}
 
     @State("Address CRI uses CORE_BACK_SIGNING_PRIVATE_KEY_JWK to validate core signatures")
-    void addressIsUsingExpectedSigningKey() {}
+    void addressIsUsingExpectedSigningKey() {
+        // no set up required but step must exist
+    }
 
     @State("dummyAuthCode is a valid authorization code")
     void validAuthorisationCodeSupplied() {
