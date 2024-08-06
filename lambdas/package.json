@@ -24,7 +24,7 @@
         "@aws-sdk/lib-dynamodb": "3.150.0",
         "@middy/core": "4.2.8",
         "esbuild": "0.17.15",
-        "jose": "4.13.1"
+        "jose": "4.15.5"
     },
     "devDependencies": {
         "@types/aws-lambda": "8.10.114",
