@@ -1479,7 +1479,7 @@ Resources:
     Condition: IsDevEnvironment
     Properties:
       LogGroupName: !Sub /aws/apigateway/${AWS::StackName}-${PreMergeDevOnlyApi}-private-AccessLogs
-      RetentionInDays: 7
+      RetentionInDays: 30
 
   ##################################################################################################
   # ipv-core-stub-aws-prod_3rdparty clientId configuration
