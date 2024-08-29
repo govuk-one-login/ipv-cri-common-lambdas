@@ -1,0 +1,107 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: "AWS::Serverless-2016-10-31"
+Description: "Digital Identity CRI Test Automation Harness"
+
+Parameters:
+  CodeSigningConfigArn:
+    Type: String
+    Default: "none"
+    Description: >
+      The ARN of the Code Signing Config to use, provided by the deployment pipeline
+  Environment:
+    Description: "The environment type"
+    Type: "String"
+    AllowedValues:
+      - "dev"
+      - "build"
+    ConstraintDescription: must be dev or build
+  PermissionsBoundary:
+    Description: "The ARN of the permissions boundary to apply when creating IAM roles"
+    Type: String
+    Default: "none"
+  CriIdentifier:
+    Description: "The unique credential issuer identifier"
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: "/common-cri-parameters/CriIdentifier"
+  # VpcStackName:
+  #   Type: String
+  #   Default: "vpc-cri"
+  #   Description: The name of the VPC stack deployed.
+  # BackendStack:
+  #   Description: The stack name of the API stack under test
+  #   Default: bav-cri-api
+  #   Type: String
+
+
+Conditions:
+  UseCodeSigningConfigArn:
+    Fn::Not:
+      - Fn::Equals:
+          - !Ref CodeSigningConfigArn
+          - "none"
+  UsePermissionsBoundary:
+  Fn::Not:
+    - Fn::Equals:
+        - !Ref PermissionsBoundary
+        - "none"
+
+Globals:
+  Function:
+    Runtime: nodejs18.x
+    VpcConfig:
+      SecurityGroupIds:
+      # TODO
+        - [!ImportValue cri-vpc-LambdaSecurityGroup]
+      SubnetIds:
+        - Fn::ImportValue:
+            "Fn::Sub": "${VpcStackName}-ProtectedSubnetIdA"
+        - Fn::ImportValue:
+            "Fn::Sub": "${VpcStackName}-ProtectedSubnetIdB"
+    PermissionsBoundary: !If
+      - UsePermissionsBoundary
+      - !Ref PermissionsBoundary
+      - !Ref AWS::NoValue
+    CodeSigningConfigArn: !If
+      - UseCodeSigning
+      - !Ref CodeSigningConfigArn
+      - !Ref AWS::NoValue
+    Timeout: 30 # seconds
+    Tracing: Active
+    MemorySize: 1024
+    Architectures:
+      - arm64
+    Environment:
+      Variables:
+        AWS_STACK_NAME: !Sub ${AWS::StackName}
+        POWERTOOLS_LOG_LEVEL: DEBUG
+        POWERTOOLS_METRICS_NAMESPACE: !Ref CriIdentifier
+    AutoPublishAlias: live
+
+Resources:
+  DequeueFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "TxMA-Event-Dequeue-${AWS::StackName}"
+      Handler: dequeue-handler.lambdaHandler
+      CodeUri: ./lambdas/
+      # Environment:
+      #   Variables:
+      # Policies:
+      #   - 
+      Events:
+        TxMASQSEvent:
+          Type: SQS
+          Properties:
+            Queue:
+              Fn::ImportValue: !Sub "${BackendStack}-TxMASQSQueue-arn"
+            Enabled: true
+            FunctionResponseTypes:
+              - ReportBatchItemFailures
+    Metadata: # Manage esbuild properties
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: "es2020"
+        Sourcemap: false # Enabling source maps will create the required NODE_OPTIONS environment variables on your lambda function during sam build
+        EntryPoints:
+          - DequeueHandler.ts
