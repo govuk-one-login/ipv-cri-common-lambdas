@@ -74,26 +74,35 @@ Resources:
   DequeueFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub "TxMA-Event-Dequeue-${AWS::StackName}"
+      FunctionName: !Sub "Audit-Event-Dequeue-${AWS::StackName}"
       Handler: dequeue-handler.lambdaHandler
       CodeUri: ../lambdas/src
+      Environment:
+        Variables:
+          POWERTOOLS_SERVICE_NAME: AuditEventDequeueFunction
       Policies:
         - Statement:
-            - Sid: TxMAKMSDecryptkeysPolicy
+            - Sid: DecryptAuditEventKeyPolicy
               Effect: Allow
               Action:
-                - "kms:Decrypt"
+                - kms:Decrypt
               Resource:
                 Fn::ImportValue: !Sub "${TxmaStackName}-AuditEventQueueEncryptionKeyArn"
-            - Sid: TxMASQSConsumeEventPolicy
+            - Sid: ConsumeAuditEventPolicy
               Effect: Allow
               Action:
-                - "sqs:DeleteMessage"
-                - "sqs:GetQueueAttributes"
-                - "sqs:ChangeMessageVisibility"
-                - "sqs:ReceiveMessage"
+                - sqs:DeleteMessage
+                - sqs:GetQueueAttributes
+                - sqs:ChangeMessageVisibility
+                - sqs:ReceiveMessage
               Resource:
                 Fn::ImportValue: !Sub "${TxmaStackName}-AuditEventQueueARN"
+            - Sid: PutEventsPolicy
+              Effect: Allow
+              Action:
+                - dynamodb:PutItem
+              Resource:
+                !GetAtt AuditEventsTable.Arn
       Events:
         TxMASQSEvent:
           Type: SQS
@@ -117,3 +126,22 @@ Resources:
     Properties:
       LogGroupName: !Sub "/aws/lambda/${DequeueFunction}"
       RetentionInDays: 30
+
+  AuditEventsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "audit-events-${AWS::StackName}"
+      AttributeDefinitions:
+        - AttributeName: partitionKey
+          AttributeType: S
+        - AttributeName: sortKey
+          AttributeType: S
+      BillingMode: PAY_PER_REQUEST
+      KeySchema:
+        - AttributeName: partitionKey
+          KeyType: HASH
+        - AttributeName: sortKey
+          KeyType: RANGE
+      TimeToLiveSpecification:
+        AttributeName: expiryDate
+        Enabled: true
