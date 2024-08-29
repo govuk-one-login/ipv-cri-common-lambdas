@@ -15,6 +15,7 @@ export class DequeueLambdaHandler implements LambdaInterface {
 
         for await (const record of event.Records) {
             try {
+                console.log("record", record);
                 // push to DDB
             } catch (error) {
                 // batchFailures.push(new BatchItemFailure(record.messageId));
@@ -26,3 +27,6 @@ export class DequeueLambdaHandler implements LambdaInterface {
         // return { batchItemFailures: batchFailures };
     }
 }
+
+const handlerClass = new DequeueLambdaHandler();
+export const lambdaHandler = handlerClass.handler.bind(handlerClass);
