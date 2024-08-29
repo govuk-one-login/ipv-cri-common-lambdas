@@ -23,15 +23,11 @@ Parameters:
     Description: "The unique credential issuer identifier"
     Type: AWS::SSM::Parameter::Value<String>
     Default: "/common-cri-parameters/CriIdentifier"
-  # VpcStackName:
-  #   Type: String
-  #   Default: "vpc-cri"
-  #   Description: The name of the VPC stack deployed.
-  # BackendStack:
-  #   Description: The stack name of the API stack under test
-  #   Default: bav-cri-api
-  #   Type: String
-
+  TxmaStackName:
+    Description: "The stack containing the TXMA infrastructure"
+    Type: String
+    # Default: txma-infrastructure
+    Default: common-infra-caitlin
 
 Conditions:
   UseCodeSigningConfigArn:
@@ -81,25 +77,38 @@ Resources:
       FunctionName: !Sub "TxMA-Event-Dequeue-${AWS::StackName}"
       Handler: dequeue-handler.lambdaHandler
       CodeUri: ../lambdas/src
-      # Environment:
-      #   Variables:
-      # Policies:
-      #   - 
-      # Events:
-      #   TxMASQSEvent:
-      #     Type: SQS
-      #     Properties:
-      #       Queue:
-      #         Fn::ImportValue: !Sub "${BackendStack}-TxMASQSQueue-arn"
-      #       Enabled: true
-      #       FunctionResponseTypes:
-      #         - ReportBatchItemFailures
-    Metadata: # Manage esbuild properties
+      Policies:
+        - Statement:
+            - Sid: TxMAKMSDecryptkeysPolicy
+              Effect: Allow
+              Action:
+                - "kms:Decrypt"
+              Resource:
+                Fn::ImportValue: !Sub "${TxmaStackName}-AuditEventQueueEncryptionKeyArn"
+            - Sid: TxMASQSConsumeEventPolicy
+              Effect: Allow
+              Action:
+                - "sqs:DeleteMessage"
+                - "sqs:GetQueueAttributes"
+                - "sqs:ChangeMessageVisibility"
+                - "sqs:ReceiveMessage"
+              Resource:
+                Fn::ImportValue: !Sub "${TxmaStackName}-AuditEventQueueARN"
+      Events:
+        TxMASQSEvent:
+          Type: SQS
+          Properties:
+            Queue:
+              Fn::ImportValue: !Sub "${TxmaStackName}-AuditEventQueueARN"
+            Enabled: true
+            FunctionResponseTypes:
+              - ReportBatchItemFailures
+    Metadata:
       BuildMethod: esbuild
       BuildProperties:
         Minify: true
         Target: "node18"
-        Sourcemap: trueg
+        Sourcemap: true
         EntryPoints:
           - dequeue-handler.ts
 

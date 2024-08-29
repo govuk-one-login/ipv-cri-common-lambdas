@@ -2,7 +2,7 @@ version = 0.1
 [dev]
 [dev.deploy]
 [dev.deploy.parameters]
-stack_name = "test-harness"
+stack_name = "test-harness-caitlin"
 region = "eu-west-2"
 confirm_changeset = false
 capabilities = "CAPABILITY_IAM CAPABILITY_NAMED_IAM"
