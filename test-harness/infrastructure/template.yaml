@@ -40,29 +40,26 @@ Conditions:
           - !Ref CodeSigningConfigArn
           - "none"
   UsePermissionsBoundary:
-  Fn::Not:
-    - Fn::Equals:
-        - !Ref PermissionsBoundary
-        - "none"
+    Fn::Not:
+      - Fn::Equals:
+          - !Ref PermissionsBoundary
+          - "none"
 
 Globals:
   Function:
     Runtime: nodejs18.x
     VpcConfig:
       SecurityGroupIds:
-      # TODO
-        - [!ImportValue cri-vpc-LambdaSecurityGroup]
+        - !ImportValue cri-vpc-AWSServicesEndpointSecurityGroupId
       SubnetIds:
-        - Fn::ImportValue:
-            "Fn::Sub": "${VpcStackName}-ProtectedSubnetIdA"
-        - Fn::ImportValue:
-            "Fn::Sub": "${VpcStackName}-ProtectedSubnetIdB"
+        - !ImportValue cri-vpc-PrivateSubnetIdA
+        - !ImportValue cri-vpc-PrivateSubnetIdB
     PermissionsBoundary: !If
       - UsePermissionsBoundary
       - !Ref PermissionsBoundary
       - !Ref AWS::NoValue
     CodeSigningConfigArn: !If
-      - UseCodeSigning
+      - UseCodeSigningConfigArn
       - !Ref CodeSigningConfigArn
       - !Ref AWS::NoValue
     Timeout: 30 # seconds
@@ -83,25 +80,25 @@ Resources:
     Properties:
       FunctionName: !Sub "TxMA-Event-Dequeue-${AWS::StackName}"
       Handler: dequeue-handler.lambdaHandler
-      CodeUri: ./lambdas/
+      CodeUri: ../lambdas/src
       # Environment:
       #   Variables:
       # Policies:
       #   - 
-      Events:
-        TxMASQSEvent:
-          Type: SQS
-          Properties:
-            Queue:
-              Fn::ImportValue: !Sub "${BackendStack}-TxMASQSQueue-arn"
-            Enabled: true
-            FunctionResponseTypes:
-              - ReportBatchItemFailures
+      # Events:
+      #   TxMASQSEvent:
+      #     Type: SQS
+      #     Properties:
+      #       Queue:
+      #         Fn::ImportValue: !Sub "${BackendStack}-TxMASQSQueue-arn"
+      #       Enabled: true
+      #       FunctionResponseTypes:
+      #         - ReportBatchItemFailures
     Metadata: # Manage esbuild properties
       BuildMethod: esbuild
       BuildProperties:
         Minify: true
-        Target: "es2020"
-        Sourcemap: false # Enabling source maps will create the required NODE_OPTIONS environment variables on your lambda function during sam build
+        Target: "node18"
+        Sourcemap: true # Enabling source maps will create the required NODE_OPTIONS environment variables on your lambda function during sam build
         EntryPoints:
-          - DequeueHandler.ts
+          - dequeue-handler.ts
