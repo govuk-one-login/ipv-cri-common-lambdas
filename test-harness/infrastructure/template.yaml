@@ -99,6 +99,12 @@ Resources:
       BuildProperties:
         Minify: true
         Target: "node18"
-        Sourcemap: true # Enabling source maps will create the required NODE_OPTIONS environment variables on your lambda function during sam build
+        Sourcemap: trueg
         EntryPoints:
           - dequeue-handler.ts
+
+  DequeueFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${DequeueFunction}"
+      RetentionInDays: 30
