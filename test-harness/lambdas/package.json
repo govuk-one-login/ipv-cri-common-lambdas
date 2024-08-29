@@ -1,0 +1,21 @@
+{
+  "name": "test-harness",
+  "description": "Harness to enable automation testing",
+  "main": "index.js",
+  "scripts": {},
+  "babel": {
+    "presets": [
+      "@babel/preset-typescript"
+    ]
+  },
+  "engines": {
+    "node": "^18.0.0"
+  },
+  "dependencies": {
+    "@aws-lambda-powertools/commons": "2.7.0",
+    "@aws-lambda-powertools/logger": "2.7.0",
+    "@aws-lambda-powertools/metrics": "2.7.0",
+    "@aws-lambda-powertools/tracer": "2.7.0",
+    "aws-lambda": "1.0.7"
+  }
+}
