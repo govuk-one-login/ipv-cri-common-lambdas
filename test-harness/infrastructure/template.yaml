@@ -80,6 +80,7 @@ Resources:
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: AuditEventDequeueFunction
+          EVENTS_TABLE_NAME: !Ref AuditEventsTable
       Policies:
         - Statement:
             - Sid: DecryptAuditEventKeyPolicy
@@ -96,7 +97,7 @@ Resources:
                 - sqs:ChangeMessageVisibility
                 - sqs:ReceiveMessage
               Resource:
-                Fn::ImportValue: !Sub "${TxmaStackName}-AuditEventQueueARN"
+                Fn::ImportValue: !Sub "${TxmaStackName}-AuditEventQueueArn"
             - Sid: PutEventsPolicy
               Effect: Allow
               Action:
@@ -104,11 +105,11 @@ Resources:
               Resource:
                 !GetAtt AuditEventsTable.Arn
       Events:
-        TxMASQSEvent:
+        AuditSQSEvent:
           Type: SQS
           Properties:
             Queue:
-              Fn::ImportValue: !Sub "${TxmaStackName}-AuditEventQueueARN"
+              Fn::ImportValue: !Sub "${TxmaStackName}-AuditEventQueueArn"
             Enabled: true
             FunctionResponseTypes:
               - ReportBatchItemFailures
