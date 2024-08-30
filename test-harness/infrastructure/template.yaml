@@ -26,8 +26,7 @@ Parameters:
   TxmaStackName:
     Description: "The stack containing the TXMA infrastructure"
     Type: String
-    # Default: txma-infrastructure
-    Default: common-infra-caitlin
+    Default: txma-infrastructure
 
 Conditions:
   UseCodeSigningConfigArn:
