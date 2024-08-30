@@ -1,6 +1,6 @@
 # Test Harness
 
-This is a test harness that listens to events from the TxMA SQS queue and puts them a test events table which can then be accessed using an API to allow automated testing of TxMA events.
+This is a test harness that listens to events from the TxMA SQS queue and puts them into a test events table which can then be accessed using an API to allow automated testing of TxMA events.
 
 The test harness is it's own stack and can be deployed to whichever accounts it's needed in by using the github action.
 
