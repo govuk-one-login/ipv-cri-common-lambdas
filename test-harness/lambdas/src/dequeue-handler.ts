@@ -3,8 +3,8 @@ import type { LambdaInterface } from "@aws-lambda-powertools/commons/types";
 import { Logger } from "@aws-lambda-powertools/logger";
 import { SQSEvent, SQSBatchItemFailure } from "aws-lambda";
 
-const logger = new Logger();
-const dbClient = new DynamoDBClient({ region: process.env.REGION });
+export const logger = new Logger();
+export const dbClient = new DynamoDBClient({ region: process.env.REGION });
 
 export class DequeueLambdaHandler implements LambdaInterface {
     async handler(event: SQSEvent): Promise<{ batchItemFailures: SQSBatchItemFailure[] }> {
@@ -30,10 +30,10 @@ export class DequeueLambdaHandler implements LambdaInterface {
 
             try {
                 await dbClient.send(putItemCommand);
-                logger.info(`Event successfully saved to ${tableName} table`);
+                logger.info({ message: "Event successfully saved to table", tableName, sessionId, eventName });
             } catch (error) {
                 batchItemFailures.push({ itemIdentifier: messageId });
-                logger.error({ message: "Error writing events to DB", error });
+                logger.error({ message: `Error writing events to DB table ${tableName}`, error });
             }
         }
 

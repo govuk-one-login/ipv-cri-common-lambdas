@@ -5,7 +5,7 @@
   "scripts": {
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "unit": "jest --silent",
+    "unit": "jest",
     "test": "npm run unit --",
     "compile": "tsc"
   },
