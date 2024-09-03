@@ -73,7 +73,6 @@ Resources:
   DequeueFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub "Audit-Event-Dequeue-${AWS::StackName}"
       Handler: dequeue-handler.lambdaHandler
       CodeUri: ../lambdas/src
       Environment:
@@ -130,7 +129,6 @@ Resources:
   AuditEventsTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: !Sub "audit-events-${AWS::StackName}"
       AttributeDefinitions:
         - AttributeName: partitionKey
           AttributeType: S
