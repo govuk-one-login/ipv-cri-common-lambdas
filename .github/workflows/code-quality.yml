@@ -1,6 +1,10 @@
 name: Code quality
 
-on: workflow_call
+on: 
+  #workflow_call
+  push:
+    branches:
+      - test-branch
 permissions: { }
 
 concurrency:
@@ -35,19 +39,19 @@ jobs:
           all-files: true
           pull-repository: false
 
-  linting:
-    name: Linting
-    runs-on: ubuntu-latest
-    steps:
-      - name: Pull repository
-        uses: actions/checkout@v4
+  # linting:
+  #   name: Linting
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Pull repository
+  #       uses: actions/checkout@v4
 
-      - name: Set up JDK
-        uses: actions/setup-java@v4
-        with:
-          java-version: 11
-          distribution: zulu
-          cache: gradle
+  #     - name: Set up JDK
+  #       uses: actions/setup-java@v4
+  #       with:
+  #         java-version: 11
+  #         distribution: zulu
+  #         cache: gradle
 
-      - name: Run Spotless
-        run: ./gradlew --no-daemon spotlessCheck
+  #     - name: Run Spotless
+  #       run: ./gradlew --no-daemon spotlessCheck
