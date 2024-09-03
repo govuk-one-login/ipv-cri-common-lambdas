@@ -8,13 +8,6 @@ Parameters:
     Default: "none"
     Description: >
       The ARN of the Code Signing Config to use, provided by the deployment pipeline
-  Environment:
-    Description: "The environment type"
-    Type: "String"
-    AllowedValues:
-      - "dev"
-      - "build"
-    ConstraintDescription: must be dev or build
   PermissionsBoundary:
     Description: "The ARN of the permissions boundary to apply when creating IAM roles"
     Type: String
