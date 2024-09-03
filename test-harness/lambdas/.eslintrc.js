@@ -20,7 +20,7 @@ module.exports = {
         expect: true,
     },
     plugins: ["@typescript-eslint"],
-    extends: ["prettier", "eslint:recommended", "plugin:prettier/recommended", "plugin:@typescript-eslint/recommended"],
+    extends: ["eslint:recommended", "plugin:prettier/recommended", "plugin:@typescript-eslint/recommended"],
     ignorePatterns: ["node_modules", ".aws-sam", "build", "dist", "dotenv", "coverage"],
     rules: {
         "no-console": 2,
