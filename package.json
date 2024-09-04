@@ -1,9 +1,8 @@
 {
   "name": "ipv-cri-common-lambdas",
   "version": "1.0.0",
-  "description": "",
   "workspaces": [
     "lambdas",
-    "test-harness/lambdas"
+    "test-resources/test-harness/lambdas"
   ]
 }
