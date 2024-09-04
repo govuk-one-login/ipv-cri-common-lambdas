@@ -433,14 +433,16 @@ describe("access-token-handler.ts", () => {
 
             it("should return http 403 if the authorizationCodeExpiryDate has expired", async () => {
                 const twentyFourthOfFeb2023InMs = 1677249836658;
-                jest.spyOn(Date, "now").mockReturnValueOnce(twentyFourthOfFeb2023InMs);
+                jest.spyOn(Date, "now").mockReturnValue(twentyFourthOfFeb2023InMs);
                 const sevenDaysInMilliseconds = 7 * 24 * 60 * 60 * 1000;
                 const expiry = Math.floor((twentyFourthOfFeb2023InMs - sevenDaysInMilliseconds) / 1000);
+                const futureExpiry = Math.floor((twentyFourthOfFeb2023InMs + sevenDaysInMilliseconds) / 1000);
 
                 mockDynamoDbClient.prototype.query.mockImplementation(() =>
                     Promise.resolve({
                         Items: [
                             {
+                                expiryDate: futureExpiry,
                                 sessionId: code,
                                 authorizationCodeExpiryDate: expiry,
                                 clientId: "1",
