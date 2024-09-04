@@ -13,7 +13,7 @@ export class DequeueLambdaHandler implements LambdaInterface {
         const tableName = process.env.EVENTS_TABLE_NAME;
         const batchItemFailures: SQSBatchItemFailure[] = [];
 
-        for await (const { body, messageId } of event.Records) {
+        for (const { body, messageId } of event.Records) {
             const { sessionId, eventName, timestamp } = this.getEventData(body);
             const nowInSeconds = Math.floor(Date.now() / 1000);
             const ttl = nowInSeconds + 360;
