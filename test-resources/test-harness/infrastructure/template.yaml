@@ -1,0 +1,138 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: "AWS::Serverless-2016-10-31"
+Description: "Digital Identity CRI Test Automation Harness"
+
+Parameters:
+  CodeSigningConfigArn:
+    Type: String
+    Default: "none"
+    Description: >
+      The ARN of the Code Signing Config to use, provided by the deployment pipeline
+  PermissionsBoundary:
+    Description: "The ARN of the permissions boundary to apply when creating IAM roles"
+    Type: String
+    Default: "none"
+  CriIdentifier:
+    Description: "The unique credential issuer identifier"
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: "/common-cri-parameters/CriIdentifier"
+  TxmaStackName:
+    Description: "The stack containing the TXMA infrastructure"
+    Type: String
+    Default: txma-infrastructure
+
+Conditions:
+  UseCodeSigningConfigArn:
+    Fn::Not:
+      - Fn::Equals:
+          - !Ref CodeSigningConfigArn
+          - "none"
+  UsePermissionsBoundary:
+    Fn::Not:
+      - Fn::Equals:
+          - !Ref PermissionsBoundary
+          - "none"
+
+Globals:
+  Function:
+    Runtime: nodejs18.x
+    VpcConfig:
+      SecurityGroupIds:
+        - !ImportValue cri-vpc-AWSServicesEndpointSecurityGroupId
+      SubnetIds:
+        - !ImportValue cri-vpc-PrivateSubnetIdA
+        - !ImportValue cri-vpc-PrivateSubnetIdB
+    PermissionsBoundary: !If
+      - UsePermissionsBoundary
+      - !Ref PermissionsBoundary
+      - !Ref AWS::NoValue
+    CodeSigningConfigArn: !If
+      - UseCodeSigningConfigArn
+      - !Ref CodeSigningConfigArn
+      - !Ref AWS::NoValue
+    Timeout: 30 # seconds
+    Tracing: Active
+    MemorySize: 1024
+    Architectures:
+      - arm64
+    Environment:
+      Variables:
+        AWS_STACK_NAME: !Sub ${AWS::StackName}
+        POWERTOOLS_LOG_LEVEL: DEBUG
+        POWERTOOLS_METRICS_NAMESPACE: !Ref CriIdentifier
+    AutoPublishAlias: live
+
+Resources:
+  DequeueFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: dequeue-handler.lambdaHandler
+      CodeUri: ../lambdas/src
+      Environment:
+        Variables:
+          POWERTOOLS_SERVICE_NAME: AuditEventDequeueFunction
+          EVENTS_TABLE_NAME: !Ref AuditEventsTable
+      Policies:
+        - Statement:
+            - Sid: DecryptAuditEventKeyPolicy
+              Effect: Allow
+              Action:
+                - kms:Decrypt
+              Resource:
+                Fn::ImportValue: !Sub "${TxmaStackName}-AuditEventQueueEncryptionKeyArn"
+            - Sid: ConsumeAuditEventPolicy
+              Effect: Allow
+              Action:
+                - sqs:DeleteMessage
+                - sqs:GetQueueAttributes
+                - sqs:ChangeMessageVisibility
+                - sqs:ReceiveMessage
+              Resource:
+                Fn::ImportValue: !Sub "${TxmaStackName}-AuditEventQueueArn"
+            - Sid: PutEventsPolicy
+              Effect: Allow
+              Action:
+                - dynamodb:PutItem
+              Resource:
+                !GetAtt AuditEventsTable.Arn
+      Events:
+        AuditSQSEvent:
+          Type: SQS
+          Properties:
+            Queue:
+              Fn::ImportValue: !Sub "${TxmaStackName}-AuditEventQueueArn"
+            Enabled: true
+            FunctionResponseTypes:
+              - ReportBatchItemFailures
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: "node18"
+        Sourcemap: true
+        EntryPoints:
+          - dequeue-handler.ts
+
+  DequeueFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${DequeueFunction}"
+      RetentionInDays: 30
+
+  AuditEventsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: partitionKey
+          AttributeType: S
+        - AttributeName: sortKey
+          AttributeType: S
+      BillingMode: PAY_PER_REQUEST
+      KeySchema:
+        - AttributeName: partitionKey
+          KeyType: HASH
+        - AttributeName: sortKey
+          KeyType: RANGE
+      TimeToLiveSpecification:
+        AttributeName: expiryDate
+        Enabled: true

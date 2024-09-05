@@ -19,21 +19,12 @@ jobs:
       - name: Pull repository
         uses: actions/checkout@v4
 
-      - name: Install Node
-        uses: actions/setup-node@v3
-        with:
-          cache: npm
-          cache-dependency-path: lambdas/package.json
-
-      - name: Install dependencies
-        working-directory: lambdas
-        run: npm ci
-
       - name: Run pre-commit
-        uses: govuk-one-login/github-actions/code-quality/run-pre-commit@cf644c0d66c41259bfe2509852d1211e3f01f44d
+        uses: govuk-one-login/github-actions/code-quality/run-pre-commit@e6b6ed890b35904e1be79f7f35ffec983fa4d9db
         with:
           all-files: true
           pull-repository: false
+          install-dependencies: true
 
   linting:
     name: Linting

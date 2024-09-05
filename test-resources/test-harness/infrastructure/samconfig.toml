@@ -1,0 +1,11 @@
+version = 0.1
+[dev]
+[dev.deploy]
+[dev.deploy.parameters]
+stack_name = "test-harness"
+region = "eu-west-2"
+confirm_changeset = false
+capabilities = "CAPABILITY_IAM CAPABILITY_NAMED_IAM"
+parameter_overrides = "CodeSigningConfigArn=\"none\" Environment=\"dev\" PermissionsBoundary=\"none\" SecretPrefix=\"none\""
+tags = ["cri:deployment-source=manual", "cri:stack-type=dev", "cri:component=ipv-cri-common-test-harness"]
+image_repositories = []
