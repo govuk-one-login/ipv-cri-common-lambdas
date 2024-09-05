@@ -66,7 +66,9 @@ Conditions:
           - "none"
   IsCSLSDisabled: !And
     - !Not
-      - !Equals [!Ref CriIdentifier, "di-ipv-cri-kbv-hmrc-api"]
+      - !Or
+        - !Equals [!Ref CriIdentifier, "di-ipv-cri-kbv-hmrc-api"]
+        - !Equals [!Ref CriIdentifier, "di-ipv-cri-toy-api"]
     - !Not
       - !Equals [!Ref Environment, "dev"]
   UseNewCSLSDestinationArn: !Equals
