@@ -8,11 +8,12 @@ import { getSessionId } from "../common/utils/request-utils";
 import { CommonConfigKey } from "../types/config-keys";
 import { Logger } from "@aws-lambda-powertools/logger";
 import { errorPayload } from "../common/utils/errors";
+import { SSMProvider } from "@aws-lambda-powertools/parameters/ssm";
 
 const dynamoDbClient = createClient(AwsClientType.DYNAMO);
 const ssmClient = createClient(AwsClientType.SSM);
 const logger = new Logger();
-const configService = new ConfigService(ssmClient);
+const configService = new ConfigService(new SSMProvider({ awsSdkV3Client: ssmClient }));
 const initPromise = configService.init([CommonConfigKey.SESSION_TABLE_NAME]);
 
 export class CreateAuthCodeLambda implements LambdaInterface {

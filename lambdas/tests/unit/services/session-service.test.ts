@@ -1,9 +1,9 @@
 import { SessionService } from "../../../src/services/session-service";
 import { ConfigService } from "../../../src/common/config/config-service";
-import { SSMClient } from "@aws-sdk/client-ssm";
 import { DynamoDBDocument, GetCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import { InvalidAccessTokenError, SessionNotFoundError } from "../../../src/common/utils/errors";
 import { SessionItem } from "../../../src/types/session-item";
+import { SSMProvider } from "@aws-lambda-powertools/parameters/ssm";
 
 jest.mock("@aws-sdk/lib-dynamodb", () => {
     return {
@@ -19,7 +19,7 @@ jest.mock("../../../src/common/config/config-service");
 describe("session-service", () => {
     let sessionService: SessionService;
 
-    const configService = new ConfigService(jest.fn() as unknown as SSMClient);
+    const configService = new ConfigService(jest.fn() as unknown as SSMProvider);
     const mockDynamoDbClient = jest.mocked(DynamoDBDocument);
     const mockConfigService = jest.mocked(ConfigService);
     const mockGetCommand = jest.mocked(GetCommand);

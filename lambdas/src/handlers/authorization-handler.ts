@@ -17,10 +17,11 @@ import { injectLambdaContext } from "@aws-lambda-powertools/logger/lib/middlewar
 import setGovUkSigningJourneyIdMiddleware from "../middlewares/session/set-gov-uk-signing-journey-id-middleware";
 import initialiseClientConfigMiddleware from "../middlewares/config/initialise-client-config-middleware";
 import setRequestedVerificationScoreMiddleware from "../middlewares/session/set-requested-verification-score-middleware";
+import { SSMProvider } from "@aws-lambda-powertools/parameters/ssm";
 
 const dynamoDbClient = createClient(AwsClientType.DYNAMO);
 const ssmClient = createClient(AwsClientType.SSM);
-const configService = new ConfigService(ssmClient);
+const configService = new ConfigService(new SSMProvider({ awsSdkV3Client: ssmClient }));
 const AUTHORIZATION_SENT_METRIC = "authorization_sent";
 
 export class AuthorizationLambda implements LambdaInterface {
