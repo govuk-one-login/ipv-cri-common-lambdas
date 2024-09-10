@@ -26,6 +26,7 @@ import setGovUkSigningJourneyIdMiddleware from "../middlewares/session/set-gov-u
 import { ConfigService } from "../common/config/config-service";
 import { EvidenceRequest } from "../services/evidence_request";
 import setRequestedVerificationScoreMiddleware from "../middlewares/session/set-requested-verification-score-middleware";
+import { SSMProvider } from "@aws-lambda-powertools/parameters/ssm";
 
 const dynamoDbClient = createClient(AwsClientType.DYNAMO);
 const sqsClient = createClient(AwsClientType.SQS);
@@ -136,7 +137,7 @@ export class SessionLambda implements LambdaInterface {
     }
 }
 const ssmClient = createClient(AwsClientType.SSM);
-const configService = new ConfigService(ssmClient);
+const configService = new ConfigService(new SSMProvider({ awsSdkV3Client: ssmClient }));
 const jweDecrypter = new JweDecrypter(kmsClient, () => configService.getConfigEntry(CommonConfigKey.DECRYPTION_KEY_ID));
 const jwtValidatorFactory = new SessionRequestValidatorFactory(logger);
 const handlerClass = new SessionLambda(

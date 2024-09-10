@@ -12,11 +12,12 @@ const ACCESS_TOKEN_TTL = parseNumber(process.env.ACCESS_TOKEN_TTL_IN_SECS) || 36
 export class ConfigService {
     private readonly configEntries = new Map<string, string>();
     private readonly clientConfigurations = new Map<string, Map<string, string>>();
-    private readonly ssmProvider: SSMProvider;
 
-    constructor(ssmClient: SSMClient) {
-        this.ssmProvider = new SSMProvider({ awsSdkV3Client: ssmClient });
-    }
+    constructor(
+        private readonly ssmProvider: SSMProvider = new SSMProvider({
+            awsSdkV3Client: new SSMClient({ region: "eu-west-2" }),
+        }),
+    ) {}
 
     public init(keys: CommonConfigKey[]): Promise<void> {
         return this.getDefaultConfig(keys);

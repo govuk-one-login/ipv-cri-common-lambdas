@@ -15,7 +15,7 @@ describe("ConfigService", () => {
 
     beforeEach(() => {
         ssmClient = new SSMClient({});
-        configService = new ConfigService(ssmClient);
+        configService = new ConfigService(new SSMProvider({ awsSdkV3Client: ssmClient }));
     });
 
     afterEach(() => {
