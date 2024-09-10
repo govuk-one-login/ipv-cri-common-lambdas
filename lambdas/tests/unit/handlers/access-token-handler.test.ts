@@ -71,6 +71,7 @@ describe("access-token-handler.ts", () => {
         sessionService = new SessionService(mockDynamoDbClient.prototype, configService);
         accessTokenRequestValidator = new AccessTokenRequestValidator(mockJwtVerifierFactory.prototype);
         accessTokenLambda = new AccessTokenLambda(
+            configService,
             new BearerAccessTokenFactory(10),
             sessionService,
             accessTokenRequestValidator,
