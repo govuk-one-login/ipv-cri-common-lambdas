@@ -1,11 +1,20 @@
 version = 0.1
-[dev]
-[dev.deploy]
-[dev.deploy.parameters]
+[default.deploy.parameters]
 stack_name = "test-harness"
+resolve_s3 = true
+s3_prefix = "test-harness"
 region = "eu-west-2"
-confirm_changeset = false
-capabilities = "CAPABILITY_IAM CAPABILITY_NAMED_IAM"
-parameter_overrides = "CodeSigningConfigArn=\"none\" Environment=\"dev\" PermissionsBoundary=\"none\" SecretPrefix=\"none\""
-tags = ["cri:deployment-source=manual", "cri:stack-type=dev", "cri:component=ipv-cri-common-test-harness"]
+capabilities = ["CAPABILITY_IAM", "CAPABILITY_NAMED_IAM"]
+parameter_overrides = [
+    "CodeSigningConfigArn=none",
+    "PermissionsBoundary=none",
+    "CriIdentifier=/common-cri-parameters/CriIdentifier",
+    "TxmaStackName=txma-infrastructure",
+    "Environment=dev",
+]
 image_repositories = []
+tags = [
+    "cri:deployment-source=manual",
+    "cri:stack-type=dev",
+    "cri:component=ipv-cri-common-test-harness"
+]
