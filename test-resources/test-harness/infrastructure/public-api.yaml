@@ -1,0 +1,103 @@
+openapi: 3.0.1
+info:
+  title: "Test harness"
+  version: "1.0"
+
+paths:
+  /events:
+    get:
+      security:
+        - sigv4Reference: [ ]
+      description: Retrieve events from DynamoDB events table. Used for testing purposes only.
+      parameters:
+        - name: partitionKey
+          in: query
+          required: true
+          description: Partition key to use in events table query.
+          schema:
+            type: string
+        - name: sortKey
+          in: query
+          required: true
+          description: Sort key to use in events table query.
+          schema:
+            type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+        400:
+          description: Bad request, missing partitionKey or sortKey
+        500:
+          description: Internal server error
+      x-amazon-apigateway-request-validator: Validate both
+      x-amazon-apigateway-integration:
+        httpMethod: POST
+        passThroughBehavior: when_no_templates
+        type: aws
+        credentials:
+          Fn::Sub: ${AuditEventsTableRole.Arn}
+        uri:
+          Fn::Sub:
+            arn:aws:apigateway:${AWS::Region}:dynamodb:action/Query
+        requestTemplates:
+          application/json:
+            Fn::Sub:
+              - >
+                #set($partitionKey = $input.params('partitionKey'))
+                #set($sortKey = $input.params('sortKey'))
+                {
+                  "TableName": "${table}",
+                  "KeyConditionExpression": "partitionKey = :partitionKey AND begins_with(sortKey, :sortKey)",
+                  "ExpressionAttributeValues": {
+                    ":partitionKey": {
+                      "S": "$partitionKey"
+                    },
+                    ":sortKey": {
+                      "S": "$sortKey"
+                    }
+                  },
+                  "ProjectionExpression": "partitionKey, sortKey, event"
+                }
+              - table:
+                  Ref: AuditEventsTable
+        responses:
+          default:
+            statusCode: 200
+            responseTemplates:
+              application/json: |
+                $input.json('$.Items')
+
+x-amazon-apigateway-request-validators:
+  Validate both:
+    validateRequestBody: true
+    validateRequestParameters: true
+
+x-amazon-apigateway-policy:
+  Version: "2012-10-17"
+  Statement:
+    - Effect: "Deny"
+      Principal:
+        AWS:  "*"
+      Action: "execute-api:Invoke"
+      Resource: "execute-api:/*"
+      Condition:
+        StringNotEquals:
+          "aws:PrincipalAccount":
+            - "${AWS::AccountId}"
+    - Effect: "Allow"
+      Principal:
+        AWS:  "*"
+      Action: "execute-api:Invoke"
+      Resource: "execute-api:/*"
+
+components:
+  securitySchemes:
+    sigv4Reference:
+      type: apiKey
+      name: Authorization
+      in: header
+      x-amazon-apigateway-authtype: awsSigv4
