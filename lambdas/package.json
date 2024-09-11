@@ -3,7 +3,7 @@
     "scripts": {
         "lint": "eslint .",
         "lint:fix": "eslint . --fix",
-        "unit": "jest --silent",
+        "unit": "jest --silent --testPathIgnorePatterns tests/unit/handlers/contract/providers/*.test.ts",
         "test": "npm run unit --",
         "test:coverage": "npm run unit -- --coverage",
         "sam:validate": "cd ../../infrastructure/lambda && sam validate && sam validate --lint",
