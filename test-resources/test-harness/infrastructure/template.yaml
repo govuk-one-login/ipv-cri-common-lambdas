@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Transform: "AWS::Serverless-2016-10-31"
+Transform: [ AWS::LanguageExtensions, AWS::Serverless-2016-10-31 ]
 Description: "Digital Identity CRI Test Automation Harness"
 
 Parameters:
@@ -20,6 +20,11 @@ Parameters:
     Description: "The stack containing the TXMA infrastructure"
     Type: String
     Default: txma-infrastructure
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, localdev, build, staging]
+    ConstraintDescription: must be dev, localdev, build or staging
 
 Conditions:
   UseCodeSigningConfigArn:
@@ -136,3 +141,68 @@ Resources:
       TimeToLiveSpecification:
         AttributeName: expiryDate
         Enabled: true
+
+  APIGateway:
+    Type: AWS::Serverless::Api
+    Properties:
+      Description: APIGW for the test harness
+      StageName: !Ref Environment
+      TracingEnabled: true
+      MethodSettings:
+        - LoggingLevel: INFO
+          ResourcePath: "/*"
+          HttpMethod: "*"
+          DataTraceEnabled: true
+          MetricsEnabled: true
+          ThrottlingRateLimit: 10000
+          ThrottlingBurstLimit: 20000
+      AccessLogSetting:
+        DestinationArn: !GetAtt ApiAccessLogGroup.Arn
+        Format:
+          Fn::ToJsonString:
+            requestId: $context.requestId
+            ip: $context.identity.sourceIp
+            requestTime: $context.requestTime
+            httpMethod: $context.httpMethod
+            path: $context.path
+            routeKey: $context.routeKey
+            status: $context.status
+            protocol: $context.protocol
+            responseLatency: $context.responseLatency
+            responseLength: $context.responseLength
+      DefinitionBody:
+        openapi: 3.0.1
+        Fn::Transform:
+          Name: AWS::Include
+          Parameters:
+            Location: public-api.yaml
+      OpenApiVersion: 3.0.1
+      EndpointConfiguration:
+        Type: REGIONAL
+
+  ApiAccessLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/vendedlogs/apigateway/${AWS::StackName}-test-harness-AccessLogs
+      RetentionInDays: 30
+
+  AuditEventsTableRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Description: Allow APIGW to read from the AuditEventsTable
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action: sts:AssumeRole
+            Principal:
+              Service: apigateway.amazonaws.com
+      Policies:
+        - PolicyName: DynamoDBReadPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:Query
+                Resource: !GetAtt AuditEventsTable.Arn
