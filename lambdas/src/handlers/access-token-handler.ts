@@ -22,15 +22,37 @@ import errorMiddleware from "../middlewares/error/error-middleware";
 import { ConfigService } from "../common/config/config-service";
 import initialiseClientConfigMiddleware from "../middlewares/config/initialise-client-config-middleware";
 import setRequestedVerificationScoreMiddleware from "../middlewares/session/set-requested-verification-score-middleware";
+import { SSMProvider } from "@aws-lambda-powertools/parameters/ssm";
 const dynamoDbClient = createClient(AwsClientType.DYNAMO);
 const ACCESS_TOKEN = "accesstoken";
 
 export class AccessTokenLambda implements LambdaInterface {
+    private sessionService: SessionService;
+    private requestValidator: AccessTokenRequestValidator;
+    private configService: ConfigService;
+    private bearerAccessTokenFactory: BearerAccessTokenFactory;
+    getSessionService() {
+        return this.sessionService;
+    }
+    getAccessTokenRequestValidator() {
+        return this.requestValidator;
+    }
+    getConfigService() {
+        return this.configService;
+    }
     constructor(
-        private readonly bearerAccessTokenFactory: BearerAccessTokenFactory,
-        private readonly sessionService: SessionService,
-        private readonly requestValidator: AccessTokenRequestValidator,
-    ) {}
+        configService?: ConfigService,
+        bearerAccessTokenFactory?: BearerAccessTokenFactory,
+        sessionService?: SessionService,
+        requestValidator?: AccessTokenRequestValidator,
+    ) {
+        this.configService =
+            configService || new ConfigService(new SSMProvider({ awsSdkV3Client: createClient(AwsClientType.SSM) }));
+        this.bearerAccessTokenFactory =
+            bearerAccessTokenFactory || new BearerAccessTokenFactory(this.configService.getBearerAccessTokenTtl());
+        this.sessionService = sessionService || new SessionService(dynamoDbClient, this.configService);
+        this.requestValidator = requestValidator || new AccessTokenRequestValidator(new JwtVerifierFactory(logger));
+    }
     @metrics.logMetrics({ throwOnEmptyMetrics: false, captureColdStartMetric: true })
     @_tracer.captureLambdaHandler({ captureResponse: false })
     public async handler(event: APIGatewayProxyEvent, _context: Context): Promise<APIGatewayProxyResult> {
@@ -39,7 +61,7 @@ export class AccessTokenLambda implements LambdaInterface {
             const eventBody = event.body;
             const sessionItem = eventBody as unknown as SessionItem;
             const requestPayload = eventBody as unknown as RequestPayload;
-            const clientConfig = configService.getClientConfig(sessionItem.clientId);
+            const clientConfig = this.configService.getClientConfig(sessionItem.clientId);
 
             this.requestValidator.validateTokenRequestToRecord(
                 requestPayload.code,
@@ -71,34 +93,26 @@ export class AccessTokenLambda implements LambdaInterface {
         }
     }
 }
-const ssmClient = createClient(AwsClientType.SSM);
-const configService = new ConfigService(ssmClient);
-const jwtVerifierFactory = new JwtVerifierFactory(logger);
-const sessionService = new SessionService(dynamoDbClient, configService);
-const accessTokenValidator = new AccessTokenRequestValidator(jwtVerifierFactory);
-const handlerClass = new AccessTokenLambda(
-    new BearerAccessTokenFactory(configService.getBearerAccessTokenTtl()),
-    sessionService,
-    accessTokenValidator,
-);
+
+const handlerClass = new AccessTokenLambda();
 export const lambdaHandler = middy(handlerClass.handler.bind(handlerClass))
     .use(errorMiddleware(logger, metrics, { metric_name: ACCESS_TOKEN, message: "Access Token Lambda error occurred" }))
     .use(injectLambdaContext(logger, { clearState: true }))
     .use(
         initialiseConfigMiddleware({
-            configService: configService,
+            configService: handlerClass.getConfigService(),
             config_keys: [CommonConfigKey.SESSION_TABLE_NAME, CommonConfigKey.SESSION_TTL],
         }),
     )
     .use(
         accessTokenValidatorMiddleware({
-            requestValidator: accessTokenValidator,
+            requestValidator: handlerClass.getAccessTokenRequestValidator(),
         }),
     )
-    .use(getSessionByAuthCodeMiddleware({ sessionService: sessionService }))
+    .use(getSessionByAuthCodeMiddleware({ sessionService: handlerClass.getSessionService() }))
     .use(
         initialiseClientConfigMiddleware({
-            configService: configService,
+            configService: handlerClass.getConfigService(),
             client_config_keys: [
                 ClientConfigKey.JWT_AUDIENCE,
                 ClientConfigKey.JWT_PUBLIC_SIGNING_KEY,
@@ -107,6 +121,6 @@ export const lambdaHandler = middy(handlerClass.handler.bind(handlerClass))
             ],
         }),
     )
-    .use(getSessionByIdMiddleware({ sessionService: sessionService }))
+    .use(getSessionByIdMiddleware({ sessionService: handlerClass.getSessionService() }))
     .use(setGovUkSigningJourneyIdMiddleware(logger))
     .use(setRequestedVerificationScoreMiddleware(logger));
