@@ -13,7 +13,6 @@ import { ConfigService } from "../../../src/common/config/config-service";
 import { JwtVerificationConfig } from "../../../src/types/jwt-verification-config";
 import { JwtVerifier, JwtVerifierFactory } from "../../../src/common/security/jwt-verifier";
 import { BearerAccessTokenFactory } from "../../../src/services/bearer-access-token-factory";
-import { SSMClient } from "@aws-sdk/client-ssm";
 import { InvalidRequestError, ServerError } from "../../../src/common/utils/errors";
 import errorMiddleware from "../../../src/middlewares/error/error-middleware";
 import initialiseConfigMiddleware from "../../../src/middlewares/config/initialise-config-middleware";
@@ -22,6 +21,7 @@ import getSessionByIdMiddleware from "../../../src/middlewares/session/get-sessi
 import setGovUkSigningJourneyIdMiddleware from "../../../src/middlewares/session/set-gov-uk-signing-journey-id-middleware";
 import { CommonConfigKey } from "../../../src/types/config-keys";
 import setRequestedVerificationScoreMiddleware from "../../../src/middlewares/session/set-requested-verification-score-middleware";
+import { SSMProvider } from "@aws-lambda-powertools/parameters/ssm";
 
 jest.mock("../../../src/common/config/config-service");
 jest.mock("../../../src/common/security/jwt-verifier");
@@ -67,10 +67,11 @@ describe("access-token-handler.ts", () => {
 
         logger = new Logger();
         metrics = new Metrics();
-        configService = new ConfigService(jest.fn() as unknown as SSMClient);
+        configService = new ConfigService(jest.fn() as unknown as SSMProvider);
         sessionService = new SessionService(mockDynamoDbClient.prototype, configService);
         accessTokenRequestValidator = new AccessTokenRequestValidator(mockJwtVerifierFactory.prototype);
         accessTokenLambda = new AccessTokenLambda(
+            configService,
             new BearerAccessTokenFactory(10),
             sessionService,
             accessTokenRequestValidator,

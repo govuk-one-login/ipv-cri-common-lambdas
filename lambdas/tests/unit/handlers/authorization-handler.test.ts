@@ -4,7 +4,6 @@ import { injectLambdaContext } from "@aws-lambda-powertools/logger/lib/middlewar
 import { DynamoDBDocument } from "@aws-sdk/lib-dynamodb";
 import { AuthorizationLambda } from "../../../src/handlers/authorization-handler";
 import { ConfigService } from "../../../src/common/config/config-service";
-import { SSMClient } from "@aws-sdk/client-ssm";
 import { SessionService } from "../../../src/services/session-service";
 import { AuthorizationRequestValidator } from "../../../src/services/auth-request-validator";
 import { SessionItem } from "../../../src/types/session-item";
@@ -30,6 +29,7 @@ import { Context } from "aws-lambda";
 import setGovUkSigningJourneyIdMiddleware from "../../../src/middlewares/session/set-gov-uk-signing-journey-id-middleware";
 import initialiseClientConfigMiddleware from "../../../src/middlewares/config/initialise-client-config-middleware";
 import setRequestedVerificationScoreMiddleware from "../../../src/middlewares/session/set-requested-verification-score-middleware";
+import { SSMProvider } from "@aws-lambda-powertools/parameters/ssm";
 
 jest.mock("../../../src/common/config/config-service");
 jest.mock("@aws-lambda-powertools/metrics");
@@ -59,7 +59,7 @@ describe("authorization-handler.ts", () => {
         let headers = {};
         let authorizationHandlerLambda: AuthorizationLambda;
         let lambdaHandler: middy.MiddyfiedHandler;
-        const configService = new ConfigService(jest.fn() as unknown as SSMClient);
+        const configService = new ConfigService(jest.fn() as unknown as SSMProvider);
         const sessionService = new SessionService(mockDynamoDbClient.prototype, configService);
         const authorizationRequestValidator = new AuthorizationRequestValidator();
         const mockConfigService = jest.mocked(ConfigService);
