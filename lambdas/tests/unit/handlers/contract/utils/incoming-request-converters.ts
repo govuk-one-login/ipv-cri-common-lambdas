@@ -1,6 +1,6 @@
 import { APIGatewayProxyEventHeaders } from "aws-lambda";
 import { IncomingHttpHeaders } from "http";
-type AuthRequest = {
+export type AuthRequest = {
     code: string;
     client_assertion_type: string;
     grant_type: string;
