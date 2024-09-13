@@ -10,18 +10,21 @@ import { MockSSMProvider } from "../mocks/mock-ssm-provider";
 import { DynamoDBDocument } from "@aws-sdk/lib-dynamodb";
 import { BearerAccessTokenFactory } from "../../../../../src/services/bearer-access-token-factory";
 import { MockDynamoDBDocument } from "../mocks/mock-dynamo-db-document";
+import { ClientConfigKey, CommonConfigKey } from "../../../../../src/types/config-keys";
 
-export const CreateAccessTokenLambda = (mockSSMProvider: MockSSMProvider, redirectUri: string) => {
-    const configService = new ConfigService(mockSSMProvider as unknown as SSMProvider);
+const parameterPathPrefix = process.env.AWS_STACK_NAME || "";
+const { JWT_AUDIENCE, JWT_PUBLIC_SIGNING_KEY, JWT_REDIRECT_URI, JWT_SIGNING_ALGORITHM } = ClientConfigKey;
+const { SESSION_TABLE_NAME, SESSION_TTL } = CommonConfigKey;
 
+export const CreateAccessTokenLambda = (redirectUri: string, componentId: string) => {
     const msToSeconds = (ms: number) => Math.round(ms / 1000);
     const twoDaysOffset = 2 * 60 * 60 * 24;
 
-    const sessionItemInDbBeforeTokenRequest: SessionItem = {
+    const sessionItemStateInDbBeforeTokenRequest: SessionItem = {
         sessionId: "a-session-id",
         clientId: "ipv-core",
         clientSessionId: "clientSessionId",
-        redirectUri: redirectUri,
+        redirectUri,
         accessToken: "accesstoken",
         authorizationCode: "dummyAuthCode",
         expiryDate: msToSeconds(Date.now()) + twoDaysOffset,
@@ -29,8 +32,19 @@ export const CreateAccessTokenLambda = (mockSSMProvider: MockSSMProvider, redire
         accessTokenExpiryDate: msToSeconds(Date.now()) + twoDaysOffset,
     };
 
+    const configService = new ConfigService(
+        new MockSSMProvider({
+            [`/${parameterPathPrefix}/${SESSION_TABLE_NAME}`]: "SessionTable",
+            [`/${parameterPathPrefix}/${SESSION_TTL}`]: "10",
+            [`/${parameterPathPrefix}/clients/ipv-core/jwtAuthentication/${JWT_SIGNING_ALGORITHM}`]: "ES256",
+            [`/${parameterPathPrefix}/clients/ipv-core/jwtAuthentication/${JWT_REDIRECT_URI}`]: redirectUri,
+            [`/${parameterPathPrefix}/clients/ipv-core/jwtAuthentication/${JWT_AUDIENCE}`]: componentId,
+            [`/${parameterPathPrefix}/clients/ipv-core/jwtAuthentication/${JWT_PUBLIC_SIGNING_KEY}`]: "mock_public_key",
+        }) as unknown as SSMProvider,
+    );
+
     const mockDynamoDbClient = new MockDynamoDBDocument({
-        '{"sessionId": "a-session-id"}': sessionItemInDbBeforeTokenRequest,
+        '{"sessionId": "a-session-id"}': sessionItemStateInDbBeforeTokenRequest,
     });
 
     const accessTokenValidator = new AccessTokenRequestValidator(new JwtVerifierFactory(logger));
