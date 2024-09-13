@@ -30,6 +30,7 @@
         "esbuild": "0.17.15",
         "express": "^4.19.2",
         "express-asyncify": "^3.1.0",
+        "express-rate-limit": "^7.4.0",
         "jose": "4.13.1"
     },
     "devDependencies": {

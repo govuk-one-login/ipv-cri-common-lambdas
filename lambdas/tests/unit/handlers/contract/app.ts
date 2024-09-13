@@ -1,4 +1,5 @@
 import express, { urlencoded, json } from "express";
+import limit from "express-rate-limit";
 import { Logger } from "@aws-lambda-powertools/logger";
 import { Constants, LogLevel } from "./utils/constants";
 import { accessTokenRouter } from "./routes/access-token-router";
@@ -13,6 +14,13 @@ const app = express();
 
 app.use(urlencoded({ extended: true }));
 app.use(json());
+
+const createLimiter = limit({
+    windowMs: 10 * 60 * 1000,
+    max: 100,
+});
+
+app.use(createLimiter);
 
 app.get("/", (_req, res) => {
     res.status(200).json({ msg: "Server is up and running" });
