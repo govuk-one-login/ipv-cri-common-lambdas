@@ -3,15 +3,19 @@ import { APIGatewayProxyEvent } from "aws-lambda";
 import { createEventRequest } from "../utils/event-request-factory";
 import {
     convertHttpHeadersToAPIGatewayHeaders,
-    convertUrlEncodedRequestBodyToString,
+    convertBodyToAuthRequest,
+    urlEncodeAuthRequest,
 } from "../utils/incoming-request-converters";
 
 export const prepareEventMiddleware = (req: Request, res: Response, next: NextFunction) => {
+    const jsonBody = convertBodyToAuthRequest(req.body);
     const event: APIGatewayProxyEvent = createEventRequest({
-        body: convertUrlEncodedRequestBodyToString(req.body),
+        body: urlEncodeAuthRequest(jsonBody),
         headers: convertHttpHeadersToAPIGatewayHeaders(req.headers),
     });
     res.locals.event = event;
+    res.locals.json = jsonBody;
+    res.locals.componentId = req.headers["component-id"];
 
     next();
 };
