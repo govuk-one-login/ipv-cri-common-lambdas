@@ -16,17 +16,30 @@ jobs:
     name: Unit tests
     uses: ./.github/workflows/run-unit-tests-java.yml
 
-  pact-tests:
+  pact-tests-java:
     name: Pact tests
     strategy:
       fail-fast: false
       matrix:
         CRI_PROVIDER: ["PassportTokenProvider","DrivingLicenceTokenProvider","FraudTokenProvider","AddressCriTokenProvider"]
-    uses: ./.github/workflows/run-pact-tests.yml
+    uses: ./.github/workflows/run-pact-tests-java.yml
     with:
       CRI_UNDER_TEST: ${{ matrix.CRI_PROVIDER }}
     secrets:
-      github-token: ${{ secrets.GITHUB_TOKEN }}
+      pact-broker-host: ${{ secrets.PACT_BROKER_HOST }}
+      pact-broker-username: ${{ secrets.PACT_BROKER_USERNAME }}
+      pact-broker-password: ${{ secrets.PACT_BROKER_PASSWORD }}
+
+  pact-tests-ts:
+    name: Pact tests
+    strategy:
+      fail-fast: false
+      matrix:
+        CRI_PROVIDER: ["ExperianKbvCriTokenProvider","NinoCriTokenProvider"]
+    uses: ./.github/workflows/run-pact-tests-ts.yml
+    with:
+      CRI_UNDER_TEST: ${{ matrix.CRI_PROVIDER }}
+    secrets:
       pact-broker-host: ${{ secrets.PACT_BROKER_HOST }}
       pact-broker-username: ${{ secrets.PACT_BROKER_USERNAME }}
       pact-broker-password: ${{ secrets.PACT_BROKER_PASSWORD }}
