@@ -1,11 +1,10 @@
-name: Unit pact tests
+name: Unit pact tests (Java)
 
 on:
   workflow_call:
     inputs:
       CRI_UNDER_TEST: { required: true, type: string }
     secrets:
-      github-token: { required: true }
       pact-broker-host: { required: true }
       pact-broker-username: { required: true }
       pact-broker-password: { required: true }
@@ -48,7 +47,6 @@ jobs:
 
       - name: Run tests
         env:
-          GITHUB_TOKEN: ${{ secrets.github-token }}
           PACT_BROKER_HOST: ${{ secrets.pact-broker-host }}
           PACT_BROKER_USERNAME: ${{ secrets.pact-broker-username }}
           PACT_BROKER_PASSWORD: ${{ secrets.pact-broker-password }}
