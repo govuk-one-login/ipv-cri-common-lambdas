@@ -1,11 +1,10 @@
 import { VerifierOptions, Verifier } from "@pact-foundation/pact";
 import { Logger } from "@aws-lambda-powertools/logger";
 import { LogLevel, Constants } from "./utils/constants";
-import path from "path";
 
 const { LOCAL_HOST, LOCAL_APP_PORT } = Constants;
 
-const CRI_UNDER_TEST = process.env.CRI_UNDER_TEST || "TokenProviderPactTest";
+const CRI_UNDER_TEST = process.env.CRI_UNDER_TEST;
 
 const logger = new Logger({
     logLevel: LogLevel.DEBUG,
@@ -33,15 +32,11 @@ describe("Pact Verification", () => {
     const verifierOptions: VerifierOptions = {
         provider: CRI_UNDER_TEST,
         providerBaseUrl: `${LOCAL_HOST}:${LOCAL_APP_PORT}`,
-        // pactBrokerUrl: "https://" + process.env.PACT_BROKER_HOST,
-        // pactBrokerUsername: process.env.PACT_BROKER_USERNAME,
-        // pactBrokerPassword: process.env.PACT_BROKER_PASSWORD,
-        pactUrls: [
-            path.resolve(process.cwd(), "tests/unit/handlers/contract/pact/experian-kbv-cri/pact.json"),
-            path.resolve(process.cwd(), "tests/unit/handlers/contract/pact/check-hmrc-cri/pact.json"),
-        ],
-        //consumerVersionSelectors: [{ mainBranch: true }, { deployedOrReleased: true }],
-        //publishVerificationResult: true,
+        pactBrokerUrl: "https://" + process.env.PACT_BROKER_HOST,
+        pactBrokerUsername: process.env.PACT_BROKER_USERNAME,
+        pactBrokerPassword: process.env.PACT_BROKER_PASSWORD,
+        consumerVersionSelectors: [{ mainBranch: true }, { deployedOrReleased: true }],
+        publishVerificationResult: true,
         stateHandlers: {
             ...experianStates,
             ...checkHmrcNinoStates,
