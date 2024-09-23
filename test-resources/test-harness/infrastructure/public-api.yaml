@@ -88,11 +88,6 @@ x-amazon-apigateway-policy:
         StringNotEquals:
           "aws:PrincipalAccount":
             - "${AWS::AccountId}"
-    - Effect: "Allow"
-      Principal:
-        AWS:  "*"
-      Action: "execute-api:Invoke"
-      Resource: "execute-api:/*"
 
 components:
   securitySchemes:
