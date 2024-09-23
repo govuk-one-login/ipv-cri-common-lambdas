@@ -123,9 +123,11 @@ export class SessionLambda implements LambdaInterface {
             }),
             ...(evidenceRequested && {
                 extensions: {
-                    evidence: {
-                        context: "identity_check",
-                    },
+                    evidence: [
+                        {
+                            context: "identity_check",
+                        },
+                    ],
                     ...(evidenceRequested.verificationScore && {
                         evidence_requested: {
                             verificationScore: evidenceRequested.verificationScore,
