@@ -493,9 +493,11 @@ describe("SessionLambda", () => {
                     clientSessionId: "test-journey-id",
                 },
                 extensions: {
-                    evidence: {
-                        context: "identity_check",
-                    },
+                    evidence: [
+                        {
+                            context: "identity_check",
+                        },
+                    ],
                     evidence_requested: {
                         verificationScore: 2,
                     },
@@ -534,9 +536,11 @@ describe("SessionLambda", () => {
                     clientSessionId: "test-journey-id",
                 },
                 extensions: {
-                    evidence: {
-                        context: "identity_check",
-                    },
+                    evidence: [
+                        {
+                            context: "identity_check",
+                        },
+                    ],
                 },
             });
         });
