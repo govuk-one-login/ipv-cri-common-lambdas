@@ -234,9 +234,9 @@ Resources:
     Properties:
       DomainName: !FindInMap [ EnvironmentVariables, !Ref Environment, TESTHARNESSURL ]
       SubjectAlternativeNames:
-        - "*.${dns_zone_name}"
+        - !FindInMap [ EnvironmentVariables, !Ref Environment, TESTHARNESSURL ]
       DomainValidationOptions:
-        - DomainName: "${dns_zone_name}"
+        - DomainName: !FindInMap [ EnvironmentVariables, !Ref Environment, TESTHARNESSURL ]
           HostedZoneId: !ImportValue PublicHostedZoneId
       ValidationMethod: DNS
           
