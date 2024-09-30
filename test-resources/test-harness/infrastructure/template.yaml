@@ -25,6 +25,17 @@ Parameters:
     Default: dev
     AllowedValues: [dev, localdev, build, staging]
     ConstraintDescription: must be dev, localdev, build or staging
+  VpcStackName:
+    Type: String
+    Default: "cri-vpc"
+    Description: The name of the VPC stack deployed.
+
+Mappings:
+  EnvironmentVariables: # This is all the environment specific environment variables that don't belong in globals.
+    dev:
+      TESTHARNESSURL: "testharness.review-hc.dev.account.gov.uk"
+    build:
+      TESTHARNESSURL: "testharness.review-hc.build.account.gov.uk"
 
 Conditions:
   UseCodeSigningConfigArn:
@@ -37,6 +48,9 @@ Conditions:
       - Fn::Equals:
           - !Ref PermissionsBoundary
           - "none"
+  CreateDevResources: !Equals
+    - !Ref Environment
+    - dev
 
 Globals:
   Function:
@@ -68,6 +82,20 @@ Globals:
     AutoPublishAlias: live
 
 Resources:
+  LambdaEgressSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: >-
+        Permits outbound on port 443 from within the VPC to the internet.
+      SecurityGroupEgress:
+        - CidrIp: 0.0.0.0/0
+          Description: Allow to the wider internet on port 443
+          FromPort: 443
+          IpProtocol: tcp
+          ToPort: 443
+      VpcId:
+        Fn::ImportValue: !Sub "${VpcStackName}-VpcId"
+
   DequeueFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -186,6 +214,43 @@ Resources:
       LogGroupName: !Sub /aws/vendedlogs/apigateway/${AWS::StackName}-test-harness-AccessLogs
       RetentionInDays: 30
 
+  TestHarnessCustomDomain:
+    Type: AWS::ApiGatewayV2::DomainName
+    Properties:
+      DomainName: !If
+        - CreateDevResources
+        - !Sub
+          - "${AWS::StackName}-${TESTHARNESSURL}"
+          - TESTHARNESSURL:
+              !FindInMap [ EnvironmentVariables, !Ref Environment, TESTHARNESSURL ]
+        - !FindInMap [ EnvironmentVariables, !Ref Environment, TESTHARNESSURL ]
+      DomainNameConfigurations:
+        - CertificateArn: "arn:aws:acm:eu-west-2:562670266496:certificate/53a67776-4c15-46df-bead-f151ed5a3c5a" # !Sub "{{resolve:ssm:/${Environment}/Platform/ACM/PrimaryZoneWildcardCertificateARN}}"
+          EndpointType: REGIONAL
+          SecurityPolicy: TLS_1_2
+
+  TestHarnessApiDomainRecord:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      Name: !Ref TestHarnessCustomDomain
+      Type: A
+      HostedZoneId: "Z05496673M01HBS2SYQZY" #!Sub "{{resolve:ssm:/${Environment}/Platform/Route53/PrimaryZoneID}}"
+      AliasTarget:
+        DNSName: !GetAtt TestHarnessCustomDomain.RegionalDomainName
+        HostedZoneId: !GetAtt TestHarnessCustomDomain.RegionalHostedZoneId
+        EvaluateTargetHealth: false
+
+  # Base Path Mapping
+  TestHarnessApiBasePathMapping:
+    Type: 'AWS::ApiGateway::BasePathMapping'
+    Properties:
+      DomainName: !Ref TestHarnessCustomDomain
+      RestApiId: !Ref APIGateway
+
+      # workaround for sam bug - see https://github.com/aws/serverless-application-model/issues/192#issuecomment-520893111
+      # noinspection YamlUnresolvedReferences
+      Stage: !Ref APIGateway.Stage
+
   AuditEventsTableRole:
     Type: AWS::IAM::Role
     Properties:
@@ -206,3 +271,12 @@ Resources:
                 Action:
                   - dynamodb:Query
                 Resource: !GetAtt AuditEventsTable.Arn
+
+Outputs:
+  TestHarnessExecuteUrl:
+    Description: "API Gateway endpoint URL for the test harness endpoints"
+    Export:
+      Name: !Sub "${AWS::StackName}-TestHarnessExecuteUrl"
+    Value: !Sub
+      - "https://${URL}/"
+      - URL: !Ref TestHarnessCustomDomain
