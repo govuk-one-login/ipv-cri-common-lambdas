@@ -14,8 +14,8 @@ Parameters:
     Default: "none"
   CriIdentifier:
     Description: "The unique credential issuer identifier"
-    Type: AWS::SSM::Parameter::Value<String>
-    Default: "/common-cri-parameters/CriIdentifier"
+    Type: String
+    Default: "di-ipv-cri-check-hmrc-api"
   TxmaStackName:
     Description: "The stack containing the TXMA infrastructure"
     Type: String
