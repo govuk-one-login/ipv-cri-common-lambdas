@@ -33,9 +33,9 @@ Parameters:
 Mappings:
   EnvironmentVariables: # This is all the environment specific environment variables that don't belong in globals.
     dev:
-      TESTHARNESSURL: "testharness.review-hc.dev.account.gov.uk"
+      TESTHARNESSURL: "testharness.dev.account.gov.uk"
     build:
-      TESTHARNESSURL: "testharness.review-hc.build.account.gov.uk"
+      TESTHARNESSURL: "testharness.build.account.gov.uk"
 
 Conditions:
   UseCodeSigningConfigArn:
@@ -225,9 +225,21 @@ Resources:
               !FindInMap [ EnvironmentVariables, !Ref Environment, TESTHARNESSURL ]
         - !FindInMap [ EnvironmentVariables, !Ref Environment, TESTHARNESSURL ]
       DomainNameConfigurations:
-        - CertificateArn: "arn:aws:acm:eu-west-2:562670266496:certificate/53a67776-4c15-46df-bead-f151ed5a3c5a" # !Sub "{{resolve:ssm:/${Environment}/Platform/ACM/PrimaryZoneWildcardCertificateARN}}"
+        - CertificateArn: !Ref ExternalCertificate
           EndpointType: REGIONAL
           SecurityPolicy: TLS_1_2
+
+  ExternalCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !FindInMap [ EnvironmentVariables, !Ref Environment, TESTHARNESSURL ]
+      SubjectAlternativeNames:
+        - "*.${dns_zone_name}"
+      DomainValidationOptions:
+        - DomainName: "${dns_zone_name}"
+          HostedZoneId: !ImportValue PublicHostedZoneId
+      ValidationMethod: DNS
+          
 
   TestHarnessApiDomainRecord:
     Type: AWS::Route53::RecordSet
