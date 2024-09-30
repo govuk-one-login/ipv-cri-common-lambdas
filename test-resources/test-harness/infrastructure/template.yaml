@@ -14,8 +14,8 @@ Parameters:
     Default: "none"
   CriIdentifier:
     Description: "The unique credential issuer identifier"
-    Type: String
-    Default: "di-ipv-cri-check-hmrc-api"
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: "/common-cri-parameters/CriIdentifier"
   TxmaStackName:
     Description: "The stack containing the TXMA infrastructure"
     Type: String
@@ -217,13 +217,7 @@ Resources:
   TestHarnessCustomDomain:
     Type: AWS::ApiGatewayV2::DomainName
     Properties:
-      DomainName: !If
-        - CreateDevResources
-        - !Sub
-          - "${AWS::StackName}-${TESTHARNESSURL}"
-          - TESTHARNESSURL:
-              !FindInMap [ EnvironmentVariables, !Ref Environment, TESTHARNESSURL ]
-        - !FindInMap [ EnvironmentVariables, !Ref Environment, TESTHARNESSURL ]
+      DomainName: !ImportValue PublicHostedZoneId
       DomainNameConfigurations:
         - CertificateArn: !Ref ExternalCertificate
           EndpointType: REGIONAL
@@ -232,11 +226,11 @@ Resources:
   ExternalCertificate:
     Type: AWS::CertificateManager::Certificate
     Properties:
-      DomainName: !FindInMap [ EnvironmentVariables, !Ref Environment, TESTHARNESSURL ]
+      DomainName: "testharness.dev.account.gov.uk"
       SubjectAlternativeNames:
-        - !FindInMap [ EnvironmentVariables, !Ref Environment, TESTHARNESSURL ]
+        - "testharness.dev.account.gov.uk"
       DomainValidationOptions:
-        - DomainName: !FindInMap [ EnvironmentVariables, !Ref Environment, TESTHARNESSURL ]
+        - DomainName: "testharness.dev.account.gov.uk"
           HostedZoneId: !ImportValue PublicHostedZoneId
       ValidationMethod: DNS
           
