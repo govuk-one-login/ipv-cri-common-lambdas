@@ -33,9 +33,9 @@ Parameters:
 Mappings:
   EnvironmentVariables: # This is all the environment specific environment variables that don't belong in globals.
     dev:
-      TESTHARNESSURL: "testharness.review-hc.dev.account.gov.uk"
+      TESTHARNESSURL: "review-hc.dev.account.gov.uk"
     build:
-      TESTHARNESSURL: "testharness.review-hc.build.account.gov.uk"
+      TESTHARNESSURL: "review-hc.build.account.gov.uk"
 
 Conditions:
   UseCodeSigningConfigArn:
@@ -217,24 +217,41 @@ Resources:
   TestHarnessCustomDomain:
     Type: AWS::ApiGatewayV2::DomainName
     Properties:
-      DomainName: !If
-        - CreateDevResources
-        - !Sub
-          - "${AWS::StackName}-${TESTHARNESSURL}"
-          - TESTHARNESSURL:
-              !FindInMap [ EnvironmentVariables, !Ref Environment, TESTHARNESSURL ]
-        - !FindInMap [ EnvironmentVariables, !Ref Environment, TESTHARNESSURL ]
+      DomainName: !Sub
+        - "${AWS::StackName}.${TESTHARNESSURL}"
+        - TESTHARNESSURL:
+            !FindInMap [ EnvironmentVariables, !Ref Environment, TESTHARNESSURL ]
       DomainNameConfigurations:
-        - CertificateArn: "arn:aws:acm:eu-west-2:562670266496:certificate/53a67776-4c15-46df-bead-f151ed5a3c5a" # !Sub "{{resolve:ssm:/${Environment}/Platform/ACM/PrimaryZoneWildcardCertificateARN}}"
+        - CertificateArn: !Ref ExternalCertificate
           EndpointType: REGIONAL
           SecurityPolicy: TLS_1_2
+
+  ExternalCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !Sub
+        - "${AWS::StackName}.${TESTHARNESSURL}"
+        - TESTHARNESSURL:
+            !FindInMap [ EnvironmentVariables, !Ref Environment, TESTHARNESSURL ]
+      SubjectAlternativeNames:
+        - !Sub
+          - "${AWS::StackName}.${TESTHARNESSURL}"
+          - TESTHARNESSURL:
+              !FindInMap [ EnvironmentVariables, !Ref Environment, TESTHARNESSURL ]
+      DomainValidationOptions:
+        - DomainName:  !Sub
+          - "${AWS::StackName}.${TESTHARNESSURL}"
+          - TESTHARNESSURL:
+              !FindInMap [ EnvironmentVariables, !Ref Environment, TESTHARNESSURL ]
+          HostedZoneId: !ImportValue PublicHostedZoneId
+      ValidationMethod: DNS
 
   TestHarnessApiDomainRecord:
     Type: AWS::Route53::RecordSet
     Properties:
       Name: !Ref TestHarnessCustomDomain
       Type: A
-      HostedZoneId: "Z05496673M01HBS2SYQZY" #!Sub "{{resolve:ssm:/${Environment}/Platform/Route53/PrimaryZoneID}}"
+      HostedZoneId: !ImportValue PublicHostedZoneId
       AliasTarget:
         DNSName: !GetAtt TestHarnessCustomDomain.RegionalDomainName
         HostedZoneId: !GetAtt TestHarnessCustomDomain.RegionalHostedZoneId
