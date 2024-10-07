@@ -25,11 +25,25 @@ jobs:
           cache-name: test-resources
           pull-repository: true
 
+  config:
+    name: ${{ format('Get config [{0}]', matrix.environment) }}
+    runs-on: ubuntu-latest
+    environment: test-resources-${{ matrix.environment }}
+    strategy:
+      matrix:
+        environment: [dev, build]
+    steps:
+      - name: Get deployment enabled statuses
+        shell: bash
+        env:
+          VARS: ${{ toJSON(vars) }}
+        run: echo "$VARS"
+
   publish:
     needs: build
     runs-on: ubuntu-latest
     environment: test-resources-${{ matrix.environment }}
-    name: ${{ format('{0} Publish [{1} | {2}]', steps.enabled.outputs.badge, matrix.environment, matrix.name) }}
+    name: ${{ format('Publish [{0} | {1}]', matrix.environment, matrix.name) }}
     concurrency:
       group: package-test-resources-${{ matrix.environment }}
       cancel-in-progress: false
@@ -48,10 +62,10 @@ jobs:
       - name: Check deployment enabled
         id: enabled
         continue-on-error: true
+        shell: bash
         env:
           ENV_ENABLED: ${{ github.ref_name == 'main' || matrix.environment == 'dev' }}
           DEPLOYMENT_ENABLED: ${{ vars[format('{0}_ENABLED', matrix.cri)] == 'true' }}
-        shell: bash
         run: |
           $ENV_ENABLED && $DEPLOYMENT_ENABLED && ENABLED=true || ENABLED=false
           echo "badge=$($ENABLED && echo "🟢" || echo "🔴")" >> "$GITHUB_OUTPUT"
