@@ -26,7 +26,7 @@ jobs:
 #          pull-repository: true
 
   config:
-    name: ${{ format('Get config [{0}]', matrix.environment) }}
+    name: ${{ format('Get config ({0})', matrix.environment) }}
     runs-on: ubuntu-latest
     environment: test-resources-${{ matrix.environment }}
     strategy:
