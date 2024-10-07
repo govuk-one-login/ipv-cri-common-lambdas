@@ -25,6 +25,15 @@ jobs:
   #          cache-name: test-resources
   #          pull-repository: true
 
+  reuse:
+    name: Reuse
+    uses: ./.github/workflows/upload-artifact.yml
+    with:
+      environment: ${{ matrix.environment }}
+    strategy:
+      matrix:
+        environment: [dev, build]
+
   config:
     name: ${{ format('Get config ({0})', matrix.environment) }}
     runs-on: ubuntu-latest
