@@ -79,7 +79,7 @@ jobs:
       - name: Print status
         shell: bash
         env:
-          BADGE: ${{ fromJSON(needs.config.outputs[format('statuses-{0}', matrix.environment)]).ADDRESS.badge }}
+          BADGE: ${{ fromJSON(needs.config.outputs[format('statuses-{0}', matrix.environment)])[matrix.prefix].badge }}
         run: echo "$BADGE"
 
       - name: Check deployment enabled
