@@ -60,7 +60,7 @@ jobs:
     needs: [config]
     runs-on: ubuntu-latest
     environment: test-resources-${{ matrix.environment }}
-    name: ${{ format('{2} Publish [{0} | {1}]', matrix.environment, matrix.name, fromJSON(needs.config.outputs[format('statuses-{0}', matrix.environment)])[matrix.cri].badge) }}
+    name: ${{ format('{2} {1} {0}', matrix.environment, matrix.name, fromJSON(needs.config.outputs[format('statuses-{0}', matrix.environment)])[matrix.cri].badge) }}
     concurrency:
       group: package-test-resources-${{ matrix.environment }}
       cancel-in-progress: false
