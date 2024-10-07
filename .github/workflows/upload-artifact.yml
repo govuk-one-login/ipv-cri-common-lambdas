@@ -23,3 +23,12 @@ jobs:
         env:
           VARS: ${{ toJSON(vars) }}
         run: echo "$VARS"
+
+      - name: Pull repository
+        uses: actions/checkout@v4
+
+      - name: Filter keys
+        uses: ./.github/actions/map-variables
+        with:
+          values: ${{ toJSON(vars) }}
+          key-filter: _ENABLED$
