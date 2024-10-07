@@ -3,8 +3,8 @@ name: Package test resources
 on:
   workflow_dispatch:
   push:
-    branches: [main]
-    paths: [test-resources/**]
+    branches: [main, oj-2738-test-resources-gha]
+#    paths: [test-resources/**]
 
 permissions: {}
 
