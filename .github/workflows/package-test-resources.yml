@@ -37,7 +37,19 @@ jobs:
         shell: bash
         env:
           VARS: ${{ toJSON(vars) }}
-        run: echo "$VARS"
+        run: |
+          echo "statuses=$(
+            jq 'with_entries(
+              select(.key | endswith("_ENABLED")) |
+              {
+                key: .key | rtrimstr("_ENABLED"),
+                value: {
+                  enabled: .value,
+                  badge: (if .value == "true" then "🟢" else "🔴" end)
+                }
+              }
+            ) | tojson' <<< "$VARS"
+          )" >> "$GITHUB_OUTPUT"
 
   publish:
     needs: build
