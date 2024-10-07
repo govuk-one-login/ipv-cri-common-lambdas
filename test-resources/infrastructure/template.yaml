@@ -5,13 +5,10 @@ Description: "Digital Identity CRI Test Automation Harness"
 Parameters:
   CodeSigningConfigArn:
     Type: String
-    Default: "none"
-    Description: >
-      The ARN of the Code Signing Config to use, provided by the deployment pipeline
+    Default: ""
   PermissionsBoundary:
-    Description: "The ARN of the permissions boundary to apply when creating IAM roles"
     Type: String
-    Default: "none"
+    Default: ""
   CriIdentifier:
     Description: "The unique credential issuer identifier"
     Type: AWS::SSM::Parameter::Value<String>
@@ -42,43 +39,30 @@ Mappings:
         staging: review-a.staging.account.gov.uk
 
 Conditions:
-  UseCodeSigningConfigArn:
-    Fn::Not:
-      - Fn::Equals:
-          - !Ref CodeSigningConfigArn
-          - "none"
-  UsePermissionsBoundary:
-    Fn::Not:
-      - Fn::Equals:
-          - !Ref PermissionsBoundary
-          - "none"
+  EnforceCodeSigning: !Not [!Equals [!Ref CodeSigningConfigArn, ""]]
+  UsePermissionsBoundary: !Not [!Equals [!Ref PermissionsBoundary, ""]]
+
 Globals:
   Function:
+    CodeUri: ..
+    Timeout: 30
     Runtime: nodejs18.x
+    Architectures: [arm64]
+    PermissionsBoundary:
+      !If [UsePermissionsBoundary, !Ref PermissionsBoundary, !Ref AWS::NoValue]
     VpcConfig:
       SecurityGroupIds:
         - !ImportValue cri-vpc-AWSServicesEndpointSecurityGroupId
       SubnetIds:
         - !ImportValue cri-vpc-PrivateSubnetIdA
         - !ImportValue cri-vpc-PrivateSubnetIdB
-    PermissionsBoundary: !If
-      - UsePermissionsBoundary
-      - !Ref PermissionsBoundary
-      - !Ref AWS::NoValue
-    CodeSigningConfigArn: !If
-      - UseCodeSigningConfigArn
-      - !Ref CodeSigningConfigArn
-      - !Ref AWS::NoValue
-    Timeout: 30 # seconds
     Tracing: Active
     MemorySize: 1024
-    Architectures:
-      - arm64
     Environment:
       Variables:
-        AWS_STACK_NAME: !Sub ${AWS::StackName}
-        POWERTOOLS_LOG_LEVEL: DEBUG
+        NODE_OPTIONS: --enable-source-maps
         POWERTOOLS_METRICS_NAMESPACE: !Ref CriIdentifier
+        POWERTOOLS_LOG_LEVEL: DEBUG
     AutoPublishAlias: live
 
 Resources:
@@ -98,9 +82,14 @@ Resources:
 
   DequeueFunction:
     Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Sourcemap: true
     Properties:
-      Handler: dequeue-handler.lambdaHandler
-      CodeUri: ../lambdas/src
+      Handler: audit-events-test-harness/lambdas/src/dequeue-handler.lambdaHandler
+      CodeSigningConfigArn:
+        !If [EnforceCodeSigning, !Ref CodeSigningConfigArn, !Ref AWS::NoValue]
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: AuditEventDequeueFunction
@@ -137,14 +126,6 @@ Resources:
             Enabled: true
             FunctionResponseTypes:
               - ReportBatchItemFailures
-    Metadata:
-      BuildMethod: esbuild
-      BuildProperties:
-        Minify: true
-        Target: "node18"
-        Sourcemap: true
-        EntryPoints:
-          - dequeue-handler.ts
 
   DequeueFunctionLogGroup:
     Type: AWS::Logs::LogGroup
@@ -272,6 +253,8 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       Description: Allow APIGW to read from the AuditEventsTable
+      PermissionsBoundary:
+        !If [UsePermissionsBoundary, !Ref PermissionsBoundary, !Ref AWS::NoValue]
       AssumeRolePolicyDocument:
         Version: 2012-10-17
         Statement:
