@@ -33,15 +33,17 @@ jobs:
       matrix:
         environment: [dev, build]
     outputs:
-      statuses: ${{ steps.statuses.outputs.statuses }}
+      statuses-dev: ${{ steps.statuses.outputs.statuses-dev }}
+      statuses-build: ${{ steps.statuses.outputs.statuses-build }}
     steps:
       - name: Get deployment enabled statuses
         id: statuses
         shell: bash
         env:
           VARS: ${{ toJSON(vars) }}
+          ENV: ${{ matrix.environment }}
         run: |
-          echo "statuses=$(
+          echo "statuses-$ENV=$(
             jq 'with_entries(
               select(.key | endswith("_ENABLED")) |
               {
@@ -77,7 +79,7 @@ jobs:
       - name: Print status
         shell: bash
         env:
-          BADGE: ${{ needs.config.outputs.statuses }}
+          BADGE: ${{ needs.config.outputs[format('statuses-{0}', matrix.environment)] }}
         run: echo "$BADGE"
 
       - name: Check deployment enabled
