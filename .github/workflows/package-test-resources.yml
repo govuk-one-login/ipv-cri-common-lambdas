@@ -29,7 +29,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     environment: test-resources-${{ matrix.environment }}
-    name: ${{ format('Publish to {0} {1}', matrix.name, matrix.environment) }}
+    name: ${{ format('{0} Publish [{1} | {2}]', steps.enabled.outputs.badge, matrix.environment, matrix.name) }}
     concurrency:
       group: package-test-resources-${{ matrix.environment }}
       cancel-in-progress: false
@@ -47,19 +47,22 @@ jobs:
     steps:
       - name: Check deployment enabled
         id: enabled
-        if: ${{
-          (github.ref_name == 'main' || matrix.environment == 'dev') &&
-          vars[format('{0}_ENABLED', matrix.cri)] == 'true'
-          }}
+        continue-on-error: true
+        env:
+          ENV_ENABLED: ${{ github.ref_name == 'main' || matrix.environment == 'dev' }}
+          DEPLOYMENT_ENABLED: ${{ vars[format('{0}_ENABLED', matrix.cri)] == 'true' }}
         shell: bash
-        run: exit 0
+        run: |
+          $ENV_ENABLED && $DEPLOYMENT_ENABLED && ENABLED=true || ENABLED=false
+          echo "badge=$($ENABLED && echo "🟢" || echo "🔴")" >> "$GITHUB_OUTPUT"
+          $ENABLED && exit 0 || exit 1
 
       - name: Pull repository
-        if: ${{ steps.enabled.conclusion == 'success' }}
+        if: ${{ steps.enabled.outcome == 'success' }}
         uses: actions/checkout@v4
 
       - name: Get SAM artifact
-        if: ${{ steps.enabled.conclusion == 'success' }}
+        if: ${{ steps.enabled.outcome == 'success' }}
         uses: actions/cache/restore@v4
         with:
           key: ${{ needs.build.outputs.cache-key }}
@@ -67,14 +70,14 @@ jobs:
           path: .aws-sam
 
       - name: Assume AWS Role
-        if: ${{ steps.enabled.conclusion == 'success' }}
+        if: ${{ steps.enabled.outcome == 'success' }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ vars[format('{0}_ROLE_ARN', matrix.cri)] }}
           aws-region: eu-west-2
 
       - name: Upload to S3
-        if: ${{ steps.enabled.conclusion == 'success' }}
+        if: ${{ steps.enabled.outcome == 'success' }}
         uses: govuk-one-login/devplatform-upload-action@v3.9.2
         with:
           artifact-bucket-name: ${{ vars[format('{0}_ARTIFACTS_BUCKET_NAME', matrix.cri)] }}
