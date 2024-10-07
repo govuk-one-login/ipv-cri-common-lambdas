@@ -44,7 +44,7 @@ jobs:
           ENV: ${{ matrix.environment }}
         run: |
           echo "statuses-$ENV=$(
-            jq 'with_entries(
+            jq --compact-output 'with_entries(
               select(.key | endswith("_ENABLED")) |
               {
                 key: .key | rtrimstr("_ENABLED"),
@@ -53,7 +53,7 @@ jobs:
                   badge: (if .value == "true" then "🟢" else "🔴" end)
                 }
               }
-            ) | tojson' <<< "$VARS"
+            )' <<< "$VARS"
           )" >> "$GITHUB_OUTPUT"
 
   publish:
@@ -79,7 +79,7 @@ jobs:
       - name: Print status
         shell: bash
         env:
-          BADGE: ${{ needs.config.outputs[format('statuses-{0}', matrix.environment)] }}
+          BADGE: ${{ fromJSON(needs.config.outputs[format('statuses-{0}', matrix.environment)]).ADDRESS.badge }}
         run: echo "$BADGE"
 
       - name: Check deployment enabled
