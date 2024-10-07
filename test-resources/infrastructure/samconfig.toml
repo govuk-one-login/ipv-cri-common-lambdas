@@ -1,0 +1,25 @@
+version = 0.1
+
+[default.build.parameters]
+cached = true
+parallel = true
+
+[default.deploy.parameters]
+stack_name = "<your-name>-test-resources"
+
+capabilities = ["CAPABILITY_IAM", "CAPABILITY_NAMED_IAM"]
+fail_on_empty_changeset = false
+confirm_changeset = false
+s3_prefix = "test-resources"
+region = "eu-west-2"
+resolve_s3 = true
+
+tags = [
+    "cri:component=ipv-cri-common-test-harness",
+    "cri:deployment-source=manual",
+    "cri:stack-type=dev",
+]
+
+parameter_overrides = [
+    "Environment=dev",
+]
