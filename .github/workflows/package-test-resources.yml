@@ -1,0 +1,83 @@
+name: Package test resources
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [test-resources/**]
+
+concurrency:
+  group: package-test-resources-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  build:
+    name: Build SAM app
+    runs-on: ubuntu-latest
+    outputs:
+      cache-key: ${{ steps.build.outputs.cache-key }}
+      cache-restore-keys: ${{ steps.build.outputs.cache-restore-keys }}
+    steps:
+      - name: Build SAM application
+        id: build
+        uses: govuk-one-login/github-actions/sam/build-application@c9c3f2ef04d9145894de83e973b0f4dc1e90d14e
+        with:
+          template: test-resources/infrastructure/template.yaml
+          source-dir: test-resources/**/lambdas/src
+          cache-name: test-resources
+          pull-repository: true
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: test-resources-${{ matrix.environment }}
+    name: ${{ format('Publish [{0} | {1}]', matrix.environment, matrix.cri) }}
+    permissions:
+      id-token: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        environment: [dev, build]
+        cri: [address, check-hmrc]
+        include:
+          - {cri: address, prefix: ADDRESS}
+          - {cri: check-hmrc, prefix: CHECK_HMRC}
+    steps:
+      - name: Check deployment enabled
+        id: enabled
+        if: ${{
+          (github.ref_name == 'main' || matrix.environment == 'dev') &&
+          vars[format('{0}_ENABLED', matrix.prefix)] == 'true'
+          }}
+        shell: bash
+        run: exit 0
+
+      - name: Pull repository
+        if: ${{ steps.enabled.conclusion == 'success' }}
+        uses: actions/checkout@v4
+
+      - name: Get SAM artifact
+        if: ${{ steps.enabled.conclusion == 'success' }}
+        uses: actions/cache/restore@v4
+        with:
+          key: ${{ needs.build.outputs.cache-key }}
+          restore-keys: ${{ needs.build.outputs.cache-restore-keys }}
+          path: .aws-sam
+
+      - name: Assume AWS Role
+        if: ${{ steps.enabled.conclusion == 'success' }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars[format('{0}_ROLE_ARN', matrix.prefix)] }}
+          aws-region: eu-west-2
+
+      - name: Upload to S3
+        if: ${{ steps.enabled.conclusion == 'success' }}
+        uses: govuk-one-login/devplatform-upload-action@v3.9.2
+        with:
+          artifact-bucket-name: ${{ vars[format('{0}_ARTIFACTS_BUCKET_NAME', matrix.prefix)] }}
+          signing-profile-name: ${{ vars[format('{0}_SIGNING_PROFILE_NAME', matrix.prefix)] }}
+          working-directory: .aws-sam/build
