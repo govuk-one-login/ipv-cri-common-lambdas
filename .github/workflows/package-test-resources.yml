@@ -50,7 +50,7 @@ jobs:
                 key: .key | rtrimstr("_ENABLED"),
                 value: {
                   enabled: .value,
-                  badge: (if .value == "true" then "🟢" else "🔴" end)
+                  badge: (if .value == "true" then "🚀" else "✘  " end)
                 }
               }
             )' <<< "$VARS"
