@@ -1,0 +1,30 @@
+name: "Map dictionary values"
+description: "Map dictionary keys to a new set of values"
+
+inputs:
+  values:
+    description: "The input dictionary to process"
+    required: true
+  key-filter:
+    description: "Regex filter to select the keys whose values should be mapped"
+    required: false
+
+runs:
+  using: composite
+  steps:
+    - name: Filter keys
+      if: ${{ inputs.key-filter != null }}
+      id: filter
+      shell: bash
+      env:
+        DICTIONARY: ${{ inputs.values }}
+        KEY_FILTER: ${{ inputs.key-filter }}
+      run: |        
+        echo keys="$(
+          jq --compact-output --arg keyFilter "$KEY_FILTER" \
+            'to_entries| map(select(.key | match($keyFilter)) | .key)' <<< "$DICTIONARY"
+        )" >> "$GITHUB_OUTPUT"
+
+    - name: Print
+      shell: bash
+      run: echo "${{ steps.filter.outputs.keys }}"
