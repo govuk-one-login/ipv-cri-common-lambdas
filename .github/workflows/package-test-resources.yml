@@ -9,21 +9,21 @@ on:
 permissions: {}
 
 jobs:
-#  build:
-#    name: Build SAM app
-#    runs-on: ubuntu-latest
-#    outputs:
-#      cache-key: ${{ steps.build.outputs.cache-key }}
-#      cache-restore-keys: ${{ steps.build.outputs.cache-restore-keys }}
-#    steps:
-#      - name: Build SAM application
-#        id: build
-#        uses: govuk-one-login/github-actions/sam/build-application@c9c3f2ef04d9145894de83e973b0f4dc1e90d14e
-#        with:
-#          template: test-resources/infrastructure/template.yaml
-#          source-dir: test-resources/**/lambdas/src
-#          cache-name: test-resources
-#          pull-repository: true
+  #  build:
+  #    name: Build SAM app
+  #    runs-on: ubuntu-latest
+  #    outputs:
+  #      cache-key: ${{ steps.build.outputs.cache-key }}
+  #      cache-restore-keys: ${{ steps.build.outputs.cache-restore-keys }}
+  #    steps:
+  #      - name: Build SAM application
+  #        id: build
+  #        uses: govuk-one-login/github-actions/sam/build-application@c9c3f2ef04d9145894de83e973b0f4dc1e90d14e
+  #        with:
+  #          template: test-resources/infrastructure/template.yaml
+  #          source-dir: test-resources/**/lambdas/src
+  #          cache-name: test-resources
+  #          pull-repository: true
 
   config:
     name: ${{ format('Get config ({0})', matrix.environment) }}
@@ -33,8 +33,7 @@ jobs:
       matrix:
         environment: [dev, build]
     outputs:
-      statuses-dev: ${{ steps.statuses.outputs.statuses-dev }}
-      statuses-build: ${{ steps.statuses.outputs.statuses-build }}
+      statuses: ${{ toJSON(steps.statuses.outputs) }}
     steps:
       - name: Get deployment enabled statuses
         id: statuses
@@ -43,7 +42,7 @@ jobs:
           VARS: ${{ toJSON(vars) }}
           ENV: ${{ matrix.environment }}
         run: |
-          echo "statuses-$ENV=$(
+          echo "$ENV=$(
             jq --compact-output 'with_entries(
               select(.key | endswith("_ENABLED")) |
               {
@@ -60,7 +59,7 @@ jobs:
     needs: [config]
     runs-on: ubuntu-latest
     environment: test-resources-${{ matrix.environment }}
-    name: ${{ format('{2} {1} {0}', matrix.environment, matrix.name, fromJSON(needs.config.outputs[format('statuses-{0}', matrix.environment)])[matrix.cri].badge) }}
+    #    name: ${{ format('{2} {1} {0}', matrix.environment, matrix.name, fromJSON(needs.config.outputs.statuses[matrix.environment])[matrix.cri].badge) }}
     concurrency:
       group: package-test-resources-${{ matrix.environment }}
       cancel-in-progress: false
@@ -76,10 +75,16 @@ jobs:
           - {cri: ADDRESS, name: Address}
           - {cri: CHECK_HMRC, name: "Check HMRC"}
     steps:
+      #      - name: Print status
+      #        shell: bash
+      #        env:
+      #          BADGE: ${{ fromJSON(needs.config.outputs[format('statuses-{0}', matrix.environment)])[matrix.prefix].badge }}
+      #        run: echo "$BADGE"
+
       - name: Print status
         shell: bash
         env:
-          BADGE: ${{ fromJSON(needs.config.outputs[format('statuses-{0}', matrix.environment)])[matrix.prefix].badge }}
+          BADGE: ${{ needs.config.outputs.statuses }}
         run: echo "$BADGE"
 
       - name: Check deployment enabled
