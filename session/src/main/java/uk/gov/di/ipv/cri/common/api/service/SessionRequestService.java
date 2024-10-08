@@ -30,6 +30,7 @@ public class SessionRequestService {
     private static final String CLIENT_ID = "client_id";
     private static final String PERSISTENT_SESSION_ID = "persistent_session_id";
     private static final String CLIENT_SESSION_ID = "govuk_signin_journey_id";
+    private static final String CONTEXT = "context";
 
     private final ObjectMapper objectMapper;
     private final JWTVerifier jwtVerifier;
@@ -127,6 +128,10 @@ public class SessionRequestService {
                                         jwtClaims.getClaim(SHARED_CLAIMS_NAME)),
                                 SharedClaims.class);
                 sessionRequest.setSharedClaims(sharedClaims);
+            }
+
+            if (jwtClaims.getClaims().containsKey(CONTEXT)) {
+                sessionRequest.setContext(jwtClaims.getStringClaim(CONTEXT));
             }
 
             return sessionRequest;
