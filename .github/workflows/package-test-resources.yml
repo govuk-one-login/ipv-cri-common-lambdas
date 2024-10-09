@@ -121,11 +121,11 @@ jobs:
   #          )" >> "$GITHUB_OUTPUT"
 
   publish:
-#    needs: [badges]
+    needs: [badges]
     runs-on: ubuntu-latest
     environment: test-resources-${{ matrix.environment }}
     #    name: ${{ format('{2} {1} {0}', matrix.environment, matrix.name, fromJSON(needs.config.outputs.statuses[matrix.environment])[matrix.cri].badge) }}
-    #    name: ${{ format('{2} {1} {0}', matrix.environment, matrix.name, fromJSON(needs.badges.outputs)[matrix.cri]) }}
+    name: ${{ format('{2} {1} {0}', matrix.environment, matrix.name, fromJSON(needs.badges.outputs[matrix.environment])[matrix.cri]) }}
     concurrency:
       group: package-test-resources-${{ matrix.environment }}
       cancel-in-progress: false
