@@ -1,15 +1,18 @@
-name: "Map dictionary values"
-description: "Map dictionary values to a new set of values based on the provided mapping"
+name: "Map dictionary keys or values"
+description: "Map dictionary keys or values based on the provided mapping or regex"
 
 inputs:
   dictionary:
     description: "The dictionary containing the values to map. Must be valid JSON containing key-value pairs"
     required: true
-  value-map:
-    description: "The mapping of the current values to the new values as key-value pairs delimited by '|' or newlines"
-    required: true
   key-filter:
     description: "Regex filter to select the keys whose values should be mapped; map all values otherwise"
+    required: false
+  key-transform:
+    description: "Map keys by applying the provided regex. Must contain one capturing group"
+    required: false
+  value-map:
+    description: "The mapping of the current values to the new values as key-value pairs delimited by '|' or newlines"
     required: false
 
 outputs:
@@ -32,7 +35,8 @@ runs:
       shell: bash
       env:
         DICTIONARY: ${{ inputs.dictionary }}
+        KEY_FILTER: ${{ inputs.key-filter }}
+        KEY_TRANSFORM: ${{ inputs.key-transform }}
         VALUE_MAP: ${{ steps.value-map.outputs.parsed-parameters }}
-        KEY_REGEX: ${{ inputs.key-filter }}
         MAP: ${{ github.action_path }}/map-dictionary.sh
       run: echo values="$($MAP)" >> "$GITHUB_OUTPUT"
