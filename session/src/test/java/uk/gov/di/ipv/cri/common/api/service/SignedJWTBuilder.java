@@ -10,6 +10,7 @@ import com.nimbusds.jose.crypto.RSASSASigner;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.oauth2.sdk.ResponseType;
+import software.amazon.awssdk.utils.StringUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -49,6 +50,7 @@ class SignedJWTBuilder {
     private String persistentSessionId = "persistentSessionIdTest";
     private String clientSessionId = "clientSessionIdTest";
     private Map<String, Object> sharedClaims = null;
+    private String context;
 
     SignedJWTBuilder setNow(Instant now) {
         this.now = now;
@@ -120,6 +122,11 @@ class SignedJWTBuilder {
         return this;
     }
 
+    SignedJWTBuilder setContext(String context) {
+        this.context = context;
+        return this;
+    }
+
     Certificate getCertificate() {
         return certificate;
     }
@@ -161,6 +168,10 @@ class SignedJWTBuilder {
                 if (Objects.nonNull(sharedClaims)) {
                     jwtClaimSetBuilder.claim("shared_claims", this.sharedClaims);
                 }
+            }
+
+            if (!StringUtils.isEmpty(context)) {
+                jwtClaimSetBuilder.claim("context", this.context);
             }
 
             SignedJWT signedJWT =
