@@ -14,6 +14,9 @@ inputs:
   value-map:
     description: "The mapping of the current values to the new values as key-value pairs delimited by '|' or newlines"
     required: false
+  env-var-name:
+    description: "Name of an env var to store the mapped dictionary"
+    required: false
 
 outputs:
   values:
@@ -38,5 +41,15 @@ runs:
         KEY_FILTER: ${{ inputs.key-filter }}
         KEY_TRANSFORM: ${{ inputs.key-transform }}
         VALUE_MAP: ${{ steps.value-map.outputs.parsed-parameters }}
-        MAP: ${{ github.action_path }}/map-dictionary.sh
+        MAP: ${{ github.action_path }}/map.sh
       run: echo values="$($MAP)" >> "$GITHUB_OUTPUT"
+
+    - name: Set environment variable
+      if: ${{ inputs.env-var-name != null }}
+      shell: bash
+      env:
+        ENV_VAR: ${{ inputs.env-var-name }}
+        VALUES: ${{ steps.map.outputs.values }}
+      run: |
+        echo "Setting environment variable '$ENV_VAR'..."
+        echo "$ENV_VAR=$VALUES" >> "$GITHUB_ENV"

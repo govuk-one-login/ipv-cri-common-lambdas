@@ -37,21 +37,35 @@ jobs:
   badges:
     runs-on: ubuntu-latest
     environment: test-resources-${{ matrix.environment }}
+    name: Get badges
     strategy:
       matrix:
         environment: [dev, build]
+    outputs:
+      dev: ${{ env.badges-dev }}
+      build: ${{ env.badges-build }}
+      all: ${{ toJSON(steps.outputs.outputs) }}
     steps:
       - name: Pull repository
         uses: actions/checkout@v4
 
       - name: Get badges
         id: badges
-        uses: ./.github/actions/map-dictionary-values
+        uses: ./.github/actions/map-dictionary
         with:
+          env-var-name: badges-${{ matrix.environment }}
           dictionary: ${{ toJSON(vars) }}
           key-filter: _ENABLED$
           key-transform: ^(.*)_ENABLED$
           value-map: true=🚀 | false=✋
+
+      - name: Output values
+        shell: bash
+        id: outputs
+        env:
+          ENVIRONMENT: ${{ matrix.environment }}
+          BADGES: ${{ steps.badges.outputs.values }}
+        run: echo "$ENVIRONMENT=$BADGES" >> "$GITHUB_OUTPUT"
 
       - name: Print badges
         shell: bash
@@ -59,41 +73,59 @@ jobs:
           BADGES: ${{ steps.badges.outputs.values }}
         run: jq '.' <<< "$BADGES" | tee "$GITHUB_STEP_SUMMARY"
 
-  config:
-    name: ${{ format('Get config ({0})', matrix.environment) }}
+  print-badges:
+    needs: badges
     runs-on: ubuntu-latest
-    environment: test-resources-${{ matrix.environment }}
-    strategy:
-      matrix:
-        environment: [dev, build]
-    outputs:
-      statuses: ${{ toJSON(steps.statuses.outputs) }}
+    name: Print badges
     steps:
-      - name: Get deployment enabled statuses
-        id: statuses
+      - name: Print badges
         shell: bash
         env:
-          VARS: ${{ toJSON(vars) }}
-          ENV: ${{ matrix.environment }}
-        run: |
-          echo "$ENV=$(
-            jq --compact-output 'with_entries(
-              select(.key | endswith("_ENABLED")) |
-              {
-                key: .key | rtrimstr("_ENABLED"),
-                value: {
-                  enabled: .value,
-                  badge: (if .value == "true" then "🚀" else "✋" end)
-                }
-              }
-            )' <<< "$VARS"
-          )" >> "$GITHUB_OUTPUT"
+          BADGES: ${{ toJSON(needs.badges.outputs) }}
+        run: jq '.' <<< "$BADGES" | tee "$GITHUB_STEP_SUMMARY"
+
+      - name: Get badge
+        shell: bash
+        env:
+          BADGE: ${{ fromJSON(needs.badges.outputs.dev).ADDRESS }}
+        run: echo "Badge | $BADGE" | tee "$GITHUB_STEP_SUMMARY"
+
+  #  config:
+  #    name: ${{ format('Get config ({0})', matrix.environment) }}
+  #    runs-on: ubuntu-latest
+  #    environment: test-resources-${{ matrix.environment }}
+  #    strategy:
+  #      matrix:
+  #        environment: [dev, build]
+  #    outputs:
+  #      statuses: ${{ toJSON(steps.statuses.outputs) }}
+  #    steps:
+  #      - name: Get deployment enabled statuses
+  #        id: statuses
+  #        shell: bash
+  #        env:
+  #          VARS: ${{ toJSON(vars) }}
+  #          ENV: ${{ matrix.environment }}
+  #        run: |
+  #          echo "$ENV=$(
+  #            jq --compact-output 'with_entries(
+  #              select(.key | endswith("_ENABLED")) |
+  #              {
+  #                key: .key | rtrimstr("_ENABLED"),
+  #                value: {
+  #                  enabled: .value,
+  #                  badge: (if .value == "true" then "🚀" else "✋" end)
+  #                }
+  #              }
+  #            )' <<< "$VARS"
+  #          )" >> "$GITHUB_OUTPUT"
 
   publish:
-    needs: [config]
+#    needs: [badges]
     runs-on: ubuntu-latest
     environment: test-resources-${{ matrix.environment }}
     #    name: ${{ format('{2} {1} {0}', matrix.environment, matrix.name, fromJSON(needs.config.outputs.statuses[matrix.environment])[matrix.cri].badge) }}
+    #    name: ${{ format('{2} {1} {0}', matrix.environment, matrix.name, fromJSON(needs.badges.outputs)[matrix.cri]) }}
     concurrency:
       group: package-test-resources-${{ matrix.environment }}
       cancel-in-progress: false
