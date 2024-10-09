@@ -147,6 +147,12 @@ jobs:
       #          BADGE: ${{ fromJSON(needs.config.outputs[format('statuses-{0}', matrix.environment)])[matrix.prefix].badge }}
       #        run: echo "$BADGE"
 
+      - name: Print matrix
+        shell: bash
+        env:
+          MATRIX: ${{ toJSON(matrix) }}
+        run: echo "$MATRIX" | tee "$GITHUB_STEP_SUMMARY"
+
       - name: Print status
         shell: bash
         env:
