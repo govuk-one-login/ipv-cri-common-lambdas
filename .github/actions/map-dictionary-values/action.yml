@@ -1,0 +1,38 @@
+name: "Map dictionary values"
+description: "Map dictionary values to a new set of values based on the provided mapping"
+
+inputs:
+  dictionary:
+    description: "The dictionary containing the values to map. Must be valid JSON containing key-value pairs"
+    required: true
+  value-map:
+    description: "The mapping of the current values to the new values as key-value pairs delimited by '|' or newlines"
+    required: true
+  key-filter:
+    description: "Regex filter to select the keys whose values should be mapped; map all values otherwise"
+    required: false
+
+outputs:
+  values:
+    description: "The mapped key-value pairs"
+    value: ${{ steps.map.outputs.values }}
+
+runs:
+  using: composite
+  steps:
+    - name: Parse value map
+      id: value-map
+      uses: govuk-one-login/github-actions/parse-parameters@oj-2738-test-harness-actions
+      with:
+        parameters: ${{ inputs.value-map }}
+        json-output: true
+
+    - name: Map values
+      id: map
+      shell: bash
+      env:
+        DICTIONARY: ${{ inputs.dictionary }}
+        VALUE_MAP: ${{ steps.value-map.outputs.parsed-parameters }}
+        KEY_REGEX: ${{ inputs.key-filter }}
+        MAP: ${{ github.action_path }}/map-dictionary.sh
+      run: echo values="$($MAP)" >> "$GITHUB_OUTPUT"
