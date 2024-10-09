@@ -50,9 +50,8 @@ jobs:
         with:
           dictionary: ${{ toJSON(vars) }}
           key-filter: _ENABLED$
-          value-map: |
-            true=🚀
-            false=✋
+          key-transform: ^(.*)_ENABLED$
+          value-map: true=🚀 | false=✋
 
       - name: Print badges
         shell: bash
