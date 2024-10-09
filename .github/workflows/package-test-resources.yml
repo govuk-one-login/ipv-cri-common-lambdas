@@ -25,14 +25,40 @@ jobs:
   #          cache-name: test-resources
   #          pull-repository: true
 
-  reuse:
-    name: Reuse
-    uses: ./.github/workflows/upload-artifact.yml
-    with:
-      environment: ${{ matrix.environment }}
+  #  reuse:
+  #    name: Reuse
+  #    uses: ./.github/workflows/upload-artifact.yml
+  #    with:
+  #      environment: ${{ matrix.environment }}
+  #    strategy:
+  #      matrix:
+  #        environment: [dev, build]
+
+  badges:
+    runs-on: ubuntu-latest
+    environment: test-resources-${{ matrix.environment }}
     strategy:
       matrix:
         environment: [dev, build]
+    steps:
+      - name: Pull repository
+        uses: actions/checkout@v4
+
+      - name: Get badges
+        id: badges
+        uses: ./.github/actions/map-dictionary-values
+        with:
+          dictionary: ${{ toJSON(vars) }}
+          key-filter: _ENABLED$
+          value-map: |
+            true=🚀
+            false=✋
+
+      - name: Print badges
+        shell: bash
+        env:
+          BADGES: ${{ steps.badges.outputs.values }}
+        run: jq '.' <<< "$BADGES" | tee "$GITHUB_STEP_SUMMARY"
 
   config:
     name: ${{ format('Get config ({0})', matrix.environment) }}
