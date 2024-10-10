@@ -3,11 +3,11 @@ name: Unit pact tests (Java)
 on:
   workflow_call:
     inputs:
-      CRI_UNDER_TEST: { required: true, type: string }
+      cri-provider: {required: true, type: string}
     secrets:
-      pact-broker-host: { required: true }
-      pact-broker-username: { required: true }
-      pact-broker-password: { required: true }
+      pact-broker-host: {required: true}
+      pact-broker-username: {required: true}
+      pact-broker-password: {required: true}
 
 concurrency:
   group: pact-tests-java-${{ inputs.cri-provider }}-${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
@@ -17,7 +17,7 @@ defaults:
   run:
     shell: bash
 
-permissions: { }
+permissions: {}
 
 jobs:
   run-pact-tests:
@@ -51,8 +51,8 @@ jobs:
 
       - name: Run tests
         env:
+          CRI_UNDER_TEST: ${{ inputs.cri-provider }}
           PACT_BROKER_HOST: ${{ secrets.pact-broker-host }}
           PACT_BROKER_USERNAME: ${{ secrets.pact-broker-username }}
           PACT_BROKER_PASSWORD: ${{ secrets.pact-broker-password }}
-          CRI_UNDER_TEST: ${{ inputs.CRI_UNDER_TEST }}
         run: ./gradlew pactTests jacocoTestReport --build-cache --parallel -x spotlessApply -x spotlessCheck
