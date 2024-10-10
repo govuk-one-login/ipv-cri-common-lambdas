@@ -1,11 +1,14 @@
-name: Build and package common CRI
-on:
-  push:
-    branches:
-      - main
-  workflow_dispatch: # deploy manually
+name: Package common lambdas
 
-concurrency: post-merge-matrix-build-and-package
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths-ignore: [test-resources/**]
+
+concurrency:
+  group: package-common-lambdas
+  cancel-in-progress: false
 
 jobs:
   build_common_cri:
@@ -57,14 +60,21 @@ jobs:
             out/
           key: "${{ github.sha }}"
 
-
   sign_and_publish_common_cri_to_dev:
+    name: Sign and publish common_cri infrastructure to Dev
     needs: build_common_cri
+    runs-on: ubuntu-latest
     continue-on-error: true
+    timeout-minutes: 10
+    env:
+      AWS_REGION: eu-west-2
+    permissions:
+      id-token: write
+      contents: read
     strategy:
       fail-fast: false
       matrix:
-        target: [ ADDRESS_DEV, COMMON_DEV, DL_DEV, FRAUD_DEV, KBV_DEV, PASSPORTA_DEV, TOY_DEV, HMRC_KBV_DEV, HMRC_CHECK_DEV ]
+        target: [ADDRESS_DEV, COMMON_DEV, DL_DEV, FRAUD_DEV, KBV_DEV, PASSPORTA_DEV, TOY_DEV, HMRC_KBV_DEV, HMRC_CHECK_DEV]
         include:
           - target: ADDRESS_DEV
             ENABLED: "${{ vars.ADDRESS_DEV_ENABLED }}"
@@ -111,17 +121,7 @@ jobs:
             ARTIFACT_SOURCE_BUCKET_NAME_SECRET: HMRC_CHECK_DEV_COMMON_CRI_ARTIFACT_SOURCE_BUCKET_NAME
             GH_ACTIONS_ROLE_ARN_SECRET:         HMRC_CHECK_DEV_COMMON_CRI_GH_ACTIONS_ROLE_ARN
             SIGNING_PROFILE_NAME:               HMRC_CHECK_DEV_SIGNING_PROFILE_NAME
-
-    name: Sign and publish common_cri infrastructure to Dev
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    env:
-      AWS_REGION: eu-west-2
-    permissions:
-      id-token: write
-      contents: read
     steps:
-
       - name: Checkout code
         if: matrix.ENABLED == 'true'
         uses: actions/checkout@v3
@@ -167,12 +167,20 @@ jobs:
           working-directory: ./out
 
   sign_and_publish_common_cri_to_build:
+    name: Sign and publish common_cri infrastructure to Build
     needs: sign_and_publish_common_cri_to_dev
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      AWS_REGION: eu-west-2
+    permissions:
+      id-token: write
+      contents: read
     continue-on-error: true
     strategy:
       fail-fast: false
       matrix:
-        target: [ ADDRESS_BUILD, COMMON_BUILD, DL_BUILD, FRAUD_BUILD, KBV_BUILD, PASSPORTA_BUILD, TOY_BUILD, HMRC_KBV_BUILD, HMRC_CHECK_BUILD ]
+        target: [ADDRESS_BUILD, COMMON_BUILD, DL_BUILD, FRAUD_BUILD, KBV_BUILD, PASSPORTA_BUILD, TOY_BUILD, HMRC_KBV_BUILD, HMRC_CHECK_BUILD]
         include:
           - target: ADDRESS_BUILD
             ENABLED: "${{ vars.ADDRESS_BUILD_ENABLED }}"
@@ -219,16 +227,7 @@ jobs:
             ARTIFACT_SOURCE_BUCKET_NAME_SECRET: HMRC_CHECK_BUILD_COMMON_CRI_ARTIFACT_SOURCE_BUCKET_NAME
             GH_ACTIONS_ROLE_ARN_SECRET:         HMRC_CHECK_BUILD_COMMON_CRI_GH_ACTIONS_ROLE_ARN
             SIGNING_PROFILE_NAME:               HMRC_CHECK_BUILD_SIGNING_PROFILE_NAME
-    name: Sign and publish common_cri infrastructure to Build
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    env:
-      AWS_REGION: eu-west-2
-    permissions:
-      id-token: write
-      contents: read
     steps:
-
       - name: Checkout code
         if: matrix.ENABLED == 'true'
         uses: actions/checkout@v3
@@ -274,8 +273,8 @@ jobs:
           working-directory: ./out
 
   clean_up:
-    needs: sign_and_publish_common_cri_to_build
     name: Clean up cache
+    needs: sign_and_publish_common_cri_to_build
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
@@ -284,18 +283,17 @@ jobs:
       id-token: write
       contents: read
     steps:
-
-    - name: Cleanup Cache
-      if: ${{ always() }}
-      run: |
-        gh extension install actions/gh-actions-cache
-
-        REPO=${{ github.repository }}
-        # BRANCH="refs/pull/${{ github.event.pull_request.number }}/merge" # might need this
-        BRANCH="refs/heads/main"
-        set +e
-        echo "Deleting cache..."
-            gh actions-cache delete "${{ github.sha }}" -R $REPO -B $BRANCH --confirm
-        echo "Done"
-      env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Cleanup Cache
+        if: ${{ always() }}
+        run: |
+          gh extension install actions/gh-actions-cache
+          
+          REPO=${{ github.repository }}
+          # BRANCH="refs/pull/${{ github.event.pull_request.number }}/merge" # might need this
+          BRANCH="refs/heads/main"
+          set +e
+          echo "Deleting cache..."
+              gh actions-cache delete "${{ github.sha }}" -R $REPO -B $BRANCH --confirm
+          echo "Done"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
