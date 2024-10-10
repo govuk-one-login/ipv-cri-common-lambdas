@@ -3,13 +3,13 @@ name: Integration tests
 on:
   workflow_call:
     inputs:
-      aws-region: { required: false, type: string }
-      stack-name: { required: true, type: string }
-      stack-outputs: { required: true, type: string }
+      aws-region: {required: false, type: string}
+      stack-name: {required: true, type: string}
+      stack-outputs: {required: true, type: string}
     secrets:
-      api-gateway-api-key: { required: true }
-      ipv-core-stub-basic-auth-pwd: { required: true }
-      ipv-core-stub-basic-auth-user: { required: true }
+      api-gateway-api-key: {required: true}
+      ipv-core-stub-basic-auth-pwd: {required: true}
+      ipv-core-stub-basic-auth-user: {required: true}
 
 concurrency:
   group: integration-tests-${{ github.workflow }}-${{ github.head_ref || github.ref_name }}

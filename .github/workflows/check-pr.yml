@@ -21,10 +21,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        CRI_PROVIDER: ["PassportTokenProvider","DrivingLicenceTokenProvider","FraudTokenProvider","AddressCriTokenProvider"]
+        cri-provider: ["PassportTokenProvider","DrivingLicenceTokenProvider","FraudTokenProvider","AddressCriTokenProvider"]
     uses: ./.github/workflows/run-pact-tests-java.yml
     with:
-      CRI_UNDER_TEST: ${{ matrix.CRI_PROVIDER }}
+      cri-provider: ${{ matrix.cri-provider }}
     secrets:
       pact-broker-host: ${{ secrets.PACT_BROKER_HOST }}
       pact-broker-username: ${{ secrets.PACT_BROKER_USERNAME }}
@@ -35,10 +35,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        CRI_PROVIDER: ["ExperianKbvCriTokenProvider","NinoCriTokenProvider"]
+        cri-provider: ["ExperianKbvCriTokenProvider","NinoCriTokenProvider"]
     uses: ./.github/workflows/run-pact-tests-ts.yml
     with:
-      CRI_UNDER_TEST: ${{ matrix.CRI_PROVIDER }}
+      cri-provider: ${{ matrix.cri-provider }}
     secrets:
       pact-broker-host: ${{ secrets.PACT_BROKER_HOST }}
       pact-broker-username: ${{ secrets.PACT_BROKER_USERNAME }}
