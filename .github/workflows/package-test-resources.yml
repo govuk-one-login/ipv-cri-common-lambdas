@@ -39,6 +39,7 @@ jobs:
     environment: test-resources-${{ matrix.environment }}
     name: Get badges
     strategy:
+      fail-fast: false
       matrix:
         environment: [dev, build]
     outputs:
