@@ -6,10 +6,6 @@ on:
     branches: [main]
     paths: [test-resources/**]
 
-concurrency:
-  group: package-test-resources-${{ github.head_ref || github.ref_name }}
-  cancel-in-progress: false
-
 permissions: {}
 
 jobs:
@@ -33,7 +29,10 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     environment: test-resources-${{ matrix.environment }}
-    name: ${{ format('Publish [{0} | {1}]', matrix.environment, matrix.cri) }}
+    name: ${{ format('Publish to {0} {1}', matrix.name, matrix.environment) }}
+    concurrency:
+      group: package-test-resources-${{ matrix.environment }}
+      cancel-in-progress: false
     permissions:
       id-token: write
       contents: read
@@ -41,16 +40,16 @@ jobs:
       fail-fast: false
       matrix:
         environment: [dev, build]
-        cri: [address, check-hmrc]
+        cri: [ADDRESS, CHECK_HMRC]
         include:
-          - {cri: address, prefix: ADDRESS}
-          - {cri: check-hmrc, prefix: CHECK_HMRC}
+          - {cri: ADDRESS, name: Address}
+          - {cri: CHECK_HMRC, name: "Check HMRC"}
     steps:
       - name: Check deployment enabled
         id: enabled
         if: ${{
           (github.ref_name == 'main' || matrix.environment == 'dev') &&
-          vars[format('{0}_ENABLED', matrix.prefix)] == 'true'
+          vars[format('{0}_ENABLED', matrix.cri)] == 'true'
           }}
         shell: bash
         run: exit 0
@@ -71,13 +70,13 @@ jobs:
         if: ${{ steps.enabled.conclusion == 'success' }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ vars[format('{0}_ROLE_ARN', matrix.prefix)] }}
+          role-to-assume: ${{ vars[format('{0}_ROLE_ARN', matrix.cri)] }}
           aws-region: eu-west-2
 
       - name: Upload to S3
         if: ${{ steps.enabled.conclusion == 'success' }}
         uses: govuk-one-login/devplatform-upload-action@v3.9.2
         with:
-          artifact-bucket-name: ${{ vars[format('{0}_ARTIFACTS_BUCKET_NAME', matrix.prefix)] }}
-          signing-profile-name: ${{ vars[format('{0}_SIGNING_PROFILE_NAME', matrix.prefix)] }}
+          artifact-bucket-name: ${{ vars[format('{0}_ARTIFACTS_BUCKET_NAME', matrix.cri)] }}
+          signing-profile-name: ${{ vars[format('{0}_SIGNING_PROFILE_NAME', matrix.cri)] }}
           working-directory: .aws-sam/build
