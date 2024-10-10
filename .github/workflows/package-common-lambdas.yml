@@ -1,9 +1,10 @@
-name: Build and package common CRI
+name: Package common lambdas
+
 on:
+  workflow_dispatch:
   push:
-    branches:
-      - main
-  workflow_dispatch: # deploy manually
+    branches: [main]
+    paths-ignore: [test-resources/**]
 
 concurrency: post-merge-matrix-build-and-package
 
