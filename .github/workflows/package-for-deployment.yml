@@ -3,14 +3,25 @@ name: "Package a SAM app and upload to S3 for secure pipeline deployment in mult
 on:
   workflow_call:
     inputs:
-      environment: {required: true, type: string}
       cris: {required: true, type: string}
+      environment: {required: true, type: string}
 
 jobs:
-  badges:
+  config:
+    name: Config
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
+    steps:
+      - name: Print CRIs
+        shell: bash
+        env:
+          CRIS: ${{ inputs.cris }}
+        run: echo "$CRIS"
+
+  badges:
     name: Get badges
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
     outputs:
       badges: ${{ steps.badges.outputs.values }}
     steps:
@@ -26,13 +37,11 @@ jobs:
           key-transform: ^(.*)_ENABLED$
           value-map: true=🚀 | false=✋
 
-  # Get CRI names
-
   publish:
     needs: badges
+    name: Publish
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
-    name: Publish
     strategy:
       fail-fast: false
       matrix:

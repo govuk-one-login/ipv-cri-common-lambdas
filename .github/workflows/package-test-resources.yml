@@ -200,11 +200,14 @@ jobs:
 #          working-directory: .aws-sam/build
 
   reuse:
+    name: Publish to ${{ matrix.environment }}
     uses: ./.github/workflows/package-for-deployment.yml
     strategy:
+      fail-fast: false
       matrix:
-        environment: [test-resources-dev, test-resources-build]
+        environment: [dev, build]
     with:
-      environment: ${{ matrix.environment }}
+      environment: test-resources-${{ matrix.environment }}
       cris: >-
-        ADDRESS CHECK_HMRC
+        ADDRESS
+        CHECK_HMRC
