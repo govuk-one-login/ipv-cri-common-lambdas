@@ -11,11 +11,11 @@ on:
       ipv-core-stub-basic-auth-pwd: { required: true }
       ipv-core-stub-basic-auth-user: { required: true }
 
-permissions: {}
-
 concurrency:
   group: integration-tests-${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
+
+permissions: {}
 
 jobs:
   run-tests:
