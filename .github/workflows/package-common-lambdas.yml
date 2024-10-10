@@ -6,13 +6,9 @@ on:
     branches: [main]
     paths-ignore: [test-resources/**]
 
-concurrency:
-  group: package-common-lambdas
-  cancel-in-progress: false
-
 jobs:
-  build_common_cri:
-    name: Build and package common_cri infrastructure
+  build:
+    name: Build
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
@@ -60,12 +56,15 @@ jobs:
             out/
           key: "${{ github.sha }}"
 
-  sign_and_publish_common_cri_to_dev:
-    name: Sign and publish common_cri infrastructure to Dev
-    needs: build_common_cri
+  publish-dev:
+    needs: build
+    name: Publish to ${{ matrix.target }}
     runs-on: ubuntu-latest
     continue-on-error: true
     timeout-minutes: 10
+    concurrency:
+      group: publish-common-lambdas-${{ matrix.target }}-dev
+      cancel-in-progress: false
     env:
       AWS_REGION: eu-west-2
     permissions:
@@ -166,11 +165,15 @@ jobs:
           signing-profile-name: "${{ secrets[matrix.SIGNING_PROFILE_NAME] }}"
           working-directory: ./out
 
-  sign_and_publish_common_cri_to_build:
-    name: Sign and publish common_cri infrastructure to Build
-    needs: sign_and_publish_common_cri_to_dev
+  publish-build:
+    needs: build
+    name: Publish to ${{ matrix.target }}
+    if: ${{ github.ref_name == 'main' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    concurrency:
+      group: publish-common-lambdas-${{ matrix.target }}-build
+      cancel-in-progress: false
     env:
       AWS_REGION: eu-west-2
     permissions:
@@ -272,9 +275,10 @@ jobs:
           signing-profile-name: "${{ secrets[matrix.SIGNING_PROFILE_NAME] }}"
           working-directory: ./out
 
-  clean_up:
+  clean-up:
+    needs: [build, publish-dev, publish-build]
     name: Clean up cache
-    needs: sign_and_publish_common_cri_to_build
+    if: ${{ always() }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
@@ -284,7 +288,6 @@ jobs:
       contents: read
     steps:
       - name: Cleanup Cache
-        if: ${{ always() }}
         run: |
           gh extension install actions/gh-actions-cache
           
