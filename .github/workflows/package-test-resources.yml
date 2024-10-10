@@ -197,3 +197,13 @@ jobs:
 #          artifact-bucket-name: ${{ vars[format('{0}_ARTIFACTS_BUCKET_NAME', matrix.cri)] }}
 #          signing-profile-name: ${{ vars[format('{0}_SIGNING_PROFILE_NAME', matrix.cri)] }}
 #          working-directory: .aws-sam/build
+
+  reuse:
+    uses: ./.github/workflows/package-for-deployment.yml
+    strategy:
+      matrix:
+        environment: [test-resources-dev, test-resources-build]
+    with:
+      environment: ${{ matrix.environment }}
+      cris: >-
+        ADDRESS CHECK_HMRC

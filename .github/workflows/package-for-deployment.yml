@@ -1,0 +1,46 @@
+name: "Package a SAM app and upload to S3 for secure pipeline deployment in multiple AWS accounts"
+
+on:
+  workflow_call:
+    inputs:
+      environment: {required: true, type: string}
+      cris: {required: true, type: string}
+
+jobs:
+  badges:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    name: Get badges
+    outputs:
+      badges: ${{ steps.badges.outputs.values }}
+    steps:
+      - name: Pull repository
+        uses: actions/checkout@v4
+
+      - name: Get badges
+        id: badges
+        uses: ./.github/actions/map-dictionary
+        with:
+          dictionary: ${{ toJSON(vars) }}
+          key-filter: _ENABLED$
+          key-transform: ^(.*)_ENABLED$
+          value-map: true=🚀 | false=✋
+
+  # Get CRI names
+
+  publish:
+    needs: badges
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    name: Publish
+    strategy:
+      fail-fast: false
+      matrix:
+        cri: ${{ fromJSON(inputs.cris) }} # from CRI names
+        include:
+          - {cri: ADDRESS, name: Address}
+          - {cri: CHECK_HMRC, name: "Check HMRC"}
+    steps:
+      - name: Print
+        shell: bash
+        run: echo
