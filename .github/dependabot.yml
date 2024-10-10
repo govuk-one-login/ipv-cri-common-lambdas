@@ -8,8 +8,12 @@ updates:
     labels:
       - dependabot
     commit-message:
-      prefix: BAU
+      prefix: DEP
   - package-ecosystem: "gradle" 
     directory: "/" 
     schedule:
       interval: "weekly"
+    labels:
+      - dependabot
+    commit-message:
+      prefix: DEP
