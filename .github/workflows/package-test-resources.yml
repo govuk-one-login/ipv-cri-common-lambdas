@@ -208,6 +208,4 @@ jobs:
         environment: [dev, build]
     with:
       environment: test-resources-${{ matrix.environment }}
-      cris: >-
-        ADDRESS
-        CHECK_HMRC
+      cris: ADDRESS CHECK_HMRC
