@@ -6,7 +6,9 @@ on:
     branches: [main]
     paths-ignore: [test-resources/**]
 
-concurrency: post-merge-matrix-build-and-package
+concurrency:
+  group: package-common-lambdas
+  cancel-in-progress: false
 
 jobs:
   build_common_cri:
