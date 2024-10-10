@@ -11,12 +11,20 @@ jobs:
     name: Config
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
+    outputs:
+      cris: ${{ steps.parse-cris.outputs.json }}
     steps:
+      - name: Parse CRIs
+        id: parse-cris
+        uses: govuk-one-login/github-actions/utils/json/parse-array@oj-2738-test-harness-actions
+        with:
+          array: ${{ inputs.cris }}
+
       - name: Print CRIs
         shell: bash
         env:
-          CRIS: ${{ inputs.cris }}
-        run: echo "$CRIS"
+          CRIS: ${{ steps.parse-cris.outputs.json }}
+        run: echo "$CRIS" | tee "$GITHUB_STEP_SUMMARY"
 
   badges:
     name: Get badges
@@ -37,19 +45,19 @@ jobs:
           key-transform: ^(.*)_ENABLED$
           value-map: true=🚀 | false=✋
 
-  publish:
-    needs: badges
-    name: Publish
-    runs-on: ubuntu-latest
-    environment: ${{ inputs.environment }}
-    strategy:
-      fail-fast: false
-      matrix:
-        cri: ${{ fromJSON(inputs.cris) }} # from CRI names
-        include:
-          - {cri: ADDRESS, name: Address}
-          - {cri: CHECK_HMRC, name: "Check HMRC"}
-    steps:
-      - name: Print
-        shell: bash
-        run: echo
+#  publish:
+#    needs: badges
+#    name: Publish
+#    runs-on: ubuntu-latest
+#    environment: ${{ inputs.environment }}
+#    strategy:
+#      fail-fast: false
+#      matrix:
+#        cri: ${{ fromJSON(inputs.cris) }} # from CRI names
+#        include:
+#          - {cri: ADDRESS, name: Address}
+#          - {cri: CHECK_HMRC, name: "Check HMRC"}
+#    steps:
+#      - name: Print
+#        shell: bash
+#        run: echo
