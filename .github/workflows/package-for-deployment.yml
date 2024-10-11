@@ -27,7 +27,7 @@ jobs:
   #        run: echo "$CRIS" | tee "$GITHUB_STEP_SUMMARY"
 
   config:
-    name: Config
+    name: Get config
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     outputs:
@@ -60,7 +60,7 @@ jobs:
 
   publish:
     needs: config
-    name: ${{ fromJSON(needs.config.outputs.badges)[matrix.cri] }} Publish to ${{ matrix.name }}
+    name: ${{ fromJSON(needs.config.outputs.badges)[matrix.cri] }} Upload to ${{ matrix.name }}
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     strategy:

@@ -34,56 +34,56 @@ jobs:
   #      matrix:
   #        environment: [dev, build]
 
-  badges:
-    runs-on: ubuntu-latest
-    environment: test-resources-${{ matrix.environment }}
-    name: Get badges
-    strategy:
-      fail-fast: false
-      matrix:
-        environment: [dev, build]
-    outputs:
-      dev: ${{ env.badges-dev }}
-      build: ${{ env.badges-build }}
-      all: ${{ toJSON(steps.outputs.outputs) }}
-    steps:
-      - name: Pull repository
-        uses: actions/checkout@v4
-
-      - name: Get badges
-        id: badges
-        uses: ./.github/actions/map-dictionary
-        with:
-          env-var-name: badges-${{ matrix.environment }}
-          dictionary: ${{ toJSON(vars) }}
-          key-filter: _ENABLED$
-          key-transform: ^(.*)_ENABLED$
-          value-map: true=🚀 | false=✋
-
-      - name: Output values
-        shell: bash
-        id: outputs
-        env:
-          ENVIRONMENT: ${{ matrix.environment }}
-          BADGES: ${{ steps.badges.outputs.values }}
-        run: echo "$ENVIRONMENT=$BADGES" >> "$GITHUB_OUTPUT"
-
-      - name: Print badges
-        shell: bash
-        env:
-          BADGES: ${{ steps.badges.outputs.values }}
-        run: jq '.' <<< "$BADGES" | tee "$GITHUB_STEP_SUMMARY"
-
-  print-badges:
-    needs: badges
-    runs-on: ubuntu-latest
-    name: Print badges
-    steps:
-      - name: Print badges
-        shell: bash
-        env:
-          BADGES: ${{ toJSON(needs.badges.outputs) }}
-        run: jq '.' <<< "$BADGES" | tee "$GITHUB_STEP_SUMMARY"
+  #  badges:
+  #    runs-on: ubuntu-latest
+  #    environment: test-resources-${{ matrix.environment }}
+  #    name: Get badges
+  #    strategy:
+  #      fail-fast: false
+  #      matrix:
+  #        environment: [dev, build]
+  #    outputs:
+  #      dev: ${{ env.badges-dev }}
+  #      build: ${{ env.badges-build }}
+  #      all: ${{ toJSON(steps.outputs.outputs) }}
+  #    steps:
+  #      - name: Pull repository
+  #        uses: actions/checkout@v4
+  #
+  #      - name: Get badges
+  #        id: badges
+  #        uses: ./.github/actions/map-dictionary
+  #        with:
+  #          env-var-name: badges-${{ matrix.environment }}
+  #          dictionary: ${{ toJSON(vars) }}
+  #          key-filter: _ENABLED$
+  #          key-transform: ^(.*)_ENABLED$
+  #          value-map: true=🚀 | false=✋
+  #
+  #      - name: Output values
+  #        shell: bash
+  #        id: outputs
+  #        env:
+  #          ENVIRONMENT: ${{ matrix.environment }}
+  #          BADGES: ${{ steps.badges.outputs.values }}
+  #        run: echo "$ENVIRONMENT=$BADGES" >> "$GITHUB_OUTPUT"
+  #
+  #      - name: Print badges
+  #        shell: bash
+  #        env:
+  #          BADGES: ${{ steps.badges.outputs.values }}
+  #        run: jq '.' <<< "$BADGES" | tee "$GITHUB_STEP_SUMMARY"
+  #
+  #  print-badges:
+  #    needs: badges
+  #    runs-on: ubuntu-latest
+  #    name: Print badges
+  #    steps:
+  #      - name: Print badges
+  #        shell: bash
+  #        env:
+  #          BADGES: ${{ toJSON(needs.badges.outputs) }}
+  #        run: jq '.' <<< "$BADGES" | tee "$GITHUB_STEP_SUMMARY"
 
   #      - name: Get badge
   #        shell: bash
@@ -121,56 +121,56 @@ jobs:
   #            )' <<< "$VARS"
   #          )" >> "$GITHUB_OUTPUT"
 
-  publish:
-    needs: [badges]
-    runs-on: ubuntu-latest
-    environment: test-resources-${{ matrix.environment }}
-    #    name: ${{ format('{2} {1} {0}', matrix.environment, matrix.name, fromJSON(needs.config.outputs.statuses[matrix.environment])[matrix.cri].badge) }}
-    #    name: ${{ format('{2} {1} {0}', matrix.environment, matrix.name, fromJSON(needs.badges.outputs[matrix.environment])[matrix.cri]) }}
-    concurrency:
-      group: package-test-resources-${{ matrix.environment }}
-      cancel-in-progress: false
-    permissions:
-      id-token: write
-      contents: read
-    strategy:
-      fail-fast: false
-      matrix:
-        environment: [dev, build]
-        cri: [ADDRESS, CHECK_HMRC]
-        include:
-          - {cri: ADDRESS, name: Address}
-          - {cri: CHECK_HMRC, name: "Check HMRC"}
-    steps:
-      #      - name: Print status
-      #        shell: bash
-      #        env:
-      #          BADGE: ${{ fromJSON(needs.config.outputs[format('statuses-{0}', matrix.environment)])[matrix.prefix].badge }}
-      #        run: echo "$BADGE"
+  #  publish:
+  #    needs: [badges]
+  #    runs-on: ubuntu-latest
+  #    environment: test-resources-${{ matrix.environment }}
+  #    #    name: ${{ format('{2} {1} {0}', matrix.environment, matrix.name, fromJSON(needs.config.outputs.statuses[matrix.environment])[matrix.cri].badge) }}
+  #    #    name: ${{ format('{2} {1} {0}', matrix.environment, matrix.name, fromJSON(needs.badges.outputs[matrix.environment])[matrix.cri]) }}
+  #    concurrency:
+  #      group: package-test-resources-${{ matrix.environment }}
+  #      cancel-in-progress: false
+  #    permissions:
+  #      id-token: write
+  #      contents: read
+  #    strategy:
+  #      fail-fast: false
+  #      matrix:
+  #        environment: [dev, build]
+  #        cri: [ADDRESS, CHECK_HMRC]
+  #        include:
+  #          - {cri: ADDRESS, name: Address}
+  #          - {cri: CHECK_HMRC, name: "Check HMRC"}
+  #    steps:
+  #      - name: Print status
+  #        shell: bash
+  #        env:
+  #          BADGE: ${{ fromJSON(needs.config.outputs[format('statuses-{0}', matrix.environment)])[matrix.prefix].badge }}
+  #        run: echo "$BADGE"
 
-      - name: Print matrix
-        shell: bash
-        env:
-          MATRIX: ${{ toJSON(matrix) }}
-        run: echo "$MATRIX" | tee "$GITHUB_STEP_SUMMARY"
-
-      - name: Print status
-        shell: bash
-        env:
-          BADGE: ${{ needs.config.outputs.statuses }}
-        run: echo "$BADGE"
-
-      - name: Check deployment enabled
-        id: enabled
-        continue-on-error: true
-        shell: bash
-        env:
-          ENV_ENABLED: ${{ github.ref_name == 'main' || matrix.environment == 'dev' }}
-          DEPLOYMENT_ENABLED: ${{ vars[format('{0}_ENABLED', matrix.cri)] == 'true' }}
-        run: |
-          $ENV_ENABLED && $DEPLOYMENT_ENABLED && ENABLED=true || ENABLED=false
-          echo "badge=$($ENABLED && echo "🟢" || echo "🔴")" >> "$GITHUB_OUTPUT"
-          $ENABLED && exit 0 || exit 1
+  #      - name: Print matrix
+  #        shell: bash
+  #        env:
+  #          MATRIX: ${{ toJSON(matrix) }}
+  #        run: echo "$MATRIX" | tee "$GITHUB_STEP_SUMMARY"
+  #
+  #      - name: Print status
+  #        shell: bash
+  #        env:
+  #          BADGE: ${{ needs.config.outputs.statuses }}
+  #        run: echo "$BADGE"
+  #
+  #      - name: Check deployment enabled
+  #        id: enabled
+  #        continue-on-error: true
+  #        shell: bash
+  #        env:
+  #          ENV_ENABLED: ${{ github.ref_name == 'main' || matrix.environment == 'dev' }}
+  #          DEPLOYMENT_ENABLED: ${{ vars[format('{0}_ENABLED', matrix.cri)] == 'true' }}
+  #        run: |
+  #          $ENV_ENABLED && $DEPLOYMENT_ENABLED && ENABLED=true || ENABLED=false
+  #          echo "badge=$($ENABLED && echo "🟢" || echo "🔴")" >> "$GITHUB_OUTPUT"
+  #          $ENABLED && exit 0 || exit 1
 
   #      - name: Pull repository
   #        if: ${{ steps.enabled.outcome == 'success' }}
@@ -211,7 +211,7 @@ jobs:
   #        with:
   #          array: ADDRESS CHECK_HMRC
 
-  reuse:
+  publish:
     #    needs: config
     name: Publish to ${{ matrix.environment }}
     uses: ./.github/workflows/package-for-deployment.yml
