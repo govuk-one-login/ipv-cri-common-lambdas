@@ -13,7 +13,6 @@ jobs:
     name: Get config
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
-    if: ${{ github.ref_name == 'main' || endsWith(inputs.environment, 'dev') }}
     outputs:
       cris-json: ${{ steps.cris.outputs.array-json }}
       badges: ${{ steps.badges.outputs.mapped-dictionary }}
@@ -35,8 +34,7 @@ jobs:
 
   publish:
     needs: config
-    #    name: ${{ fromJSON(needs.config.outputs.badges)[matrix.cri] }} Upload to ${{ matrix.name }}
-    name: Upload to ${{ matrix.name }}
+    name: ${{ fromJSON(needs.config.outputs.badges)[matrix.cri] }} Upload to ${{ matrix.name }}
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     concurrency:
@@ -63,5 +61,5 @@ jobs:
       #        run: exit 0
 
       - name: Pull repository
-        if: ${{ steps.enabled.outcome == 'success' }}
+#        if: ${{ steps.enabled.outcome == 'success' }}
         uses: actions/checkout@v4

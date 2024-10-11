@@ -100,17 +100,25 @@ jobs:
   #          signing-profile-name: ${{ vars[format('{0}_SIGNING_PROFILE_NAME', matrix.cri)] }}
   #          working-directory: .aws-sam/build
 
-  publish:
+  publish-dev:
     #    needs: config
-    name: Publish to ${{ matrix.environment }}
+    name: Publish to dev
     uses: ./.github/workflows/package-for-deployment.yml
     with:
-      environment: test-resources-${{ matrix.environment }}
+      environment: test-resources-dev
       cris: ADDRESS CHECK_HMRC
     permissions:
       id-token: write
       contents: read
-    strategy:
-      fail-fast: false
-      matrix:
-        environment: [dev, build]
+
+  publish-build:
+    #    needs: config
+    name: Publish to build
+    if: ${{ github.ref_name == 'main' }}
+    uses: ./.github/workflows/package-for-deployment.yml
+    with:
+      environment: test-resources-build
+      cris: ADDRESS CHECK_HMRC
+    permissions:
+      id-token: write
+      contents: read
