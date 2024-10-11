@@ -1,0 +1,34 @@
+name: Upload a SAM artifact to S3
+
+on:
+  workflow_call:
+    inputs:
+      environment: {required: true, type: string}
+
+concurrency:
+  group: upload-artifact-${{ inputs.environment }}
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  config:
+    name: Config
+    runs-on: ubuntu-latest
+    environment: test-resources-${{ inputs.environment }}
+    steps:
+      - name: Get status badges
+        id: status
+        shell: bash
+        env:
+          VARS: ${{ toJSON(vars) }}
+        run: echo "$VARS"
+
+      - name: Pull repository
+        uses: actions/checkout@v4
+
+      - name: Filter keys
+        uses: ./.github/actions/map-variables
+        with:
+          values: ${{ toJSON(vars) }}
+          key-filter: _ENABLED$
