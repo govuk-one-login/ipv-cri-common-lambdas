@@ -58,19 +58,19 @@ jobs:
           PRINT: ${{ steps.badges.outputs.mapped-dictionary }}
         run: echo "$PRINT"
 
-#  publish:
-#    needs: config
-#    name: ${{ fromJSON(needs.config.outputs.badges)[matrix.cri] }} Publish to ${{ matrix.name }}
-#    runs-on: ubuntu-latest
-#    environment: ${{ inputs.environment }}
-#    strategy:
-#      fail-fast: false
-#      matrix:
-#        cri: ${{ fromJSON(needs.config.outputs.cris-json) }}
-#        include:
-#          - {cri: ADDRESS, name: Address}
-#          - {cri: CHECK_HMRC, name: "Check HMRC"}
-#    steps:
-#      - name: Print
-#        shell: bash
-#        run: echo
+  publish:
+    needs: config
+    name: ${{ fromJSON(needs.config.outputs.badges)[matrix.cri] }} Publish to ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    strategy:
+      fail-fast: false
+      matrix:
+        cri: ${{ fromJSON(needs.config.outputs.cris-json) }}
+        include:
+          - {cri: ADDRESS, name: Address}
+          - {cri: CHECK_HMRC, name: "Check HMRC"}
+    steps:
+      - name: Print
+        shell: bash
+        run: echo
