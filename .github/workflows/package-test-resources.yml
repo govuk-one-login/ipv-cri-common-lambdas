@@ -9,116 +9,45 @@ on:
 permissions: {}
 
 jobs:
-  #  build:
-  #    name: Build SAM app
-  #    runs-on: ubuntu-latest
-  #    outputs:
-  #      cache-key: ${{ steps.build.outputs.cache-key }}
-  #      cache-restore-keys: ${{ steps.build.outputs.cache-restore-keys }}
-  #    steps:
-  #      - name: Build SAM application
-  #        id: build
-  #        uses: govuk-one-login/github-actions/sam/build-application@c9c3f2ef04d9145894de83e973b0f4dc1e90d14e
-  #        with:
-  #          template: test-resources/infrastructure/template.yaml
-  #          source-dir: test-resources/**/lambdas/src
-  #          cache-name: test-resources
-  #          pull-repository: true
-
-  #  publish2:
-  #    runs-on: ubuntu-latest
-  #    environment: test-resources-${{ matrix.environment }}
-  #    concurrency:
-  #      group: package-test-resources-${{ matrix.environment }}
-  #      cancel-in-progress: false
-  #    permissions:
-  #      id-token: write
-  #      contents: read
-  #    strategy:
-  #      fail-fast: false
-  #      matrix:
-  #        environment: [dev, build]
-  #        cri: [ADDRESS, CHECK_HMRC]
-  #        include:
-  #          - {cri: ADDRESS, name: Address}
-  #          - {cri: CHECK_HMRC, name: "Check HMRC"}
-  #    steps:
-  #      - name: Print status
-  #        shell: bash
-  #        env:
-  #          BADGE: ${{ fromJSON(needs.config.outputs[format('statuses-{0}', matrix.environment)])[matrix.prefix].badge }}
-  #        run: echo "$BADGE"
-  #
-  #      - name: Print matrix
-  #        shell: bash
-  #        env:
-  #          MATRIX: ${{ toJSON(matrix) }}
-  #        run: echo "$MATRIX" | tee "$GITHUB_STEP_SUMMARY"
-  #
-  #      - name: Print status
-  #        shell: bash
-  #        env:
-  #          BADGE: ${{ needs.config.outputs.statuses }}
-  #        run: echo "$BADGE"
-  #
-  #      - name: Check deployment enabled
-  #        id: enabled
-  #        continue-on-error: true
-  #        shell: bash
-  #        env:
-  #          ENV_ENABLED: ${{ github.ref_name == 'main' || matrix.environment == 'dev' }}
-  #          DEPLOYMENT_ENABLED: ${{ vars[format('{0}_ENABLED', matrix.cri)] == 'true' }}
-  #        run: |
-  #          $ENV_ENABLED && $DEPLOYMENT_ENABLED && ENABLED=true || ENABLED=false
-  #          echo "badge=$($ENABLED && echo "🟢" || echo "🔴")" >> "$GITHUB_OUTPUT"
-  #          $ENABLED && exit 0 || exit 1
-  #
-  #      - name: Pull repository
-  #        if: ${{ steps.enabled.outcome == 'success' }}
-  #        uses: actions/checkout@v4
-  #
-  #      - name: Get SAM artifact
-  #        if: ${{ steps.enabled.outcome == 'success' }}
-  #        uses: actions/cache/restore@v4
-  #        with:
-  #          key: ${{ needs.build.outputs.cache-key }}
-  #          restore-keys: ${{ needs.build.outputs.cache-restore-keys }}
-  #          path: .aws-sam
-  #
-  #      - name: Assume AWS Role
-  #        if: ${{ steps.enabled.outcome == 'success' }}
-  #        uses: aws-actions/configure-aws-credentials@v4
-  #        with:
-  #          role-to-assume: ${{ vars[format('{0}_ROLE_ARN', matrix.cri)] }}
-  #          aws-region: eu-west-2
-  #
-  #      - name: Upload to S3
-  #        if: ${{ steps.enabled.outcome == 'success' }}
-  #        uses: govuk-one-login/devplatform-upload-action@v3.9.2
-  #        with:
-  #          artifact-bucket-name: ${{ vars[format('{0}_ARTIFACTS_BUCKET_NAME', matrix.cri)] }}
-  #          signing-profile-name: ${{ vars[format('{0}_SIGNING_PROFILE_NAME', matrix.cri)] }}
-  #          working-directory: .aws-sam/build
+  build:
+    name: Build SAM app
+    runs-on: ubuntu-latest
+    outputs:
+      cache-key: ${{ steps.build.outputs.cache-key }}
+      cache-restore-keys: ${{ steps.build.outputs.cache-restore-keys }}
+    steps:
+      - name: Build SAM application
+        id: build
+        uses: govuk-one-login/github-actions/sam/build-application@c9c3f2ef04d9145894de83e973b0f4dc1e90d14e
+        with:
+          template: test-resources/infrastructure/template.yaml
+          source-dir: test-resources/**/lambdas/src
+          cache-name: test-resources
+          pull-repository: true
 
   publish-dev:
-    #    needs: config
+    needs: build
     name: Publish to dev
     uses: ./.github/workflows/package-for-deployment.yml
     with:
-      environment: test-resources-dev
       cris: ADDRESS CHECK_HMRC
+      environment: test-resources-dev
+      cache-key: ${{ needs.build.outputs.cache-key }}
+      cache-restore-keys: ${{ needs.build.outputs.cache-restore-keys }}
     permissions:
       id-token: write
       contents: read
 
   publish-build:
-    #    needs: config
+    needs: build
     name: Publish to build
     if: ${{ github.ref_name == 'main' }}
     uses: ./.github/workflows/package-for-deployment.yml
     with:
-      environment: test-resources-build
       cris: ADDRESS CHECK_HMRC
+      environment: test-resources-build
+      cache-key: ${{ needs.build.outputs.cache-key }}
+      cache-restore-keys: ${{ needs.build.outputs.cache-restore-keys }}
     permissions:
       id-token: write
       contents: read
