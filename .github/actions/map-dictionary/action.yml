@@ -5,9 +5,6 @@ inputs:
   dictionary:
     description: "The dictionary containing the values to map. Must be valid JSON containing key-value pairs"
     required: true
-  keys:
-    description: "Select the specified keys. Must be a valid JSON array"
-    required: false
   key-filter:
     description: "Select entries whose keys match the provided regex; otherwise select all keys"
     required: false
