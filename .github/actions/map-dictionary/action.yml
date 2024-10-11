@@ -1,27 +1,30 @@
-name: "Map dictionary keys or values"
-description: "Map dictionary keys or values based on the provided mapping or regex"
+name: "Map dictionary keys and values"
+description: "Map dictionary keys and values based on the provided mapping or regex"
 
 inputs:
   dictionary:
     description: "The dictionary containing the values to map. Must be valid JSON containing key-value pairs"
     required: true
+  keys:
+    description: "Select the specified keys. Must be a valid JSON array"
+    required: false
   key-filter:
-    description: "Regex filter to select the keys whose values should be mapped; map all values otherwise"
+    description: "Select entries whose keys match the provided regex; otherwise select all keys"
     required: false
   key-transform:
     description: "Map keys by applying the provided regex. Must contain one capturing group"
     required: false
   value-map:
-    description: "The mapping of the current values to the new values as key-value pairs delimited by '|' or newlines"
+    description: "The mapping of the current values to new values as key=value pairs delimited by '|' or newlines"
     required: false
   env-var-name:
     description: "Name of an env var to store the mapped dictionary"
     required: false
 
 outputs:
-  values:
+  mapped-dictionary:
     description: "The mapped key-value pairs"
-    value: ${{ steps.map.outputs.values }}
+    value: ${{ steps.map.outputs.mapped }}
 
 runs:
   using: composite
@@ -42,7 +45,7 @@ runs:
         KEY_TRANSFORM: ${{ inputs.key-transform }}
         VALUE_MAP: ${{ steps.value-map.outputs.parsed-parameters }}
         MAP: ${{ github.action_path }}/map.sh
-      run: echo values="$($MAP)" >> "$GITHUB_OUTPUT"
+      run: echo "mapped=$($MAP)" >> "$GITHUB_OUTPUT"
 
     - name: Set environment variable
       if: ${{ inputs.env-var-name != null }}

@@ -7,53 +7,107 @@ on:
       environment: {required: true, type: string}
 
 jobs:
+  #  config:
+  #    name: Config
+  #    runs-on: ubuntu-latest
+  #    environment: ${{ inputs.environment }}
+  #    outputs:
+  #      cris: ${{ steps.parse-cris.outputs.json }}
+  #    steps:
+  #      - name: Parse CRIs
+  #        id: parse-cris
+  #        uses: govuk-one-login/github-actions/utils/json/parse-array@oj-2738-test-harness-actions
+  #        with:
+  #          array: ${{ inputs.cris }}
+  #
+  #      - name: Print CRIs
+  #        shell: bash
+  #        env:
+  #          CRIS: ${{ steps.parse-cris.outputs.json }}
+  #        run: echo "$CRIS" | tee "$GITHUB_STEP_SUMMARY"
+
   config:
-    name: Config
+    name: Get config
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     outputs:
-      cris: ${{ steps.parse-cris.outputs.json }}
+      cris-json: ${{ steps.parse-cris.outputs.array-json }}
+      badges: ${{ steps.badges.outputs.mapped-dictionary }}
     steps:
+      - name: Pull repository
+        uses: actions/checkout@v4
+
       - name: Parse CRIs
         id: parse-cris
         uses: govuk-one-login/github-actions/utils/json/parse-array@oj-2738-test-harness-actions
         with:
           array: ${{ inputs.cris }}
 
-      - name: Print CRIs
+      - name: Get status variable names
+        id: status-variables
+        uses: govuk-one-login/github-actions/utils/json/parse-array@oj-2738-test-harness-actions
+        with:
+          array: ${{ join(fromJSON(steps.parse-cris.outputs.array-json), '_ENABLED ') }}
+
+      - name: Get status variable names 2
+        id: status-variables-2
+        uses: govuk-one-login/github-actions/utils/json/parse-array@oj-2738-test-harness-actions
+        with:
+          array: ${{ join(inputs.cris, '_ENABLED ') }}
+
+      - name: Print sv
         shell: bash
         env:
-          CRIS: ${{ steps.parse-cris.outputs.json }}
-        run: echo "$CRIS" | tee "$GITHUB_STEP_SUMMARY"
+          PRINT1: ${{ steps.status-variables.outputs.array-json }}
+          PRINT2: ${{ steps.status-variables-2.outputs.array-json }}
+        run: |
+          echo "$PRINT1"
+          echo "$PRINT2"
 
-  badges:
-    name: Get badges
-    runs-on: ubuntu-latest
-    environment: ${{ inputs.environment }}
-    outputs:
-      badges: ${{ steps.badges.outputs.values }}
-    steps:
-      - name: Pull repository
-        uses: actions/checkout@v4
+      - name: Get CRI name regex
+        id: cri-names
+        shell: bash
+        env:
+          CRIS: ${{ inputs.cris }}
+        run: |
+          read -ra cris <<< "$(tr '\n' ' ' <<< "$CRIS")"
+          regex=$(IFS="|" && echo "${cris[*]}")
+          echo "regex=$regex" >> "$GITHUB_OUTPUT"
+
+      - name: Print regex
+        shell: bash
+        env:
+          PRINT1: ${{ steps.cri-names.outputs.regex }}
+          PRINT2: ${{ join(fromJSON(steps.parse-cris.outputs.array-json), '|') }}
+        run: |
+          echo "$PRINT1"
+          echo "$PRINT2"
 
       - name: Get badges
         id: badges
         uses: ./.github/actions/map-dictionary
         with:
           dictionary: ${{ toJSON(vars) }}
-          key-filter: _ENABLED$
+          keys: ${{ steps.status-variables.outputs.array-json }}
+          key-filter: ^(${{ steps.cri-names.outputs.regex }})_ENABLED$
           key-transform: ^(.*)_ENABLED$
           value-map: true=🚀 | false=✋
 
+      - name: Print badges
+        shell: bash
+        env:
+          PRINT: ${{ steps.badges.outputs.mapped-dictionary }}
+        run: echo "$PRINT"
+
 #  publish:
-#    needs: badges
-#    name: Publish
+#    needs: config
+#    name: ${{ fromJSON(needs.config.outputs.badges)[matrix.cri] }} Publish to ${{ matrix.name }}
 #    runs-on: ubuntu-latest
 #    environment: ${{ inputs.environment }}
 #    strategy:
 #      fail-fast: false
 #      matrix:
-#        cri: ${{ fromJSON(inputs.cris) }} # from CRI names
+#        cri: ${{ fromJSON(needs.config.outputs.cris-json) }}
 #        include:
 #          - {cri: ADDRESS, name: Address}
 #          - {cri: CHECK_HMRC, name: "Check HMRC"}
