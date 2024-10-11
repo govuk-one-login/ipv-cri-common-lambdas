@@ -6,38 +6,19 @@ on:
       cris: {required: true, type: string}
       environment: {required: true, type: string}
 
-jobs:
-  #  config:
-  #    name: Config
-  #    runs-on: ubuntu-latest
-  #    environment: ${{ inputs.environment }}
-  #    outputs:
-  #      cris: ${{ steps.parse-cris.outputs.json }}
-  #    steps:
-  #      - name: Parse CRIs
-  #        id: parse-cris
-  #        uses: govuk-one-login/github-actions/utils/json/parse-array@oj-2738-test-harness-actions
-  #        with:
-  #          array: ${{ inputs.cris }}
-  #
-  #      - name: Print CRIs
-  #        shell: bash
-  #        env:
-  #          CRIS: ${{ steps.parse-cris.outputs.json }}
-  #        run: echo "$CRIS" | tee "$GITHUB_STEP_SUMMARY"
+permissions: {}
 
+jobs:
   config:
     name: Get config
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
+    if: ${{ github.ref_name == 'main' || endsWith(inputs.environment, 'dev') }}
     outputs:
       cris-json: ${{ steps.cris.outputs.array-json }}
       badges: ${{ steps.badges.outputs.mapped-dictionary }}
     steps:
-      - name: Pull repository
-        uses: actions/checkout@v4
-
-      - name: Parse CRIs
+      - name: Parse CRI names
         id: cris
         uses: govuk-one-login/github-actions/utils/json/parse-array@oj-2738-test-harness-actions
         with:
@@ -45,24 +26,25 @@ jobs:
 
       - name: Get badges
         id: badges
-        uses: ./.github/actions/map-dictionary
+        uses: govuk-one-login/github-actions/utils/json/map-dictionary@oj-2738-test-harness-actions
         with:
           dictionary: ${{ toJSON(vars) }}
           key-filter: ^(${{ join(fromJSON(steps.cris.outputs.array-json), '|') }})_ENABLED$
           key-transform: ^(.*)_ENABLED$
           value-map: true=🚀 | false=✋
 
-      - name: Print badges
-        shell: bash
-        env:
-          PRINT: ${{ steps.badges.outputs.mapped-dictionary }}
-        run: echo "$PRINT"
-
   publish:
     needs: config
-    name: ${{ fromJSON(needs.config.outputs.badges)[matrix.cri] }} Upload to ${{ matrix.name }}
+    #    name: ${{ fromJSON(needs.config.outputs.badges)[matrix.cri] }} Upload to ${{ matrix.name }}
+    name: Upload to ${{ matrix.name }}
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
+    concurrency:
+      group: publish-${{ github.workflow }}-${{ matrix.environment }}
+      cancel-in-progress: false
+    permissions:
+      id-token: write
+      contents: read
     strategy:
       fail-fast: false
       matrix:
@@ -71,6 +53,15 @@ jobs:
           - {cri: ADDRESS, name: Address}
           - {cri: CHECK_HMRC, name: "Check HMRC"}
     steps:
-      - name: Print
-        shell: bash
-        run: echo
+      #      - name: Check deployment enabled
+      #        id: enabled
+      #        if: ${{
+      #          (github.ref_name == 'main' || matrix.environment == 'dev') &&
+      #          vars[format('{0}_ENABLED', matrix.cri)] == 'true'
+      #          }}
+      #        shell: bash
+      #        run: exit 0
+
+      - name: Pull repository
+        if: ${{ steps.enabled.outcome == 'success' }}
+        uses: actions/checkout@v4
