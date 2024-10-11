@@ -20,7 +20,7 @@ inputs:
 
 outputs:
   mapped-dictionary:
-    description: "The mapped key-value pairs"
+    description: "The mapped key-value pairs in JSON format"
     value: ${{ steps.map.outputs.mapped }}
 
 runs:
