@@ -15,7 +15,7 @@ ext {
 		aws_lambda_events_version: "3.11.6",
 		aws_powertools_version   : "1.18.0",
 		jackson_version          : "2.15.2",
-		nimbusds_oauth_version   : "11.4",
+		nimbusds_oauth_version   : "11.20.1",
 		nimbusds_jwt_version     : "9.36",
 		protobuf_version         : "3.19.4",
 		junit                    : "5.10.1",
