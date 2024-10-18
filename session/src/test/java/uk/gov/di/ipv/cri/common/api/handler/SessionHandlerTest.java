@@ -15,6 +15,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import software.amazon.awssdk.http.HttpStatusCode;
+import uk.gov.di.ipv.cri.common.api.domain.AuditEventExtensions;
+import uk.gov.di.ipv.cri.common.api.domain.Evidence;
 import uk.gov.di.ipv.cri.common.api.service.SessionRequestService;
 import uk.gov.di.ipv.cri.common.library.domain.AuditEventContext;
 import uk.gov.di.ipv.cri.common.library.domain.AuditEventType;
@@ -30,6 +32,7 @@ import uk.gov.di.ipv.cri.common.library.service.SessionService;
 import uk.gov.di.ipv.cri.common.library.util.EventProbe;
 
 import java.net.URI;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -104,7 +107,9 @@ class SessionHandlerTest {
         verify(mockEventProbe).counterMetric(SESSION_CREATED_METRIC);
         verify(mockAuditService)
                 .sendAuditEvent(
-                        eq(AuditEventType.START), auditEventContextArgumentCaptor.capture());
+                        eq(AuditEventType.START),
+                        auditEventContextArgumentCaptor.capture(),
+                        eq(null));
         assertEquals(HttpStatusCode.CREATED, responseEvent.getStatusCode());
         var responseBody = new ObjectMapper().readValue(responseEvent.getBody(), Map.class);
         assertEquals(SESSION_ID.toString(), responseBody.get(SessionHandler.SESSION_ID));
@@ -118,6 +123,80 @@ class SessionHandlerTest {
                 persistentSessionId, auditEventContext.getSessionItem().getPersistentSessionId());
         assertEquals(clientSessionId, auditEventContext.getSessionItem().getClientSessionId());
         assertEquals(requestHeaders, auditEventContext.getRequestHeaders());
+    }
+
+    @ParameterizedTest
+    @CsvSource({"X-Forwarded-For", "X-forwarded-fOR"})
+    void shouldCreateAndSaveSessionWithContext(String xForwardedForHeaderName)
+            throws SessionValidationException, ClientConfigurationException,
+                    JsonProcessingException, SqsException {
+        String clientIpAddress = "192.0.2.0";
+        String redirectUri = "https://www.example.com/callback";
+        SharedClaims sharedClaims = new SharedClaims();
+        Map<String, String> requestHeaders =
+                Map.of("header-name", "headerValue", xForwardedForHeaderName, clientIpAddress);
+        String subject = "subject";
+        String persistentSessionId = "persistent_session_id_value";
+        String clientSessionId = "govuk_signin_journey_id_value";
+        String context = "check_details";
+        ArgumentCaptor<AuditEventContext> auditEventContextArgumentCaptor =
+                ArgumentCaptor.forClass(AuditEventContext.class);
+
+        ArgumentCaptor<AuditEventExtensions> auditEventExtensionsArgumentCaptor =
+                ArgumentCaptor.forClass(AuditEventExtensions.class);
+
+        when(mockEventProbe.addJourneyIdToLoggingContext(clientSessionId))
+                .thenReturn(mockEventProbe);
+        when(mockEventProbe.counterMetric(anyString())).thenReturn(mockEventProbe);
+        when(mockSessionRequest.getClientId()).thenReturn("ipv-core");
+        when(mockSessionRequest.getState()).thenReturn("some state");
+        when(mockSessionRequest.getRedirectUri()).thenReturn(URI.create(redirectUri));
+        when(mockSessionRequest.hasSharedClaims()).thenReturn(Boolean.TRUE);
+        when(mockSessionRequest.getSharedClaims()).thenReturn(sharedClaims);
+        when(mockSessionRequest.getSubject()).thenReturn(subject);
+        when(mockSessionRequest.getPersistentSessionId()).thenReturn(persistentSessionId);
+        when(mockSessionRequest.getClientSessionId()).thenReturn(clientSessionId);
+        when(mockSessionRequest.getContext()).thenReturn(context);
+        when(apiGatewayProxyRequestEvent.getBody()).thenReturn("some json");
+        when(apiGatewayProxyRequestEvent.getHeaders()).thenReturn(requestHeaders);
+        when(mockSessionRequestService.validateSessionRequest("some json"))
+                .thenReturn(mockSessionRequest);
+        when(mockSessionService.saveSession(mockSessionRequest)).thenReturn(SESSION_ID);
+
+        APIGatewayProxyResponseEvent responseEvent =
+                sessionHandler.handleRequest(apiGatewayProxyRequestEvent, null);
+
+        verify(mockSessionService).saveSession(mockSessionRequest);
+        verify(apiGatewayProxyRequestEvent, times(2)).getHeaders();
+        verify(mockSessionRequest).setClientIpAddress(clientIpAddress);
+        verify(mockPersonIdentityService).savePersonIdentity(SESSION_ID, sharedClaims);
+        verify(mockEventProbe).addJourneyIdToLoggingContext(clientSessionId);
+        verify(mockEventProbe).log(Level.INFO, "created session");
+        verify(mockEventProbe).addDimensions(Map.of("issuer", "ipv-core"));
+        verify(mockEventProbe).counterMetric(SESSION_CREATED_METRIC);
+        verify(mockAuditService)
+                .sendAuditEvent(
+                        eq(AuditEventType.START),
+                        auditEventContextArgumentCaptor.capture(),
+                        auditEventExtensionsArgumentCaptor.capture());
+        assertEquals(HttpStatusCode.CREATED, responseEvent.getStatusCode());
+        var responseBody = new ObjectMapper().readValue(responseEvent.getBody(), Map.class);
+        assertEquals(SESSION_ID.toString(), responseBody.get(SessionHandler.SESSION_ID));
+        assertEquals("some state", responseBody.get(STATE));
+        assertEquals(redirectUri, responseBody.get(REDIRECT_URI));
+
+        AuditEventContext auditEventContext = auditEventContextArgumentCaptor.getValue();
+        assertEquals(subject, auditEventContext.getSessionItem().getSubject());
+        assertEquals(SESSION_ID, auditEventContext.getSessionItem().getSessionId());
+        assertEquals(
+                persistentSessionId, auditEventContext.getSessionItem().getPersistentSessionId());
+        assertEquals(clientSessionId, auditEventContext.getSessionItem().getClientSessionId());
+        assertEquals(requestHeaders, auditEventContext.getRequestHeaders());
+
+        AuditEventExtensions auditEventExtensions = auditEventExtensionsArgumentCaptor.getValue();
+        List<Evidence> evidenceList = auditEventExtensions.getEvidence();
+        assertEquals(1, evidenceList.size());
+        assertEquals(context, evidenceList.get(0).getContext());
     }
 
     @Test
