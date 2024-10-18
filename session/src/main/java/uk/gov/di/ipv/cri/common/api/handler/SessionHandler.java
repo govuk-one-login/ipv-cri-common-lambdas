@@ -123,6 +123,7 @@ public class SessionHandler
             auditSessionItem.setSubject(sessionRequest.getSubject());
             auditSessionItem.setPersistentSessionId(sessionRequest.getPersistentSessionId());
             auditSessionItem.setClientSessionId(sessionRequest.getClientSessionId());
+            auditSessionItem.setContext(sessionRequest.getContext());
             auditService.sendAuditEvent(
                     AuditEventType.START,
                     new AuditEventContext(input.getHeaders(), auditSessionItem));

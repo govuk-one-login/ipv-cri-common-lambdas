@@ -71,6 +71,7 @@ class SessionHandlerTest {
         String subject = "subject";
         String persistentSessionId = "persistent_session_id_value";
         String clientSessionId = "govuk_signin_journey_id_value";
+        String context = "context";
         ArgumentCaptor<AuditEventContext> auditEventContextArgumentCaptor =
                 ArgumentCaptor.forClass(AuditEventContext.class);
 
@@ -85,6 +86,7 @@ class SessionHandlerTest {
         when(mockSessionRequest.getSubject()).thenReturn(subject);
         when(mockSessionRequest.getPersistentSessionId()).thenReturn(persistentSessionId);
         when(mockSessionRequest.getClientSessionId()).thenReturn(clientSessionId);
+        when(mockSessionRequest.getContext()).thenReturn(context);
         when(apiGatewayProxyRequestEvent.getBody()).thenReturn("some json");
         when(apiGatewayProxyRequestEvent.getHeaders()).thenReturn(requestHeaders);
         when(mockSessionRequestService.validateSessionRequest("some json"))
@@ -117,6 +119,7 @@ class SessionHandlerTest {
         assertEquals(
                 persistentSessionId, auditEventContext.getSessionItem().getPersistentSessionId());
         assertEquals(clientSessionId, auditEventContext.getSessionItem().getClientSessionId());
+        assertEquals(context, auditEventContext.getSessionItem().getContext());
         assertEquals(requestHeaders, auditEventContext.getRequestHeaders());
     }
 
