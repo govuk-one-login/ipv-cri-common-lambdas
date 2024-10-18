@@ -127,7 +127,7 @@ class SessionHandlerTest {
     @CsvSource({"X-Forwarded-For", "X-forwarded-fOR"})
     void shouldCreateAndSaveSessionWithContext(String xForwardedForHeaderName)
             throws SessionValidationException, ClientConfigurationException,
-            JsonProcessingException, SqsException {
+                    JsonProcessingException, SqsException {
         String clientIpAddress = "192.0.2.0";
         String redirectUri = "https://www.example.com/callback";
         SharedClaims sharedClaims = new SharedClaims();
@@ -174,7 +174,9 @@ class SessionHandlerTest {
         verify(mockEventProbe).counterMetric(SESSION_CREATED_METRIC);
         verify(mockAuditService)
                 .sendAuditEvent(
-                        eq(AuditEventType.START), auditEventContextArgumentCaptor.capture(), auditEventExtensionsArgumentCaptor.capture());
+                        eq(AuditEventType.START),
+                        auditEventContextArgumentCaptor.capture(),
+                        auditEventExtensionsArgumentCaptor.capture());
         assertEquals(HttpStatusCode.CREATED, responseEvent.getStatusCode());
         var responseBody = new ObjectMapper().readValue(responseEvent.getBody(), Map.class);
         assertEquals(SESSION_ID.toString(), responseBody.get(SessionHandler.SESSION_ID));

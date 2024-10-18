@@ -13,5 +13,4 @@ public class Evidence {
     public void setContext(String context) {
         this.context = context;
     }
-
 }
