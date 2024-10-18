@@ -7,9 +7,12 @@ import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.logging.log4j.Level;
 import software.amazon.awssdk.http.HttpStatusCode;
+import software.amazon.awssdk.utils.StringUtils;
 import software.amazon.lambda.powertools.logging.CorrelationIdPathConstants;
 import software.amazon.lambda.powertools.logging.Logging;
 import software.amazon.lambda.powertools.metrics.Metrics;
+import uk.gov.di.ipv.cri.common.api.domain.AuditEventExtensions;
+import uk.gov.di.ipv.cri.common.api.domain.Evidence;
 import uk.gov.di.ipv.cri.common.api.service.SessionRequestService;
 import uk.gov.di.ipv.cri.common.library.annotations.ExcludeFromGeneratedCoverageReport;
 import uk.gov.di.ipv.cri.common.library.domain.AuditEventContext;
@@ -30,9 +33,7 @@ import uk.gov.di.ipv.cri.common.library.util.ClientProviderFactory;
 import uk.gov.di.ipv.cri.common.library.util.EventProbe;
 
 import java.time.Clock;
-import java.util.Map;
-import java.util.TreeMap;
-import java.util.UUID;
+import java.util.*;
 
 import static org.apache.logging.log4j.Level.ERROR;
 
@@ -123,10 +124,20 @@ public class SessionHandler
             auditSessionItem.setSubject(sessionRequest.getSubject());
             auditSessionItem.setPersistentSessionId(sessionRequest.getPersistentSessionId());
             auditSessionItem.setClientSessionId(sessionRequest.getClientSessionId());
-            auditSessionItem.setContext(sessionRequest.getContext());
-            auditService.sendAuditEvent(
-                    AuditEventType.START,
-                    new AuditEventContext(input.getHeaders(), auditSessionItem));
+            if (!StringUtils.isBlank(sessionRequest.getContext())) {
+                List<Evidence> evidenceList = new ArrayList<>();
+                Evidence evidence = new Evidence();
+                evidence.setContext(sessionRequest.getContext());
+                evidenceList.add(evidence);
+                auditService.sendAuditEvent(
+                        AuditEventType.START,
+                        new AuditEventContext(input.getHeaders(), auditSessionItem),
+                        new AuditEventExtensions(evidenceList));
+            } else {
+                auditService.sendAuditEvent(
+                        AuditEventType.START,
+                        new AuditEventContext(input.getHeaders(), auditSessionItem));
+            }
 
             return ApiGatewayResponseGenerator.proxyJsonResponse(
                     HttpStatusCode.CREATED,
