@@ -111,6 +111,7 @@ export class SessionService {
                 clientIpAddress: sessionRequest.clientIpAddress,
                 attemptCount: 0,
                 evidenceRequest: sessionRequest.evidenceRequested,
+                context: sessionRequest.context,
             },
         });
         await this.dynamoDbClient.send(putSessionCommand);
