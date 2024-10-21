@@ -898,6 +898,12 @@ Resources:
               - "redirectUri"
               - "clientId"
             ProjectionType: "INCLUDE"
+        - IndexName: "access-token-index-all"
+          KeySchema:
+            - AttributeName: "accessToken"
+              KeyType: "HASH"
+          Projection:
+            ProjectionType: ALL
         - IndexName: "access-token-index"
           KeySchema:
             - AttributeName: "accessToken"
