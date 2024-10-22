@@ -9,4 +9,5 @@ export interface SessionRequestSummary {
     clientIpAddress: string | null;
     state: string;
     evidenceRequested?: EvidenceRequest;
+    context?: string;
 }

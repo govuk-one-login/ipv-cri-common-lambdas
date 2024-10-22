@@ -5,6 +5,8 @@ import { InvalidAccessTokenError, SessionNotFoundError } from "../../../src/comm
 import { SessionItem } from "../../../src/types/session-item";
 import { SSMProvider } from "@aws-lambda-powertools/parameters/ssm";
 
+const UUID_REGEX = new RegExp(/^[0-9A-F]{8}-[0-9A-F]{4}-[4][0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}$/i);
+
 jest.mock("@aws-sdk/lib-dynamodb", () => {
     return {
         __esModule: true,
@@ -216,7 +218,53 @@ describe("session-service", () => {
                 }),
             );
 
-            expect(output.length).toEqual(36);
+            expect(output).toEqual(expect.stringMatching(UUID_REGEX));
+        });
+
+        it("should save the session data with context to dynamo db", async () => {
+            const mockSessionRequestSummary = {
+                clientId: "test-jwt-client-id",
+                clientIpAddress: "test-client-ip-address",
+                clientSessionId: "test-journey-id",
+                persistentSessionId: "test-persistent-session-id",
+                redirectUri: "test-redirect-uri",
+                state: "test-state",
+                subject: "test-sub",
+                context: "test-context",
+            };
+
+            jest.spyOn(global.Date, "now").mockReturnValueOnce(1675382400000);
+            jest.spyOn(configService, "getSessionExpirationEpoch").mockReturnValue(1675382500000);
+            jest.spyOn(configService, "getConfigEntry").mockReturnValue("session-table-name");
+            const output = await sessionService.saveSession(mockSessionRequestSummary);
+            expect(mockDynamoDbClient.prototype.send).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    input: expect.objectContaining({
+                        TableName: "session-table-name",
+                    }),
+                }),
+            );
+            expect(mockDynamoDbClient.prototype.send).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    input: expect.objectContaining({
+                        Item: expect.objectContaining({
+                            attemptCount: 0,
+                            clientId: "test-jwt-client-id",
+                            clientIpAddress: "test-client-ip-address",
+                            clientSessionId: "test-journey-id",
+                            createdDate: 1675382400000,
+                            expiryDate: 1675382500000,
+                            persistentSessionId: "test-persistent-session-id",
+                            redirectUri: "test-redirect-uri",
+                            state: "test-state",
+                            subject: "test-sub",
+                            context: "test-context",
+                        }),
+                    }),
+                }),
+            );
+
+            expect(output).toEqual(expect.stringMatching(UUID_REGEX));
         });
     });
 });
