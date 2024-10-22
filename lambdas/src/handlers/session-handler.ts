@@ -96,6 +96,7 @@ export class SessionLambda implements LambdaInterface {
             state: jwtPayload["state"] as string,
             subject: jwtPayload.sub as string,
             evidenceRequested: jwtPayload["evidence_requested"] as EvidenceRequest,
+            context: jwtPayload["context"] as string,
         };
     }
 
