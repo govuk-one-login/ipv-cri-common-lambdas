@@ -7,9 +7,12 @@ import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.logging.log4j.Level;
 import software.amazon.awssdk.http.HttpStatusCode;
+import software.amazon.awssdk.utils.StringUtils;
 import software.amazon.lambda.powertools.logging.CorrelationIdPathConstants;
 import software.amazon.lambda.powertools.logging.Logging;
 import software.amazon.lambda.powertools.metrics.Metrics;
+import uk.gov.di.ipv.cri.common.api.domain.AuditEventExtensions;
+import uk.gov.di.ipv.cri.common.api.domain.Evidence;
 import uk.gov.di.ipv.cri.common.api.service.SessionRequestService;
 import uk.gov.di.ipv.cri.common.library.annotations.ExcludeFromGeneratedCoverageReport;
 import uk.gov.di.ipv.cri.common.library.domain.AuditEventContext;
@@ -30,6 +33,8 @@ import uk.gov.di.ipv.cri.common.library.util.ClientProviderFactory;
 import uk.gov.di.ipv.cri.common.library.util.EventProbe;
 
 import java.time.Clock;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
@@ -123,9 +128,7 @@ public class SessionHandler
             auditSessionItem.setSubject(sessionRequest.getSubject());
             auditSessionItem.setPersistentSessionId(sessionRequest.getPersistentSessionId());
             auditSessionItem.setClientSessionId(sessionRequest.getClientSessionId());
-            auditService.sendAuditEvent(
-                    AuditEventType.START,
-                    new AuditEventContext(input.getHeaders(), auditSessionItem));
+            sendStartAuditEvent(input.getHeaders(), auditSessionItem, sessionRequest.getContext());
 
             return ApiGatewayResponseGenerator.proxyJsonResponse(
                     HttpStatusCode.CREATED,
@@ -147,5 +150,20 @@ public class SessionHandler
             return ApiGatewayResponseGenerator.proxyJsonResponse(
                     HttpStatusCode.INTERNAL_SERVER_ERROR, ErrorResponse.SERVER_CONFIG_ERROR);
         }
+    }
+
+    private void sendStartAuditEvent(
+            Map<String, String> headers, SessionItem auditSessionItem, String sessionContext)
+            throws SqsException {
+        List<Evidence> evidenceList = new ArrayList<>();
+        if (!StringUtils.isBlank(sessionContext)) {
+            Evidence evidence = new Evidence();
+            evidence.setContext(sessionContext);
+            evidenceList.add(evidence);
+        }
+        auditService.sendAuditEvent(
+                AuditEventType.START,
+                new AuditEventContext(headers, auditSessionItem),
+                evidenceList.isEmpty() ? null : new AuditEventExtensions(evidenceList));
     }
 }
