@@ -6,13 +6,9 @@ on:
     branches: [main]
     paths-ignore: [test-resources/**]
 
-concurrency:
-  group: package-common-lambdas
-  cancel-in-progress: false
-
 jobs:
-  build_common_cri:
-    name: Build and package common_cri infrastructure
+  build:
+    name: Build
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
@@ -23,21 +19,21 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up JDK 11
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: 11
           distribution: zulu
 
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: 3.11.2
 
       - name: Setup Gradle
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/actions/setup-gradle@v3
         with:
           gradle-version: 7.5.1
 
@@ -60,12 +56,15 @@ jobs:
             out/
           key: "${{ github.sha }}"
 
-  sign_and_publish_common_cri_to_dev:
-    name: Sign and publish common_cri infrastructure to Dev
-    needs: build_common_cri
+  publish-dev:
+    needs: build
+    name: Publish to ${{ matrix.target }}
     runs-on: ubuntu-latest
     continue-on-error: true
     timeout-minutes: 10
+    concurrency:
+      group: publish-common-lambdas-${{ matrix.target }}-dev
+      cancel-in-progress: false
     env:
       AWS_REGION: eu-west-2
     permissions:
@@ -124,12 +123,12 @@ jobs:
     steps:
       - name: Checkout code
         if: matrix.ENABLED == 'true'
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Cache restore common lambdas build
         if: ${{ matrix.ENABLED == 'true' }}
         id: cache-common-lambdas-restore
-        uses: actions/cache/restore@v3
+        uses: actions/cache/restore@v4
         with:
           path: |
             out/
@@ -137,14 +136,14 @@ jobs:
 
       - name: Assume temporary AWS role
         if: matrix.ENABLED == 'true'
-        uses: aws-actions/configure-aws-credentials@v2
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets[matrix.GH_ACTIONS_ROLE_ARN_SECRET] }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Setup Python
         if: matrix.ENABLED == 'true'
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: 3.11.2
 
@@ -160,17 +159,21 @@ jobs:
 
       - name: Deploy SAM app
         if: matrix.ENABLED == 'true'
-        uses: govuk-one-login/devplatform-upload-action@v3.8.1
+        uses: govuk-one-login/devplatform-upload-action@v3.9.2
         with:
           artifact-bucket-name: "${{ secrets[matrix.ARTIFACT_SOURCE_BUCKET_NAME_SECRET] }}"
           signing-profile-name: "${{ secrets[matrix.SIGNING_PROFILE_NAME] }}"
           working-directory: ./out
 
-  sign_and_publish_common_cri_to_build:
-    name: Sign and publish common_cri infrastructure to Build
-    needs: sign_and_publish_common_cri_to_dev
+  publish-build:
+    needs: build
+    name: Publish to ${{ matrix.target }}
+    if: ${{ github.ref_name == 'main' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    concurrency:
+      group: publish-common-lambdas-${{ matrix.target }}-build
+      cancel-in-progress: false
     env:
       AWS_REGION: eu-west-2
     permissions:
@@ -230,12 +233,12 @@ jobs:
     steps:
       - name: Checkout code
         if: matrix.ENABLED == 'true'
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Cache restore common lambdas build
         if: ${{ matrix.ENABLED == 'true' }}
         id: cache-common-lambdas-restore
-        uses: actions/cache/restore@v3
+        uses: actions/cache/restore@v4
         with:
           path: |
             out/
@@ -243,14 +246,14 @@ jobs:
 
       - name: Assume temporary AWS role
         if: matrix.ENABLED == 'true'
-        uses: aws-actions/configure-aws-credentials@v2
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets[matrix.GH_ACTIONS_ROLE_ARN_SECRET] }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Setup Python
         if: matrix.ENABLED == 'true'
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: 3.11.2
 
@@ -266,15 +269,16 @@ jobs:
 
       - name: Deploy SAM app
         if: matrix.ENABLED == 'true'
-        uses: govuk-one-login/devplatform-upload-action@v3.8.1
+        uses: govuk-one-login/devplatform-upload-action@v3.9.2
         with:
           artifact-bucket-name: "${{ secrets[matrix.ARTIFACT_SOURCE_BUCKET_NAME_SECRET] }}"
           signing-profile-name: "${{ secrets[matrix.SIGNING_PROFILE_NAME] }}"
           working-directory: ./out
 
-  clean_up:
+  clean-up:
+    needs: [build, publish-dev, publish-build]
     name: Clean up cache
-    needs: sign_and_publish_common_cri_to_build
+    if: ${{ always() }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
@@ -284,7 +288,6 @@ jobs:
       contents: read
     steps:
       - name: Cleanup Cache
-        if: ${{ always() }}
         run: |
           gh extension install actions/gh-actions-cache
           

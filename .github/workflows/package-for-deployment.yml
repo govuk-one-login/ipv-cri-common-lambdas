@@ -1,0 +1,87 @@
+name: "Package a SAM app and upload to S3 for secure pipeline deployment in multiple AWS accounts"
+
+on:
+  workflow_call:
+    inputs:
+      cris: {required: true, type: string}
+      environment: {required: true, type: string}
+      cache-key: {required: true, type: string}
+      cache-restore-keys: {required: false, type: string}
+
+permissions: {}
+
+jobs:
+  config:
+    name: Get config
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    outputs:
+      cris-json: ${{ steps.cris.outputs.array-json }}
+      badges: ${{ steps.badges.outputs.mapped-dictionary }}
+    steps:
+      - name: Parse CRI names
+        id: cris
+        uses: govuk-one-login/github-actions/utils/json/parse-array@oj-2738-test-harness-actions
+        with:
+          array: ${{ inputs.cris }}
+
+      - name: Get badges
+        id: badges
+        uses: govuk-one-login/github-actions/utils/json/map-dictionary@oj-2738-test-harness-actions
+        with:
+          dictionary: ${{ toJSON(vars) }}
+          key-filter: ^(${{ join(fromJSON(steps.cris.outputs.array-json), '|') }})_ENABLED$
+          key-transform: ^(.*)_ENABLED$
+          value-map: true=🚀 | false=✋
+
+  upload:
+    needs: config
+    name: ${{ fromJSON(needs.config.outputs.badges)[matrix.cri] }} Upload to ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    concurrency:
+      group: publish-${{ github.workflow }}-${{ matrix.cri }}-${{ matrix.environment }}
+      cancel-in-progress: false
+    permissions:
+      id-token: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        cri: ${{ fromJSON(needs.config.outputs.cris-json) }}
+        include:
+          - {cri: ADDRESS, name: Address}
+          - {cri: CHECK_HMRC, name: "Check HMRC"}
+    steps:
+      - name: Check deployment enabled
+        id: enabled
+        if: ${{ vars[format('{0}_ENABLED', matrix.cri)] == 'true' }}
+        shell: bash
+        run: exit 0
+
+      - name: Pull repository
+        if: ${{ steps.enabled.outcome == 'success' }}
+        uses: actions/checkout@v4
+
+      - name: Get SAM artifact
+        if: ${{ steps.enabled.outcome == 'success' }}
+        uses: actions/cache/restore@v4
+        with:
+          key: ${{ inputs.cache-key }}
+          restore-keys: ${{ inputs.cache-restore-keys }}
+          path: .aws-sam
+
+      - name: Assume AWS Role
+        if: ${{ steps.enabled.outcome == 'success' }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars[format('{0}_ROLE_ARN', matrix.cri)] }}
+          aws-region: eu-west-2
+
+      - name: Upload to S3
+        if: ${{ steps.enabled.outcome == 'success' }}
+        uses: govuk-one-login/devplatform-upload-action@v3.9.2
+        with:
+          artifact-bucket-name: ${{ vars[format('{0}_ARTIFACTS_BUCKET_NAME', matrix.cri)] }}
+          signing-profile-name: ${{ vars[format('{0}_SIGNING_PROFILE_NAME', matrix.cri)] }}
+          working-directory: .aws-sam/build

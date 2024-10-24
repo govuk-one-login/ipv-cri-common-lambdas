@@ -1,0 +1,55 @@
+name: "Map dictionary keys and values"
+description: "Map dictionary keys and values based on the provided mapping or regex"
+
+inputs:
+  dictionary:
+    description: "The dictionary containing the values to map. Must be valid JSON containing key-value pairs"
+    required: true
+  key-filter:
+    description: "Select entries whose keys match the provided regex; otherwise select all keys"
+    required: false
+  key-transform:
+    description: "Map keys by applying the provided regex. Must contain one capturing group"
+    required: false
+  value-map:
+    description: "The mapping of the current values to new values as key=value pairs delimited by '|' or newlines"
+    required: false
+  env-var-name:
+    description: "Name of an env var to store the mapped dictionary"
+    required: false
+
+outputs:
+  mapped-dictionary:
+    description: "The mapped key-value pairs in JSON format"
+    value: ${{ steps.map.outputs.mapped }}
+
+runs:
+  using: composite
+  steps:
+    - name: Parse value map
+      id: value-map
+      uses: govuk-one-login/github-actions/parse-parameters@oj-2738-test-harness-actions
+      with:
+        parameters: ${{ inputs.value-map }}
+        json-output: true
+
+    - name: Map values
+      id: map
+      shell: bash
+      env:
+        DICTIONARY: ${{ inputs.dictionary }}
+        KEY_FILTER: ${{ inputs.key-filter }}
+        KEY_TRANSFORM: ${{ inputs.key-transform }}
+        VALUE_MAP: ${{ steps.value-map.outputs.parsed-parameters }}
+        MAP: ${{ github.action_path }}/map.sh
+      run: echo "mapped=$($MAP)" >> "$GITHUB_OUTPUT"
+
+    - name: Set environment variable
+      if: ${{ inputs.env-var-name != null }}
+      shell: bash
+      env:
+        ENV_VAR: ${{ inputs.env-var-name }}
+        VALUES: ${{ steps.map.outputs.values }}
+      run: |
+        echo "Setting environment variable '$ENV_VAR'..."
+        echo "$ENV_VAR=$VALUES" >> "$GITHUB_ENV"
