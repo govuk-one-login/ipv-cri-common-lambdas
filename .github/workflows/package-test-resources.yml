@@ -40,10 +40,11 @@ jobs:
       fail-fast: false
       matrix:
         environment: [dev, build]
-        cri: [ADDRESS, CHECK_HMRC]
+        cri: [ADDRESS, CHECK_HMRC, EXPERIAN_KBV]
         include:
           - {cri: ADDRESS, name: Address}
           - {cri: CHECK_HMRC, name: "Check HMRC"}
+          - {cri: EXPERIAN_KBV, name: "Experian KBV"}
     steps:
       - name: Check deployment enabled
         id: enabled
