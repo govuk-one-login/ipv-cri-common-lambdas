@@ -5,7 +5,7 @@ cached = true
 parallel = true
 
 [default.deploy.parameters]
-stack_name = "<your-name>-test-resources"
+stack_name = "caitlin-test-resources"
 
 capabilities = ["CAPABILITY_IAM", "CAPABILITY_NAMED_IAM"]
 fail_on_empty_changeset = false
