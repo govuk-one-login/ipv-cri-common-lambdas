@@ -37,6 +37,10 @@ Mappings:
         dev: review-a.dev.account.gov.uk
         build: review-a.build.account.gov.uk
         staging: review-a.staging.account.gov.uk
+      di-ipv-cri-kbv-api:
+        dev: review-k.dev.account.gov.uk
+        build: review-k.build.account.gov.uk
+        staging: review-k.staging.account.gov.uk
 
 Conditions:
   EnforceCodeSigning: !Not [!Equals [!Ref CodeSigningConfigArn, ""]]
