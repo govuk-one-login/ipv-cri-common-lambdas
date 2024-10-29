@@ -7,7 +7,11 @@ paths:
   /events:
     get:
       security:
-        - sigv4Reference: [ ]
+       - api_key:
+           Fn::If:
+             - IsNotDevEnvironment
+             - [ ]
+             - Ref: AWS::NoValue
       description: Retrieve events from DynamoDB events table. Used for testing purposes only.
       parameters:
         - name: partitionKey
