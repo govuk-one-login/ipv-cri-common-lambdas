@@ -11,7 +11,7 @@ java {
 
 ext {
 	dependencyVersions = [
-		aws_sdk_version          : "2.28.8",
+		aws_sdk_version          : "2.29.20",
 		aws_lambda_events_version: "3.11.6",
 		aws_powertools_version   : "1.18.0",
 		jackson_version          : "2.15.2",
