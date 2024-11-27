@@ -96,7 +96,6 @@ Globals:
       - !Ref CodeSigningConfigArn
       - !Ref AWS::NoValue
     Timeout: 30 # seconds
-    AutoPublishAlias: live
     Tracing: Active
     MemorySize: !FindInMap [MemorySizeMapping, Environment, !Ref "Environment"]
     Architectures:
@@ -180,6 +179,57 @@ Mappings:
       staging: 7200 # 2 hours
       integration: 7200 # 2 hours
       production: 7200 # 2 hours
+
+  # Java functions only (Enables per cri&env role out)
+  SnapStartMapping:
+    di-ipv-cri-address-api:
+      dev: None
+      build: None
+      staging: None
+      integration: None
+      production: None
+    di-ipv-cri-fraud-api:
+      dev: None
+      build: None
+      staging: None
+      integration: None
+      production: None
+    di-ipv-cri-kbv-api:
+      dev: None
+      build: None
+      staging: None
+      integration: None
+      production: None
+    di-ipv-cri-dl-api:
+      dev: None
+      build: None
+      staging: None
+      integration: None
+      production: None
+    di-ipv-cri-passport-api:
+      dev: None
+      build: None
+      staging: None
+      integration: None
+      production: None
+    di-ipv-cri-toy-api:
+      dev: None
+      build: None
+      staging: None
+      integration: None
+      production: None
+    di-ipv-cri-kbv-hmrc-api:
+      dev: None
+      build: None
+      staging: None
+      integration: None
+      production: None
+    di-ipv-cri-check-hmrc-api:
+      dev: None
+      build: None
+      staging: None
+      integration: None
+      production: None
 
   CriVpcMapping:
     di-ipv-cri-address-api:
@@ -482,6 +532,9 @@ Resources:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-session"
           SQS_AUDIT_EVENT_QUEUE_URL:
             Fn::ImportValue: !Sub ${TxmaStackName}-AuditEventQueueUrl
+      AutoPublishAlias: live
+      SnapStart:
+        ApplyOn: !FindInMap [SnapStartMapping, !Ref CriIdentifier, !Ref Environment]
       Policies:
         - AWSLambdaBasicExecutionRole
         - AWSXrayWriteOnlyAccess
@@ -565,6 +618,7 @@ Resources:
           SQS_AUDIT_EVENT_QUEUE_URL:
             Fn::ImportValue: !Sub ${TxmaStackName}-AuditEventQueueUrl
           CRI_IDENTIFIER: !Sub "${CriIdentifier}"
+      AutoPublishAlias: live
       Policies:
         - AWSLambdaBasicExecutionRole
         - AWSXrayWriteOnlyAccess
@@ -609,6 +663,7 @@ Resources:
           - src/handlers/session-handler.ts
         External:
           - "@aws-sdk/*"
+
   SessionFunctionTSLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
@@ -645,6 +700,9 @@ Resources:
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-authorization"
+      AutoPublishAlias: live
+      SnapStart:
+        ApplyOn: !FindInMap [SnapStartMapping, !Ref CriIdentifier, !Ref Environment]
       Policies:
         - AWSLambdaBasicExecutionRole
         - AWSXrayWriteOnlyAccess
@@ -690,6 +748,7 @@ Resources:
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-authorizationTS"
+      AutoPublishAlias: live
       Policies:
         - AWSLambdaBasicExecutionRole
         - AWSXrayWriteOnlyAccess
@@ -763,6 +822,9 @@ Resources:
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-access-token"
+      AutoPublishAlias: live
+      SnapStart:
+        ApplyOn: !FindInMap [SnapStartMapping, !Ref CriIdentifier, !Ref Environment]
       Policies:
         - DynamoDBReadPolicy:
             TableName:
@@ -803,6 +865,7 @@ Resources:
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-access-token-2"
+      AutoPublishAlias: live
       Policies:
         - AWSLambdaBasicExecutionRole
         - AWSXrayWriteOnlyAccess
@@ -1328,6 +1391,13 @@ Resources:
       FunctionName: !GetAtt SessionFunction.Arn
       Principal: apigateway.amazonaws.com
 
+  SessionFunctionAliasPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref SessionFunction.Alias
+      Principal: apigateway.amazonaws.com
+
   SessionFunctionTSPermission:
     Type: AWS::Lambda::Permission
     Properties:
@@ -1342,11 +1412,25 @@ Resources:
       FunctionName: !GetAtt AccessTokenFunction.Arn
       Principal: apigateway.amazonaws.com
 
+  AccessTokenFunctionAliasPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref AccessTokenFunction.Alias
+      Principal: apigateway.amazonaws.com
+
   AuthorizationFunctionPermission:
     Type: AWS::Lambda::Permission
     Properties:
       Action: lambda:InvokeFunction
       FunctionName: !GetAtt AuthorizationFunction.Arn
+      Principal: apigateway.amazonaws.com
+
+  AuthorizationFunctionAliasPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref AuthorizationFunction.Alias
       Principal: apigateway.amazonaws.com
 
   AuthorizationFunctionTSPermission:
