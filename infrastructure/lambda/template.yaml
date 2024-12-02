@@ -1,5 +1,7 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Transform: "AWS::Serverless-2016-10-31"
+Transform:
+  - AWS::Serverless-2016-10-31
+  - AWS::LanguageExtensions
 Description: "Digital Identity IPV CRI common API"
 
 Parameters:
@@ -41,6 +43,14 @@ Conditions:
       - Fn::Equals:
           - !Ref CodeSigningConfigArn
           - "none"
+  AddJavaProvisionedConcurrency: !Not
+    - !Equals
+      - !FindInMap [JavaProvisionedConcurrencyMapping, !Ref CriIdentifier, !Ref Environment]
+      -  0
+  AddTSProvisionedConcurrency: !Not
+    - !Equals
+      - !FindInMap [TSProvisionedConcurrencyMapping, !Ref CriIdentifier, !Ref Environment]
+      -  0
   IsStubEnvironment: !Or
     - !Equals [!Ref Environment, dev]
     - !Equals [!Ref Environment, build]
@@ -180,8 +190,111 @@ Mappings:
       integration: 7200 # 2 hours
       production: 7200 # 2 hours
 
-  # Java functions only (Enables per cri&env role out)
-  SnapStartMapping:
+  # TS functions Only 0 = off
+  TSProvisionedConcurrencyMapping:
+    di-ipv-cri-address-api:
+      dev: 0
+      build: 0
+      staging: 0
+      integration: 0
+      production: 0
+    di-ipv-cri-fraud-api:
+      dev: 0
+      build: 0
+      staging: 0
+      integration: 0
+      production: 0
+    di-ipv-cri-kbv-api:
+      dev: 0
+      build: 0
+      staging: 0
+      integration: 0
+      production: 0
+    di-ipv-cri-dl-api:
+      dev: 0
+      build: 0
+      staging: 0
+      integration: 0
+      production: 0
+    di-ipv-cri-passport-api:
+      dev: 0
+      build: 0
+      staging: 0
+      integration: 0
+      production: 0
+    di-ipv-cri-toy-api:
+      dev: 0
+      build: 0
+      staging: 0
+      integration: 0
+      production: 0
+    di-ipv-cri-kbv-hmrc-api:
+      dev: 0
+      build: 0
+      staging: 0
+      integration: 0
+      production: 0
+    di-ipv-cri-check-hmrc-api:
+      dev: 0
+      build: 0
+      staging: 0
+      integration: 0
+      production: 0
+
+  # CANNOT be >1 with JavaSnapStart enabled - (Enables per cri&env role out)
+  JavaProvisionedConcurrencyMapping:
+    di-ipv-cri-address-api:
+      dev: 0
+      build: 0
+      staging: 0
+      integration: 0
+      production: 0
+    di-ipv-cri-fraud-api:
+      dev: 0
+      build: 0
+      staging: 0
+      integration: 0
+      production: 0
+    di-ipv-cri-kbv-api:
+      dev: 0
+      build: 0
+      staging: 0
+      integration: 0
+      production: 0
+    di-ipv-cri-dl-api:
+      dev: 0
+      build: 0
+      staging: 0
+      integration: 0
+      production: 0
+    di-ipv-cri-passport-api:
+      dev: 0
+      build: 1
+      staging: 0
+      integration: 0
+      production: 0
+    di-ipv-cri-toy-api:
+      dev: 0
+      build: 0
+      staging: 0
+      integration: 0
+      production: 0
+    di-ipv-cri-kbv-hmrc-api:
+      dev: 0
+      build: 0
+      staging: 0
+      integration: 0
+      production: 0
+    di-ipv-cri-check-hmrc-api:
+      dev: 0
+      build: 0
+      staging: 0
+      integration: 0
+      production: 0
+
+  # CANNOT be used with JavaProvisionedConcurrency - Java functions only (Enables per cri&env role out)
+  # Permitted values : PublishedVersions or None
+  JavaSnapStartMapping:
     di-ipv-cri-address-api:
       dev: None
       build: None
@@ -533,8 +646,9 @@ Resources:
           SQS_AUDIT_EVENT_QUEUE_URL:
             Fn::ImportValue: !Sub ${TxmaStackName}-AuditEventQueueUrl
       AutoPublishAlias: live
+      AutoPublishAliasAllProperties: true
       SnapStart:
-        ApplyOn: !FindInMap [SnapStartMapping, !Ref CriIdentifier, !Ref Environment]
+        ApplyOn: !FindInMap [JavaSnapStartMapping, !Ref CriIdentifier, !Ref Environment]
       Policies:
         - AWSLambdaBasicExecutionRole
         - AWSXrayWriteOnlyAccess
@@ -578,6 +692,11 @@ Resources:
                 - "kms:GenerateDataKey"
               Resource:
                 Fn::ImportValue: !Sub ${TxmaStackName}-AuditEventQueueEncryptionKeyArn
+      ProvisionedConcurrencyConfig:
+        !If
+        - AddJavaProvisionedConcurrency
+        - ProvisionedConcurrentExecutions: !FindInMap [JavaProvisionedConcurrencyMapping, !Ref CriIdentifier, !Ref Environment]
+        - !Ref AWS::NoValue
 
   SessionFunctionLogGroup:
     Type: AWS::Logs::LogGroup
@@ -619,6 +738,7 @@ Resources:
             Fn::ImportValue: !Sub ${TxmaStackName}-AuditEventQueueUrl
           CRI_IDENTIFIER: !Sub "${CriIdentifier}"
       AutoPublishAlias: live
+      AutoPublishAliasAllProperties: true
       Policies:
         - AWSLambdaBasicExecutionRole
         - AWSXrayWriteOnlyAccess
@@ -653,6 +773,11 @@ Resources:
                 - "kms:GenerateDataKey"
               Resource:
                 Fn::ImportValue: !Sub ${TxmaStackName}-AuditEventQueueEncryptionKeyArn
+      ProvisionedConcurrencyConfig:
+        !If
+        - AddTSProvisionedConcurrency
+        - ProvisionedConcurrentExecutions: !FindInMap [TSProvisionedConcurrencyMapping, !Ref CriIdentifier, !Ref Environment]
+        - !Ref AWS::NoValue
     Metadata: # Manage esbuild properties
       BuildMethod: esbuild
       BuildProperties:
@@ -701,8 +826,9 @@ Resources:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-authorization"
       AutoPublishAlias: live
+      AutoPublishAliasAllProperties: true
       SnapStart:
-        ApplyOn: !FindInMap [SnapStartMapping, !Ref CriIdentifier, !Ref Environment]
+        ApplyOn: !FindInMap [JavaSnapStartMapping, !Ref CriIdentifier, !Ref Environment]
       Policies:
         - AWSLambdaBasicExecutionRole
         - AWSXrayWriteOnlyAccess
@@ -722,6 +848,11 @@ Resources:
                 - ssm:GetParametersByPath
               Resource:
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/clients/*"
+      ProvisionedConcurrencyConfig:
+        !If
+        - AddJavaProvisionedConcurrency
+        - ProvisionedConcurrentExecutions: !FindInMap [JavaProvisionedConcurrencyMapping, !Ref CriIdentifier, !Ref Environment]
+        - !Ref AWS::NoValue
 
   AuthorizationFunctionLogGroup:
     Type: AWS::Logs::LogGroup
@@ -749,6 +880,7 @@ Resources:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-authorizationTS"
       AutoPublishAlias: live
+      AutoPublishAliasAllProperties: true
       Policies:
         - AWSLambdaBasicExecutionRole
         - AWSXrayWriteOnlyAccess
@@ -764,6 +896,11 @@ Resources:
                 - ssm:GetParameters
               Resource:
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/SessionTableName"
+      ProvisionedConcurrencyConfig:
+        !If
+        - AddTSProvisionedConcurrency
+        - ProvisionedConcurrentExecutions: !FindInMap [TSProvisionedConcurrencyMapping, !Ref CriIdentifier, !Ref Environment]
+        - !Ref AWS::NoValue
     Metadata: # Manage esbuild properties
       BuildMethod: esbuild
       BuildProperties:
@@ -823,8 +960,9 @@ Resources:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-access-token"
       AutoPublishAlias: live
+      AutoPublishAliasAllProperties: true
       SnapStart:
-        ApplyOn: !FindInMap [SnapStartMapping, !Ref CriIdentifier, !Ref Environment]
+        ApplyOn: !FindInMap [JavaSnapStartMapping, !Ref CriIdentifier, !Ref Environment]
       Policies:
         - DynamoDBReadPolicy:
             TableName:
@@ -845,6 +983,11 @@ Resources:
                 - ssm:GetParametersByPath
               Resource:
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/clients/*"
+      ProvisionedConcurrencyConfig:
+        !If
+        - AddJavaProvisionedConcurrency
+        - ProvisionedConcurrentExecutions: !FindInMap [JavaProvisionedConcurrencyMapping, !Ref CriIdentifier, !Ref Environment]
+        - !Ref AWS::NoValue
 
   AccessTokenFunctionTS:
     Type: AWS::Serverless::Function
@@ -866,6 +1009,7 @@ Resources:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-access-token-2"
       AutoPublishAlias: live
+      AutoPublishAliasAllProperties: true
       Policies:
         - AWSLambdaBasicExecutionRole
         - AWSXrayWriteOnlyAccess
@@ -883,6 +1027,11 @@ Resources:
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/SessionTableName"
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/SessionTtl"
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/clients/*"
+      ProvisionedConcurrencyConfig:
+        !If
+        - AddTSProvisionedConcurrency
+        - ProvisionedConcurrentExecutions: !FindInMap [TSProvisionedConcurrencyMapping, !Ref CriIdentifier, !Ref Environment]
+        - !Ref AWS::NoValue
     Metadata: # Manage esbuild properties
       BuildMethod: esbuild
       BuildProperties:
