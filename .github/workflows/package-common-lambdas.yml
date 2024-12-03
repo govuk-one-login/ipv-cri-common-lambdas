@@ -44,7 +44,7 @@ jobs:
       - name: Setup SAM
         uses: aws-actions/setup-sam@v2
         with:
-          version: 1.74.0
+          version: 1.131.0
 
       - name: SAM build
         run: |
@@ -152,7 +152,7 @@ jobs:
         if: matrix.ENABLED == 'true'
         uses: aws-actions/setup-sam@v2
         with:
-          version: 1.74.0
+          version: 1.131.0
 
       - name: SAM Validate
         if: matrix.ENABLED == 'true'
@@ -258,7 +258,7 @@ jobs:
         if: matrix.ENABLED == 'true'
         uses: aws-actions/setup-sam@v2
         with:
-          version: 1.74.0
+          version: 1.131.0
 
       - name: SAM Validate
         if: matrix.ENABLED == 'true'
