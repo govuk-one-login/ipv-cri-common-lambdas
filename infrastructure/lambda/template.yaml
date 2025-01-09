@@ -45,11 +45,11 @@ Conditions:
           - "none"
   AddJavaProvisionedConcurrency: !Not
     - !Equals
-      - !FindInMap [JavaProvisionedConcurrencyMapping, !Ref CriIdentifier, !Ref Environment]
+      - !FindInMap [JavaProvisionedConcurrencyMapping, !Ref CriIdentifier, !Ref Environment, DefaultValue: !Ref AWS::NoValue]
       -  0
   AddTSProvisionedConcurrency: !Not
     - !Equals
-      - !FindInMap [TSProvisionedConcurrencyMapping, !Ref CriIdentifier, !Ref Environment]
+      - !FindInMap [TSProvisionedConcurrencyMapping, !Ref CriIdentifier, !Ref Environment, DefaultValue: !Ref AWS::NoValue]
       -  0
   IsStubEnvironment: !Or
     - !Equals [!Ref Environment, dev]
@@ -67,17 +67,14 @@ Conditions:
     - !Ref Environment
     - dev
   IsDevPlatformDeploy: !Equals
-    - !FindInMap [CriVpcMapping, !Ref CriIdentifier, !Ref Environment]
+    - !FindInMap [CriVpcMapping, !Ref CriIdentifier, !Ref Environment, DefaultValue: !Ref AWS::NoValue]
     - "di-devplatform-deploy"
   UsePermissionsBoundary:
     Fn::Not:
       - Fn::Equals:
           - !Ref PermissionsBoundary
           - "none"
-  IsCSLSDisabled: !And
-    - !Not
-      - !Equals [!Ref CriIdentifier, "di-ipv-cri-toy-api"]
-    - !Not
+  IsCSLSDisabled: !Not
       - !Equals [!Ref Environment, "dev"]
   UseNewCSLSDestinationArn: !Or
     - !Equals [!Ref CriIdentifier, "di-ipv-cri-kbv-hmrc-api"]
@@ -222,12 +219,6 @@ Mappings:
       staging: 0
       integration: 0
       production: 0
-    di-ipv-cri-toy-api:
-      dev: 0
-      build: 0
-      staging: 0
-      integration: 0
-      production: 0
     di-ipv-cri-kbv-hmrc-api:
       dev: 0
       build: 0
@@ -268,12 +259,6 @@ Mappings:
       integration: 0
       production: 0
     di-ipv-cri-passport-api:
-      dev: 0
-      build: 0
-      staging: 0
-      integration: 0
-      production: 0
-    di-ipv-cri-toy-api:
       dev: 0
       build: 0
       staging: 0
@@ -325,12 +310,6 @@ Mappings:
       staging: PublishedVersions
       integration: None
       production: None
-    di-ipv-cri-toy-api:
-      dev: None
-      build: None
-      staging: None
-      integration: None
-      production: None
     di-ipv-cri-kbv-hmrc-api:
       dev: None
       build: None
@@ -370,12 +349,6 @@ Mappings:
       integration: "di-ipv-cri-pipeline-deployment"
       production: "di-ipv-cri-pipeline-deployment"
     di-ipv-cri-passport-api:
-      dev: "di-devplatform-deploy"
-      build: "di-devplatform-deploy"
-      staging: "di-devplatform-deploy"
-      integration: "di-devplatform-deploy"
-      production: "di-devplatform-deploy"
-    di-ipv-cri-toy-api:
       dev: "di-devplatform-deploy"
       build: "di-devplatform-deploy"
       staging: "di-devplatform-deploy"
@@ -425,12 +398,6 @@ Mappings:
       staging: "https://review-p.staging.account.gov.uk"
       integration: "https://review-p.integration.account.gov.uk"
       production: "https://review-p.account.gov.uk"
-    di-ipv-cri-toy-api:
-      dev: "https://review-toy.dev.account.gov.uk"
-      build: "https://review-toy.build.account.gov.uk"
-      staging: "https://review-toy.staging.account.gov.uk"
-      integration: "https://review-toy.integration.account.gov.uk"
-      production: "https://review-toy.account.gov.uk"
     di-ipv-cri-kbv-hmrc-api:
       dev: "https://review-hk.dev.account.gov.uk"
       build: "https://review-hk.build.account.gov.uk"
@@ -557,8 +524,6 @@ Mappings:
       staging: "https://identity.staging.account.gov.uk/credential-issuer/callback?id=ukPassport"
       integration: "https://identity.integration.account.gov.uk/credential-issuer/callback?id=ukPassport"
       production: "https://identity.account.gov.uk/credential-issuer/callback?id=ukPassport"
-    di-ipv-cri-toy-api:
-      staging: "https://identity.staging.account.gov.uk/credential-issuer/callback?id=toy"
     di-ipv-cri-check-hmrc-api:
       staging: "https://identity.staging.account.gov.uk/credential-issuer/callback?id=nino"
       integration: "https://identity.integration.account.gov.uk/credential-issuer/callback?id=nino"
@@ -599,12 +564,6 @@ Mappings:
       staging: "https://review-p.staging.account.gov.uk"
       integration: "https://review-p.integration.account.gov.uk"
       production: "https://review-p.account.gov.uk"
-    di-ipv-cri-toy-api:
-      dev: "https://review-toy.dev.account.gov.uk"
-      build: "https://review-toy.build.account.gov.uk"
-      staging: "https://review-toy.staging.account.gov.uk"
-      integration: "https://review-toy.integration.account.gov.uk"
-      production: "https://review-toy.account.gov.uk"
     di-ipv-cri-kbv-hmrc-api:
       dev: "https://review-hk.dev.account.gov.uk"
       build: "https://review-hk.build.account.gov.uk"
@@ -648,7 +607,7 @@ Resources:
       AutoPublishAlias: live
       AutoPublishAliasAllProperties: true
       SnapStart:
-        ApplyOn: !FindInMap [JavaSnapStartMapping, !Ref CriIdentifier, !Ref Environment]
+        ApplyOn: !FindInMap [JavaSnapStartMapping, !Ref CriIdentifier, !Ref Environment, DefaultValue: !Ref AWS::NoValue]
       Policies:
         - AWSLambdaBasicExecutionRole
         - AWSXrayWriteOnlyAccess
@@ -695,7 +654,7 @@ Resources:
       ProvisionedConcurrencyConfig:
         !If
         - AddJavaProvisionedConcurrency
-        - ProvisionedConcurrentExecutions: !FindInMap [JavaProvisionedConcurrencyMapping, !Ref CriIdentifier, !Ref Environment]
+        - ProvisionedConcurrentExecutions: !FindInMap [JavaProvisionedConcurrencyMapping, !Ref CriIdentifier, !Ref Environment, DefaultValue: !Ref AWS::NoValue]
         - !Ref AWS::NoValue
 
   SessionFunctionLogGroup:
@@ -776,7 +735,7 @@ Resources:
       ProvisionedConcurrencyConfig:
         !If
         - AddTSProvisionedConcurrency
-        - ProvisionedConcurrentExecutions: !FindInMap [TSProvisionedConcurrencyMapping, !Ref CriIdentifier, !Ref Environment]
+        - ProvisionedConcurrentExecutions: !FindInMap [TSProvisionedConcurrencyMapping, !Ref CriIdentifier, !Ref Environment, DefaultValue: !Ref AWS::NoValue ]
         - !Ref AWS::NoValue
     Metadata: # Manage esbuild properties
       BuildMethod: esbuild
@@ -828,7 +787,7 @@ Resources:
       AutoPublishAlias: live
       AutoPublishAliasAllProperties: true
       SnapStart:
-        ApplyOn: !FindInMap [JavaSnapStartMapping, !Ref CriIdentifier, !Ref Environment]
+        ApplyOn: !FindInMap [JavaSnapStartMapping, !Ref CriIdentifier, !Ref Environment, DefaultValue: !Ref AWS::NoValue]
       Policies:
         - AWSLambdaBasicExecutionRole
         - AWSXrayWriteOnlyAccess
@@ -851,7 +810,7 @@ Resources:
       ProvisionedConcurrencyConfig:
         !If
         - AddJavaProvisionedConcurrency
-        - ProvisionedConcurrentExecutions: !FindInMap [JavaProvisionedConcurrencyMapping, !Ref CriIdentifier, !Ref Environment]
+        - ProvisionedConcurrentExecutions: !FindInMap [JavaProvisionedConcurrencyMapping, !Ref CriIdentifier, !Ref Environment, DefaultValue: !Ref AWS::NoValue]
         - !Ref AWS::NoValue
 
   AuthorizationFunctionLogGroup:
@@ -899,7 +858,7 @@ Resources:
       ProvisionedConcurrencyConfig:
         !If
         - AddTSProvisionedConcurrency
-        - ProvisionedConcurrentExecutions: !FindInMap [TSProvisionedConcurrencyMapping, !Ref CriIdentifier, !Ref Environment]
+        - ProvisionedConcurrentExecutions: !FindInMap [TSProvisionedConcurrencyMapping, !Ref CriIdentifier, !Ref Environment, DefaultValue: !Ref AWS::NoValue]
         - !Ref AWS::NoValue
     Metadata: # Manage esbuild properties
       BuildMethod: esbuild
@@ -962,7 +921,7 @@ Resources:
       AutoPublishAlias: live
       AutoPublishAliasAllProperties: true
       SnapStart:
-        ApplyOn: !FindInMap [JavaSnapStartMapping, !Ref CriIdentifier, !Ref Environment]
+        ApplyOn: !FindInMap [JavaSnapStartMapping, !Ref CriIdentifier, !Ref Environment, DefaultValue: !Ref AWS::NoValue]
       Policies:
         - DynamoDBReadPolicy:
             TableName:
@@ -986,7 +945,7 @@ Resources:
       ProvisionedConcurrencyConfig:
         !If
         - AddJavaProvisionedConcurrency
-        - ProvisionedConcurrentExecutions: !FindInMap [JavaProvisionedConcurrencyMapping, !Ref CriIdentifier, !Ref Environment]
+        - ProvisionedConcurrentExecutions: !FindInMap [JavaProvisionedConcurrencyMapping, !Ref CriIdentifier, !Ref Environment, DefaultValue: !Ref AWS::NoValue]
         - !Ref AWS::NoValue
 
   AccessTokenFunctionTS:
@@ -1030,7 +989,7 @@ Resources:
       ProvisionedConcurrencyConfig:
         !If
         - AddTSProvisionedConcurrency
-        - ProvisionedConcurrentExecutions: !FindInMap [TSProvisionedConcurrencyMapping, !Ref CriIdentifier, !Ref Environment]
+        - ProvisionedConcurrentExecutions: !FindInMap [TSProvisionedConcurrencyMapping, !Ref CriIdentifier, !Ref Environment, DefaultValue: !Ref AWS::NoValue]
         - !Ref AWS::NoValue
     Metadata: # Manage esbuild properties
       BuildMethod: esbuild
@@ -1232,7 +1191,7 @@ Resources:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod/jwtAuthentication/audience"
       Type: String
       Value:
-        !FindInMap [CriAudienceMapping, !Ref CriIdentifier, !Ref Environment]
+        !FindInMap [CriAudienceMapping, !Ref CriIdentifier, !Ref Environment, DefaultValue: ""]
 
   IPVCoreStubAwsBuildAudienceParameter:
     Condition: IsStubEnvironment
@@ -1241,7 +1200,7 @@ Resources:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build/jwtAuthentication/audience"
       Type: String
       Value:
-        !FindInMap [CriAudienceMapping, !Ref CriIdentifier, !Ref Environment]
+        !FindInMap [CriAudienceMapping, !Ref CriIdentifier, !Ref Environment, DefaultValue: ""]
 
   IPVCoreStubAudienceParameter:
     Condition: IsStubEnvironment
@@ -1250,7 +1209,7 @@ Resources:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub/jwtAuthentication/audience"
       Type: String
       Value:
-        !FindInMap [CriAudienceMapping, !Ref CriIdentifier, !Ref Environment]
+        !FindInMap [CriAudienceMapping, !Ref CriIdentifier, !Ref Environment, DefaultValue: "" ]
 
   IPVCoreStubPreProdAwsBuildAudienceParameter:
     Condition: IsProdEnvironment
@@ -1259,7 +1218,7 @@ Resources:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod-aws-build/jwtAuthentication/audience"
       Type: String
       Value:
-        !FindInMap [CriAudienceMapping, !Ref CriIdentifier, !Ref Environment]
+        !FindInMap [CriAudienceMapping, !Ref CriIdentifier, !Ref Environment, DefaultValue: "" ]
 
   IPVCoreStubPreProdAudienceParameter:
     Condition: IsProdEnvironment
@@ -1268,7 +1227,7 @@ Resources:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod/jwtAuthentication/audience"
       Type: String
       Value:
-        !FindInMap [CriAudienceMapping, !Ref CriIdentifier, !Ref Environment]
+        !FindInMap [CriAudienceMapping, !Ref CriIdentifier, !Ref Environment, DefaultValue: "" ]
 
   IPVCore1AudienceParameter:
     Condition: IsProdLikeEnvironment
@@ -1277,7 +1236,7 @@ Resources:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core/jwtAuthentication/audience"
       Type: String
       Value:
-        !FindInMap [CriAudienceMapping, !Ref CriIdentifier, !Ref Environment]
+        !FindInMap [CriAudienceMapping, !Ref CriIdentifier, !Ref Environment, DefaultValue: "" ]
 
   IPVCoreStubAwsProdIssuerParameter:
     Condition: IsStubEnvironment
@@ -1502,6 +1461,7 @@ Resources:
           IPVCore1RedirectURIMapping,
           !Ref CriIdentifier,
           !Ref Environment,
+          DefaultValue: ""
         ]
 
   AuthRequestKmsEncryptionKeyIdParameter:
@@ -1522,6 +1482,7 @@ Resources:
           VerifiableCredentialIssuerMapping,
           !Ref CriIdentifier,
           !Ref Environment,
+          DefaultValue: ""
         ]
       Description: Issuer of the Verifiable Credential
 
@@ -1724,7 +1685,7 @@ Resources:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod_3rdparty/jwtAuthentication/audience"
       Type: String
       Value:
-        !FindInMap [CriAudienceMapping, !Ref CriIdentifier, !Ref Environment]
+        !FindInMap [CriAudienceMapping, !Ref CriIdentifier, !Ref Environment, DefaultValue: "" ]
 
   IPVCoreStubAwsProd3rdPartyPublicSigningJwkBase64Parameter:
     Condition: IsStubEnvironment
@@ -1768,7 +1729,7 @@ Resources:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build_3rdparty/jwtAuthentication/audience"
       Type: String
       Value:
-        !FindInMap [CriAudienceMapping, !Ref CriIdentifier, !Ref Environment]
+        !FindInMap [CriAudienceMapping, !Ref CriIdentifier, !Ref Environment, DefaultValue: "" ]
 
   IPVCoreStubAwsBuild3rdPartyPublicSigningJwkBase64Parameter:
     Condition: IsStubEnvironment
