@@ -61,7 +61,6 @@ NOTE: Since this is defaulting `CRI_DEV=common-lambda-dev`
 and contains keys configured for the common lambda account `di-ipv-cri-common-dev`the `API_GATEWAY_ID_PRIVATE` can be found
 in the output of the common lambda stack being targeted i.e the value of `PreMergeDevOnlyApiId` output.
 
-`
 
 `STACK_NAME=di-ipv-cri-common-api-your-stack-name ENVIRONMENT=dev API_GATEWAY_ID_PRIVATE=xxxx IPV_CORE_STUB_BASIC_AUTH_USER=xxxx IPV_CORE_STUB_BASIC_AUTH_PASSWORD=xxxx IPV_CORE_STUB_URL="https://cri.core.stubs.account.gov.uk" gradle integration-tests:cucumber
 
