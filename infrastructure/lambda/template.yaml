@@ -254,10 +254,10 @@ Mappings:
       production: 0
     di-ipv-cri-dl-api:
       dev: 0
-      build: 0
-      staging: 0
-      integration: 0
-      production: 0
+      build: 1
+      staging: 1
+      integration: 1
+      production: 1
     di-ipv-cri-passport-api:
       dev: 0
       build: 0
