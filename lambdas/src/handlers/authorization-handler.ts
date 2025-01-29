@@ -18,6 +18,9 @@ import setGovUkSigningJourneyIdMiddleware from "../middlewares/session/set-gov-u
 import initialiseClientConfigMiddleware from "../middlewares/config/initialise-client-config-middleware";
 import setRequestedVerificationScoreMiddleware from "../middlewares/session/set-requested-verification-score-middleware";
 import { SSMProvider } from "@aws-lambda-powertools/parameters/ssm";
+import { initOpenTelemetry } from "../common/utils/otel-setup";
+
+initOpenTelemetry();
 
 const dynamoDbClient = createClient(AwsClientType.DYNAMO);
 const ssmClient = createClient(AwsClientType.SSM);

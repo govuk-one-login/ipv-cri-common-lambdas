@@ -9,6 +9,9 @@ import { CommonConfigKey } from "../types/config-keys";
 import { Logger } from "@aws-lambda-powertools/logger";
 import { errorPayload } from "../common/utils/errors";
 import { SSMProvider } from "@aws-lambda-powertools/parameters/ssm";
+import { initOpenTelemetry } from "../common/utils/otel-setup";
+
+initOpenTelemetry();
 
 const dynamoDbClient = createClient(AwsClientType.DYNAMO);
 const ssmClient = createClient(AwsClientType.SSM);
