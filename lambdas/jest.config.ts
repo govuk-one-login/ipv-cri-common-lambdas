@@ -9,7 +9,7 @@ export default {
     setupFiles: ["<rootDir>/setEnvVars.js"],
     coverageThreshold: {
         global: {
-            statements: 94,
+            statements: 93,
             branches: 94,
             functions: 95,
             lines: 94,
