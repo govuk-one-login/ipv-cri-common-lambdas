@@ -27,6 +27,9 @@ import { ConfigService } from "../common/config/config-service";
 import { EvidenceRequest } from "../services/evidence_request";
 import setRequestedVerificationScoreMiddleware from "../middlewares/session/set-requested-verification-score-middleware";
 import { SSMProvider } from "@aws-lambda-powertools/parameters/ssm";
+import { initOpenTelemetry } from "../common/utils/otel-setup";
+
+initOpenTelemetry();
 
 const dynamoDbClient = createClient(AwsClientType.DYNAMO);
 const sqsClient = createClient(AwsClientType.SQS);
