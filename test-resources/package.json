@@ -16,7 +16,7 @@
     "@aws-lambda-powertools/commons": "^2.8.0",
     "@aws-lambda-powertools/logger": "^2.8.0",
     "aws-lambda": "1.0.7",
-    "esbuild": "^0.24.0"
+    "esbuild": "^0.25.0"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.145",
