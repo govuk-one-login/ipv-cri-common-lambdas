@@ -26,7 +26,7 @@ jobs:
           aws-region: eu-west-2
 
       - name: Get stale preview stacks
-        uses: govuk-one-login/github-actions/sam/get-stale-stacks@cf644c0d66c41259bfe2509852d1211e3f01f44d
+        uses: govuk-one-login/github-actions/sam/get-stale-stacks@ca188729ecb0c92e5fe5ae7c024f9894815da3a1
         with:
           threshold-days: 14
           stack-name-filter: preview-common-lambdas
@@ -38,7 +38,7 @@ jobs:
 
       - name: Delete stacks
         if: ${{ env.STACKS != null }}
-        uses: govuk-one-login/github-actions/sam/delete-stacks@cf644c0d66c41259bfe2509852d1211e3f01f44d
+        uses: govuk-one-login/github-actions/sam/delete-stacks@ca188729ecb0c92e5fe5ae7c024f9894815da3a1
         with:
           stack-names: ${{ env.STACKS }}
           verbose: true

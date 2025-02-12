@@ -47,7 +47,7 @@ jobs:
           echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
 
       - name: Build SAM application
-        uses: govuk-one-login/github-actions/sam/build-application@cf644c0d66c41259bfe2509852d1211e3f01f44d
+        uses: govuk-one-login/github-actions/sam/build-application@ca188729ecb0c92e5fe5ae7c024f9894815da3a1
         id: build
         with:
           template: infrastructure/lambda/template.yaml
@@ -70,7 +70,7 @@ jobs:
       stack-outputs: ${{ steps.deploy.outputs.stack-outputs }}
     steps:
       - name: Deploy stack
-        uses: govuk-one-login/github-actions/sam/deploy-stack@cf644c0d66c41259bfe2509852d1211e3f01f44d
+        uses: govuk-one-login/github-actions/sam/deploy-stack@ca188729ecb0c92e5fe5ae7c024f9894815da3a1
         id: deploy
         with:
           sam-deployment-bucket: ${{ vars.DEPLOYMENT_ARTIFACTS_BUCKET }}
