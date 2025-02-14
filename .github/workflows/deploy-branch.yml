@@ -47,12 +47,13 @@ jobs:
           echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
 
       - name: Build SAM application
-        uses: govuk-one-login/github-actions/sam/build-application@ca188729ecb0c92e5fe5ae7c024f9894815da3a1
+        uses: govuk-one-login/github-actions/sam/build-application@87ae1213145261e3837cc38d5b9317422acd95c2
         id: build
         with:
           template: infrastructure/lambda/template.yaml
           cache-name: common-lambdas-${{ steps.vars.outputs.sha_short }}
           pull-repository: false
+          sam-version: 1.132.0
 
   deploy:
     name: Deploy stack
