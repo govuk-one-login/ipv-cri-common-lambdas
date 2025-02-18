@@ -1,6 +1,6 @@
 plugins {
 	id "java"
-	id "io.freefair.aspectj.post-compile-weaving" version "6.3.0"
+	id "io.freefair.aspectj.post-compile-weaving" version "6.6.3"
 	id "jacoco"
 }
 
@@ -8,6 +8,8 @@ dependencies {
 	implementation configurations.cri_common_lib,
 			configurations.aws,
 			configurations.aws_crt_client,
+			configurations.aspectjrt,
+			configurations.opentelemetry,
 			configurations.dynamodb,
 			configurations.lambda,
 			configurations.nimbus,

@@ -57,7 +57,7 @@ public class SessionHandler
 
     @ExcludeFromGeneratedCoverageReport
     public SessionHandler() {
-        ClientProviderFactory clientProviderFactory = new ClientProviderFactory();
+        ClientProviderFactory clientProviderFactory = new ClientProviderFactory(true, true);
         ConfigurationService configurationService =
                 new ConfigurationService(
                         clientProviderFactory.getSSMProvider(),

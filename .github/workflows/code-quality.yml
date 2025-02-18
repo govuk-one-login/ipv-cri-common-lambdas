@@ -20,7 +20,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run pre-commit
-        uses: govuk-one-login/github-actions/code-quality/run-pre-commit@e6b6ed890b35904e1be79f7f35ffec983fa4d9db
+        uses: govuk-one-login/github-actions/code-quality/run-pre-commit@4616241694c035be4ea4a10fc0fe6521c0f079f8
         with:
           all-files: true
           pull-repository: false
@@ -36,7 +36,7 @@ jobs:
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
-          java-version: 11
+          java-version: 17
           distribution: zulu
           cache: gradle
 
