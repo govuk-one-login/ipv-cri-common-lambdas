@@ -45,7 +45,7 @@ public class AuthorizationHandler
 
     @ExcludeFromGeneratedCoverageReport
     public AuthorizationHandler() {
-        ClientProviderFactory clientProviderFactory = new ClientProviderFactory();
+        ClientProviderFactory clientProviderFactory = new ClientProviderFactory(true, true);
         ConfigurationService configurationService =
                 new ConfigurationService(
                         clientProviderFactory.getSSMProvider(),

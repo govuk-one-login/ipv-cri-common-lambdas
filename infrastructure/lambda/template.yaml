@@ -589,7 +589,7 @@ Resources:
       FunctionName: !Sub "${AWS::StackName}-SessionFunction"
       CodeUri: ../../session
       Handler: uk.gov.di.ipv.cri.common.api.handler.SessionHandler::handleRequest
-      Runtime: java11
+      Runtime: java17
       Layers:
         - !Sub
           - "{{resolve:secretsmanager:${SecretArn}:SecretString:JAVA_LAYER}}"
@@ -771,7 +771,7 @@ Resources:
       FunctionName: !Sub "${AWS::StackName}-AuthorizationFunction"
       CodeUri: ../../authorization
       Handler: uk.gov.di.ipv.cri.common.api.handler.AuthorizationHandler::handleRequest
-      Runtime: java11
+      Runtime: java17
       Layers:
         - !Sub
           - "{{resolve:secretsmanager:${SecretArn}:SecretString:JAVA_LAYER}}"
@@ -905,7 +905,7 @@ Resources:
       FunctionName: !Sub "${AWS::StackName}-AccessTokenFunction"
       CodeUri: ../../accesstoken
       Handler: uk.gov.di.ipv.cri.common.api.handler.AccessTokenHandler::handleRequest
-      Runtime: java11
+      Runtime: java17
       Layers:
         - !Sub
           - "{{resolve:secretsmanager:${SecretArn}:SecretString:JAVA_LAYER}}"
