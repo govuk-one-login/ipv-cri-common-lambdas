@@ -55,7 +55,7 @@ jobs:
       - name: Cache build
         if: ${{ always() }}
         id: cache-commom-lambda-build
-        uses: actions/cache/save@v3
+        uses: actions/cache/save@v4
         with:
           path: |
             out/
@@ -125,7 +125,7 @@ jobs:
       - name: Cache restore common lambdas build
         if: ${{ matrix.ENABLED == 'true' }}
         id: cache-common-lambdas-restore
-        uses: actions/cache/restore@v3
+        uses: actions/cache/restore@v4
         with:
           path: |
             out/
@@ -226,7 +226,7 @@ jobs:
       - name: Cache restore common lambdas build
         if: ${{ matrix.ENABLED == 'true' }}
         id: cache-common-lambdas-restore
-        uses: actions/cache/restore@v3
+        uses: actions/cache/restore@v4
         with:
           path: |
             out/
