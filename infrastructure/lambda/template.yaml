@@ -232,7 +232,7 @@ Mappings:
       integration: 0
       production: 0
 
-  # CANNOT be >1 with JavaSnapStart enabled - (Enables per cri&env role out)
+  # CANNOT be >= 1 with JavaSnapStart enabled - (Enables per cri&env role out)
   JavaProvisionedConcurrencyMapping:
     di-ipv-cri-address-api:
       dev: 0
@@ -281,10 +281,10 @@ Mappings:
   # Permitted values : PublishedVersions or None
   JavaSnapStartMapping:
     di-ipv-cri-address-api:
-      dev: None
-      build: None
-      staging: None
-      integration: None
+      dev: PublishedVersions
+      build: PublishedVersions
+      staging: PublishedVersions
+      integration: PublishedVersions
       production: None
     di-ipv-cri-fraud-api:
       dev: None
