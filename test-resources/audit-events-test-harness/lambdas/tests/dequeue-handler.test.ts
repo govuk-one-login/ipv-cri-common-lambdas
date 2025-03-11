@@ -1,5 +1,5 @@
 import { SQSEvent } from "aws-lambda";
-import { dbClient, logger, lambdaHandler } from "../dequeue-handler";
+import { dbClient, logger, lambdaHandler } from "../src/dequeue-handler";
 
 jest.mock("@aws-sdk/client-dynamodb", () => ({
     DynamoDBClient: jest.fn().mockImplementation(() => ({
