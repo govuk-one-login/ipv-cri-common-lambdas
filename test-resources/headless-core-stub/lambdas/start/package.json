@@ -1,0 +1,15 @@
+{
+    "name": "headless-core-stub-start",
+    "description": "Start lambda for the headless core stub",
+    "scripts": {
+        "lint": "eslint .",
+        "lint:fix": "eslint . --fix",
+        "unit": "jest",
+        "test": "npm run unit --",
+        "compile": "tsc"
+    },
+    "dependencies": {
+        "aws-lambda": "1.0.7"
+    },
+    "devDependencies": {}
+}
