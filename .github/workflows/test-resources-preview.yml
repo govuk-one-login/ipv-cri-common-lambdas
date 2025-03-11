@@ -1,0 +1,29 @@
+name: Test Resources Preview
+
+on: workflow_call
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build:
+    name: Build SAM app
+    runs-on: ubuntu-latest
+    permissions: {}
+    outputs:
+      sha_short: ${{ steps.vars.outputs.sha_short }}    
+    steps:
+      - name: Get short-sha
+        id: vars
+        run: |
+          echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Build SAM application
+        uses: govuk-one-login/github-actions/sam/build-application@87ae1213145261e3837cc38d5b9317422acd95c2
+        id: build
+        with:
+          template: test-resources/infrastructure/template.yaml
+          cache-name: test-resources-${{ steps.vars.outputs.sha_short }}
+          pull-repository: true
+          sam-version: 1.132.0

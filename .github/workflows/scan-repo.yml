@@ -27,6 +27,12 @@ jobs:
     with:
       coverage-report: true
 
+  unit-tests-test-resources:
+    name: Test coverage
+    uses: ./.github/workflows/run-unit-tests-test-resources.yml
+    with:
+      coverage-report:  false
+
   sonarcloud-java:
     name: SonarCloud / Java
     needs: unit-tests-java
