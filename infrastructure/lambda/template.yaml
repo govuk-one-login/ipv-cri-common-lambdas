@@ -285,7 +285,7 @@ Mappings:
       build: PublishedVersions
       staging: PublishedVersions
       integration: PublishedVersions
-      production: None
+      production: PublishedVersions
     di-ipv-cri-fraud-api:
       dev: None
       build: None
