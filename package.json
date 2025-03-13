@@ -2,6 +2,6 @@
   "name": "ipv-cri-common-lambdas",
   "workspaces": [
     "lambdas",
-    "test-resources"
+    "test-resources/**"
   ]
 }
