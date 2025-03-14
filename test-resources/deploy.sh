@@ -3,6 +3,7 @@ cd "$(dirname "${BASH_SOURCE[0]}")"
 set -eu
 
 stack_name="${1:-}"
+common_stack_name="${2:-}"
 
 if ! [[ "$stack_name" ]]; then
   [[ $(aws sts get-caller-identity --query Arn --output text) =~ \/([^\/\.]+)\. ]] && user="${BASH_REMATCH[1]}" || exit
@@ -27,4 +28,8 @@ sam deploy --stack-name "$stack_name" \
   cri:deployment-source=manual \
   cri:stack-type=dev \
   --parameter-overrides \
-  Environment=dev 
+  Environment=dev \
+  ${common_stack_name:+CommonStackName=$common_stack_name}
+
+
+
