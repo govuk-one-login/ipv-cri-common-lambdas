@@ -21,7 +21,7 @@ describe("token-request-validator.ts", () => {
         it("should throw when the client_assertion_type is not valid", function () {
             const tokenRequestBody = `code=${code}&redirect_uri=${redirect_uri}&client_assertion=${client_assertion}&client_assertion_type=test&grant_type=${grant_type}`;
             expect(() => accessTokenRequestValidator.validatePayload(tokenRequestBody)).toThrow(
-                "Invalid grant_type parameter",
+                "Invalid client_assertion_type parameter",
             );
         });
 
