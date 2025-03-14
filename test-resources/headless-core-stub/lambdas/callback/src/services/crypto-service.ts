@@ -16,7 +16,7 @@ const buildQueryString = (queryParams: Record<string, string>) => {
         .join("&");
 };
 
-const msToSeconds = (ms: number) => Math.round(ms / 1000);
+export const msToSeconds = (ms: number) => Math.round(ms / 1000);
 
 const buildBaseJwtPayload = (params: BaseParams) => {
     const baseJwtPayload: JWTPayload = {
