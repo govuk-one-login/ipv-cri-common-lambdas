@@ -8,7 +8,7 @@ import { ConfigurationHelper } from "./configuration-helper";
 export class CallBackService {
     constructor(
         private readonly dynamoDbClient: DynamoDBDocument,
-        private readonly configService: ConfigurationHelper,
+        private readonly configHelper: ConfigurationHelper,
     ) {}
     public async getSessionByAuthorizationCode(code: string): Promise<SessionItem> {
         const sessionTable = await this.getSessionTableName();
@@ -44,7 +44,7 @@ export class CallBackService {
     }
 
     private async getSessionTableName(): Promise<string> {
-        const sessionTableNameParameter = await this.configService.getParametersWithoutClientId();
+        const sessionTableNameParameter = await this.configHelper.getParametersWithoutClientId();
 
         return sessionTableNameParameter[CommonConfigKey.SESSION_TABLE_NAME];
     }

@@ -90,6 +90,47 @@ Resources:
       VpcId:
         Fn::ImportValue: !Sub "${VpcStackName}-VpcId"
 
+  CallbackFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Sourcemap: true
+    Properties:
+      Handler: headless-core-stub/lambdas/callback/src/callback-handler.lambdaHandler
+      CodeSigningConfigArn:
+        !If [EnforceCodeSigning, !Ref CodeSigningConfigArn, !Ref AWS::NoValue]
+      Environment:
+        Variables:
+          CRI_IDENTIFIER: !Sub "${CriIdentifier}"
+          AWS_STACK_NAME: !Ref CommonStackName
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Sub "{{resolve:ssm:/${CommonStackName}/SessionTableName}}"
+        - Statement:
+            - Effect: Allow
+              Action:
+                - ssm:GetParametersByPath
+                - ssm:GetParameters
+                - ssm:GetParameter
+              Resource:
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${CommonStackName}/clients/ipv-core-stub-aws-build/jwtAuthentication/*"
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${CommonStackName}/SessionTableName"
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${CriIdentifier}/test/privateSigningKey"
+
+  CallbackFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${CallbackFunction}"
+      RetentionInDays: 30
+
+  CallbackFunctionAliasPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt CallbackFunction.Arn
+      Principal: apigateway.amazonaws.com
+
   DequeueFunction:
     Type: AWS::Serverless::Function
     Metadata:

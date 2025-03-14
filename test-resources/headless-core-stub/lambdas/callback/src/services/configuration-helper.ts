@@ -4,7 +4,7 @@ import { ClientConfigKey, CommonConfigKey } from "./config-keys";
 const criIdentifier = process.env.CRI_IDENTIFIER || "";
 const commonParameterPrefix = process.env.AWS_STACK_NAME || "";
 export enum ConfigSecretKey {
-    STUB_PRIVATE_SIGNING_KEY = "test/privateSigningKey",
+    STUB_PRIVATE_SIGNING_KEY = "test/privateSigningKey", // pragma: allowlist secret
 }
 
 export class ConfigurationHelper {
