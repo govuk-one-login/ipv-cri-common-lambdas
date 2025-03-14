@@ -28,7 +28,7 @@ export class AccessTokenRequestValidator {
             !client_assertion_type ||
             client_assertion_type !== "urn:ietf:params:oauth:client-assertion-type:jwt-bearer"
         ) {
-            throw new InvalidRequestError("Invalid grant_type parameter");
+            throw new InvalidRequestError("Invalid client_assertion_type parameter");
         }
 
         return { grant_type, code, redirectUri, client_assertion_type, client_assertion };
