@@ -26,6 +26,10 @@ Parameters:
     Type: String
     Default: "cri-vpc"
     Description: The name of the VPC stack deployed.
+  CommonStackName:
+    Description: "The name of the stack containing the common CRI lambdas/infra"
+    Type: String
+    Default: common-cri-api
 
 Mappings:
   TestHarnessUrl:
@@ -67,6 +71,8 @@ Globals:
         NODE_OPTIONS: --enable-source-maps
         POWERTOOLS_METRICS_NAMESPACE: !Ref CriIdentifier
         POWERTOOLS_LOG_LEVEL: DEBUG
+        COMMON_PARAMETER_NAME_PREFIX: !Ref CommonStackName
+        AWS_STACK_NAME: !Sub ${AWS::StackName}
     AutoPublishAlias: live
 
 Resources:
