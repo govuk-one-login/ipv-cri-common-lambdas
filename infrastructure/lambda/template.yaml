@@ -680,7 +680,7 @@ Resources:
       FunctionName: !Sub "${AWS::StackName}-SessionFunctionTS"
       CodeUri: ../../lambdas
       Handler: session-handler.lambdaHandler
-      Runtime: nodejs18.x
+      Runtime: nodejs22.x
       Layers:
         - !Sub
           - "{{resolve:secretsmanager:${SecretArn}:SecretString:NODEJS_LAYER}}"
@@ -825,7 +825,7 @@ Resources:
       FunctionName: !Sub "${AWS::StackName}-AuthorizationFunctionTS"
       CodeUri: ../../lambdas
       Handler: authorization-handler.lambdaHandler
-      Runtime: nodejs18.x
+      Runtime: nodejs22.x
       Layers:
         - !Sub
           - "{{resolve:secretsmanager:${SecretArn}:SecretString:NODEJS_LAYER}}"
@@ -954,7 +954,7 @@ Resources:
       FunctionName: !Sub "${AWS::StackName}-AccessTokenFunctionTS"
       Handler: access-token-handler.lambdaHandler
       CodeUri: ../../lambdas
-      Runtime: nodejs18.x
+      Runtime: nodejs22.x
       Layers:
         - !Sub
           - "{{resolve:secretsmanager:${SecretArn}:SecretString:NODEJS_LAYER}}"
@@ -1582,7 +1582,7 @@ Resources:
       FunctionName: !Sub "${AWS::StackName}-CreateAuthCodeFunction"
       CodeUri: ../../lambdas
       Handler: create-auth-code-handler.lambdaHandler
-      Runtime: nodejs18.x
+      Runtime: nodejs22.x
       Layers:
         - !Sub
           - "{{resolve:secretsmanager:${SecretArn}:SecretString:NODEJS_LAYER}}"
