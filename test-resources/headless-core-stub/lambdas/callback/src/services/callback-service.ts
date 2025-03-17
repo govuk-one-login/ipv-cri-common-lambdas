@@ -18,7 +18,9 @@ export class CallBackService {
             IndexName: "authorizationCode-index",
             KeyConditionExpression: "authorizationCode = :authorizationCode",
             ExpressionAttributeValues: {
-                ":authorizationCode": code,
+                ":authorizationCode": {
+                    S: code,
+                },
             },
         };
 
