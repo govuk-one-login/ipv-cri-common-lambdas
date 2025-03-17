@@ -8,8 +8,10 @@ import { PrivateJwtParams } from "./services/types";
 import { buildPrivateKeyJwtParams, msToSeconds } from "./services/crypto-service";
 import { ClientConfigKey } from "./services/config-keys";
 import { createClient, AwsClientType } from "./services/aws-client-factory";
-import { logger } from "./services/power-tool";
 import { errorPayload } from "./services/errors";
+import { Logger } from "@aws-lambda-powertools/logger";
+
+const logger = new Logger();
 
 export class CallbackLambdaHandler implements LambdaInterface {
     constructor(
