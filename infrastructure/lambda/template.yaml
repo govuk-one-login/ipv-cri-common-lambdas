@@ -1673,6 +1673,72 @@ Resources:
       LogGroupName: !Sub /aws/apigateway/${AWS::StackName}-${PreMergeDevOnlyApi}-private-AccessLogs
       RetentionInDays: 30
 
+
+  ##################################################################################################
+  # ipv-core-stub-aws-headless clientId configuration
+  #################################################################################################
+  IPVCoreStubAwsHeadlessAudienceParameter:
+    Condition: IsStubEnvironment
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-headless/jwtAuthentication/audience"
+      Type: String
+      Value:
+        !FindInMap [CriAudienceMapping, !Ref CriIdentifier, !Ref Environment]
+
+  IPVCoreStubAwsHeadlessPublicSigningJwkBase64Parameter:
+    Condition: IsStubEnvironment
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-headless/jwtAuthentication/publicSigningJwkBase64"
+      Type: String
+      Value: "ewogICAgImt0eSI6ICJFQyIsCiAgICAidXNlIjogInNpZyIsCiAgICAiY3J2IjogIlAtMjU2IiwKICAgICJraWQiOiAiaXB2LWNvcmUtc3R1Yi0yLWZyb20tbWtqd2sub3JnIiwKICAgICJ4IjogImszOXVLYWNTdWtRQnJNWnJIRFRCVVpzbGl2cFhLRE5aVGc2aW5DSHdyTGMiLAogICAgInkiOiAiOEY4TG5RN3dHOWh4c1Q0YXgwQXR5N2lNR0l5aVlfWUdwM19xSVp6S28xQSIsCiAgICAiYWxnIjogIkVTMjU2Igp9"
+
+  IPVCoreStubAwsHeadlessIssuerParameter:
+    Condition: IsStubEnvironment
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-headless/jwtAuthentication/issuer"
+      Type: String
+      Value: !Join
+        - ''
+        - - 'https://test-resources.'
+          - !Select
+            - 1
+            - !Split
+              - 'https://'
+              - !FindInMap
+                - VerifiableCredentialIssuerMapping
+                - !Ref CriIdentifier
+                - !Ref Environment
+
+  IPVCoreStubAwsHeadlessRedirectURIParameter:
+    Condition: IsStubEnvironment
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-headless/jwtAuthentication/redirectUri"
+      Type: String
+      Value: !Join
+        - ''
+        - - 'https://test-resources.'
+          - !Select
+            - 1
+            - !Split
+              - 'https://'
+              - !FindInMap
+                - VerifiableCredentialIssuerMapping
+                - !Ref CriIdentifier
+                - !Ref Environment
+          - '/callback'
+
+  IPVCoreStubAwsHeadlessAuthenticationAlgParameter:
+    Condition: IsStubEnvironment
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-headless/jwtAuthentication/authenticationAlg"
+      Type: String
+      Value: ES256
+
   ##################################################################################################
   # ipv-core-stub-aws-prod_3rdparty clientId configuration
   #################################################################################################
