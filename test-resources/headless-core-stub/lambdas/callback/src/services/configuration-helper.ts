@@ -1,10 +1,11 @@
 import { getParametersByName } from "@aws-lambda-powertools/parameters/ssm";
 import { ClientConfigKey, CommonConfigKey } from "./config-keys";
 
-const criIdentifier = process.env.CRI_IDENTIFIER || "";
-const commonParameterPrefix = process.env.AWS_STACK_NAME || "";
+const commonParameterPrefix = process.env.AWS_STACK_NAME || "common-cri-api";
+const testResourcesParameterPrefix = process.env.TEST_RESOURCES_STACK_NAME || "test-resources";
+
 export enum ConfigSecretKey {
-    STUB_PRIVATE_SIGNING_KEY = "test/privateSigningKey", // pragma: allowlist secret
+    STUB_PRIVATE_SIGNING_KEY = "ipv-core-stub-aws-headless/privateSigningKey", // pragma: allowlist secret
 }
 
 export class ConfigurationHelper {
@@ -31,7 +32,7 @@ export class ConfigurationHelper {
     public getParametersWithoutClientId = async () => {
         const parameters = [
             { key: CommonConfigKey.SESSION_TABLE_NAME, prefix: `/${commonParameterPrefix}` },
-            { key: ConfigSecretKey.STUB_PRIVATE_SIGNING_KEY, prefix: `/${criIdentifier}` },
+            { key: ConfigSecretKey.STUB_PRIVATE_SIGNING_KEY, prefix: `/${testResourcesParameterPrefix}` },
         ];
         return this.getParametersValues(parameters);
     };

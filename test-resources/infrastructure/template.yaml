@@ -104,6 +104,7 @@ Resources:
         Variables:
           CRI_IDENTIFIER: !Sub "${CriIdentifier}"
           AWS_STACK_NAME: !Ref CommonStackName
+          testResourcesParameterPrefix: "test-resources"
       Policies:
         - DynamoDBReadPolicy:
             TableName: !Sub "{{resolve:ssm:/${CommonStackName}/SessionTableName}}"
@@ -116,7 +117,7 @@ Resources:
               Resource:
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${CommonStackName}/clients/ipv-core-stub-aws-build/jwtAuthentication/*"
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${CommonStackName}/SessionTableName"
-                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${CriIdentifier}/test/privateSigningKey"
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/test-resources/ipv-core-stub-aws-headless/privateSigningKey"
 
   CallbackFunctionLogGroup:
     Type: AWS::Logs::LogGroup
