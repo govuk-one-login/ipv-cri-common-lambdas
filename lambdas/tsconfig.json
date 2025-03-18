@@ -18,6 +18,5 @@
     "include": [
         "src",
         "tests",
-        "../test-resources/headless-core-stub/lambdas/callback/src/services/aws-client-factory.ts"
     ]
 }

@@ -1,52 +1,44 @@
-import { QueryCommandInput } from "@aws-sdk/client-dynamodb";
+import { DynamoDBClient, QueryCommand } from "@aws-sdk/client-dynamodb";
 import { SessionItem } from "./session-item";
-import { DynamoDBDocument } from "@aws-sdk/lib-dynamodb";
-import { InvalidAccessTokenError, SessionExpiredError, AuthorizationCodeExpiredError } from "./errors";
-import { ConfigurationHelper } from "./configuration-helper";
+
+const dynamoDbClient = new DynamoDBClient();
 
 export class CallBackService {
-    constructor(
-        private readonly dynamoDbClient: DynamoDBDocument,
-        private readonly configHelper: ConfigurationHelper,
-    ) {}
     public async getSessionByAuthorizationCode(sessionTable: string, code: string): Promise<SessionItem> {
-        const params: QueryCommandInput = {
-            TableName: sessionTable,
-            IndexName: "authorizationCode-index",
-            KeyConditionExpression: "authorizationCode = :authorizationCode",
-            ExpressionAttributeValues: {
-                ":authorizationCode": code,
-            },
+        const sessionItemQuery = await dynamoDbClient.send(
+            new QueryCommand({
+                TableName: sessionTable,
+                IndexName: "authorizationCode-index",
+                KeyConditionExpression: "authorizationCode = :authorizationCode",
+                ExpressionAttributeValues: {
+                    ":authorizationCode": {
+                        S: code as string,
+                    },
+                },
+            }),
+        );
+
+        if (sessionItemQuery.Count == 0 || !sessionItemQuery.Items) {
+            throw new Error("No session item found for provided authorizationCode");
+        }
+
+        const sessionItem = sessionItemQuery.Items[0];
+
+        return {
+            sessionId: sessionItem.sessionId.S || "",
+            clientId: sessionItem.clientId.S || "",
+            authorizationCode: sessionItem.authorizationCode.S || "",
+            redirectUri: sessionItem.redirectUri.S || "",
         };
-
-        const sessionItem = await this.dynamoDbClient.query(params);
-
-        if (!sessionItem?.Items || sessionItem?.Items?.length !== 1) {
-            throw new InvalidAccessTokenError();
-        }
-
-        if (this.hasDateExpired(sessionItem.Items[0].expiryDate)) {
-            throw new SessionExpiredError();
-        }
-
-        if (this.hasDateExpired(sessionItem.Items[0].authorizationCodeExpiryDate)) {
-            throw new AuthorizationCodeExpiredError();
-        }
-
-        return sessionItem.Items[0] as SessionItem;
     }
 
-    private hasDateExpired(dateToCheck: number): boolean {
-        return dateToCheck < Math.floor(Date.now() / 1000);
-    }
-
-    public async getToken(tokenUrl: string, params: string) {
+    public async getToken(tokenUrl: string, body: string) {
         return await fetch(tokenUrl, {
             method: "POST",
             headers: {
-                "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+                "Content-Type": "application/x-www-form-urlencoded",
             },
-            body: params,
+            body: body,
         });
     }
 

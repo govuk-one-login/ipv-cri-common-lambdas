@@ -1,11 +1,6 @@
 export interface SessionItem {
-    expiryDate: number;
     sessionId: string;
     clientId: string;
-    clientSessionId: string;
-    authorizationCode?: string;
-    authorizationCodeExpiryDate: number;
+    authorizationCode: string;
     redirectUri: string;
-    accessToken: string;
-    accessTokenExpiryDate: number;
 }
