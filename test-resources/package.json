@@ -7,12 +7,12 @@
     "scripts": {
         "lint": "eslint .",
         "lint:fix": "eslint . --fix",
-        "unit": "export POWERTOOLS_DEV=true && jest --silent",
-        "unit:logs": "jest",
+        "sam:build": "npm run sam:validate && sam build --template infrastructure/template.yaml --cached --parallel",
+        "sam:validate": "cd infrastructure && sam validate && sam validate --lint",
         "test": "npm run unit --",
         "test:coverage": "npm run unit -- --coverage",
-        "sam:validate": "cd infrastructure && sam validate && sam validate --lint",
-        "sam:build": "npm run sam:validate && sam build --template infrastructure/template.yaml --cached --parallel"
+        "unit": "export POWERTOOLS_DEV=true && jest --silent",
+        "unit:logs": "jest"
     },
     "dependencies": {
         "@aws-lambda-powertools/commons": "2.16.0",
@@ -22,9 +22,13 @@
         "@aws-sdk/client-ssm": "3.772.0",
         "@govuk-one-login/data-vocab": "1.9.3",
         "@govuk-one-login/data-vocab-schemas": "1.9.3",
+        "@middy/core": "4.2.8",
+        "ajv": "8.17.1",
+        "ajv-formats": "3.0.1",
+        "aws-sdk-client-mock": "4.1.0",
         "ecdsa-sig-formatter": "1.0.11",
-        "jose": "5.10.0",
-        "esbuild": "0.25.1"
+        "esbuild": "0.25.1",
+        "jose": "5.10.0"
     },
     "devDependencies": {
         "@types/aws-lambda": "^8.10.145",
