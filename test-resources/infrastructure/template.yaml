@@ -13,6 +13,10 @@ Parameters:
     Description: "The unique credential issuer identifier"
     Type: AWS::SSM::Parameter::Value<String>
     Default: "/common-cri-parameters/CriIdentifier"
+  CommonLambdasStackName:
+    Description: "The stack containing the common lambdas"
+    Type: String
+    Default: common-cri-api
   TxmaStackName:
     Description: "The stack containing the TXMA infrastructure"
     Type: String
@@ -50,7 +54,7 @@ Globals:
   Function:
     CodeUri: ..
     Timeout: 30
-    Runtime: nodejs18.x
+    Runtime: nodejs22.x
     Architectures: [arm64]
     PermissionsBoundary:
       !If [UsePermissionsBoundary, !Ref PermissionsBoundary, !Ref AWS::NoValue]
@@ -136,6 +140,51 @@ Resources:
     Properties:
       LogGroupName: !Sub "/aws/lambda/${DequeueFunction}"
       RetentionInDays: 30
+
+  StartFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Sourcemap: true
+    Properties:
+      Handler: headless-core-stub/lambdas/start/src/start-handler.lambdaHandler
+      CodeSigningConfigArn:
+        !If [EnforceCodeSigning, !Ref CodeSigningConfigArn, !Ref AWS::NoValue]
+      Environment:
+        Variables:
+          POWERTOOLS_SERVICE_NAME: HeadlessCoreStubStartFunction
+          DECRYPTION_KEY_ID: !ImportValue core-infrastructure-CriDecryptionKey1Id
+          COMMON_LAMBDAS_STACK_NAME: !Ref CommonLambdasStackName
+      Policies:
+        - Statement:
+            Effect: Allow
+            Action: 'kms:GetPublicKey'
+            Resource: !Sub 'arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/*'
+        - Statement:
+            Effect: Allow
+            Action: 'ssm:GetParameter'
+            Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/test-resources/ipv-core-stub-aws-headless/privateSigningKey"
+        - Statement:
+            Effect: Allow
+            Action: 'ssm:GetParameter'
+            Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${CommonLambdasStackName}/clients/ipv-core-stub-aws-headless/jwtAuthentication/issuer"
+        - Statement:
+            Effect: Allow
+            Action: 'ssm:GetParameter'
+            Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${CommonLambdasStackName}/clients/ipv-core-stub-aws-headless/jwtAuthentication/redirectUri"
+  StartFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${StartFunction}"
+      RetentionInDays: 30
+
+  StartFunctionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref StartFunction.Alias
+      Principal: apigateway.amazonaws.com
 
   AuditEventsTable:
     Type: AWS::DynamoDB::Table
