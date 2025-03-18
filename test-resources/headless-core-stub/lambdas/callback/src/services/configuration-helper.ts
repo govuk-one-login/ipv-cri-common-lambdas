@@ -1,5 +1,5 @@
 import { getParametersByName } from "@aws-lambda-powertools/parameters/ssm";
-import { ClientConfigKey, CommonConfigKey } from "./config-keys";
+import { ClientConfigKey } from "./config-keys";
 
 const commonParameterPrefix = process.env.AWS_STACK_NAME || "common-cri-api";
 const testResourcesParameterPrefix = process.env.TEST_RESOURCES_STACK_NAME || "test-resources";
@@ -11,7 +11,7 @@ export enum ConfigSecretKey {
 export class ConfigurationHelper {
     constructor() {}
 
-    public getParameterWithClientId = async (clientId: string) => {
+    public getParameters = async (clientId: string) => {
         const parameters = [
             {
                 key: ClientConfigKey.JWT_AUDIENCE,
@@ -25,14 +25,10 @@ export class ConfigurationHelper {
                 key: ClientConfigKey.JWT_REDIRECT_URI,
                 prefix: `/${commonParameterPrefix}/clients/${clientId}/jwtAuthentication`,
             },
-        ];
-        return this.getParametersValues(parameters);
-    };
-
-    public getParametersWithoutClientId = async () => {
-        const parameters = [
-            { key: CommonConfigKey.SESSION_TABLE_NAME, prefix: `/${commonParameterPrefix}` },
-            { key: ConfigSecretKey.STUB_PRIVATE_SIGNING_KEY, prefix: `/${testResourcesParameterPrefix}` },
+            {
+                key: ConfigSecretKey.STUB_PRIVATE_SIGNING_KEY,
+                prefix: `/${testResourcesParameterPrefix}`,
+            },
         ];
         return this.getParametersValues(parameters);
     };

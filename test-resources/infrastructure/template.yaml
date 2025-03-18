@@ -105,6 +105,7 @@ Resources:
           CRI_IDENTIFIER: !Sub "${CriIdentifier}"
           AWS_STACK_NAME: !Ref CommonStackName
           testResourcesParameterPrefix: "test-resources"
+          SessionTable: !Sub session-${CommonStackName}
       Policies:
         - DynamoDBReadPolicy:
             TableName: !Sub "{{resolve:ssm:/${CommonStackName}/SessionTableName}}"

@@ -1,38 +1,48 @@
-import type { LambdaInterface } from "@aws-lambda-powertools/commons/types";
+import { LambdaInterface } from "@aws-lambda-powertools/commons/types";
 import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from "aws-lambda";
+import { Logger } from "@aws-lambda-powertools/logger";
+import { v4 as uuidv4 } from "uuid";
+import { JWTPayload } from "jose";
 import { ConfigSecretKey, ConfigurationHelper } from "./services/configuration-helper";
 import { CallBackService } from "./services/callback-service";
-import { JWTPayload } from "jose";
-import { v4 as uuidv4 } from "uuid";
 import { PrivateJwtParams } from "./services/types";
 import { buildPrivateKeyJwtParams, msToSeconds } from "./services/crypto-service";
 import { ClientConfigKey } from "./services/config-keys";
-import { createClient, AwsClientType } from "./services/aws-client-factory";
+import { AwsClientType, createClient } from "./services/aws-client-factory";
 import { errorPayload } from "./services/errors";
-import { Logger } from "@aws-lambda-powertools/logger";
 
 const logger = new Logger();
+const dynamoDbClient = createClient(AwsClientType.DYNAMO);
+const configurationHelper = new ConfigurationHelper();
+const callbackService = new CallBackService(dynamoDbClient, configurationHelper);
 
-export class CallbackLambdaHandler implements LambdaInterface {
-    constructor(
-        private readonly configurationHelper: ConfigurationHelper,
-        private readonly callBackService: CallBackService,
-    ) {}
-    public async handler(event: APIGatewayProxyEvent, context: Context): Promise<APIGatewayProxyResult> {
+const sessionTableName = process.env.SessionTable || "common-cri-api-session";
+
+class CallbackLambdaHandler implements LambdaInterface {
+    async handler(event: APIGatewayProxyEvent, context: Context): Promise<APIGatewayProxyResult> {
+        const authorizationCode = event.queryStringParameters?.authorizationCode;
+
+        if (!authorizationCode) {
+            return this.badRequestResponse("Missing authorization code");
+        }
+
+        logger.info("Received authorizationCode: " + authorizationCode);
+
         try {
-            const authorizationCode = event.queryStringParameters?.["authorizationCode"] as string;
-            logger.info(`Receiving authorizationCode from CRI front-end ${authorizationCode}`);
+            logger.info("Fetching session item...");
+            const sessionItem = await callbackService.getSessionByAuthorizationCode(
+                sessionTableName,
+                authorizationCode,
+            );
 
-            const sessionItem = await this.callBackService.getSessionByAuthorizationCode(authorizationCode);
-            const paramClientConfig = await this.configurationHelper.getParameterWithClientId(sessionItem.clientId);
-            const paramConfig = await configurationHelper.getParametersWithoutClientId();
+            logger.info("Fetching SSM parameters");
+            const paramClientConfig = await configurationHelper.getParameters(sessionItem.clientId);
 
-            const privateJwtKey = paramConfig[ConfigSecretKey.STUB_PRIVATE_SIGNING_KEY];
+            const privateJwtKey = paramClientConfig[ConfigSecretKey.STUB_PRIVATE_SIGNING_KEY];
             const audience = paramClientConfig[ClientConfigKey.JWT_AUDIENCE];
 
-            logger.info("Generating privateJwtKey request");
-
-            const privateJwtParams = await this.getPrivateJwtRequestParams(
+            logger.info("Generating private JWT parameters...");
+            const privateJwtParams = await this.generatePrivateJwtParams(
                 sessionItem.clientId,
                 authorizationCode,
                 sessionItem.redirectUri,
@@ -40,28 +50,50 @@ export class CallbackLambdaHandler implements LambdaInterface {
                 paramClientConfig,
             );
 
-            const audienceApi = audience.replace("review-", "api.review-");
+            const audienceApi = this.getApiAudience(audience);
+            logger.info("Audience is " + audienceApi);
 
-            logger.info(`Calling CRI Api token endpoint using ${privateJwtParams}`);
-            const token = await this.callBackService.getToken(`${audienceApi}/token`, privateJwtParams);
-            logger.info(`Retrieved token: ${JSON.stringify(token)}`);
+            const tokenEndpoint = `${audienceApi}/token-ts`;
 
-            const vcResponse = await this.callBackService.issueCredential(
-                `${audienceApi}/credential/issue`,
-                token.access_token,
-            );
+            logger.info("Calling token endpoint " + tokenEndpoint + " with body: " + privateJwtParams);
 
-            logger.info(`Retrieved VC: ${JSON.stringify(vcResponse)}`);
+            const tokenResponse = await callbackService.getToken(tokenEndpoint, privateJwtParams);
 
-            return {
-                statusCode: vcResponse.status,
-                body: await vcResponse.text(),
-            };
-        } catch (err: unknown) {
-            return errorPayload(err as Error, logger, context.functionName);
+            if (!tokenResponse.ok) {
+                const tokenResponseBody = await tokenResponse.text();
+                this.logApiError(tokenEndpoint, tokenResponse.status, tokenResponseBody);
+                return this.returnAPIResponse(tokenResponse.status, tokenResponseBody);
+            }
+
+            const tokenBody = await tokenResponse.json();
+
+            const credentialEndpoint = `${audienceApi}/credential/issue`;
+            logger.info("Calling " + credentialEndpoint);
+            const credential = await callbackService.issueCredential(credentialEndpoint, tokenBody.access_token);
+            const credentialResponseBody = await credential.text();
+
+            if (!credential.ok) {
+                this.logApiError(credentialEndpoint, credential.status, credentialResponseBody);
+            }
+
+            return this.returnAPIResponse(credential.status, credentialResponseBody);
+        } catch (error) {
+            return errorPayload(error as Error, logger, context.functionName);
         }
     }
-    public async getPrivateJwtRequestParams(
+
+    private logApiError(endpoint: string, status: number, body: string) {
+        logger.info("Request to " + endpoint + " failed with status " + status + " body: " + body);
+    }
+
+    private returnAPIResponse(status: number, body: string) {
+        return {
+            statusCode: status,
+            body: body,
+        };
+    }
+
+    private async generatePrivateJwtParams(
         clientId: string,
         authorizationCode: string,
         redirectUrl: string,
@@ -69,7 +101,6 @@ export class CallbackLambdaHandler implements LambdaInterface {
         clientConfig: Record<string, string>,
     ): Promise<string> {
         const audience = clientConfig[ClientConfigKey.JWT_AUDIENCE];
-
         const customClaims: JWTPayload = {
             iss: clientId,
             sub: clientId,
@@ -85,11 +116,23 @@ export class CallbackLambdaHandler implements LambdaInterface {
             privateSigningKey: JSON.parse(privateJwtKey),
         };
 
-        return await buildPrivateKeyJwtParams(jwtParams);
+        return buildPrivateKeyJwtParams(jwtParams);
+    }
+
+    private getApiAudience(audience: string): string {
+        if (audience.includes("review")) {
+            return audience.replace("review-", "api.review-");
+        }
+        return audience;
+    }
+
+    private badRequestResponse(message: string): APIGatewayProxyResult {
+        return {
+            statusCode: 400,
+            body: JSON.stringify({ error: message }),
+        };
     }
 }
-const dynamoDbClient = createClient(AwsClientType.DYNAMO);
-const configurationHelper = new ConfigurationHelper();
-const callBackService = new CallBackService(dynamoDbClient, configurationHelper);
-const handlerClass = new CallbackLambdaHandler(configurationHelper, callBackService);
+
+const handlerClass = new CallbackLambdaHandler();
 export const lambdaHandler = handlerClass.handler.bind(handlerClass);
