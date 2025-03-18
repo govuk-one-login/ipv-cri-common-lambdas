@@ -4,10 +4,10 @@
     "scripts": {
         "lint": "eslint .",
         "lint:fix": "eslint . --fix",
-        "unit": "jest",
+        "unit": "export POWERTOOLS_DEV=true && jest --silent",
+        "unit:logs": "jest --silent --runInBand",
         "test": "npm run unit --",
         "compile": "tsc"
     },
-    "dependencies": {},
-    "devDependencies": {}
+    "dependencies": {}
 }

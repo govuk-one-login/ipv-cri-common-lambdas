@@ -1,7 +1,7 @@
 import { LambdaInterface } from "@aws-lambda-powertools/commons/types";
 import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from "aws-lambda";
 import { Logger } from "@aws-lambda-powertools/logger";
-import { ConfigurationHelper } from "./services/configuration-helper";
+import { ConfigurationHelper } from "../../../utils/src/services/configuration-helper";
 import { CallBackService } from "./services/callback-service";
 import { generatePrivateJwtParams } from "./services/private-key-jwt-helper";
 import { JWK } from "jose";
