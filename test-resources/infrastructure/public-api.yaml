@@ -69,7 +69,34 @@ paths:
             statusCode: 200
             responseTemplates:
               application/json: |
-                $input.json('$.Items')
+                $input.json('$.Items')           
+  /start:
+    post:
+      security:
+        - sigv4Reference: [ ]
+      description: Headless core stub start. Used for testing purposes only.
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+        400:
+          description: Bad request
+        500:
+          description: Internal server error
+      x-amazon-apigateway-request-validator: "Validate both"
+      x-amazon-apigateway-integration:
+        httpMethod: "POST"
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${StartFunction.Arn}:live/invocations
+        responses:
+          default:
+            statusCode: "200"
+        passthroughBehavior: "when_no_match"
+        contentHandling: "CONVERT_TO_TEXT"
+        type: "aws_proxy"
 
 x-amazon-apigateway-request-validators:
   Validate both:

@@ -5,7 +5,7 @@ export default {
     clearMocks: true,
     modulePaths: ["<rootDir>/src"],
     collectCoverageFrom: ["<rootDir>/src/**/*"],
-    testMatch: ["<rootDir>/tests/*.test.ts"],
+    testMatch: ["<rootDir>/tests/**/*.test.ts"],
     coverageThreshold: {
         global: {
             statements: 100,
