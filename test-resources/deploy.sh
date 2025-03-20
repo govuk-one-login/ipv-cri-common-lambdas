@@ -25,6 +25,6 @@ sam deploy --stack-name "$stack_name" \
   --tags \
   cri:component=ipv-cri-common-test-harness \
   cri:deployment-source=manual \
-  cri:stack-type=dev \
+  cri:stack-type=localdev \
   --parameter-overrides \
-  Environment=dev 
+  Environment=localdev 
