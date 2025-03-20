@@ -3,6 +3,12 @@ Transform:
   - AWS::Serverless-2016-10-31
   - AWS::LanguageExtensions
 Description: "Digital Identity IPV CRI common API"
+Metadata:
+  cfn-lint:
+    config:
+      ignore_checks:
+        - W8003
+        - E3031
 
 Parameters:
   CodeSigningConfigArn:
@@ -36,6 +42,14 @@ Parameters:
     Description: "The stack containing the TXMA infrastructure"
     Type: String
     Default: txma-infrastructure
+  PrimaryActiveSigningKey:
+    Description: "Alias for Current Encryption Key"
+    Type: String
+    Default: "dev_identity_signing_key"
+  SecondaryActiveSigningKey:
+    Description: "Alias for Previous Encryption Key"
+    Type: String
+    Default: "dev_identity_signing_key_previous"
 
 Conditions:
   UseCodeSigningConfigArn:
@@ -75,7 +89,7 @@ Conditions:
           - !Ref PermissionsBoundary
           - "none"
   IsCSLSDisabled: !Not
-      - !Equals [!Ref Environment, "dev"]
+    - !Equals [!Ref Environment, "dev"]
   UseNewCSLSDestinationArn: !Or
     - !Equals [!Ref CriIdentifier, "di-ipv-cri-kbv-hmrc-api"]
     - !Equals [!Ref CriIdentifier, "di-ipv-cri-check-hmrc-api"]
@@ -90,9 +104,9 @@ Globals:
       SubnetIds: !If
         - IsDevPlatformDeploy
         - [
-            !ImportValue cri-vpc-PrivateSubnetIdA,
-            !ImportValue cri-vpc-PrivateSubnetIdB,
-          ]
+          !ImportValue cri-vpc-PrivateSubnetIdA,
+          !ImportValue cri-vpc-PrivateSubnetIdB,
+        ]
         - !Split [",", !ImportValue cri-vpc-PrivateSubnets]
     PermissionsBoundary: !If
       - UsePermissionsBoundary
@@ -156,6 +170,10 @@ Globals:
                 dynatraceSecretArn,
               ]
         DT_OPEN_TELEMETRY_ENABLE_INTEGRATION: "true"
+        ENV_VAR_FEATURE_FLAG_KEY_ROTATION: !FindInMap [ KeyRotationMapping, !Ref CriIdentifier, !Ref Environment]
+#        CLIENT_JAR_KMS_ENCRYPTION_KEY_ALIAS_PRIMARY: !ImportValue  key-rotation-${active-signing-key}
+#        CLIENT_JAR_KMS_ENCRYPTION_KEY_ALIAS_SECONDARY:  !ImportValue  key-rotation-${active-signing-key}
+
 
 Mappings:
 
@@ -281,10 +299,10 @@ Mappings:
   # Permitted values : PublishedVersions or None
   JavaSnapStartMapping:
     di-ipv-cri-address-api:
-      dev: PublishedVersions
-      build: PublishedVersions
-      staging: PublishedVersions
-      integration: PublishedVersions
+      dev: None
+      build: None
+      staging: None
+      integration: None
       production: None
     di-ipv-cri-fraud-api:
       dev: None
@@ -476,21 +494,21 @@ Mappings:
 
   IPVCoreStubAwsProdRedirectURIMapping:
     Environment:
-      dev: "https://cri.core.stubs.account.gov.uk/callback"
+      dev: "http://localhost:8085/callback"
       build: "https://cri.core.stubs.account.gov.uk/callback"
       staging: "https://cri.core.stubs.account.gov.uk/callback"
       integration: "https://cri.core.stubs.account.gov.uk/callback"
 
   IPVCoreStubAwsBuildRedirectURIMapping:
     Environment:
-      dev: "https://cri.core.build.stubs.account.gov.uk/callback"
+      dev: "http://localhost:8085/callback"
       build: "https://cri.core.build.stubs.account.gov.uk/callback"
       staging: "https://cri.core.build.stubs.account.gov.uk/callback"
       integration: "https://cri.core.build.stubs.account.gov.uk/callback"
 
   IPVCoreStubRedirectURIMapping:
     Environment:
-      dev: "https://di-ipv-core-stub.london.cloudapps.digital/callback"
+      dev: "http://localhost:8085/callback"
       build: "https://di-ipv-core-stub.london.cloudapps.digital/callback"
       staging: "https://di-ipv-core-stub.london.cloudapps.digital/callback"
       integration: "https://di-ipv-core-stub.london.cloudapps.digital/callback"
@@ -576,6 +594,50 @@ Mappings:
       staging: "https://review-hc.staging.account.gov.uk"
       integration: "https://review-hc.integration.account.gov.uk"
       production: "https://review-hc.account.gov.uk"
+
+  KeyRotationMapping:
+      di-ipv-cri-address-api:
+        dev: "false"
+        build: "false"
+        staging: "false"
+        integration: "false"
+        production: "false"
+      di-ipv-cri-fraud-api:
+        dev: "false"
+        build: "false"
+        staging: "false"
+        integration: "false"
+        production: "false"
+      di-ipv-cri-kbv-api:
+        dev: "false"
+        build: "false"
+        staging: "false"
+        integration: "false"
+        production: "false"
+      di-ipv-cri-dl-api:
+        dev: "false"
+        build: "false"
+        staging: "false"
+        integration: "false"
+        production: "false"
+      di-ipv-cri-passport-api:
+        dev: "true"
+        build: "false"
+        staging: "false"
+        integration: "false"
+        production: "false"
+      di-ipv-cri-kbv-hmrc-api:
+        dev: "false"
+        build: "false"
+        staging: "false"
+        integration: "false"
+        production: "false"
+      di-ipv-cri-check-hmrc-api:
+        dev: "false"
+        build: "false"
+        staging: "false"
+        integration: "false"
+        production: "false"
 
 Resources:
 
@@ -1028,7 +1090,7 @@ Resources:
       DestinationArn: !If
         - UseNewCSLSDestinationArn
         - "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2"
-        - "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython" 
+        - "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython"
       FilterPattern: ""
       LogGroupName: !Ref AccessTokenFunctionLogGroup
 
@@ -1039,7 +1101,7 @@ Resources:
       DestinationArn: !If
         - UseNewCSLSDestinationArn
         - "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2"
-        - "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython" 
+        - "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython"
       FilterPattern: ""
       LogGroupName: !Ref AccessTokenTSFunctionLogGroup
 
@@ -1707,7 +1769,7 @@ Resources:
     Properties:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod_3rdparty/jwtAuthentication/redirectUri"
       Type: String
-      Value: "https://cri-3rdparty.core.stubs.account.gov.uk/callback"
+      Value: "http://localhost:8085/callback"
 
   IPVCoreStubAwsProd3rdPartyAuthenticationAlgParameter:
     Condition: IsStubEnvironment
@@ -1751,7 +1813,7 @@ Resources:
     Properties:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build_3rdparty/jwtAuthentication/redirectUri"
       Type: String
-      Value: "https://cri-3rdparty.core.build.stubs.account.gov.uk/callback"
+      Value: "http://localhost:8085/callback"
 
   IPVCoreStubAwsBuild3rdPartyAuthenticationAlgParameter:
     Condition: IsStubEnvironment
