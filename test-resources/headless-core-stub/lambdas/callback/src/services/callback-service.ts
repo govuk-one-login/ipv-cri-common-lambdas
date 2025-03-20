@@ -46,7 +46,6 @@ export class CallBackService {
         return await fetch(credentialUrl, {
             method: "POST",
             headers: {
-                "Content-Type": "application/json",
                 Authorization: `Bearer ${accessToken}`,
             },
         });

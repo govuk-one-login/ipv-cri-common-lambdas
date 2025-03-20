@@ -14,7 +14,7 @@ const callbackService = new CallBackService();
 const sessionTableName = process.env.SessionTable || "session-common-cri-api";
 
 export class CallbackLambdaHandler implements LambdaInterface {
-    async handler(event: APIGatewayProxyEvent, context: Context): Promise<APIGatewayProxyResult> {
+    async handler(event: APIGatewayProxyEvent, _context: Context): Promise<APIGatewayProxyResult> {
         const authorizationCode = event.queryStringParameters?.authorizationCode;
 
         if (!authorizationCode) {
@@ -47,7 +47,7 @@ export class CallbackLambdaHandler implements LambdaInterface {
             const audienceApi = this.formatAudience(audience);
             logger.info("Audience is " + audienceApi);
 
-            const tokenEndpoint = `${audienceApi}/token-ts`;
+            const tokenEndpoint = `${audienceApi}/token`;
 
             logger.info("Calling token endpoint " + tokenEndpoint + " with body: " + privateJwtParams);
 
@@ -59,21 +59,23 @@ export class CallbackLambdaHandler implements LambdaInterface {
                 return this.respondWith(tokenResponse.status, tokenResponseBody);
             }
 
-            // temp
-            return this.respondWith(200, "OK");
+            logger.info("Successfully called /token endpoint");
 
-            // const tokenBody = await tokenResponse.json();
-            //
-            // const credentialEndpoint = `${audienceApi}/credential/issue`;
-            // logger.info("Calling " + credentialEndpoint);
-            // const credential = await callbackService.issueCredential(credentialEndpoint, tokenBody.access_token);
-            // const credentialResponseBody = await credential.text();
-            //
-            // if (!credential.ok) {
-            //     this.logApiError(credentialEndpoint, credential.status, credentialResponseBody);
-            // }
-            //
-            // return this.respondWith(credential.status, credentialResponseBody);
+            const tokenBody = await tokenResponse.json();
+            const credentialEndpoint = `${audienceApi}/credential/issue`;
+
+            logger.info("Calling " + credentialEndpoint);
+
+            const credential = await callbackService.issueCredential(credentialEndpoint, tokenBody.access_token);
+            const credentialResponseBody = await credential.text();
+
+            if (!credential.ok) {
+                this.logApiError(credentialEndpoint, credential.status, credentialResponseBody);
+            }
+
+            logger.info("Successfully called /credential/issue endpoint");
+
+            return this.respondWith(credential.status, credentialResponseBody);
         } catch (error: unknown) {
             const err = error as Error;
             logger.error(err.message);
