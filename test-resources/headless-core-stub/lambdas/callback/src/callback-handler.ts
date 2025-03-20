@@ -59,18 +59,21 @@ export class CallbackLambdaHandler implements LambdaInterface {
                 return this.respondWith(tokenResponse.status, tokenResponseBody);
             }
 
-            const tokenBody = await tokenResponse.json();
+            // temp
+            return this.respondWith(200, "OK");
 
-            const credentialEndpoint = `${audienceApi}/credential/issue`;
-            logger.info("Calling " + credentialEndpoint);
-            const credential = await callbackService.issueCredential(credentialEndpoint, tokenBody.access_token);
-            const credentialResponseBody = await credential.text();
-
-            if (!credential.ok) {
-                this.logApiError(credentialEndpoint, credential.status, credentialResponseBody);
-            }
-
-            return this.respondWith(credential.status, credentialResponseBody);
+            // const tokenBody = await tokenResponse.json();
+            //
+            // const credentialEndpoint = `${audienceApi}/credential/issue`;
+            // logger.info("Calling " + credentialEndpoint);
+            // const credential = await callbackService.issueCredential(credentialEndpoint, tokenBody.access_token);
+            // const credentialResponseBody = await credential.text();
+            //
+            // if (!credential.ok) {
+            //     this.logApiError(credentialEndpoint, credential.status, credentialResponseBody);
+            // }
+            //
+            // return this.respondWith(credential.status, credentialResponseBody);
         } catch (error: unknown) {
             const err = error as Error;
             logger.error(err.message);
