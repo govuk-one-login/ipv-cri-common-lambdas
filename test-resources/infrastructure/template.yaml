@@ -97,6 +97,12 @@ Resources:
       BuildProperties:
         Sourcemap: true
     Properties:
+      VpcConfig:
+        SecurityGroupIds:
+          - !ImportValue cri-vpc-AWSServicesEndpointSecurityGroupId
+        SubnetIds:
+          - !ImportValue cri-vpc-ProtectedSubnetIdA
+          - !ImportValue cri-vpc-ProtectedSubnetIdB
       Handler: headless-core-stub/lambdas/callback/src/callback-handler.lambdaHandler
       CodeSigningConfigArn:
         !If [EnforceCodeSigning, !Ref CodeSigningConfigArn, !Ref AWS::NoValue]
