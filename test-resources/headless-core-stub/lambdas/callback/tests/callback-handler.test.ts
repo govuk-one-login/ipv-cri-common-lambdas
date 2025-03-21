@@ -2,15 +2,18 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from "aws-lambda
 import { CallbackLambdaHandler } from "../src/callback-handler";
 import { CallBackService } from "../src/services/callback-service";
 import { ConfigurationHelper } from "../src/services/configuration-helper";
-import { TestKeys } from "./test_keys";
 
 describe("callback-handler", () => {
     const sessionTableName = "session-common-cri-api";
     const authorizationCode = "an-authorization-code";
     const accessTokenValue = "access_token_value";
     const clientId = "headless-core-stub";
+    const audience = "my-audience";
     const redirectUri = "https://test-resources.headless-core-stub.redirect/callback";
+    const keyJwtValue =
+        "client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion-type%3Ajwt-bearer&code=an-authorization-code&grant_type=authorization_code&redirect_uri=https%3A%2F%2Ftest-resources.headless-core-stub.redirect%2Fcallback&client_assertion=fake.jwt.key";
 
+    let mockGetPrivateKeyJwt: jest.Mock;
     let mockSessionByAuthorizationCode: jest.Mock;
     let mockGetParameters: jest.Mock;
     let mockGetToken: jest.Mock;
@@ -23,6 +26,7 @@ describe("callback-handler", () => {
         mockGetParameters = jest.fn();
         mockGetToken = jest.fn();
         mockIssueCredential = jest.fn();
+        mockGetPrivateKeyJwt = jest.fn();
 
         const mockCallbackService = {
             getSessionByAuthorizationCode: mockSessionByAuthorizationCode,
@@ -34,7 +38,12 @@ describe("callback-handler", () => {
             getParameters: mockGetParameters,
         } as Partial<ConfigurationHelper>;
 
+        const privateKeyJwtHelper = {
+            generatePrivateJwtParams: mockGetPrivateKeyJwt,
+        };
+
         const callbackHandler = new CallbackLambdaHandler(
+            privateKeyJwtHelper,
             mockConfigHelper as ConfigurationHelper,
             mockCallbackService as CallBackService,
         );
@@ -48,11 +57,12 @@ describe("callback-handler", () => {
             clientId,
             redirectUri,
         });
+        mockGetPrivateKeyJwt.mockResolvedValueOnce(keyJwtValue);
         mockGetParameters.mockResolvedValueOnce({
             redirectUri,
-            audience: "my-audience",
+            audience,
             issuer: "https://issuer.example.com",
-            privateSigningKey: JSON.stringify(TestKeys.privateSigningJwk),
+            privateSigningKey: JSON.stringify({}),
         });
         mockGetToken.mockResolvedValueOnce({
             ok: true,
@@ -76,6 +86,13 @@ describe("callback-handler", () => {
         );
 
         expect(mockSessionByAuthorizationCode).toHaveBeenCalledWith(sessionTableName, authorizationCode);
+        expect(mockGetPrivateKeyJwt).toHaveBeenCalledWith(
+            clientId,
+            authorizationCode,
+            redirectUri,
+            expect.anything(),
+            "my-audience",
+        );
         expect(mockGetParameters).toHaveBeenCalledWith(clientId);
         expect(mockIssueCredential).toHaveBeenCalledWith(expect.any(String), accessTokenValue);
         expect(response).toEqual({ statusCode: 200, body: "vc.jwt.credential" });
@@ -118,7 +135,7 @@ describe("callback-handler", () => {
             redirectUri,
             audience: "my-audience",
             issuer: "https://issuer.example.com",
-            privateSigningKey: JSON.stringify(TestKeys.privateSigningJwk),
+            privateSigningKey: JSON.stringify({}),
         });
         mockGetToken.mockResolvedValueOnce({ ok: false, status: 500, text: async () => "mock-token-error" });
 
@@ -142,7 +159,7 @@ describe("callback-handler", () => {
             redirectUri,
             audience: "my-audience",
             issuer: "https://issuer.example.com",
-            privateSigningKey: JSON.stringify(TestKeys.privateSigningJwk),
+            privateSigningKey: JSON.stringify({}),
         });
         mockGetToken.mockResolvedValue({ ok: true, json: async () => ({ access_token: accessTokenValue }) });
         mockIssueCredential.mockResolvedValueOnce({

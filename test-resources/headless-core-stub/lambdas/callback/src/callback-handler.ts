@@ -6,11 +6,13 @@ import { JWTPayload } from "jose";
 import { ConfigurationHelper } from "./services/configuration-helper";
 import { CallBackService } from "./services/callback-service";
 import { buildPrivateKeyJwtParams, msToSeconds } from "./services/crypto-service";
+import { PrivateKeyJwtHelper } from "./services/private-key-jwt-helper";
 
 const sessionTableName = process.env.SESSION_TABLE || "session-common-cri-api";
 
 export class CallbackLambdaHandler implements LambdaInterface {
     constructor(
+        private readonly privateKeyJwtHelper = new PrivateKeyJwtHelper(),
         private readonly configurationHelper = new ConfigurationHelper(),
         private readonly callbackService = new CallBackService(),
         private readonly logger = new Logger(),
@@ -38,7 +40,7 @@ export class CallbackLambdaHandler implements LambdaInterface {
             const audience = ssmParameters["audience"];
 
             this.logger.info("Generating private JWT parameters...");
-            const privateJwtParams = await this.generatePrivateJwtParams(
+            const privateJwtParams = await this.privateKeyJwtHelper.generatePrivateJwtParams(
                 sessionItem.clientId,
                 authorizationCode,
                 sessionItem.redirectUri,
@@ -83,7 +85,7 @@ export class CallbackLambdaHandler implements LambdaInterface {
         }
     }
 
-    private async generatePrivateJwtParams(
+    public async generatePrivateJwtParams(
         clientId: string,
         authorizationCode: string,
         redirectUrl: string,
