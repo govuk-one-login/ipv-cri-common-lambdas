@@ -17,9 +17,9 @@ resolve_s3 = true
 tags = [
     "cri:component=ipv-cri-common-test-harness",
     "cri:deployment-source=manual",
-    "cri:stack-type=dev",
+    "cri:stack-type=localdev",
 ]
 
 parameter_overrides = [
-    "Environment=dev",
+    "Environment=localdev",
 ]
