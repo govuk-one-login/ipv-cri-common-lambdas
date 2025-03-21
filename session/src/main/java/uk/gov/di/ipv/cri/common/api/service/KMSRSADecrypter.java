@@ -38,9 +38,9 @@ class KMSRSADecrypter implements JWEDecrypter {
     //    private static final String CLIENT_JAR_KMS_ENCRYPTION_KEY_ALIAS_SECONDARY = System.getenv(
     // "CLIENT_JAR_KMS_ENCRYPTION_KEY_ALIAS_SECONDARY");
     private static final String CLIENT_JAR_KMS_ENCRYPTION_KEY_ALIAS_PRIMARY =
-            "SigningKeyActiveAlias";
+            "primary_key";
     private static final String CLIENT_JAR_KMS_ENCRYPTION_KEY_ALIAS_SECONDARY =
-            "SigningKeyPreviousAlias";
+            "secondary_key";
 
     private final boolean keyRotationEnabled =
             Boolean.parseBoolean(System.getenv("ENV_VAR_FEATURE_FLAG_KEY_ROTATION"));
@@ -82,7 +82,7 @@ class KMSRSADecrypter implements JWEDecrypter {
             throw new JOSEException(
                     AlgorithmSupportMessage.unsupportedJWEAlgorithm(alg, supportedJWEAlgorithms()));
         }
-        DecryptResponse decryptResponse;
+        DecryptResponse decryptResponse = null;
         if (keyRotationEnabled) {
             System.out.println("KeyRotationEnabled!!!!!!!!");
             var encryptedKeyDecryptRequestPrimary =
@@ -92,29 +92,39 @@ class KMSRSADecrypter implements JWEDecrypter {
                             .keyId("alias/" + CLIENT_JAR_KMS_ENCRYPTION_KEY_ALIAS_PRIMARY)
                             .build();
 
-            var encryptedKeyDecryptRequestSecondary =
-                    DecryptRequest.builder()
-                            .ciphertextBlob(SdkBytes.fromByteArray(encryptedKey.decode()))
-                            .encryptionAlgorithm(RSAES_OAEP_SHA_256)
-                            .keyId("alias/" + CLIENT_JAR_KMS_ENCRYPTION_KEY_ALIAS_SECONDARY)
-                            .build();
-
             // During a key rotation we might receive JWTs encrypted with either the old or new key.
+            boolean primaryKeyUnsuccessful = true;
             try {
+                System.out.println("Policy added");
                 System.out.println("PRIMARY KEY BLOCK:::::");
                 decryptResponse = kmsClient.decrypt(encryptedKeyDecryptRequestPrimary);
-            } catch (IncorrectKeyException e) {
-                System.out.println("SECONDARY KEY BLOCK:::::");
-                decryptResponse = kmsClient.decrypt(encryptedKeyDecryptRequestSecondary);
-            } catch (Exception e) {
-                // We only expect to get IncorrectKeyExceptions, but if we get another error we
-                // should
-                // still try the secondary key
-                System.out.println("SECONDARY RETRY KEY BLOCK:::::");
-                LOGGER.warn(
-                        "Unexpected exception decrypting JWT key with primary key. Trying secondary key. %s"
-                                .formatted(e.getMessage()));
-                decryptResponse = kmsClient.decrypt(encryptedKeyDecryptRequestSecondary);
+                primaryKeyUnsuccessful = false;
+//            } catch (IncorrectKeyException e) {
+//                System.out.println("SECONDARY KEY BLOCK:::::");
+//                decryptResponse = kmsClient.decrypt(encryptedKeyDecryptRequestSecondary);
+            } catch ( Exception e) {
+                LOGGER.warn("Failed to decrypt with primary key. Trying secondary");
+            }
+            if (primaryKeyUnsuccessful) {
+
+                var encryptedKeyDecryptRequestSecondary =
+                        DecryptRequest.builder()
+                                .ciphertextBlob(SdkBytes.fromByteArray(encryptedKey.decode()))
+                                .encryptionAlgorithm(RSAES_OAEP_SHA_256)
+                                .keyId("alias/" + CLIENT_JAR_KMS_ENCRYPTION_KEY_ALIAS_SECONDARY)
+                                .build();
+
+                try {
+                    System.out.println("Policy added");
+                    System.out.println("PRIMARY KEY BLOCK:::::");
+                    decryptResponse = kmsClient.decrypt(encryptedKeyDecryptRequestSecondary);
+                    //            } catch (IncorrectKeyException e) {
+                    //                System.out.println("SECONDARY KEY BLOCK:::::");
+                    //                decryptResponse = kmsClient.decrypt(encryptedKeyDecryptRequestSecondary);
+                } catch (Exception e) {
+                    LOGGER.error("Failed to decrypt with secondary key");
+                    throw e;
+                }
             }
 
         } else {

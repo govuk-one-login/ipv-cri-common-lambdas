@@ -42,14 +42,6 @@ Parameters:
     Description: "The stack containing the TXMA infrastructure"
     Type: String
     Default: txma-infrastructure
-  PrimaryActiveSigningKey:
-    Description: "Alias for Current Encryption Key"
-    Type: String
-    Default: "dev_identity_signing_key"
-  SecondaryActiveSigningKey:
-    Description: "Alias for Previous Encryption Key"
-    Type: String
-    Default: "dev_identity_signing_key_previous"
 
 Conditions:
   UseCodeSigningConfigArn:
@@ -170,7 +162,6 @@ Globals:
                 dynatraceSecretArn,
               ]
         DT_OPEN_TELEMETRY_ENABLE_INTEGRATION: "true"
-        ENV_VAR_FEATURE_FLAG_KEY_ROTATION: !FindInMap [ KeyRotationMapping, !Ref CriIdentifier, !Ref Environment]
 #        CLIENT_JAR_KMS_ENCRYPTION_KEY_ALIAS_PRIMARY: !ImportValue  key-rotation-${active-signing-key}
 #        CLIENT_JAR_KMS_ENCRYPTION_KEY_ALIAS_SECONDARY:  !ImportValue  key-rotation-${active-signing-key}
 
@@ -204,6 +195,51 @@ Mappings:
       staging: 7200 # 2 hours
       integration: 7200 # 2 hours
       production: 7200 # 2 hours
+
+# Use key rotation aliases in session decryption
+  KeyRotationMapping:
+    di-ipv-cri-address-api:
+      dev: "false"
+      build: "false"
+      staging: "false"
+      integration: "false"
+      production: "false"
+    di-ipv-cri-fraud-api:
+      dev: "false"
+      build: "false"
+      staging: "false"
+      integration: "false"
+      production: "false"
+    di-ipv-cri-kbv-api:
+      dev: "false"
+      build: "false"
+      staging: "false"
+      integration: "false"
+      production: "false"
+    di-ipv-cri-dl-api:
+      dev: "false"
+      build: "false"
+      staging: "false"
+      integration: "false"
+      production: "false"
+    di-ipv-cri-passport-api:
+      dev: "true"
+      build: "false"
+      staging: "false"
+      integration: "false"
+      production: "false"
+    di-ipv-cri-kbv-hmrc-api:
+      dev: "false"
+      build: "false"
+      staging: "false"
+      integration: "false"
+      production: "false"
+    di-ipv-cri-check-hmrc-api:
+      dev: "false"
+      build: "false"
+      staging: "false"
+      integration: "false"
+      production: "false"
 
   # TS functions Only 0 = off
   TSProvisionedConcurrencyMapping:
@@ -595,50 +631,6 @@ Mappings:
       integration: "https://review-hc.integration.account.gov.uk"
       production: "https://review-hc.account.gov.uk"
 
-  KeyRotationMapping:
-      di-ipv-cri-address-api:
-        dev: "false"
-        build: "false"
-        staging: "false"
-        integration: "false"
-        production: "false"
-      di-ipv-cri-fraud-api:
-        dev: "false"
-        build: "false"
-        staging: "false"
-        integration: "false"
-        production: "false"
-      di-ipv-cri-kbv-api:
-        dev: "false"
-        build: "false"
-        staging: "false"
-        integration: "false"
-        production: "false"
-      di-ipv-cri-dl-api:
-        dev: "false"
-        build: "false"
-        staging: "false"
-        integration: "false"
-        production: "false"
-      di-ipv-cri-passport-api:
-        dev: "true"
-        build: "false"
-        staging: "false"
-        integration: "false"
-        production: "false"
-      di-ipv-cri-kbv-hmrc-api:
-        dev: "false"
-        build: "false"
-        staging: "false"
-        integration: "false"
-        production: "false"
-      di-ipv-cri-check-hmrc-api:
-        dev: "false"
-        build: "false"
-        staging: "false"
-        integration: "false"
-        production: "false"
-
 Resources:
 
   #########################
@@ -666,6 +658,7 @@ Resources:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-session"
           SQS_AUDIT_EVENT_QUEUE_URL:
             Fn::ImportValue: !Sub ${TxmaStackName}-AuditEventQueueUrl
+          ENV_VAR_FEATURE_FLAG_KEY_ROTATION: !FindInMap [ KeyRotationMapping, !Ref CriIdentifier, !Ref Environment]
       AutoPublishAlias: live
       AutoPublishAliasAllProperties: true
       SnapStart:
