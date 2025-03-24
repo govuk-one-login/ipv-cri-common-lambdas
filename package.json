@@ -3,5 +3,9 @@
   "workspaces": [
     "lambdas",
     "test-resources/**"
-  ]
+  ],
+  "dependencies": {
+    "@govuk-one-login/data-vocab": "^1.9.3",
+    "@govuk-one-login/data-vocab-schemas": "^1.9.3"
+  }
 }

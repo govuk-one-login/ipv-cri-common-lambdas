@@ -20,12 +20,11 @@
         "@aws-sdk/client-kms": "3.758.0",
         "@aws-sdk/client-ssm": "3.759.0",
         "@govuk-one-login/data-vocab": "1.9.2",
-        "@govuk-one-login/data-vocab-schemas": "1.9.2",
-        "aws-sdk-client-mock": "4.1.0",
         "ajv": "8.17.1",
         "ajv-formats": "3.0.1",
-        "jose": "5.4.0",
-        "esbuild": "0.25.1"
+        "aws-sdk-client-mock": "4.1.0",
+        "esbuild": "0.25.1",
+        "jose": "5.4.0"
     },
     "devDependencies": {
         "@types/aws-lambda": "^8.10.145",
