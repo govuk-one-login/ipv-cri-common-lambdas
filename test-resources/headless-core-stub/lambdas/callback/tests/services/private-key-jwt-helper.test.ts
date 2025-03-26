@@ -1,40 +1,49 @@
 import { generatePrivateJwtParams } from "../../src/services/private-key-jwt-helper";
-import * as CryptoService from "../../src/services/crypto-service";
-import * as Uuid from "uuid";
-import { JWTPayload } from "jose";
+import { generateKeyPair, exportJWK, JWK } from "jose";
 
-jest.mock("../../src/services/crypto-service");
-jest.mock("uuid");
+jest.useFakeTimers().setSystemTime(new Date("2025-03-26T12:00:00Z"));
+
 describe("generatePrivateJwtParams", () => {
-    const clientId = "mock-client-id";
-    const authorizationCode = "mock-auth-code";
-    const redirectUrl = "https://mock-redirect-url.com";
-    const privateJwtKey = "mock-private-key";
-    const audience = "mock-audience";
+    let privateJwtKey: JWK;
+    const clientId: string = "mock-client-id";
+    const authorizationCode: string = "mock-auth-code";
+    const redirectUrl: string = "https://mock-redirect-url.com";
+    const audience: string = "mock-audience";
+    const jwtHeader = { alg: "ES256", typ: "JWT" };
 
-    const mockCustomClaims: JWTPayload = {
-        iss: clientId,
-        sub: clientId,
-        aud: audience,
-        exp: 12345678,
-        jti: "mock-jti",
-    };
-
-    beforeEach(() => {
-        jest.spyOn(CryptoService, "msToSeconds").mockImplementation((ms) => Math.floor(ms / 1000));
-        jest.spyOn(Uuid, "v4").mockReturnValueOnce(mockCustomClaims.jti as string);
+    beforeAll(async () => {
+        const { privateKey } = await generateKeyPair("ES256");
+        privateJwtKey = await exportJWK(privateKey);
     });
-    afterEach(() => jest.clearAllMocks());
 
-    it("generates custom claims and call buildPrivateKeyJwtParams with the correct parameters", async () => {
-        const mockJwt = "mock-jwt";
-        jest.spyOn(CryptoService, "buildPrivateKeyJwtParams").mockResolvedValueOnce(mockJwt);
+    it("generates JWT with correct claims and headers", async () => {
+        const result = await generatePrivateJwtParams(
+            clientId,
+            authorizationCode,
+            redirectUrl,
+            privateJwtKey,
+            audience,
+            jwtHeader,
+        );
 
-        const expectedCustomClaims: JWTPayload = {
-            ...mockCustomClaims,
-            exp: CryptoService.msToSeconds(Date.now() + 5 * 60 * 1000),
-        };
+        const params = new URLSearchParams(result);
+        const jwt = params.get("client_assertion");
+        expect(jwt).toBeTruthy();
 
+        const [headerBase64, payloadBase64] = jwt!.split(".");
+        const decodedHeader = JSON.parse(Buffer.from(headerBase64, "base64url").toString());
+        const decodedPayload = JSON.parse(Buffer.from(payloadBase64, "base64url").toString());
+
+        expect(decodedHeader).toEqual(jwtHeader);
+
+        expect(decodedPayload.iss).toBe(clientId);
+        expect(decodedPayload.sub).toBe(clientId);
+        expect(decodedPayload.aud).toBe(audience);
+        expect(decodedPayload.exp).toBe(Math.round(Date.now() / 1000) + 5 * 60);
+        expect(decodedPayload.jti).toBeTruthy();
+    });
+
+    it("defaults to standard JWT header if not provided", async () => {
         const result = await generatePrivateJwtParams(
             clientId,
             authorizationCode,
@@ -43,36 +52,43 @@ describe("generatePrivateJwtParams", () => {
             audience,
         );
 
-        expect(Uuid.v4).toHaveBeenCalled();
-        expect(CryptoService.msToSeconds).toHaveBeenCalledWith(expect.any(Number));
-        expect(CryptoService.buildPrivateKeyJwtParams).toHaveBeenCalledWith({
-            customClaims: expectedCustomClaims,
-            authorizationCode: authorizationCode,
-            redirectUrl: redirectUrl,
-            privateSigningKey: privateJwtKey,
-        });
-        expect(result).toBe(mockJwt);
+        const params = new URLSearchParams(result);
+        const jwt = params.get("client_assertion");
+        expect(jwt).toBeTruthy();
+
+        const [headerBase64, payloadBase64] = jwt!.split(".");
+        const decodedHeader = JSON.parse(Buffer.from(headerBase64, "base64url").toString());
+        const decodedPayload = JSON.parse(Buffer.from(payloadBase64, "base64url").toString());
+
+        expect(decodedHeader).toEqual(jwtHeader);
+
+        expect(decodedPayload.jti).toBeTruthy();
     });
 
-    it("handles errors thrown by buildPrivateKeyJwtParams", async () => {
-        jest.spyOn(CryptoService, "buildPrivateKeyJwtParams").mockRejectedValueOnce(new Error("Mock error"));
+    it("generates different JWTs for different authorization codes", async () => {
+        const result1 = await generatePrivateJwtParams(clientId, "auth-code-1", redirectUrl, privateJwtKey, audience);
+        const result2 = await generatePrivateJwtParams(clientId, "auth-code-2", redirectUrl, privateJwtKey, audience);
 
-        await expect(
-            generatePrivateJwtParams(clientId, authorizationCode, redirectUrl, privateJwtKey, audience),
-        ).rejects.toThrow(new Error("Mock error"));
-
-        expect(Uuid.v4).toHaveBeenCalled();
-        expect(CryptoService.msToSeconds).toHaveBeenCalledWith(expect.any(Number));
-        expect(CryptoService.buildPrivateKeyJwtParams).toHaveBeenCalled();
+        expect(result1).not.toEqual(result2);
     });
 
-    it("correctly formats the expiration time using msToSeconds", async () => {
-        const mockExpirationMs = Date.now() + 5 * 60 * 1000;
-        const expectedExpirationSeconds = Math.floor(mockExpirationMs / 1000);
+    it("generates a JWT with a valid expiration claim (5 minutes)", async () => {
+        const result = await generatePrivateJwtParams(
+            clientId,
+            authorizationCode,
+            redirectUrl,
+            privateJwtKey,
+            audience,
+        );
 
-        await generatePrivateJwtParams(clientId, authorizationCode, redirectUrl, privateJwtKey, audience);
+        const params = new URLSearchParams(result);
+        const jwt = params.get("client_assertion");
 
-        expect(CryptoService.msToSeconds).toHaveBeenCalledWith(mockExpirationMs);
-        expect(CryptoService.msToSeconds).toHaveReturnedWith(expectedExpirationSeconds);
+        const payloadBase64 = jwt!.split(".")[1];
+        const decodedPayload = JSON.parse(Buffer.from(payloadBase64, "base64url").toString());
+
+        const expectedExp = Math.round(Date.now() / 1000) + 5 * 60;
+        expect(decodedPayload.exp).toBe(expectedExp);
+        expect(decodedPayload.jti).toBeTruthy();
     });
 });

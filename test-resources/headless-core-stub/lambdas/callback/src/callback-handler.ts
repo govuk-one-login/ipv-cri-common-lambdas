@@ -4,6 +4,7 @@ import { Logger } from "@aws-lambda-powertools/logger";
 import { ConfigurationHelper } from "./services/configuration-helper";
 import { CallBackService } from "./services/callback-service";
 import { generatePrivateJwtParams } from "./services/private-key-jwt-helper";
+import { JWK } from "jose";
 
 const sessionTableName = process.env.SESSION_TABLE || "session-common-cri-api";
 const configurationHelper = new ConfigurationHelper();
@@ -26,7 +27,7 @@ export class CallbackLambdaHandler implements LambdaInterface {
 
             logger.info({ message: "Fetching SSM parameters", ...filteredParams });
 
-            const privateJwtKey = JSON.parse(privateSigningKey);
+            const privateJwtKey = JSON.parse(privateSigningKey) as JWK;
             const audience = ssmParameters["audience"];
 
             logger.info({ message: "Generating private JWT parameters..." });
