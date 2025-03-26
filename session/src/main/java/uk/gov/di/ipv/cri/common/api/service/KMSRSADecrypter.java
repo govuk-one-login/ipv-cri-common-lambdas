@@ -9,6 +9,7 @@ import com.nimbusds.jose.crypto.impl.AlgorithmSupportMessage;
 import com.nimbusds.jose.crypto.impl.ContentCryptoProvider;
 import com.nimbusds.jose.jca.JWEJCAContext;
 import com.nimbusds.jose.util.Base64URL;
+import org.apache.commons.codec.binary.Hex;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awssdk.core.SdkBytes;
@@ -16,11 +17,13 @@ import software.amazon.awssdk.services.kms.KmsClient;
 import software.amazon.awssdk.services.kms.model.DecryptRequest;
 import software.amazon.awssdk.services.kms.model.DecryptResponse;
 import software.amazon.awssdk.services.kms.model.EncryptionAlgorithmSpec;
-import software.amazon.awssdk.services.kms.model.IncorrectKeyException;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Objects;
 import java.util.Set;
 
@@ -32,15 +35,10 @@ class KMSRSADecrypter implements JWEDecrypter {
             Set.of(EncryptionMethod.A256GCM);
     private static final Logger LOGGER = LogManager.getLogger();
 
-    // TODO: Set as Env variables
-    //    private static final String CLIENT_JAR_KMS_ENCRYPTION_KEY_ALIAS_PRIMARY = System.getenv(
-    // "CLIENT_JAR_KMS_ENCRYPTION_KEY_ALIAS_PRIMARY");
-    //    private static final String CLIENT_JAR_KMS_ENCRYPTION_KEY_ALIAS_SECONDARY = System.getenv(
-    // "CLIENT_JAR_KMS_ENCRYPTION_KEY_ALIAS_SECONDARY");
     private static final String CLIENT_JAR_KMS_ENCRYPTION_KEY_ALIAS_PRIMARY =
-            "primary_key";
+            "dev_identity_signing_key"; //change the name to session_decryption_key_current
     private static final String CLIENT_JAR_KMS_ENCRYPTION_KEY_ALIAS_SECONDARY =
-            "secondary_key";
+            "dev_identity_signing_key_previous"; //change the name to session_decryption_key_previous
 
     private final boolean keyRotationEnabled =
             Boolean.parseBoolean(System.getenv("ENV_VAR_FEATURE_FLAG_KEY_ROTATION"));
@@ -98,12 +96,11 @@ class KMSRSADecrypter implements JWEDecrypter {
                 System.out.println("Policy added");
                 System.out.println("PRIMARY KEY BLOCK:::::");
                 decryptResponse = kmsClient.decrypt(encryptedKeyDecryptRequestPrimary);
+                String encryptKeyID = decryptResponse.keyId();
+                String hashedKeyId = createHashedKeyId(encryptKeyID);
                 primaryKeyUnsuccessful = false;
-//            } catch (IncorrectKeyException e) {
-//                System.out.println("SECONDARY KEY BLOCK:::::");
-//                decryptResponse = kmsClient.decrypt(encryptedKeyDecryptRequestSecondary);
-            } catch ( Exception e) {
-                LOGGER.warn("Failed to decrypt with primary key. Trying secondary");
+            } catch (Exception e) {
+                LOGGER.warn("Failed to decrypt with primary key. Trying secondary", e);
             }
             if (primaryKeyUnsuccessful) {
 
@@ -116,19 +113,16 @@ class KMSRSADecrypter implements JWEDecrypter {
 
                 try {
                     System.out.println("Policy added");
-                    System.out.println("PRIMARY KEY BLOCK:::::");
+                    System.out.println("SECONDARY KEY BLOCK:::::");
                     decryptResponse = kmsClient.decrypt(encryptedKeyDecryptRequestSecondary);
-                    //            } catch (IncorrectKeyException e) {
-                    //                System.out.println("SECONDARY KEY BLOCK:::::");
-                    //                decryptResponse = kmsClient.decrypt(encryptedKeyDecryptRequestSecondary);
                 } catch (Exception e) {
-                    LOGGER.error("Failed to decrypt with secondary key");
+                    LOGGER.error("Failed to decrypt with secondary key", e);
                     throw e;
                 }
             }
 
         } else {
-
+            System.out.println("KeyRotationEnabled Flag set to false");
             DecryptRequest decryptRequest =
                     DecryptRequest.builder()
                             .encryptionAlgorithm(EncryptionAlgorithmSpec.RSAES_OAEP_SHA_256)
@@ -143,6 +137,16 @@ class KMSRSADecrypter implements JWEDecrypter {
                 header, null, encryptedKey, iv, cipherText, authTag, cek, getJCAContext());
     }
 
+    private String createHashedKeyId(String keyId) throws NoSuchAlgorithmException {
+        System.out.println("ENTER CREATE HASHED KEY ID METHOD");
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        byte[] hash = digest.digest(keyId.getBytes(StandardCharsets.UTF_8));
+        return Hex.encodeHexString(hash);
+    }
+
+    // TODO: Helper method to compare hashed keyIDs - validation check
+    //compare it with the hashed kid we received in the JWE header
+    //fail if not matched
     @Override
     public Set<JWEAlgorithm> supportedJWEAlgorithms() {
         return SUPPORTED_ALGORITHMS;

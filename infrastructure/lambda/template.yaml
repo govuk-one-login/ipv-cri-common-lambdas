@@ -42,6 +42,14 @@ Parameters:
     Description: "The stack containing the TXMA infrastructure"
     Type: String
     Default: txma-infrastructure
+  PrimaryActiveSigningKey:
+    Description: "Alias for Current Encryption Key"
+    Type: String
+    Default: "dev_identity_signing_key"
+  SecondaryActiveSigningKey:
+    Description: "Alias for Previous Encryption Key"
+    Type: String
+    Default: "dev_identity_signing_key_previous"
 
 Conditions:
   UseCodeSigningConfigArn:
@@ -706,6 +714,16 @@ Resources:
                 - "kms:GenerateDataKey"
               Resource:
                 Fn::ImportValue: !Sub ${TxmaStackName}-AuditEventQueueEncryptionKeyArn
+        - Statement:
+            - Effect: Allow
+              Action:
+                - "kms:Decrypt"
+              Resource: !Sub "arn:aws:kms:${AWS::Region}:${AWS::AccountId}:alias/dev_identity_signing_key"
+        - Statement:
+            - Effect: Allow
+              Action:
+                - "kms:Decrypt"
+              Resource: !Sub "arn:aws:kms:${AWS::Region}:${AWS::AccountId}:alias/dev_identity_signing_key_previous"
       ProvisionedConcurrencyConfig:
         !If
         - AddJavaProvisionedConcurrency

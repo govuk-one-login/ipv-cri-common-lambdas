@@ -24,6 +24,7 @@ ext {
 		mockito                  : "4.3.1",
 		glassfish_version        : "3.0.3",
 		cri_common_lib           : "4.0.0",
+		webcompere_version       : "2.1.7",
 	]
 }
 
@@ -97,6 +98,7 @@ subprojects {
 		cucumberRuntime
 		cri_common_lib
 		pact_tests
+		webcompere
 	}
 
 	configurations.all {
@@ -158,6 +160,9 @@ subprojects {
 
 		nimbus "com.nimbusds:oauth2-oidc-sdk:${dependencyVersions.nimbusds_oauth_version}",
 				"com.nimbusds:nimbus-jose-jwt:${dependencyVersions.nimbusds_jwt_version}"
+
+		webcompere "uk.org.webcompere:system-stubs-core:${dependencyVersions.webcompere_version}",
+				"uk.org.webcompere:system-stubs-jupiter:${dependencyVersions.webcompere_version}"
 	}
 
 	apply plugin: 'java'
