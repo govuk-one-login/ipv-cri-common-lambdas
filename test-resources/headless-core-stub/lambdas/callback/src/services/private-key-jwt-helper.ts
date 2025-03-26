@@ -1,12 +1,12 @@
-import { importJWK, JWK, JWTHeaderParameters, JWTPayload, SignJWT } from "jose";
 import { v4 as uuidv4 } from "uuid";
+import { signJwt } from "./signer";
+import { JWK, JWTPayload } from "jose";
 export const generatePrivateJwtParams = async (
     clientId: string,
     authorizationCode: string,
     redirectUrl: string,
     privateJwtKey: JWK,
     audience: string,
-    jwtHeader: JWTHeaderParameters = { alg: "ES256", typ: "JWT" },
 ): Promise<string> => {
     const signingClaims: JWTPayload = {
         iss: clientId,
@@ -16,9 +16,7 @@ export const generatePrivateJwtParams = async (
         jti: uuidv4(),
     };
 
-    const signedJwt = await new SignJWT(signingClaims)
-        .setProtectedHeader(jwtHeader)
-        .sign(await importJWK(privateJwtKey, "ES256"));
+    const signedJwt = await signJwt(signingClaims, privateJwtKey);
 
     return new URLSearchParams([
         ["client_assertion_type", "urn:ietf:params:oauth:client-assertion-type:jwt-bearer"],

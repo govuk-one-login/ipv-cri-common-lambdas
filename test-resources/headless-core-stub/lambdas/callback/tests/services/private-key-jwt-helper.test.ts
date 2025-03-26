@@ -23,7 +23,6 @@ describe("generatePrivateJwtParams", () => {
             redirectUrl,
             privateJwtKey,
             audience,
-            jwtHeader,
         );
 
         const params = new URLSearchParams(result);
