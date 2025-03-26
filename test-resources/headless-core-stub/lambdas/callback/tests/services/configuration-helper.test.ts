@@ -1,6 +1,6 @@
 import { ConfigurationHelper } from "../../src/services/configuration-helper";
 import * as SSMPowerToolsParameter from "@aws-lambda-powertools/parameters/ssm";
-
+import * as GetParameters from "../../src/services/get-parameters";
 jest.mock("@aws-lambda-powertools/parameters/ssm");
 
 describe("ConfigurationHelper", () => {
@@ -21,6 +21,10 @@ describe("ConfigurationHelper", () => {
     });
 
     describe("getParameters", () => {
+        beforeEach(() => {
+            jest.mock("../../src/services/get-parameters");
+        });
+        afterEach(() => jest.clearAllMocks());
         it("generates correct parameter paths and calls getParametersValues", async () => {
             const expectedParameters = [
                 `/${commonParameterPrefix}/clients/${clientId}/jwtAuthentication/audience`,
@@ -29,17 +33,18 @@ describe("ConfigurationHelper", () => {
                 `/${testResourcesParameterPrefix}/${clientId}/privateSigningKey`,
             ];
 
-            const configurationHelper = new ConfigurationHelper();
-            jest.spyOn(configurationHelper, "getParametersValues").mockResolvedValueOnce({
+            jest.spyOn(GetParameters, "getParametersValues").mockResolvedValueOnce({
                 audience,
+                issuer,
                 redirectUri,
-                issuer: "mock-issuer",
                 privateSigningKey: "mock-key",
             });
 
+            const configurationHelper = new ConfigurationHelper();
+
             const result = await configurationHelper.getParameters(clientId);
 
-            expect(configurationHelper.getParametersValues).toHaveBeenCalledWith(expectedParameters);
+            expect(GetParameters.getParametersValues).toHaveBeenCalledWith(expectedParameters);
             expect(result).toEqual({
                 audience,
                 redirectUri,
@@ -66,9 +71,7 @@ describe("ConfigurationHelper", () => {
                 _errors: [],
             });
 
-            const configurationHelper = new ConfigurationHelper();
-
-            const result = await configurationHelper.getParametersValues(mockParameterPaths);
+            const result = await GetParameters.getParametersValues(mockParameterPaths);
 
             expect(SSMPowerToolsParameter.getParametersByName).toHaveBeenCalledWith(
                 Object.fromEntries(mockParameterPaths.map((path) => [path, {}])),
@@ -90,9 +93,7 @@ describe("ConfigurationHelper", () => {
                 _errors: ["/mock-common-prefix/clients/mock-client-id/jwtAuthentication/audience"],
             });
 
-            const configurationHelper = new ConfigurationHelper();
-
-            await expect(configurationHelper.getParametersValues(mockParameterPaths)).rejects.toThrowError(
+            await expect(GetParameters.getParametersValues(mockParameterPaths)).rejects.toThrowError(
                 "Following SSM parameters do not exist: /mock-common-prefix/clients/mock-client-id/jwtAuthentication/audience",
             );
         });
