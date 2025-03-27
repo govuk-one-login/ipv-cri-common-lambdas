@@ -26,6 +26,8 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       sha_short: ${{ steps.vars.outputs.sha_short }}
+    env:
+      NODE_AUTH_TOKEN: ${{ secrets.npm-token }}
     steps:
       - name: Pull repository
         uses: actions/checkout@v4
@@ -38,8 +40,6 @@ jobs:
           registry-url: "https://npm.pkg.github.com"
           scope: "@govuk-one-login"
           always-auth: true
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.npm-token }}
 
       - name: Get short-sha
         id: vars
@@ -53,8 +53,6 @@ jobs:
           template: test-resources/infrastructure/template.yaml
           cache-name: test-resources-${{ steps.vars.outputs.sha_short }}
           sam-version: 1.132.0
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   deploy:
     name: Deploy stack
