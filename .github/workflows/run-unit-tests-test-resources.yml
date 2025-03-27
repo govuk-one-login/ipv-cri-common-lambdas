@@ -8,6 +8,8 @@ on:
     outputs:
       coverage-artifact:
         value: ${{ inputs.coverage-artifact }}
+    secrets:
+      npm-token: { required: true }
 
 concurrency:
   group: unit-tests-test-resources-${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
@@ -17,7 +19,8 @@ defaults:
   run:
     shell: bash
 
-permissions: { }
+permissions:
+   packages: read
 
 jobs:
   run-unit-tests:
@@ -31,13 +34,18 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install Node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           cache: npm
           cache-dependency-path: test-resources/package.json
+          registry-url: "https://npm.pkg.github.com"
+          scope: "@govuk-one-login"
+          always-auth: true
 
       - name: Install dependencies
         run: (cd .. && npm ci)
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.npm-token }}
 
       - name: Run tests
         run: npm run test:coverage -- --config jest.config.ci.ts

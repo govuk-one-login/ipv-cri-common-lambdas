@@ -32,6 +32,8 @@ jobs:
     uses: ./.github/workflows/run-unit-tests-test-resources.yml
     with:
       coverage-report:  false
+    secrets:
+      npm-token: ${{ secrets.GITHUB_TOKEN }}
 
   sonarcloud-java:
     name: SonarCloud / Java

@@ -1,7 +1,12 @@
 name: Code quality
 
-on: workflow_call
-permissions: { }
+on: 
+  workflow_call:
+    secrets:
+      npm-token: { required: true }
+
+permissions: 
+  packages: read
 
 concurrency:
   group: code-quality-${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
@@ -18,6 +23,17 @@ jobs:
     steps:
       - name: Pull repository
         uses: actions/checkout@v4
+
+      - name: Install Node
+        uses: actions/setup-node@v4
+        with:
+          cache: npm
+          cache-dependency-path: ./package-lock.json
+          registry-url: "https://npm.pkg.github.com"
+          scope: "@govuk-one-login"
+          always-auth: true
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.npm-token }}
 
       - name: Run pre-commit
         uses: govuk-one-login/github-actions/code-quality/run-pre-commit@4616241694c035be4ea4a10fc0fe6521c0f079f8
