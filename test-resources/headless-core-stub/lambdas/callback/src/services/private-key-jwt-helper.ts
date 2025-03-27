@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from "uuid";
-import { signJwt } from "./signer";
+import { signJwt } from "../../../utils/crypto/signer";
 import { JWK, JWTPayload } from "jose";
 export const generatePrivateJwtParams = async (
     clientId: string,
