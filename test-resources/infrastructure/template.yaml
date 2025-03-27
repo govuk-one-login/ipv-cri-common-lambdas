@@ -133,7 +133,7 @@ Resources:
     Type: AWS::Lambda::Permission
     Properties:
       Action: lambda:InvokeFunction
-      FunctionName: !GetAtt CallbackFunction.Arn
+      FunctionName: !Ref CallbackFunction.Alias
       Principal: apigateway.amazonaws.com
 
   DequeueFunction:
