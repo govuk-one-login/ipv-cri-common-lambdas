@@ -80,12 +80,12 @@ jobs:
           aws-role-arn: ${{ vars.DEPLOYMENT_ROLE_ARN }}
           stack-name-prefix: preview-test-resources
           stack-name-length-limit: 37
-          cache-name: common-test-resources-${{ needs.build.outputs.sha_short}}
+          cache-name: test-resources-${{ needs.build.outputs.sha_short}}
           s3-prefix: preview
           pull-repository: true
-          # delete-failed-stack: true
+          delete-failed-stack: true
           tags: |
-            cri:component=ipv-cri-common-test-resources
+            cri:component=ipv-cri-test-resources
             cri:stack-type=preview
             cri:application=Orange
             cri:deployment-source=github-actions

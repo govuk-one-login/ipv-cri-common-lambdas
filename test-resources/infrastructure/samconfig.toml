@@ -12,7 +12,6 @@ fail_on_empty_changeset = false
 confirm_changeset = false
 s3_prefix = "test-resources"
 region = "eu-west-2"
-resolve_s3 = true
 
 tags = [
     "cri:component=ipv-cri-common-test-harness",
