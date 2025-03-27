@@ -26,6 +26,10 @@ Parameters:
     Type: String
     Default: "cri-vpc"
     Description: The name of the VPC stack deployed.
+  CommonStackName:
+    Description: "The name of the stack containing the common CRI lambdas/infra"
+    Type: String
+    Default: common-cri-api
 
 Mappings:
   TestHarnessUrl:
@@ -62,8 +66,8 @@ Globals:
       SecurityGroupIds:
         - !ImportValue cri-vpc-AWSServicesEndpointSecurityGroupId
       SubnetIds:
-        - !ImportValue cri-vpc-PrivateSubnetIdA
-        - !ImportValue cri-vpc-PrivateSubnetIdB
+        - !ImportValue cri-vpc-ProtectedSubnetIdA
+        - !ImportValue cri-vpc-ProtectedSubnetIdB
     Tracing: Active
     MemorySize: 1024
     Environment:
@@ -71,6 +75,8 @@ Globals:
         NODE_OPTIONS: --enable-source-maps
         POWERTOOLS_METRICS_NAMESPACE: !Ref CriIdentifier
         POWERTOOLS_LOG_LEVEL: DEBUG
+        COMMON_PARAMETER_NAME_PREFIX: !Ref CommonStackName
+        AWS_STACK_NAME: !Sub ${AWS::StackName}
     AutoPublishAlias: live
 
 Resources:
@@ -88,6 +94,48 @@ Resources:
       VpcId:
         Fn::ImportValue: !Sub "${VpcStackName}-VpcId"
 
+  CallbackFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Sourcemap: true
+    Properties:
+      Handler: headless-core-stub/lambdas/callback/src/callback-handler.lambdaHandler
+      CodeSigningConfigArn:
+        !If [EnforceCodeSigning, !Ref CodeSigningConfigArn, !Ref AWS::NoValue]
+      Environment:
+        Variables:
+          CRI_IDENTIFIER: !Sub "${CriIdentifier}"
+          AWS_STACK_NAME: !Ref CommonStackName
+          TEST_RESOURCES_PARAMETER_PREFIX: "test-resources"
+          SESSION_TABLE: !Sub session-${CommonStackName}
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Sub "{{resolve:ssm:/${CommonStackName}/SessionTableName}}"
+        - Statement:
+            - Effect: Allow
+              Action:
+                - ssm:GetParametersByPath
+                - ssm:GetParameters
+                - ssm:GetParameter
+              Resource:
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${CommonStackName}/clients/*/jwtAuthentication/*"
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/test-resources/ipv-core-stub-aws-headless/privateSigningKey"
+
+  CallbackFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${CallbackFunction}"
+      RetentionInDays: 30
+
+  CallbackFunctionAliasPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref CallbackFunction.Alias
+      Principal: apigateway.amazonaws.com
+
   DequeueFunction:
     Type: AWS::Serverless::Function
     Metadata:
@@ -98,6 +146,12 @@ Resources:
       Handler: audit-events-test-harness/lambdas/src/dequeue-handler.lambdaHandler
       CodeSigningConfigArn:
         !If [EnforceCodeSigning, !Ref CodeSigningConfigArn, !Ref AWS::NoValue]
+      VpcConfig:
+        SecurityGroupIds:
+          - !ImportValue cri-vpc-AWSServicesEndpointSecurityGroupId
+        SubnetIds:
+          - !ImportValue cri-vpc-PrivateSubnetIdA
+          - !ImportValue cri-vpc-PrivateSubnetIdB
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: AuditEventDequeueFunction
