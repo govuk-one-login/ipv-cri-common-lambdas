@@ -1,19 +1,46 @@
 name: Test Resources Preview
 
-on: workflow_call
+on: 
+  workflow_call: 
+    secrets:
+      npm-token: { required: true }
+    outputs:
+      stack-name:
+        description: The deployed stack name
+        value: ${{ jobs.deploy.outputs.stack-name }}
+      stack-outputs:
+        description: The deployed stack outputs
+        value: ${{ jobs.deploy.outputs.stack-outputs }}
+      aws-region:
+        description: The region in which the stack was deployed
+        value: ${{ jobs.deploy.outputs.aws-region }}
 
 permissions:
   id-token: write
   contents: read
+  packages: read
 
 jobs:
   build:
     name: Build SAM app
     runs-on: ubuntu-latest
-    permissions: {}
     outputs:
-      sha_short: ${{ steps.vars.outputs.sha_short }}    
+      sha_short: ${{ steps.vars.outputs.sha_short }}
     steps:
+      - name: Pull repository
+        uses: actions/checkout@v4
+        
+      - name: Install Node
+        uses: actions/setup-node@v4
+        with:
+          cache: npm
+          cache-dependency-path: ./package-lock.json
+          registry-url: "https://npm.pkg.github.com"
+          scope: "@govuk-one-login"
+          always-auth: true
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.npm-token }}
+
       - name: Get short-sha
         id: vars
         run: |
@@ -25,5 +52,42 @@ jobs:
         with:
           template: test-resources/infrastructure/template.yaml
           cache-name: test-resources-${{ steps.vars.outputs.sha_short }}
-          pull-repository: true
           sam-version: 1.132.0
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  deploy:
+    name: Deploy stack
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: build
+    concurrency:
+      group: deploy-development-${{ github.head_ref || github.ref_name }}
+    environment:
+      name: test-resources-dev
+      url: ${{ steps.deploy.outputs.stack-url }}
+    outputs:
+      aws-region: ${{ steps.deploy.outputs.aws-region }}
+      stack-name: ${{ steps.deploy.outputs.stack-name }}
+      stack-outputs: ${{ steps.deploy.outputs.stack-outputs }}
+    steps:
+      - name: Deploy stack
+        uses: govuk-one-login/github-actions/sam/deploy-stack@ca188729ecb0c92e5fe5ae7c024f9894815da3a1
+        id: deploy
+        with:
+          template: test-resources/infrastructure/template.yaml
+          sam-deployment-bucket: ${{ vars.DEPLOYMENT_ARTIFACTS_BUCKET }}
+          aws-role-arn: ${{ vars.DEPLOYMENT_ROLE_ARN }}
+          stack-name-prefix: preview-test-resources
+          stack-name-length-limit: 37
+          cache-name: common-test-resources-${{ needs.build.outputs.sha_short}}
+          s3-prefix: preview
+          pull-repository: true
+          # delete-failed-stack: true
+          tags: |
+            cri:component=ipv-cri-common-test-resources
+            cri:stack-type=preview
+            cri:application=Orange
+            cri:deployment-source=github-actions
+          parameters: |
+            Environment=dev

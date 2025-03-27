@@ -70,3 +70,6 @@ jobs:
     permissions:
       id-token: write
       contents: read
+      packages: read
+    secrets:
+      npm-token: ${{ secrets.GITHUB_TOKEN }}
