@@ -42,16 +42,14 @@ describe("callback-handler", () => {
             issuer: "https://issuer.example.com",
             privateSigningKey: JSON.stringify({}),
         });
-        getTokenSpy = jest.spyOn(CallBackService.prototype, "getToken").mockResolvedValueOnce({
-            ok: true,
-            status: 200,
-            json: async () => ({ access_token: accessTokenValue }),
-        } as Response);
-        issueCredentialSpy = jest.spyOn(CallBackService.prototype, "callIssueCredential").mockResolvedValueOnce({
-            ok: true,
-            status: 200,
-            text: async () => "vc.jwt.credential",
-        } as Response);
+        getTokenSpy = jest.spyOn(CallBackService.prototype, "invokeTokenEndpoint").mockResolvedValueOnce({
+            statusCode: 200,
+            body: JSON.stringify({ access_token: accessTokenValue }),
+        });
+        issueCredentialSpy = jest.spyOn(CallBackService.prototype, "invokeCredentialEndpoint").mockResolvedValueOnce({
+            statusCode: 200,
+            body: "vc.jwt.credential",
+        });
 
         const response = await lambdaHandler(
             {
@@ -108,16 +106,18 @@ describe("callback-handler", () => {
             issuer: "https://issuer.example.com",
             privateSigningKey: JSON.stringify({}),
         });
-        getTokenSpy = jest
-            .spyOn(CallBackService.prototype, "getToken")
-            .mockResolvedValueOnce({ ok: false, status: 500, text: async () => "mock-token-error" } as Response);
+        getTokenSpy = jest.spyOn(CallBackService.prototype, "invokeTokenEndpoint").mockRejectedValueOnce(
+            new Error("failed with 500 status", {
+                cause: "No session item found for provided authorizationCode",
+            }),
+        );
 
         const response = await lambdaHandler(event as APIGatewayProxyEvent, {} as Context);
 
         expect(sessionByAuthorizationCodeSpy).toHaveBeenCalledWith(sessionTableName, authorizationCode);
         expect(getParametersSpy).toHaveBeenCalledWith(clientId);
         expect(response.statusCode).toBe(500);
-        expect(response.body).toBe("mock-token-error");
+        expect(response.body).toBe("failed with 500 status");
     });
 
     it("handles credential endpoint failure gracefully", async () => {
@@ -137,15 +137,14 @@ describe("callback-handler", () => {
             issuer: "https://issuer.example.com",
             privateSigningKey: JSON.stringify({}),
         });
-        getTokenSpy = jest.spyOn(CallBackService.prototype, "getToken").mockResolvedValueOnce({
-            ok: true,
-            json: async () => ({ access_token: accessTokenValue }),
-        } as Response);
-        issueCredentialSpy = jest.spyOn(CallBackService.prototype, "callIssueCredential").mockResolvedValueOnce({
-            ok: false,
-            status: 500,
-            text: async () => "mock-credential-error",
-        } as Response);
+        getTokenSpy = jest.spyOn(CallBackService.prototype, "invokeTokenEndpoint").mockResolvedValueOnce({
+            statusCode: 200,
+            body: JSON.stringify({ access_token: accessTokenValue }),
+        });
+        issueCredentialSpy = jest.spyOn(CallBackService.prototype, "invokeCredentialEndpoint").mockResolvedValueOnce({
+            statusCode: 500,
+            body: "mock-credential-error",
+        });
 
         const response = await lambdaHandler(event as APIGatewayProxyEvent, {} as Context);
 

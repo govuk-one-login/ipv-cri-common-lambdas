@@ -1,5 +1,6 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { CallBackService } from "../../src/services/callback-service";
+import { Logger } from "@aws-lambda-powertools/logger";
 
 global.fetch = jest.fn();
 const mockFetch = fetch as jest.MockedFunction<typeof fetch>;
@@ -11,11 +12,18 @@ describe("CallBack Service", () => {
 
     const redirectUri = "https://test-resources.headless-core-stub.redirect/callback";
     let mockSend: jest.Mock;
+    let mockLoggerError: jest.Mock;
+    let mockLoggerInfo: jest.Mock;
     let callbackService: CallBackService;
 
     beforeEach(() => {
         mockSend = jest.fn();
-        callbackService = new CallBackService({ send: mockSend } as unknown as DynamoDBClient);
+        mockLoggerError = jest.fn();
+        mockLoggerInfo = jest.fn();
+        callbackService = new CallBackService(
+            { error: mockLoggerError, info: mockLoggerInfo } as unknown as Logger,
+            { send: mockSend } as unknown as DynamoDBClient,
+        );
     });
     afterEach(() => jest.clearAllMocks());
 
@@ -63,7 +71,7 @@ describe("CallBack Service", () => {
             ).rejects.toThrow("No session item found for provided authorizationCode");
         });
     });
-    describe("getToken", () => {
+    describe("callTokenEndpoint", () => {
         const accessTokenValue = "mock-access-token";
         it("requests using POST with the correct headers and body succeeds", async () => {
             const mockResponse = {
@@ -80,7 +88,7 @@ describe("CallBack Service", () => {
             const requestBody =
                 "client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion-type%3Ajwt-bearer&code=an-authorization-code&grant_type=authorization_code&redirect_uri=https%3A%2F%2Ftest-resources.headless-core-stub.redirect%2Fcallback&client_assertion=eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJoZWFkbGVzcy1jb3JlLXN0dWIiLCJzdWIiOiJoZWFkbGVzcy1jb3JlLXN0dWIiLCJhdWQiOiJteS1hdWRpZW5jZSIsImV4cCI6MTc0MjU0NjA0NCwianRpIjoiZWI5YjZiYjAtOWE5NC00YWIxLTlkMTYtOTdiMmFlMDdjNzBjIn0.GOfjQV9gerLQ8mTr3ZMouQG7Ri7lyeKdAto2IDovSaVZjEyUYomqIAVhV9xWgBsdsP1OfXTHFNEmPm_PzBA1zg";
 
-            const response = await callbackService.getToken(tokenUrl, requestBody);
+            const response = await callbackService.invokeTokenEndpoint(tokenUrl, requestBody);
 
             expect(mockFetch).toHaveBeenCalledWith(tokenUrl, {
                 method: "POST",
@@ -89,7 +97,10 @@ describe("CallBack Service", () => {
                 },
                 body: requestBody,
             });
-            expect(response).toEqual(mockResponse);
+            expect(response).toEqual({
+                body: "200 OK",
+                statusCode: 200,
+            } as unknown as Response);
         });
         it("handles errors gracefully", async () => {
             mockFetch.mockRejectedValueOnce(new Error("Fetch error"));
@@ -98,7 +109,7 @@ describe("CallBack Service", () => {
             const requestBody =
                 "client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion-type%3Ajwt-bearer&code=an-authorization-code&grant_type=authorization_code&redirect_uri=https%3A%2F%2Ftest-resources.headless-core-stub.redirect%2Fcallback&client_assertion=eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJoZWFkbGVzcy1jb3JlLXN0dWIiLCJzdWIiOiJoZWFkbGVzcy1jb3JlLXN0dWIiLCJhdWQiOiJteS1hdWRpZW5jZSIsImV4cCI6MTc0MjU0NjA0NCwianRpIjoiZWI5YjZiYjAtOWE5NC00YWIxLTlkMTYtOTdiMmFlMDdjNzBjIn0.GOfjQV9gerLQ8mTr3ZMouQG7Ri7lyeKdAto2IDovSaVZjEyUYomqIAVhV9xWgBsdsP1OfXTHFNEmPm_PzBA1zg";
 
-            await expect(callbackService.getToken(tokenUrl, requestBody)).rejects.toThrow("Fetch error");
+            await expect(callbackService.invokeTokenEndpoint(tokenUrl, requestBody)).rejects.toThrow("Fetch error");
 
             expect(mockFetch).toHaveBeenCalledWith(tokenUrl, {
                 method: "POST",

@@ -5,85 +5,70 @@ import { ConfigurationHelper } from "./services/configuration-helper";
 import { CallBackService } from "./services/callback-service";
 import { generatePrivateJwtParams } from "./services/private-key-jwt-helper";
 import { JWK } from "jose";
+import { SessionItem } from "./services/session-item";
 
 const sessionTableName = process.env.SESSION_TABLE || "session-common-cri-api";
 const configurationHelper = new ConfigurationHelper();
-const callbackService = new CallBackService();
 const logger = new Logger();
+const callback = new CallBackService(logger);
+const CONTENT_TYPE_JWT_HEADER = { "Content-Type": "application/jwt" };
 export class CallbackLambdaHandler implements LambdaInterface {
     async handler(event: APIGatewayProxyEvent, _context: Context): Promise<APIGatewayProxyResult> {
         try {
             const authorizationCode = event.queryStringParameters?.authorizationCode as string;
             logger.info({ message: "Received authorizationCode", authorizationCode });
 
-            const sessionItem = await callbackService.getSessionByAuthorizationCode(
-                sessionTableName,
-                authorizationCode,
-            );
-            logger.info({ message: "Fetching session item...", ...sessionItem });
+            const sessionItem = await callback.getSessionByAuthorizationCode(sessionTableName, authorizationCode);
+            logger.info({ message: "Fetched session item...", ...sessionItem });
 
-            const ssmParameters = await configurationHelper.getParameters(sessionItem.clientId);
-            const { privateSigningKey, ...filteredParams } = ssmParameters;
-
-            logger.info({ message: "Fetching SSM parameters", ...filteredParams });
-
-            const privateJwtKey = JSON.parse(privateSigningKey) as JWK;
-            const audience = ssmParameters["audience"];
-
+            const ssmParameters = await this.fetchSSMParameters(sessionItem.clientId);
             logger.info({ message: "Generating private JWT parameters..." });
-            const privateJwtParams = await generatePrivateJwtParams(
-                sessionItem.clientId,
-                authorizationCode,
-                sessionItem.redirectUri,
-                privateJwtKey,
-                audience,
-            );
+            const privateJwtParams = await this.generatePrivateJwtParams(sessionItem, authorizationCode, ssmParameters);
 
+            const audience = ssmParameters["audience"];
             const audienceApi = this.formatAudience(audience);
             logger.info({ message: "Using Audience", audienceApi });
 
             const tokenEndpoint = `${audienceApi}/token`;
             logger.info({ message: "Calling token endpoint", tokenEndpoint, privateJwtParams });
-            const tokenResponse = await callbackService.getToken(tokenEndpoint, privateJwtParams);
-
-            if (!tokenResponse.ok) {
-                const tokenResponseBody = await tokenResponse.text();
-                const status = tokenResponse.status;
-                logger.error({ message: "Request to endpoint failed", tokenEndpoint, status, tokenResponseBody });
-                return { statusCode: tokenResponse.status, body: tokenResponseBody };
-            }
-
+            const tokenResponse = await callback.invokeTokenEndpoint(tokenEndpoint, privateJwtParams);
             logger.info({ message: "Successfully called /token endpoint" });
-            const tokenBody = await tokenResponse.json();
 
+            const tokenBody = JSON.parse(tokenResponse.body);
             const credentialEndpoint = `${audienceApi}/credential/issue`;
             logger.info({ message: "Calling issue credential endpoint", credentialEndpoint });
-            const credential = await callbackService.callIssueCredential(credentialEndpoint, tokenBody.access_token);
-            const credentialResponseJwt = await credential.text();
+            const credential = await callback.invokeCredentialEndpoint(credentialEndpoint, tokenBody.access_token);
 
-            if (!credential.ok) {
-                const endpoint = credentialEndpoint;
-                const status = credential.status;
-                const body = await credential.text();
-                logger.error({ message: "Request to endpoint failed", endpoint, status, body });
-            }
-            logger.info({ message: "Successfully called /credential/issue endpoint" });
-
-            return {
-                statusCode: credential.status,
-                headers: {
-                    "Content-Type": "application/jwt",
-                },
-                body: credentialResponseJwt,
-            };
+            return { statusCode: credential.statusCode, headers: CONTENT_TYPE_JWT_HEADER, body: credential.body };
         } catch (error: unknown) {
             const err = error as Error;
             const value = err.message;
-            logger.error({ message: "Unknown error occurred", value });
+            logger.error({ message: "Error occurred", value });
             return { statusCode: 500, body: err.message };
         }
     }
 
+    private async generatePrivateJwtParams(session: SessionItem, code: string, ssmParameters: Record<string, string>) {
+        logger.info({ message: "Generating private JWT parameters", ...ssmParameters });
+        return await generatePrivateJwtParams(
+            session.clientId,
+            code,
+            session.redirectUri,
+            JSON.parse(ssmParameters["privateSigningKey"]) as JWK,
+            ssmParameters["audience"],
+        );
+    }
+
+    private async fetchSSMParameters(clientId: string) {
+        const ssmParameters = await configurationHelper.getParameters(clientId);
+        const filteredParams = this.excludeFromRecord(ssmParameters, "privateSigningKey");
+        logger.info({ message: "Fetched SSM parameters", ...filteredParams });
+        return ssmParameters;
+    }
+
+    private excludeFromRecord = (record: Record<string, string>, excludeKey: string): Record<string, string> => {
+        return Object.fromEntries(Object.entries(record).filter(([key]) => key !== excludeKey));
+    };
     private formatAudience = (audience: string) =>
         audience.includes("review-") ? audience.replace("review-", "api.review-") : audience;
 }
