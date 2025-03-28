@@ -1,17 +1,15 @@
 import { LambdaInterface } from "@aws-lambda-powertools/commons/types";
 import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from "aws-lambda";
 import { Logger } from "@aws-lambda-powertools/logger";
-import { ConfigurationHelper } from "./services/configuration-helper";
 import { CallBackService } from "./services/callback-service";
 import { generatePrivateJwtParams } from "./services/private-key-jwt-helper";
 import { JWK } from "jose";
 import { SessionItem } from "./services/session-item";
+import { ConfigurationHelper } from "../../../utils/src/services/configuration-helper";
 
 const sessionTableName = process.env.SESSION_TABLE || "session-common-cri-api";
-const configurationHelper = new ConfigurationHelper();
-const logger = new Logger();
+const logger = new Logger({ serviceName: "CallBackService" });
 const callback = new CallBackService(logger);
-const CONTENT_TYPE_JWT_HEADER = { "Content-Type": "application/jwt" };
 export class CallbackLambdaHandler implements LambdaInterface {
     async handler(event: APIGatewayProxyEvent, _context: Context): Promise<APIGatewayProxyResult> {
         try {
@@ -19,37 +17,29 @@ export class CallbackLambdaHandler implements LambdaInterface {
             logger.info({ message: "Received authorizationCode", authorizationCode });
 
             const sessionItem = await callback.getSessionByAuthorizationCode(sessionTableName, authorizationCode);
-            logger.info({ message: "Fetched session item...", ...sessionItem });
-
             const ssmParameters = await this.fetchSSMParameters(sessionItem.clientId);
-            logger.info({ message: "Generating private JWT parameters..." });
-            const privateJwtParams = await this.generatePrivateJwtParams(sessionItem, authorizationCode, ssmParameters);
-
-            const audience = ssmParameters["audience"];
-            const audienceApi = this.formatAudience(audience);
-            logger.info({ message: "Using Audience", audienceApi });
+            const audienceApi = this.formatAudience(ssmParameters["audience"]);
 
             const tokenEndpoint = `${audienceApi}/token`;
-            logger.info({ message: "Calling token endpoint", tokenEndpoint, privateJwtParams });
+            const privateJwtParams = await this.generatePrivateJwtParams(sessionItem, authorizationCode, ssmParameters);
             const tokenResponse = await callback.invokeTokenEndpoint(tokenEndpoint, privateJwtParams);
-            logger.info({ message: "Successfully called /token endpoint" });
 
-            const tokenBody = JSON.parse(tokenResponse.body);
+            const { access_token } = JSON.parse(tokenResponse.body);
             const credentialEndpoint = `${audienceApi}/credential/issue`;
-            logger.info({ message: "Calling issue credential endpoint", credentialEndpoint });
-            const credential = await callback.invokeCredentialEndpoint(credentialEndpoint, tokenBody.access_token);
+            const { statusCode, body } = await callback.invokeCredentialEndpoint(credentialEndpoint, access_token);
 
-            return { statusCode: credential.statusCode, headers: CONTENT_TYPE_JWT_HEADER, body: credential.body };
+            return { statusCode: statusCode, headers: { "Content-Type": "application/jwt" }, body };
         } catch (error: unknown) {
-            const err = error as Error;
-            const value = err.message;
-            logger.error({ message: "Error occurred", value });
-            return { statusCode: 500, body: err.message };
+            const exception = error as Error;
+            logger.error("Error occurred: ", exception.message);
+
+            return { statusCode: 500, body: exception.message };
         }
     }
 
     private async generatePrivateJwtParams(session: SessionItem, code: string, ssmParameters: Record<string, string>) {
-        logger.info({ message: "Generating private JWT parameters", ...ssmParameters });
+        logger.info({ message: "Generating private JWT parameters" });
+
         return await generatePrivateJwtParams(
             session.clientId,
             code,
@@ -60,8 +50,9 @@ export class CallbackLambdaHandler implements LambdaInterface {
     }
 
     private async fetchSSMParameters(clientId: string) {
-        const ssmParameters = await configurationHelper.getParameters(clientId);
+        const ssmParameters = await ConfigurationHelper.getParameters(clientId);
         const filteredParams = this.excludeFromRecord(ssmParameters, "privateSigningKey");
+
         logger.info({ message: "Fetched SSM parameters", ...filteredParams });
         return ssmParameters;
     }
@@ -69,8 +60,12 @@ export class CallbackLambdaHandler implements LambdaInterface {
     private excludeFromRecord = (record: Record<string, string>, excludeKey: string): Record<string, string> => {
         return Object.fromEntries(Object.entries(record).filter(([key]) => key !== excludeKey));
     };
-    private formatAudience = (audience: string) =>
-        audience.includes("review-") ? audience.replace("review-", "api.review-") : audience;
+    private formatAudience = (audience: string) => {
+        const audienceApi = audience.includes("review-") ? audience.replace("review-", "api.review-") : audience;
+
+        logger.info({ message: "Using Audience", audienceApi });
+        return audienceApi;
+    };
 }
 
 const handlerClass = new CallbackLambdaHandler();

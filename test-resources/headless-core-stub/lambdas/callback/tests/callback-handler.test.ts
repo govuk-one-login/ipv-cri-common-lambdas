@@ -1,11 +1,11 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from "aws-lambda";
 import { CallbackLambdaHandler } from "../src/callback-handler";
 import { CallBackService } from "../src/services/callback-service";
-import { ConfigurationHelper } from "../src/services/configuration-helper";
 import * as KeyJwtHelper from "../src/services/private-key-jwt-helper";
 import { SessionItem } from "../src/services/session-item";
+import { ConfigurationHelper } from "../../../utils/src/services/configuration-helper";
 jest.mock("../src/services/callback-service");
-jest.mock("../src/services/configuration-helper");
+jest.mock("../../../utils/src/services/configuration-helper");
 
 describe("callback-handler", () => {
     const sessionTableName = "session-common-cri-api";
@@ -36,7 +36,7 @@ describe("callback-handler", () => {
 
         jest.spyOn(KeyJwtHelper, "generatePrivateJwtParams").mockResolvedValueOnce(keyJwtValue);
 
-        getParametersSpy = jest.spyOn(ConfigurationHelper.prototype, "getParameters").mockResolvedValueOnce({
+        getParametersSpy = jest.spyOn(ConfigurationHelper, "getParameters").mockResolvedValueOnce({
             redirectUri,
             audience,
             issuer: "https://issuer.example.com",
@@ -100,7 +100,7 @@ describe("callback-handler", () => {
                 clientId,
                 redirectUri,
             } as SessionItem);
-        getParametersSpy = jest.spyOn(ConfigurationHelper.prototype, "getParameters").mockResolvedValueOnce({
+        getParametersSpy = jest.spyOn(ConfigurationHelper, "getParameters").mockResolvedValueOnce({
             redirectUri,
             audience,
             issuer: "https://issuer.example.com",
@@ -131,7 +131,7 @@ describe("callback-handler", () => {
         sessionByAuthorizationCodeSpy = jest
             .spyOn(CallBackService.prototype, "getSessionByAuthorizationCode")
             .mockResolvedValueOnce({ clientId, redirectUri } as SessionItem);
-        getParametersSpy = jest.spyOn(ConfigurationHelper.prototype, "getParameters").mockResolvedValueOnce({
+        getParametersSpy = jest.spyOn(ConfigurationHelper, "getParameters").mockResolvedValueOnce({
             redirectUri,
             audience,
             issuer: "https://issuer.example.com",
