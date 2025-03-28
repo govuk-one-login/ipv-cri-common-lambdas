@@ -1,0 +1,13 @@
+{
+    "name": "test-resources-integration-tests",
+    "description": "Integration tests for test resources",
+    "scripts": {
+        "lint": "eslint .",
+        "lint:fix": "eslint . --fix",
+        "unit": "jest",
+        "test": "npm run unit --",
+        "compile": "tsc"
+    },
+    "dependencies": {},
+    "devDependencies": {}
+}
