@@ -106,7 +106,39 @@ paths:
             statusCode: 200
             responseTemplates:
               application/json: |
-                $input.json('$.Items')
+                $input.json('$.Items')           
+  /start:
+    post:
+      security:
+        - sigv4Reference: [ ]
+      description: Headless core stub start. Used for testing purposes only.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JWTClaimsSetOverrides"
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StartResponse"
+        400:
+          description: Bad request
+        500:
+          description: Internal server error
+      x-amazon-apigateway-request-validator: "Validate both"
+      x-amazon-apigateway-integration:
+        httpMethod: "POST"
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${StartFunction.Arn}:live/invocations
+        responses:
+          default:
+            statusCode: "200"
+        passthroughBehavior: "when_no_match"
+        contentHandling: "CONVERT_TO_TEXT"
+        type: "aws_proxy"
 
 x-amazon-apigateway-request-validators:
   Validate both:
@@ -133,3 +165,76 @@ components:
       name: Authorization
       in: header
       x-amazon-apigateway-authtype: awsSigv4
+  schemas:
+    JWTClaimsSetOverrides:
+      type: "object"
+      properties:
+        iss:
+          type: "string"
+          format: "uri"
+          description: "An identifier of the issuer of the JWT"
+          example: "https://localhost/callback"
+        sub:
+          type: "string"
+          format: "uri"
+          description: "The user's subject identifier"
+          example: "urn:fdc:gov.uk:a9fb8e38-0458-4dc0-8bec-2662709cb240"
+        aud:
+          type: "string"
+          format: "uri"
+          description: "An identifier of the recipient of the JWT, ie the credential issuer/collector server"
+          example: "https://review-a.dev.account.gov.uk"
+        iat:
+          type: "number"
+          description: "Issued at (seconds)"
+          example: "1742384945"
+        exp:
+          type: "number"
+          description: "Expiration (seconds)"
+          example: "1742384945"
+        nbf:
+          type: "number"
+          description: "Not before (seconds)"
+          example: "1742384945"
+        response_type:
+          type: "string"
+          example: "code"
+        client_id:
+          type: "string"
+          description: "The OAuth client identifier"
+          example: "ipv-core-stub-aws-headless"
+        redirect_uri:
+          type: "string"
+          format: "uri"
+          description: "The OAuth client redirect uri, where the user will be redirected in the authorization response"
+          example: "https://localhost/callback"
+        state:
+          type: "string"
+          description: "A random state value, to be returned in the authorization response"
+          example: "b72b0ac6-4038-44e1-904c-f1e07832f266"
+        govuk_signin_journey_id:
+          type: "string"
+          description: "a non-empty string value used to correlate sessions across IPV and credential issuers"
+          example: "d6e00a9b-d66a-4572-b331-318edf307eca"
+        shared_claims:
+          type: "object"
+          description: "User information for credential issuing"
+        evidence_requested:
+          type: "object"
+          description: "Configure the checks being requested to a Credential Issuer"
+        context:
+          type: "string"
+          description: "Configure the information collected from a user by Credential Collector"
+          example: "international_user"
+    StartResponse:
+      required:
+        - "client_id"
+        - "request"
+      type: "object"
+      properties:
+        client_id:
+          type: "string"
+          minLength: 1
+          example: "ipv-core-stub-aws-headless"
+        request:
+          type: "string"
