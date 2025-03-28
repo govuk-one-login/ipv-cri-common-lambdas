@@ -1,6 +1,6 @@
 import { ConfigurationHelper } from "../../src/services/configuration-helper";
 import * as SSMPowerToolsParameter from "@aws-lambda-powertools/parameters/ssm";
-import * as GetParameters from "../../../utils/parameter/get-parameters";
+import * as GetParameters from "../../src/parameter/get-parameters";
 jest.mock("@aws-lambda-powertools/parameters/ssm");
 
 describe("ConfigurationHelper", () => {
@@ -22,7 +22,7 @@ describe("ConfigurationHelper", () => {
 
     describe("getParameters", () => {
         beforeEach(() => {
-            jest.mock("../../../utils/parameter/get-parameters");
+            jest.mock("../../src/parameter/get-parameters");
         });
         afterEach(() => jest.clearAllMocks());
         it("generates correct parameter paths and calls getParametersValues", async () => {
@@ -30,7 +30,7 @@ describe("ConfigurationHelper", () => {
                 `/${commonParameterPrefix}/clients/${clientId}/jwtAuthentication/audience`,
                 `/${commonParameterPrefix}/clients/${clientId}/jwtAuthentication/issuer`,
                 `/${commonParameterPrefix}/clients/${clientId}/jwtAuthentication/redirectUri`,
-                `/${testResourcesParameterPrefix}/${clientId}/privateSigningKey`,
+                `/${testResourcesParameterPrefix}/ipv-core-stub-aws-headless/privateSigningKey`,
             ];
 
             jest.spyOn(GetParameters, "getParametersValues").mockResolvedValueOnce({
