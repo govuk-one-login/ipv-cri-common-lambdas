@@ -4,10 +4,12 @@
     "scripts": {
         "lint": "eslint .",
         "lint:fix": "eslint . --fix",
-        "unit": "jest",
-        "test": "npm run unit --",
+        "test": "jest --",
         "compile": "tsc"
     },
-    "dependencies": {},
-    "devDependencies": {}
+    "devDependencies": {
+        "@aws-sdk/client-cloudformation": "3.777.0",
+        "@aws-sdk/client-dynamodb": "3.777.0",
+        "@aws-sdk/types": "3.775.0"
+    }
 }
