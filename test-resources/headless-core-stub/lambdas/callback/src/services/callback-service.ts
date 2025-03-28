@@ -2,6 +2,7 @@ import { DynamoDBClient, QueryCommand } from "@aws-sdk/client-dynamodb";
 import { SessionItem } from "./session-item";
 import { APIGatewayProxyResult } from "aws-lambda";
 import { Logger } from "@aws-lambda-powertools/logger";
+import { withRetry } from "../../../../utils/src/retrier/retry";
 
 export class CallBackService {
     constructor(
@@ -10,31 +11,33 @@ export class CallBackService {
     ) {}
 
     public async getSessionByAuthorizationCode(sessionTable: string, code: string): Promise<SessionItem> {
-        const sessionItemQuery = await this.dynamoDbClient.send(
-            new QueryCommand({
-                TableName: sessionTable,
-                IndexName: "authorizationCode-index",
-                KeyConditionExpression: "authorizationCode = :authorizationCode",
-                ExpressionAttributeValues: {
-                    ":authorizationCode": {
-                        S: code as string,
+        this.logger.info({ message: "Fetching session item...", authorizationCode: code });
+        return await withRetry<SessionItem>(async () => {
+            const sessionItemQuery = await this.dynamoDbClient.send(
+                new QueryCommand({
+                    TableName: sessionTable,
+                    IndexName: "authorizationCode-index",
+                    KeyConditionExpression: "authorizationCode = :authorizationCode",
+                    ExpressionAttributeValues: {
+                        ":authorizationCode": { S: code },
                     },
-                },
-            }),
-        );
+                }),
+            );
 
-        if (sessionItemQuery.Count == 0 || !sessionItemQuery.Items) {
-            throw new Error("No session item found for provided authorizationCode");
-        }
+            if (sessionItemQuery?.Count === 0 || !sessionItemQuery?.Items) {
+                throw new Error("No session item found for provided authorizationCode");
+            }
 
-        const sessionItem = sessionItemQuery.Items[0];
+            const sessionItem = sessionItemQuery.Items[0];
 
-        return {
-            sessionId: sessionItem?.sessionId?.S,
-            clientId: sessionItem?.clientId?.S,
-            authorizationCode: sessionItem?.authorizationCode?.S,
-            redirectUri: sessionItem?.redirectUri?.S,
-        } as SessionItem;
+            this.logger.info({ message: "Fetched session item...", ...sessionItem });
+            return {
+                sessionId: sessionItem?.sessionId?.S,
+                clientId: sessionItem?.clientId?.S,
+                authorizationCode: sessionItem?.authorizationCode?.S,
+                redirectUri: sessionItem?.redirectUri?.S,
+            } as SessionItem;
+        }, this.logger);
     }
 
     public async invokeTokenEndpoint(tokenEndpoint: string, body: string): Promise<APIGatewayProxyResult> {
