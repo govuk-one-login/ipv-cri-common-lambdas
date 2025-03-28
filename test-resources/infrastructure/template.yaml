@@ -56,13 +56,19 @@ Mappings:
     di-ipv-cri-kbv-api:
       pipeline: "di-ipv-cri-pipeline-deployment"
 
+Metadata:
+  cfn-lint:
+    config:
+      ignore_checks:
+        - W8003
+
 Conditions:
   EnforceCodeSigning: !Not [!Equals [!Ref CodeSigningConfigArn, ""]]
   UsePermissionsBoundary: !Not [!Equals [!Ref PermissionsBoundary, ""]]
   DequeueEvents: !Not [!Equals [!Ref Environment, localdev]]
   # Don't create domain resources for the common dev account as there are none
   CreateDomainResources: !Not [!Equals [!Sub "${AWS::AccountId}", "486210938254"]]
-  IsDevPlatformDeploy: !Equals [ !FindInMap [ CriVpcMapping, !Ref CriIdentifier, "pipeline" ], "di-devplatform-deploy" ]
+  IsDevPlatformDeploy: !Equals [ !FindInMap [ CriVpcMapping, !Ref CriIdentifier, "pipeline"  ], "di-devplatform-deploy" ]
 
 Globals:
   Function:
