@@ -6,7 +6,8 @@ on:
     branches: [main]
     paths: [test-resources/**]
 
-permissions: {}
+permissions:
+  packages: read
 
 jobs:
   build:
@@ -15,7 +16,21 @@ jobs:
     outputs:
       cache-key: ${{ steps.build.outputs.cache-key }}
       cache-restore-keys: ${{ steps.build.outputs.cache-restore-keys }}
+    env:
+      NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
+      - name: Pull repository
+        uses: actions/checkout@v4
+        
+      - name: Install Node
+        uses: actions/setup-node@v4
+        with:
+          cache: npm
+          cache-dependency-path: ./package-lock.json
+          registry-url: "https://npm.pkg.github.com"
+          scope: "@govuk-one-login"
+          always-auth: true
+
       - name: Build SAM application
         id: build
         uses: govuk-one-login/github-actions/sam/build-application@c9c3f2ef04d9145894de83e973b0f4dc1e90d14e
@@ -23,7 +38,6 @@ jobs:
           template: test-resources/infrastructure/template.yaml
           source-dir: test-resources/**/lambdas/src
           cache-name: test-resources
-          pull-repository: true
 
   publish:
     needs: build
