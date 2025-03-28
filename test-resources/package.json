@@ -7,7 +7,8 @@
     "scripts": {
         "lint": "eslint .",
         "lint:fix": "eslint . --fix",
-        "unit": "jest --silent",
+        "unit": "export POWERTOOLS_DEV=true && jest --silent",
+        "unit:logs": "jest",
         "test": "npm run unit --",
         "test:coverage": "npm run unit -- --coverage",
         "sam:validate": "cd infrastructure && sam validate && sam validate --lint",

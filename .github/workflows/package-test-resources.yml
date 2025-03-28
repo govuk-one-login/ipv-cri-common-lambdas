@@ -45,7 +45,7 @@ jobs:
     environment: test-resources-${{ matrix.environment }}
     name: ${{ format('Publish to {0} {1}', matrix.name, matrix.environment) }}
     concurrency:
-      group: package-test-resources-${{ matrix.environment }}
+      group: package-test-resources-${{ matrix.name }}-${{ matrix.environment }}
       cancel-in-progress: false
     permissions:
       id-token: write

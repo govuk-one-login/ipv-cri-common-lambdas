@@ -60,7 +60,7 @@ jobs:
     timeout-minutes: 15
     needs: build
     concurrency:
-      group: deploy-development-${{ github.head_ref || github.ref_name }}
+      group: deploy-development-tr-${{ github.head_ref || github.ref_name }}
     environment:
       name: test-resources-dev
       url: ${{ steps.deploy.outputs.stack-url }}

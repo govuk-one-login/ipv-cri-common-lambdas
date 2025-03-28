@@ -1,4 +1,4 @@
-import { getParametersValues } from "../../../../utils/src/parameter/get-parameters";
+import { getParametersValues } from "../parameter/get-parameters";
 
 const commonParameterPrefix = process.env.AWS_STACK_NAME || "common-cri-api";
 const testResourcesParameterPrefix = process.env.TEST_RESOURCES_STACK_NAME || "test-resources";
