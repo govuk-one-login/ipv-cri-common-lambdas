@@ -48,6 +48,13 @@ Mappings:
         dev: review-k.dev.account.gov.uk
         build: review-k.build.account.gov.uk
         staging: review-k.staging.account.gov.uk
+  CriVpcMapping:
+    di-ipv-cri-check-hmrc-api:
+      pipeline: "di-devplatform-deploy"
+    di-ipv-cri-address-api:
+      pipeline: "di-ipv-cri-pipeline-deployment"
+    di-ipv-cri-kbv-api:
+      pipeline: "di-ipv-cri-pipeline-deployment"
 
 Conditions:
   EnforceCodeSigning: !Not [!Equals [!Ref CodeSigningConfigArn, ""]]
@@ -55,6 +62,7 @@ Conditions:
   DequeueEvents: !Not [!Equals [!Ref Environment, localdev]]
   # Don't create domain resources for the common dev account as there are none
   CreateDomainResources: !Not [!Equals [!Sub "${AWS::AccountId}", "486210938254"]]
+  IsDevPlatformDeploy: !Equals [ !FindInMap [ CriVpcMapping, !Ref CriIdentifier, "pipeline" ], "di-devplatform-deploy" ]
 
 Globals:
   Function:
@@ -67,9 +75,10 @@ Globals:
     VpcConfig:
       SecurityGroupIds:
         - !ImportValue cri-vpc-AWSServicesEndpointSecurityGroupId
-      SubnetIds:
-        - !ImportValue cri-vpc-ProtectedSubnetIdA
-        - !ImportValue cri-vpc-ProtectedSubnetIdB
+      SubnetIds: !If
+        - IsDevPlatformDeploy
+        - [ !ImportValue cri-vpc-ProtectedSubnetIdA, !ImportValue cri-vpc-ProtectedSubnetIdB ]
+        - [ !ImportValue cri-vpc-PrivateSubnetIdA, !ImportValue cri-vpc-PrivateSubnetIdB ]
     Tracing: Active
     MemorySize: 1024
     Environment:
