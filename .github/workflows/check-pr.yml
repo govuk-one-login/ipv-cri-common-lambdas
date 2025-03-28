@@ -7,6 +7,10 @@ jobs:
   code-quality:
     name: Code quality
     uses: ./.github/workflows/code-quality.yml
+    permissions:
+      packages: read
+    secrets:
+      npm-token: ${{ secrets.GITHUB_TOKEN }}
 
   unit-tests-ts:
     name: Unit tests
@@ -70,3 +74,6 @@ jobs:
     permissions:
       id-token: write
       contents: read
+      packages: read
+    secrets:
+      npm-token: ${{ secrets.GITHUB_TOKEN }}

@@ -53,6 +53,8 @@ Conditions:
   EnforceCodeSigning: !Not [!Equals [!Ref CodeSigningConfigArn, ""]]
   UsePermissionsBoundary: !Not [!Equals [!Ref PermissionsBoundary, ""]]
   DequeueEvents: !Not [!Equals [!Ref Environment, localdev]]
+  # Don't create domain resources for the common dev account as there are none
+  CreateDomainResources: !Not [!Equals [!Sub "${AWS::AccountId}", "486210938254"]]
 
 Globals:
   Function:
@@ -258,6 +260,7 @@ Resources:
       RetentionInDays: 30
 
   TestHarnessCustomDomain:
+    Condition: CreateDomainResources
     Type: AWS::ApiGatewayV2::DomainName
     Properties:
       DomainName: !Sub
@@ -270,6 +273,7 @@ Resources:
           SecurityPolicy: TLS_1_2
 
   ExternalCertificate:
+    Condition: CreateDomainResources
     Type: AWS::CertificateManager::Certificate
     Properties:
       DomainName: !Sub
@@ -290,6 +294,7 @@ Resources:
       ValidationMethod: DNS
 
   TestHarnessApiDomainRecord:
+    Condition: CreateDomainResources
     Type: AWS::Route53::RecordSet
     Properties:
       Name: !Ref TestHarnessCustomDomain
@@ -302,6 +307,7 @@ Resources:
 
   # Base Path Mapping
   TestHarnessApiBasePathMapping:
+    Condition: CreateDomainResources
     Type: AWS::ApiGateway::BasePathMapping
     Properties:
       DomainName: !Ref TestHarnessCustomDomain
@@ -339,6 +345,9 @@ Outputs:
     Description: API Gateway endpoint URL for the test harness endpoints
     Export:
       Name: !Sub ${AWS::StackName}-TestHarnessExecuteUrl
-    Value: !Sub
-      - https://${URL}/
-      - URL: !Ref TestHarnessCustomDomain
+    Value: !If
+      - CreateDomainResources
+      - !Sub
+        - https://${URL}/
+        - URL: !Ref TestHarnessCustomDomain
+      - !Sub https://${APIGateway}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/
