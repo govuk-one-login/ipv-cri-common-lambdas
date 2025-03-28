@@ -14,14 +14,18 @@ describe("CallBack Service", () => {
     let mockSend: jest.Mock;
     let mockLoggerError: jest.Mock;
     let mockLoggerInfo: jest.Mock;
+    let mockLoggerWarn: jest.Mock;
+
     let callbackService: CallBackService;
 
     beforeEach(() => {
         mockSend = jest.fn();
         mockLoggerError = jest.fn();
         mockLoggerInfo = jest.fn();
+        mockLoggerWarn = jest.fn();
+
         callbackService = new CallBackService(
-            { error: mockLoggerError, info: mockLoggerInfo } as unknown as Logger,
+            { error: mockLoggerError, info: mockLoggerInfo, warn: mockLoggerWarn } as unknown as Logger,
             { send: mockSend } as unknown as DynamoDBClient,
         );
     });
