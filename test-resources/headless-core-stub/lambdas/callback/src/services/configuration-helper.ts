@@ -9,7 +9,7 @@ export class ConfigurationHelper {
             `/${commonParameterPrefix}/clients/${clientId}/jwtAuthentication/audience`,
             `/${commonParameterPrefix}/clients/${clientId}/jwtAuthentication/issuer`,
             `/${commonParameterPrefix}/clients/${clientId}/jwtAuthentication/redirectUri`,
-            `/${testResourcesParameterPrefix}/${clientId}/privateSigningKey`,
+            `/${testResourcesParameterPrefix}/ipv-core-stub-aws-headless/privateSigningKey`,
         ];
         return getParametersValues(parameters);
     }
