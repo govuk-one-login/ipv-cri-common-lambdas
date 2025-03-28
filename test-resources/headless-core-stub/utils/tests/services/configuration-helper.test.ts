@@ -40,9 +40,7 @@ describe("ConfigurationHelper", () => {
                 privateSigningKey: "mock-key",
             });
 
-            const configurationHelper = new ConfigurationHelper();
-
-            const result = await configurationHelper.getParameters(clientId);
+            const result = await ConfigurationHelper.getParameters(clientId);
 
             expect(GetParameters.getParametersValues).toHaveBeenCalledWith(expectedParameters);
             expect(result).toEqual({
