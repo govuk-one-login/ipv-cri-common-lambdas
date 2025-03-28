@@ -36,9 +36,10 @@ class KMSRSADecrypter implements JWEDecrypter {
     private static final Logger LOGGER = LogManager.getLogger();
 
     private static final String CLIENT_JAR_KMS_ENCRYPTION_KEY_ALIAS_PRIMARY =
-            "dev_identity_signing_key"; //change the name to session_decryption_key_current
+            "dev_identity_signing_key"; // change the name to session_decryption_key_current
     private static final String CLIENT_JAR_KMS_ENCRYPTION_KEY_ALIAS_SECONDARY =
-            "dev_identity_signing_key_previous"; //change the name to session_decryption_key_previous
+            "dev_identity_signing_key_previous"; // change the name to
+    // session_decryption_key_previous
 
     private final boolean keyRotationEnabled =
             Boolean.parseBoolean(System.getenv("ENV_VAR_FEATURE_FLAG_KEY_ROTATION"));
@@ -91,18 +92,16 @@ class KMSRSADecrypter implements JWEDecrypter {
                             .build();
 
             // During a key rotation we might receive JWTs encrypted with either the old or new key.
-            boolean primaryKeyUnsuccessful = true;
+            boolean primaryKeySuccessful = false;
             try {
                 System.out.println("Policy added");
                 System.out.println("PRIMARY KEY BLOCK:::::");
                 decryptResponse = kmsClient.decrypt(encryptedKeyDecryptRequestPrimary);
-                String encryptKeyID = decryptResponse.keyId();
-                String hashedKeyId = createHashedKeyId(encryptKeyID);
-                primaryKeyUnsuccessful = false;
+                primaryKeySuccessful = true;
             } catch (Exception e) {
                 LOGGER.warn("Failed to decrypt with primary key. Trying secondary", e);
             }
-            if (primaryKeyUnsuccessful) {
+            if (!primaryKeySuccessful) {
 
                 var encryptedKeyDecryptRequestSecondary =
                         DecryptRequest.builder()
@@ -121,6 +120,12 @@ class KMSRSADecrypter implements JWEDecrypter {
                 }
             }
 
+            System.out.println("This is the hashed header key ID::::: " + header.getKeyID());
+            boolean keyMatch = validateKeyID(header.getKeyID(), decryptResponse);
+            if (!keyMatch) {
+                throw new JOSEException("Hashed keyIds do not match");
+            }
+
         } else {
             System.out.println("KeyRotationEnabled Flag set to false");
             DecryptRequest decryptRequest =
@@ -137,6 +142,11 @@ class KMSRSADecrypter implements JWEDecrypter {
                 header, null, encryptedKey, iv, cipherText, authTag, cek, getJCAContext());
     }
 
+    private String extractKeyId(String keyArn) {
+        int idIndex = keyArn.lastIndexOf("/");
+        return keyArn.substring(idIndex + 1);
+    }
+
     private String createHashedKeyId(String keyId) throws NoSuchAlgorithmException {
         System.out.println("ENTER CREATE HASHED KEY ID METHOD");
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
@@ -144,9 +154,21 @@ class KMSRSADecrypter implements JWEDecrypter {
         return Hex.encodeHexString(hash);
     }
 
-    // TODO: Helper method to compare hashed keyIDs - validation check
-    //compare it with the hashed kid we received in the JWE header
-    //fail if not matched
+    private boolean validateKeyID(String headerKeyId, DecryptResponse decryptResponse)
+            throws JOSEException {
+        try {
+            String keyARN = decryptResponse.keyId();
+            System.out.println("KEY ARN FROM DECRYPT RESPONSE: " + keyARN);
+            String decryptedKeyID = extractKeyId(keyARN);
+            System.out.println("KEYID AFTER EXTRACTION: " + decryptedKeyID);
+            String hashedDecryptedKeyId = createHashedKeyId(decryptedKeyID);
+            System.out.println("HASHED KEY: " + hashedDecryptedKeyId);
+            return headerKeyId.equals(hashedDecryptedKeyId);
+        } catch (NoSuchAlgorithmException e) {
+            throw new JOSEException("Hashed key method has failed.");
+        }
+    }
+
     @Override
     public Set<JWEAlgorithm> supportedJWEAlgorithms() {
         return SUPPORTED_ALGORITHMS;
