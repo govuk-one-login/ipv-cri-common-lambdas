@@ -10,8 +10,10 @@
     "devDependencies": {
         "@aws-sdk/client-cloudformation": "3.777.0",
         "@aws-sdk/client-dynamodb": "3.777.0",
-        "@aws-sdk/credential-providers": "^3.777.0",
+        "@aws-sdk/client-kms": "3.777.0",
+        "@aws-sdk/credential-providers": "3.777.0",
         "@aws-sdk/types": "3.775.0",
-        "aws-sigv4-fetch": "^4.4.1"
+        "aws-sigv4-fetch": "^4.4.1",
+        "jose": "^6.0.10"
     }
 }
