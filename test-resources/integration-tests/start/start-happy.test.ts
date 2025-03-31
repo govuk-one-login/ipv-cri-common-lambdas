@@ -20,16 +20,20 @@ describe("core stub start endpoint", () => {
         ({ TestHarnessExecuteUrl } = await stackOutputs(process.env.STACK_NAME));
     });
     it("returns 200 for a valid request", async () => {
-        const response = await signedFetch(`${TestHarnessExecuteUrl}start`, {
+        const clientId = "ipv-core-stub-aws-headless";
+        const data = await signedFetch(`${TestHarnessExecuteUrl}start`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
             },
-            body: JSON.stringify({ aud: "https://review-a.dev.account.gov.uk" }),
+            body: JSON.stringify({ aud: "https://review-a.dev.account.gov.uk", client_id: clientId }),
         });
 
-        console.log("TestHarnessExecuteUrl", TestHarnessExecuteUrl);
+        const response = await data.json();
+
         // console.log("response", response);
-        expect(response.status).toBe(200);
+
+        expect(data.status).toBe(200);
+        expect(response.client_id).toBe(clientId);
     });
 });
