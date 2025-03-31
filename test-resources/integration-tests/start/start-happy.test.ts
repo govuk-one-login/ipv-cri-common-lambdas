@@ -92,4 +92,59 @@ describe("core stub start endpoint", () => {
             ],
         });
     });
+
+    it("returns overridden shared claims if provided", async () => {
+        const sharedClaimsOverrides = {
+            name: [
+                {
+                    nameParts: [
+                        {
+                            type: "GivenName",
+                            value: "Test",
+                        },
+                        {
+                            type: "FamilyName",
+                            value: "Tester",
+                        },
+                    ],
+                },
+            ],
+            birthDate: [{ value: "2000-02-02" }],
+            address: [
+                {
+                    addressLocality: "LONDON",
+                    buildingNumber: "1",
+                    postalCode: "EE2 1AA",
+                    streetName: "Test st",
+                    validFrom: "2024-01-01",
+                },
+            ],
+        };
+        const data = await signedFetch(`${testHarnessExecuteUrl}start`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ aud, client_id: clientId, iss, shared_claims: sharedClaimsOverrides }),
+        });
+
+        const { client_id, request } = await data.json();
+
+        const jwtBuffer = await jweDecrypter.decryptJwe(request);
+        const jwtVerifier = jwtVerifierFactory.create(authenticationAlg, publicSigningJwkBase64);
+        const payload = await jwtVerifier.verify(
+            jwtBuffer,
+            new Set([ClaimNames.EXPIRATION_TIME, ClaimNames.SUBJECT, ClaimNames.NOT_BEFORE, ClaimNames.STATE]),
+            new Map([
+                [ClaimNames.AUDIENCE, aud],
+                [ClaimNames.ISSUER, iss],
+            ]),
+        );
+
+        expect(data.status).toBe(200);
+        expect(client_id).toBe(clientId);
+        expect(payload?.iss).toEqual(iss);
+        expect(payload?.aud).toEqual(aud);
+        expect(payload?.shared_claims).toEqual(sharedClaimsOverrides);
+    });
 });
