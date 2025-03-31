@@ -1,23 +1,11 @@
-import { fromNodeProviderChain } from "@aws-sdk/credential-providers";
-import { createSignedFetcher } from "aws-sigv4-fetch";
 import { stackOutputs } from "../helpers/cloudformation";
+import { signedFetch } from "../helpers/fetch";
 import { kmsClient } from "../helpers/kms";
 import { JweDecrypter } from "../helpers/jwe-decrypter";
 import { JwtVerifierFactory, ClaimNames } from "../helpers/jwt-verifier";
 import { getParametersValues } from "../../headless-core-stub/lambdas/utils/parameter/get-parameters";
 
-const customCredentialsProvider = fromNodeProviderChain({
-    timeout: 1000,
-    maxRetries: 0,
-});
-
-const signedFetch = createSignedFetcher({
-    region: "eu-west-2",
-    service: "execute-api",
-    credentials: customCredentialsProvider,
-});
-
-describe("core stub start endpoint", () => {
+describe("happy path core stub start endpoint", () => {
     let authenticationAlg;
     let publicSigningJwkBase64;
     let testHarnessExecuteUrl;
