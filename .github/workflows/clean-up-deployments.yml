@@ -29,7 +29,7 @@ jobs:
         uses: govuk-one-login/github-actions/sam/get-stale-stacks@ca188729ecb0c92e5fe5ae7c024f9894815da3a1
         with:
           threshold-days: 14
-          stack-name-filter: preview-common-lambdas
+          stack-name-filter: preview
           stack-tag-filters: |
             cri:deployment-source=github-actions
             cri:stack-type=preview
