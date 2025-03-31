@@ -1,10 +1,9 @@
 import { getParametersValues } from "../parameter/get-parameters";
+import config from "./config";
+const { commonParameterPrefix, testResourcesParameterPrefix } = config;
 
-const commonParameterPrefix = process.env.AWS_STACK_NAME || "common-cri-api";
-const testResourcesParameterPrefix = process.env.TEST_RESOURCES_STACK_NAME || "test-resources";
-
-export class ConfigurationHelper {
-    public static async getParameters(clientId: string) {
+export class ClientConfiguration {
+    public static async getConfig(clientId: string) {
         const parameters = [
             `/${commonParameterPrefix}/clients/${clientId}/jwtAuthentication/audience`,
             `/${commonParameterPrefix}/clients/${clientId}/jwtAuthentication/issuer`,

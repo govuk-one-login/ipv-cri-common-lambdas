@@ -1,9 +1,9 @@
-import { ConfigurationHelper } from "../../src/services/configuration-helper";
+import { ClientConfiguration } from "../../src/services/client-configuration";
 import * as SSMPowerToolsParameter from "@aws-lambda-powertools/parameters/ssm";
 import * as GetParameters from "../../src/parameter/get-parameters";
 jest.mock("@aws-lambda-powertools/parameters/ssm");
 
-describe("ConfigurationHelper", () => {
+describe("ClientConfiguration", () => {
     const commonParameterPrefix = "mock-common-prefix";
     const testResourcesParameterPrefix = "mock-test-resources-prefix";
     const issuer = "mock-issuer";
@@ -20,12 +20,12 @@ describe("ConfigurationHelper", () => {
         jest.clearAllMocks();
     });
 
-    describe("getParameters", () => {
+    describe("getConfig", () => {
         beforeEach(() => {
             jest.mock("../../src/parameter/get-parameters");
         });
         afterEach(() => jest.clearAllMocks());
-        it("generates correct parameter paths and calls getParametersValues", async () => {
+        it("returns expected values when properly configured", async () => {
             const expectedParameters = [
                 `/${commonParameterPrefix}/clients/${clientId}/jwtAuthentication/audience`,
                 `/${commonParameterPrefix}/clients/${clientId}/jwtAuthentication/issuer`,
@@ -40,7 +40,7 @@ describe("ConfigurationHelper", () => {
                 privateSigningKey: "mock-key",
             });
 
-            const result = await ConfigurationHelper.getParameters(clientId);
+            const result = await ClientConfiguration.getConfig(clientId);
 
             expect(GetParameters.getParametersValues).toHaveBeenCalledWith(expectedParameters);
             expect(result).toEqual({

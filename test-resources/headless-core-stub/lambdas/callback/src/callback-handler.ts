@@ -5,9 +5,10 @@ import { CallBackService } from "./services/callback-service";
 import { generatePrivateJwtParams } from "./services/private-key-jwt-helper";
 import { JWK } from "jose";
 import { SessionItem } from "./services/session-item";
-import { ConfigurationHelper } from "../../../utils/src/services/configuration-helper";
+import { ClientConfiguration } from "../../../utils/src/services/client-configuration";
+import config from "../../../utils/src/services/config";
 
-const sessionTableName = process.env.SESSION_TABLE || "session-common-cri-api";
+const { sessionTableName } = config;
 const logger = new Logger({ serviceName: "CallBackService" });
 const callback = new CallBackService(logger);
 export class CallbackLambdaHandler implements LambdaInterface {
@@ -17,11 +18,11 @@ export class CallbackLambdaHandler implements LambdaInterface {
             logger.info({ message: "Received authorizationCode", authorizationCode });
 
             const sessionItem = await callback.getSessionByAuthorizationCode(sessionTableName, authorizationCode);
-            const ssmParameters = await this.fetchSSMParameters(sessionItem.clientId);
-            const audienceApi = this.formatAudience(ssmParameters["audience"]);
+            const ssmParameter = await this.fetchSSMParameters(sessionItem.clientId);
+            const audienceApi = this.formatAudience(ssmParameter.audience);
 
             const tokenEndpoint = `${audienceApi}/token`;
-            const privateJwtParams = await this.generatePrivateJwtParams(sessionItem, authorizationCode, ssmParameters);
+            const privateJwtParams = await this.generatePrivateJwtParams(sessionItem, authorizationCode, ssmParameter);
             const tokenResponse = await callback.invokeTokenEndpoint(tokenEndpoint, privateJwtParams);
 
             const { access_token } = JSON.parse(tokenResponse.body);
@@ -44,13 +45,13 @@ export class CallbackLambdaHandler implements LambdaInterface {
             session.clientId,
             code,
             session.redirectUri,
-            JSON.parse(ssmParameters["privateSigningKey"]) as JWK,
-            ssmParameters["audience"],
+            JSON.parse(ssmParameters.privateSigningKey) as JWK,
+            ssmParameters.audience,
         );
     }
 
     private async fetchSSMParameters(clientId: string) {
-        const ssmParameters = await ConfigurationHelper.getParameters(clientId);
+        const ssmParameters = await ClientConfiguration.getConfig(clientId);
         const filteredParams = this.excludeFromRecord(ssmParameters, "privateSigningKey");
 
         logger.info({ message: "Fetched SSM parameters", ...filteredParams });
