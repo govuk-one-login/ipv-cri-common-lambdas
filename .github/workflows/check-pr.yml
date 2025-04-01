@@ -1,6 +1,10 @@
 name: Check PR
 
-on: pull_request
+on:
+  pull_request:
+    paths-ignore:
+      - 'test-resources/**'
+
 permissions: {}
 
 jobs:
@@ -19,14 +23,6 @@ jobs:
   unit-tests-java:
     name: Unit tests
     uses: ./.github/workflows/run-unit-tests-java.yml
-
-  unit-tests-test-resources:
-    name: Unit tests
-    uses: ./.github/workflows/run-unit-tests-test-resources.yml
-    permissions:
-      packages: read
-    secrets:
-      npm-token: ${{ secrets.GITHUB_TOKEN }}
 
   pact-tests-java:
     name: Pact tests
@@ -75,13 +71,3 @@ jobs:
       api-gateway-api-key: ${{ secrets.APIGW_API_KEY }}
       ipv-core-stub-basic-auth-user: ${{ secrets.IPV_CORE_STUB_BASIC_AUTH_USER }}
       ipv-core-stub-basic-auth-pwd: ${{ secrets.IPV_CORE_STUB_BASIC_AUTH_PASSWORD }}
-
-  test-resources-preview:
-    name: Preview Test Resources
-    uses: ./.github/workflows/test-resources-preview.yml
-    permissions:
-      id-token: write
-      contents: read
-      packages: read
-    secrets:
-      npm-token: ${{ secrets.GITHUB_TOKEN }}
