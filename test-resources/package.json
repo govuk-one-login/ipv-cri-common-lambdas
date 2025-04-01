@@ -10,8 +10,9 @@
         "sam:build": "npm run sam:validate && sam build --template infrastructure/template.yaml --cached --parallel",
         "sam:validate": "cd infrastructure && sam validate && sam validate --lint",
         "test": "npm run unit --",
+        "test:integration": "jest --select-projects integration-tests --runInBand",
         "test:coverage": "npm run unit -- --coverage",
-        "unit": "export POWERTOOLS_DEV=true && jest --silent",
+        "unit": "export POWERTOOLS_DEV=true && jest --silent --ignore-projects integration-tests",
         "unit:logs": "jest"
     },
     "dependencies": {
@@ -31,10 +32,17 @@
         "jose": "5.10.0"
     },
     "devDependencies": {
+        "@aws-sdk/client-cloudformation": "3.777.0",
+        "@aws-sdk/client-dynamodb": "3.777.0",
+        "@aws-sdk/credential-providers": "3.777.0",
+        "@aws-sdk/types": "3.775.0",
+        "@smithy/smithy-client": "4.2.0",
+        "@smithy/types": "4.2.0",
         "@types/aws-lambda": "^8.10.145",
         "@types/jest": "^29.5.13",
         "@typescript-eslint/eslint-plugin": "^6.11.0",
         "@typescript-eslint/parser": "^6.11.0",
+        "aws-sigv4-fetch": "4.4.1",
         "eslint": "^8.53.0",
         "eslint-config-prettier": "^9.0.0",
         "eslint-plugin-prettier": "^5.0.1",

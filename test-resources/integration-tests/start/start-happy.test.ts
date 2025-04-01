@@ -3,7 +3,7 @@ import { signedFetch } from "../helpers/fetch";
 import { kmsClient } from "../helpers/kms";
 import { JweDecrypter } from "../helpers/jwe-decrypter";
 import { JwtVerifierFactory, ClaimNames } from "../helpers/jwt-verifier";
-import { getParametersValues } from "../../headless-core-stub/lambdas/utils/parameter/get-parameters";
+import { getParametersValues } from "../../headless-core-stub/utils/src/parameter/get-parameters";
 
 describe("happy path core stub start endpoint", () => {
     let authenticationAlg;
@@ -17,13 +17,16 @@ describe("happy path core stub start endpoint", () => {
     const iss = "https://test-issuer";
 
     beforeAll(async () => {
+        const { TestHarnessExecuteUrl, CommonStackName } = await stackOutputs(process.env.STACK_NAME);
+        testHarnessExecuteUrl = TestHarnessExecuteUrl;
+
+        const { CriDecryptionKey1Id: decryptionKeyId } = await stackOutputs("core-infrastructure");
+
         ({ authenticationAlg, publicSigningJwkBase64 } = await getParametersValues([
-            `/${process.env.COMMON_STACK_NAME}/clients/${clientId}/jwtAuthentication/authenticationAlg`,
-            `/${process.env.COMMON_STACK_NAME}/clients/${clientId}/jwtAuthentication/publicSigningJwkBase64`,
+            `/${CommonStackName}/clients/${clientId}/jwtAuthentication/authenticationAlg`,
+            `/${CommonStackName}/clients/${clientId}/jwtAuthentication/publicSigningJwkBase64`,
         ]));
 
-        ({ TestHarnessExecuteUrl: testHarnessExecuteUrl } = await stackOutputs(process.env.STACK_NAME));
-        const { CriDecryptionKey1Id: decryptionKeyId } = await stackOutputs(process.env.INFRA_STACK_NAME);
         jweDecrypter = new JweDecrypter(kmsClient, () => decryptionKeyId);
     });
 
