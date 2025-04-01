@@ -33,8 +33,8 @@ export class JweDecrypter {
                 protectedHeaderArray,
             );
         } catch (error) {
-            // TODO
-            console.log("error", error);
+            // eslint-disable-next-line no-console
+            console.error("Error decrypting JWE", error);
             throw error;
         }
     }

@@ -7,7 +7,7 @@ const customCredentialsProvider = fromNodeProviderChain({
 });
 
 export const signedFetch = createSignedFetcher({
-    region: "eu-west-2",
+    region: process.env.AWS_REGION,
     service: "execute-api",
     credentials: customCredentialsProvider,
 });

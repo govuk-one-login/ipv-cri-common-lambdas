@@ -47,7 +47,8 @@ export class JwtVerifier {
 
             return payload;
         } catch (error) {
-            // this.logger.error("JWT verification failed", error as Error);
+            // eslint-disable-next-line no-console
+            console.error("JWT verification failed", error as Error);
             return null;
         }
     }
