@@ -1,0 +1,49 @@
+name: Integration tests for test resources
+
+on:
+  workflow_call:
+    inputs:
+      aws-region: {required: false, type: string}
+      stack-name: {required: true, type: string}
+      stack-outputs: {required: true, type: string}
+    secrets:
+      npm-token: { required: true }
+
+concurrency:
+  group: integration-tests-${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  run-tests:
+    name: Integration
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    environment: di-ipv-cri-dev
+    defaults:
+      run:
+        working-directory: test-resources/integration-tests
+    steps:
+      - name: Pull repository
+        uses: actions/checkout@v3
+
+      - name: Install Node
+        uses: actions/setup-node@v4
+        with:
+          cache: npm
+          cache-dependency-path: ./package-lock.json
+          registry-url: "https://npm.pkg.github.com"
+          scope: "@govuk-one-login"
+          always-auth: true
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.npm-token }}
+
+      - name: Run tests
+        env:
+          ENVIRONMENT: dev
+          AWS_REGION: ${{ inputs.aws-region }}
+          STACK_NAME: ${{ inputs.stack-name }}
+          COMMON_STACK_NAME: ${{ fromJson(inputs.stack-outputs).CommonStackName }}
+          INFRA_STACK_NAME: ${{ fromJson(inputs.stack-outputs).TxmaStackName }}
+        run: npm run test
