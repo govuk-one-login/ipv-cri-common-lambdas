@@ -6,7 +6,7 @@ The code in this repository is deployed and promoted through the environments us
 
 The automated deployments are triggered on a push to main after PR approval and GitHub secrets determine deployments.
 
-## Required GitHub secrets:
+## Required GitHub secrets: blah blah
 
 Common CRI secrets for dev environments:
 
