@@ -111,6 +111,52 @@ Resources:
       VpcId:
         Fn::ImportValue: !Sub "${VpcStackName}-VpcId"
 
+  StartFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Sourcemap: true
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-StartFunction"
+      Handler: headless-core-stub/lambdas/start/src/start-handler.lambdaHandler
+      CodeSigningConfigArn:
+        !If [EnforceCodeSigning, !Ref CodeSigningConfigArn, !Ref AWS::NoValue]
+      LoggingConfig:
+        LogGroup: !Sub /aws/lambda/${AWS::StackName}/StartFunction
+      Environment:
+        Variables:
+          POWERTOOLS_SERVICE_NAME: HeadlessCoreStubStartFunction
+          DECRYPTION_KEY_ID: !ImportValue core-infrastructure-CriDecryptionKey1Id
+          AWS_STACK_NAME: !Ref CommonStackName
+      Policies:
+        - Statement:
+            Effect: Allow
+            Action: 'kms:GetPublicKey'
+            Resource: !Sub 'arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/*'
+        - Statement:
+            - Effect: Allow
+              Action:
+                - ssm:GetParametersByPath
+                - ssm:GetParameters
+                - ssm:GetParameter
+              Resource:
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${CommonStackName}/clients/*/jwtAuthentication/*"
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/test-resources/ipv-core-stub-aws-headless/privateSigningKey"
+  
+  StartFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}/StartFunction"
+      RetentionInDays: 30
+
+  StartFunctionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref StartFunction.Alias
+      Principal: apigateway.amazonaws.com
+
   CallbackFunction:
     Type: AWS::Serverless::Function
     Metadata:
@@ -118,6 +164,7 @@ Resources:
       BuildProperties:
         Sourcemap: true
     Properties:
+      FunctionName: !Sub "${AWS::StackName}-CallbackFunction"
       Handler: headless-core-stub/lambdas/callback/src/callback-handler.lambdaHandler
       CodeSigningConfigArn:
         !If [EnforceCodeSigning, !Ref CodeSigningConfigArn, !Ref AWS::NoValue]
