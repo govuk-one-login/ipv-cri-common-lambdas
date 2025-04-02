@@ -413,3 +413,8 @@ Outputs:
         - https://${URL}/
         - URL: !Ref TestHarnessCustomDomain
       - !Sub https://${APIGateway}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/
+  CommonStackName:
+    Description: Common stack name used by the test resources
+    Export:
+      Name: !Sub ${AWS::StackName}-CommonStackName
+    Value: !Ref CommonStackName
