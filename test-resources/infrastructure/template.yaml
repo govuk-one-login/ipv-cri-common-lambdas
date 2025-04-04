@@ -310,7 +310,7 @@ Resources:
   ApiGatewayStage:
     Type: AWS::ApiGateway::Stage
     Properties:
-      StageName: prod
+      StageName: !Ref Environment
       RestApiId:
         Ref: APIGateway
       MethodSettings:
@@ -398,7 +398,7 @@ Resources:
 
       # workaround for sam bug - see https://github.com/aws/serverless-application-model/issues/192#issuecomment-520893111
       # noinspection YamlUnresolvedReferences
-      Stage: !Ref Environment
+      Stage: !Ref ApiGatewayStage
 
   AuditEventsTableRole:
     Type: AWS::IAM::Role
