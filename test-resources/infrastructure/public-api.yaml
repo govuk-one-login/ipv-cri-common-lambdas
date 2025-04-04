@@ -143,19 +143,6 @@ x-amazon-apigateway-request-validators:
     validateRequestBody: true
     validateRequestParameters: true
 
-x-amazon-apigateway-policy:
-  Version: "2012-10-17"
-  Statement:
-    - Effect: "Deny"
-      Principal:
-        AWS:  "*"
-      Action: "execute-api:Invoke"
-      Resource: "execute-api:/*"
-      Condition:
-        StringNotEquals:
-          "aws:PrincipalAccount":
-            - "${AWS::AccountId}"
-
 components:
   securitySchemes:
     sigv4Reference:
