@@ -53,7 +53,7 @@ describe("callback-handler", () => {
 
         const response = await lambdaHandler(
             {
-                queryStringParameters: { authorizationCode },
+                queryStringParameters: { code: authorizationCode },
             } as unknown as APIGatewayProxyEvent,
             {} as Context,
         );
@@ -76,7 +76,7 @@ describe("callback-handler", () => {
             .spyOn(CallBackService.prototype, "getSessionByAuthorizationCode")
             .mockRejectedValueOnce(new Error("No session item found for provided authorizationCode"));
 
-        const event: Partial<APIGatewayProxyEvent> = { queryStringParameters: { authorizationCode } };
+        const event: Partial<APIGatewayProxyEvent> = { queryStringParameters: { code: authorizationCode } };
         const response = await lambdaHandler(event as APIGatewayProxyEvent, {} as Context);
 
         expect(sessionByAuthorizationCodeSpy).toHaveBeenCalledWith(sessionTableName, authorizationCode);
@@ -89,7 +89,7 @@ describe("callback-handler", () => {
     it("handles token endpoint failure gracefully", async () => {
         const event: Partial<APIGatewayProxyEvent> = {
             queryStringParameters: {
-                authorizationCode,
+                code: authorizationCode,
             },
         };
         jest.spyOn(KeyJwtHelper, "generatePrivateJwtParams").mockResolvedValueOnce(keyJwtValue);
@@ -123,7 +123,7 @@ describe("callback-handler", () => {
     it("handles credential endpoint failure gracefully", async () => {
         const event: Partial<APIGatewayProxyEvent> = {
             queryStringParameters: {
-                authorizationCode,
+                code: authorizationCode,
             },
         };
 
