@@ -3,6 +3,12 @@ Transform:
   - AWS::Serverless-2016-10-31
   - AWS::LanguageExtensions
 Description: "Digital Identity IPV CRI common API"
+Metadata:
+  cfn-lint:
+    config:
+      ignore_checks:
+        - W8003
+        - E3031
 
 Parameters:
   CodeSigningConfigArn:
@@ -157,6 +163,7 @@ Globals:
               ]
         DT_OPEN_TELEMETRY_ENABLE_INTEGRATION: "true"
 
+
 Mappings:
 
   EnvironmentConfiguration:
@@ -186,6 +193,51 @@ Mappings:
       staging: 7200 # 2 hours
       integration: 7200 # 2 hours
       production: 7200 # 2 hours
+
+# Use key rotation aliases in session decryption
+  KeyRotationMapping:
+    di-ipv-cri-address-api:
+      dev: "false"
+      build: "false"
+      staging: "false"
+      integration: "false"
+      production: "false"
+    di-ipv-cri-fraud-api:
+      dev: "false"
+      build: "false"
+      staging: "false"
+      integration: "false"
+      production: "false"
+    di-ipv-cri-kbv-api:
+      dev: "false"
+      build: "false"
+      staging: "false"
+      integration: "false"
+      production: "false"
+    di-ipv-cri-dl-api:
+      dev: "false"
+      build: "false"
+      staging: "false"
+      integration: "false"
+      production: "false"
+    di-ipv-cri-passport-api:
+      dev: "true"
+      build: "false"
+      staging: "false"
+      integration: "false"
+      production: "false"
+    di-ipv-cri-kbv-hmrc-api:
+      dev: "false"
+      build: "false"
+      staging: "false"
+      integration: "false"
+      production: "false"
+    di-ipv-cri-check-hmrc-api:
+      dev: "false"
+      build: "false"
+      staging: "false"
+      integration: "false"
+      production: "false"
 
   # TS functions Only 0 = off
   TSProvisionedConcurrencyMapping:
@@ -604,6 +656,7 @@ Resources:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-session"
           SQS_AUDIT_EVENT_QUEUE_URL:
             Fn::ImportValue: !Sub ${TxmaStackName}-AuditEventQueueUrl
+          ENV_VAR_FEATURE_FLAG_KEY_ROTATION: !FindInMap [ KeyRotationMapping, !Ref CriIdentifier, !Ref Environment]
       AutoPublishAlias: live
       AutoPublishAliasAllProperties: true
       SnapStart:
