@@ -14,7 +14,7 @@ const callback = new CallBackService(logger);
 export class CallbackLambdaHandler implements LambdaInterface {
     async handler(event: APIGatewayProxyEvent, _context: Context): Promise<APIGatewayProxyResult> {
         try {
-            const authorizationCode = event.queryStringParameters?.authorizationCode as string;
+            const authorizationCode = event.queryStringParameters?.code as string;
             logger.info({ message: "Received authorizationCode", authorizationCode });
 
             const sessionItem = await callback.getSessionByAuthorizationCode(sessionTableName, authorizationCode);
