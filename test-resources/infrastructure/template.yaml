@@ -310,7 +310,7 @@ Resources:
   ApiGatewayStage:
     Type: AWS::ApiGateway::Stage
     Properties:
-      StageName: prod
+      StageName: !Ref Environment
       RestApiId:
         Ref: APIGateway
       MethodSettings:
