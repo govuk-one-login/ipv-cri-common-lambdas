@@ -311,11 +311,11 @@ Resources:
     Type: AWS::ApiGateway::Deployment
     Properties:
       RestApiId: !Ref APIGateway
+      StageName: !Ref Environment
 
   ApiGatewayStage:
     Type: AWS::ApiGateway::Stage
     Properties:
-      StageName: !Ref Environment
       DeploymentId: !Ref ApiGatewayDeployment
       RestApiId:
         Ref: APIGateway
