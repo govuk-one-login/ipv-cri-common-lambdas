@@ -6,8 +6,6 @@ info:
 paths:
   /callback:
     get:
-      security:
-        - sigv4Reference: [ ]
       summary: handles Callback initiated by ipv-core-stub-aws-headless
       parameters:
         - name: authorizationCode
