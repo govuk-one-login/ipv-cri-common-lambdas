@@ -310,8 +310,7 @@ Resources:
   ApiGatewayDeployment:
     Type: AWS::ApiGateway::Deployment
     Properties:
-      RestApiId:
-        Ref: !Ref APIGateway
+      RestApiId: !Ref APIGateway
       StageName: !Ref Environment
 
   ApiGatewayStage:
