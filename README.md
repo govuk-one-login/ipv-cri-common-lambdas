@@ -94,7 +94,6 @@ You can run against localhost as follows:
 
 `
 
-
 NOTE: The common-lambda stack has an extra `/pre-merge-create-auth-code` endpoint which it uses to create an authorization code which it needs as prerequisite to test certain paths, since it is not a CRI itself (since it just a collection of common endpoints used by CRI's).
 
 ## Check repo for secrets
