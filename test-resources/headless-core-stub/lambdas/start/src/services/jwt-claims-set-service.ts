@@ -76,7 +76,7 @@ export const validateClaimsSet = (claimsSet: JWTClaimsSet) => {
     }
 };
 
-const msToSeconds = (ms: number) => Math.round(ms / 1000);
+const msToSeconds = (ms: number) => Math.floor(ms / 1000);
 
 const defaultClaims = {
     name: [
