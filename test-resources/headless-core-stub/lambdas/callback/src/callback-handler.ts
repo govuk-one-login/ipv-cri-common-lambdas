@@ -29,7 +29,7 @@ export class CallbackLambdaHandler implements LambdaInterface {
             const credentialEndpoint = `${audienceApi}/credential/issue`;
             const { statusCode, body } = await callback.invokeCredentialEndpoint(credentialEndpoint, access_token);
 
-            return { statusCode: statusCode, headers: { "Content-Type": "application/jwt" }, body };
+            return { statusCode: statusCode, headers: { "Content-Type": "text/plain" }, body };
         } catch (error: unknown) {
             const exception = error as Error;
             logger.error("Error occurred: ", exception.message);
