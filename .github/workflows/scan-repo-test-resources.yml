@@ -1,0 +1,52 @@
+name: Scan repository
+
+on:
+  pull_request:
+    paths:
+      - 'test-resources/**'
+      - '.github/**'
+  push:
+    branches: [main]
+  schedule:
+    # Every Monday at 9am
+    - cron: "0 9 * * 1"
+
+concurrency:
+  group: scan-repo-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+permissions: read-all
+
+jobs:
+  unit-tests-test-resources:
+    name: Test coverage
+    uses: ./.github/workflows/run-unit-tests-test-resources.yml
+    with:
+      coverage-report:  false
+    secrets:
+      npm-token: ${{ secrets.GITHUB_TOKEN }}
+
+  sonarcloud-ts:
+    name: SonarCloud / TypeScript
+    needs: unit-tests-test-resources
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run SonarCloud scan
+        uses: govuk-one-login/github-actions/code-quality/sonarcloud@52a9e8e35980e6bcaf24d88180a61501e6f2605b
+        with:
+          projectBaseDir: test-resources
+          coverage-location: test-resources/coverage
+          coverage-artifact: ${{ needs.unit-tests-test-resources.outputs.coverage-artifact }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          sonar-token: ${{ secrets.SONAR_TOKEN_TS }}
+
+  codeql:
+    name: CodeQL
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+    steps:
+      - name: Run CodeQL scan
+        uses: govuk-one-login/github-actions/code-quality/codeql@52a9e8e35980e6bcaf24d88180a61501e6f2605b
+        with:
+          languages: javascript-typescript

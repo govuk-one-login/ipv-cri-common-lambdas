@@ -2,6 +2,8 @@ name: Scan repository
 
 on:
   pull_request:
+    paths-ignore:
+      - 'test-resources/**'
   push:
     branches: [main]
   schedule:
@@ -26,14 +28,6 @@ jobs:
     uses: ./.github/workflows/run-unit-tests-java.yml
     with:
       coverage-report: true
-
-  unit-tests-test-resources:
-    name: Test coverage
-    uses: ./.github/workflows/run-unit-tests-test-resources.yml
-    with:
-      coverage-report:  false
-    secrets:
-      npm-token: ${{ secrets.GITHUB_TOKEN }}
 
   sonarcloud-java:
     name: SonarCloud / Java
