@@ -65,7 +65,7 @@ describe("callback-handler", () => {
         expect(response).toEqual({
             statusCode: 200,
             headers: {
-                "Content-Type": "application/jwt",
+                "Content-Type": "text/plain",
             },
             body: "vc.jwt.credential",
         });
