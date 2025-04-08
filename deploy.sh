@@ -27,7 +27,7 @@ sam deploy --stack-name "$stack_name" \
   --tags \
   cri:component=ipv-cri-common-lambdas \
   cri:deployment-source=manual \
-  cri:stack-type=localdev \
+  cri:stack-type=dev \
   --parameter-overrides \
   Environment=dev \
   ${audit_event_name_prefix:+AuditEventNamePrefix=$audit_event_name_prefix} \

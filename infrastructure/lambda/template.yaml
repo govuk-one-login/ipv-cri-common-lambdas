@@ -62,6 +62,9 @@ Conditions:
     - !Equals [!Ref Environment, build]
     - !Equals [!Ref Environment, staging]
     - !Equals [!Ref Environment, integration]
+  IsIpvCore3rdPartyStubEnvironment: !Equals
+    - !Ref Environment
+    - staging
   IsProdLikeEnvironment: !Or
     - !Equals [!Ref Environment, staging]
     - !Equals [!Ref Environment, integration]
@@ -1726,6 +1729,51 @@ Resources:
       LogGroupName: !Sub /aws/apigateway/${AWS::StackName}-${PreMergeDevOnlyApi}-private-AccessLogs
       RetentionInDays: 30
 
+  ##################################################################################################
+  # ipv-core-3rd-party-stubs clientId configuration (real ipv-core + real cri's + 3rd-party-stubs Only Staging)
+  #################################################################################################
+  IPVCore3rdPartyStubsAudienceParameter:
+    Condition: IsIpvCore3rdPartyStubEnvironment
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-3rd-party-stubs/jwtAuthentication/audience"
+      Type: String
+      Value:
+        !FindInMap [CriAudienceMapping, !Ref CriIdentifier, !Ref Environment]
+
+  IPVCore3rdPartyStubsPublicSigningJwkBase64Parameter:
+    Condition: IsIpvCore3rdPartyStubEnvironment
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-3rd-party-stubs/jwtAuthentication/publicSigningJwkBase64"
+      Type: String
+      Value:
+        !FindInMap [IPVCore1PublicSigningJwkBase64Mapping, Environment,!Ref "Environment"]
+
+  IPVCore3rdPartyStubsIssuerParameter:
+    Condition: IsIpvCore3rdPartyStubEnvironment
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-3rd-party-stubs/jwtAuthentication/issuer"
+      Type: String
+      Value: !FindInMap [IPVCore1IssuerMapping, Environment, !Ref "Environment"]
+
+  IPVCore3rdPartyStubsRedirectURIParameter:
+    Condition: IsIpvCore3rdPartyStubEnvironment
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-3rd-party-stubs/jwtAuthentication/redirectUri"
+      Type: String
+      Value:
+        !FindInMap [IPVCore1RedirectURIMapping, !Ref CriIdentifier, !Ref Environment ]
+
+  IPVCore3rdPartyStubsAuthenticationAlgParameter:
+    Condition: IsIpvCore3rdPartyStubEnvironment
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-3rd-party-stubs/jwtAuthentication/authenticationAlg"
+      Type: String
+      Value: ES256
 
   ##################################################################################################
   # ipv-core-stub-aws-headless clientId configuration
