@@ -17,6 +17,17 @@ jobs:
     secrets:
       npm-token: ${{ secrets.GITHUB_TOKEN }}
 
+  # Branch setting require us to run all unit tests on all PRs
+  unit-tests-ts:
+    name: Unit tests
+    uses: ./.github/workflows/run-unit-tests-ts.yml
+    with:
+      coverage-report: true
+
+  unit-tests-java:
+    name: Unit tests
+    uses: ./.github/workflows/run-unit-tests-java.yml
+
   unit-tests-test-resources:
     name: Unit tests
     uses: ./.github/workflows/run-unit-tests-test-resources.yml
