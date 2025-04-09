@@ -2,7 +2,6 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from "aws-lambda
 import { CallbackLambdaHandler } from "../src/callback-handler";
 import { CallBackService } from "../src/services/callback-service";
 import * as KeyJwtHelper from "../src/services/private-key-jwt-helper";
-import { SessionItem } from "../src/services/session-item";
 import { ClientConfiguration } from "../../../utils/src/services/client-configuration";
 import { DEFAULT_CLIENT_ID } from "../../start/src/services/jwt-claims-set-service";
 
@@ -10,7 +9,6 @@ jest.mock("../src/services/callback-service");
 jest.mock("../../../utils/src/services/client-configuration");
 
 describe("callback-handler", () => {
-    const sessionTableName = "session-common-cri-api";
     const authorizationCode = "an-authorization-code";
     const accessTokenValue = "access_token_value";
     const audience = "my-audience";
@@ -21,7 +19,6 @@ describe("callback-handler", () => {
     let getTokenSpy: jest.SpyInstance;
     let getParametersSpy: jest.SpyInstance;
     let issueCredentialSpy: jest.SpyInstance;
-    let sessionByAuthorizationCodeSpy: jest.SpyInstance;
     let lambdaHandler: (_event: APIGatewayProxyEvent, _context: Context) => Promise<APIGatewayProxyResult>;
 
     beforeEach(() => {
@@ -31,10 +28,6 @@ describe("callback-handler", () => {
     afterEach(() => jest.clearAllMocks());
 
     it("returns 200 when entire flow is successful", async () => {
-        sessionByAuthorizationCodeSpy = jest
-            .spyOn(CallBackService.prototype, "getSessionByAuthorizationCode")
-            .mockResolvedValueOnce({ redirectUri } as SessionItem);
-
         jest.spyOn(KeyJwtHelper, "generatePrivateJwtParams").mockResolvedValueOnce(keyJwtValue);
 
         getParametersSpy = jest.spyOn(ClientConfiguration, "getConfig").mockResolvedValueOnce({
@@ -62,7 +55,6 @@ describe("callback-handler", () => {
         expect(getParametersSpy).toHaveBeenCalledWith(DEFAULT_CLIENT_ID);
         expect(getTokenSpy).toHaveBeenCalledWith("my-audience/token", keyJwtValue);
         expect(issueCredentialSpy).toHaveBeenCalledWith("my-audience/credential/issue", "access_token_value");
-        expect(sessionByAuthorizationCodeSpy).toHaveBeenLastCalledWith("session-common-cri-api", authorizationCode);
         expect(response).toEqual({
             statusCode: 200,
             headers: {
@@ -74,9 +66,6 @@ describe("callback-handler", () => {
 
     it("uses client_id from request params if provided", async () => {
         const clientIdOverride = "test-client-id";
-        sessionByAuthorizationCodeSpy = jest
-            .spyOn(CallBackService.prototype, "getSessionByAuthorizationCode")
-            .mockResolvedValueOnce({ redirectUri } as SessionItem);
 
         jest.spyOn(KeyJwtHelper, "generatePrivateJwtParams").mockResolvedValueOnce(keyJwtValue);
 
@@ -105,7 +94,6 @@ describe("callback-handler", () => {
         expect(getParametersSpy).toHaveBeenCalledWith(clientIdOverride);
         expect(getTokenSpy).toHaveBeenCalledWith("my-audience/token", keyJwtValue);
         expect(issueCredentialSpy).toHaveBeenCalledWith("my-audience/credential/issue", "access_token_value");
-        expect(sessionByAuthorizationCodeSpy).toHaveBeenLastCalledWith("session-common-cri-api", authorizationCode);
         expect(response).toEqual({
             statusCode: 200,
             headers: {
@@ -115,18 +103,53 @@ describe("callback-handler", () => {
         });
     });
 
-    it("returns 404 if session is not found", async () => {
-        sessionByAuthorizationCodeSpy = jest
-            .spyOn(CallBackService.prototype, "getSessionByAuthorizationCode")
-            .mockRejectedValueOnce(new Error("No session item found for provided authorizationCode"));
+    it("uses state from request params if provided", async () => {
+        // This is { aud: "audience-override", redirect_uri: "redirect-uri-override" } encoded
+        const stateOverride =
+            "eyJhdWQiOiJhdWRpZW5jZS1vdmVycmlkZSIsInJlZGlyZWN0X3VyaSI6InJlZGlyZWN0LXVyaS1vdmVycmlkZSJ9"; // pragma: allowlist secret
 
-        const event: Partial<APIGatewayProxyEvent> = { queryStringParameters: { code: authorizationCode } };
-        const response = await lambdaHandler(event as APIGatewayProxyEvent, {} as Context);
+        const generatePrivateJwtParamsSpy = jest
+            .spyOn(KeyJwtHelper, "generatePrivateJwtParams")
+            .mockResolvedValueOnce(keyJwtValue);
 
-        expect(sessionByAuthorizationCodeSpy).toHaveBeenCalledWith(sessionTableName, authorizationCode);
+        getParametersSpy = jest.spyOn(ClientConfiguration, "getConfig").mockResolvedValueOnce({
+            redirectUri,
+            audience,
+            issuer: "https://issuer.example.com",
+            privateSigningKey: JSON.stringify({}),
+        });
+        getTokenSpy = jest.spyOn(CallBackService.prototype, "invokeTokenEndpoint").mockResolvedValueOnce({
+            statusCode: 200,
+            body: JSON.stringify({ access_token: accessTokenValue }),
+        });
+        issueCredentialSpy = jest.spyOn(CallBackService.prototype, "invokeCredentialEndpoint").mockResolvedValueOnce({
+            statusCode: 200,
+            body: "vc.jwt.credential",
+        });
+
+        const response = await lambdaHandler(
+            {
+                queryStringParameters: { code: authorizationCode, state: stateOverride },
+            } as unknown as APIGatewayProxyEvent,
+            {} as Context,
+        );
+
+        expect(getParametersSpy).toHaveBeenCalledWith(DEFAULT_CLIENT_ID);
+        expect(generatePrivateJwtParamsSpy).toHaveBeenCalledWith(
+            DEFAULT_CLIENT_ID,
+            authorizationCode,
+            "redirect-uri-override",
+            {},
+            "audience-override",
+        );
+        expect(getTokenSpy).toHaveBeenCalledWith("audience-override/token", keyJwtValue);
+        expect(issueCredentialSpy).toHaveBeenCalledWith("audience-override/credential/issue", "access_token_value");
         expect(response).toEqual({
-            statusCode: 500,
-            body: "No session item found for provided authorizationCode",
+            statusCode: 200,
+            headers: {
+                "Content-Type": "text/plain",
+            },
+            body: "vc.jwt.credential",
         });
     });
 
@@ -138,11 +161,6 @@ describe("callback-handler", () => {
         };
         jest.spyOn(KeyJwtHelper, "generatePrivateJwtParams").mockResolvedValueOnce(keyJwtValue);
 
-        sessionByAuthorizationCodeSpy = jest
-            .spyOn(CallBackService.prototype, "getSessionByAuthorizationCode")
-            .mockResolvedValueOnce({
-                redirectUri,
-            } as SessionItem);
         getParametersSpy = jest.spyOn(ClientConfiguration, "getConfig").mockResolvedValueOnce({
             redirectUri,
             audience,
@@ -157,7 +175,6 @@ describe("callback-handler", () => {
 
         const response = await lambdaHandler(event as APIGatewayProxyEvent, {} as Context);
 
-        expect(sessionByAuthorizationCodeSpy).toHaveBeenCalledWith(sessionTableName, authorizationCode);
         expect(getParametersSpy).toHaveBeenCalledWith(DEFAULT_CLIENT_ID);
         expect(response.statusCode).toBe(500);
         expect(response.body).toBe("failed with 500 status");
@@ -171,9 +188,7 @@ describe("callback-handler", () => {
         };
 
         jest.spyOn(KeyJwtHelper, "generatePrivateJwtParams").mockResolvedValueOnce(keyJwtValue);
-        sessionByAuthorizationCodeSpy = jest
-            .spyOn(CallBackService.prototype, "getSessionByAuthorizationCode")
-            .mockResolvedValueOnce({ redirectUri } as SessionItem);
+
         getParametersSpy = jest.spyOn(ClientConfiguration, "getConfig").mockResolvedValueOnce({
             redirectUri,
             audience,
@@ -191,7 +206,6 @@ describe("callback-handler", () => {
 
         const response = await lambdaHandler(event as APIGatewayProxyEvent, {} as Context);
 
-        expect(sessionByAuthorizationCodeSpy).toHaveBeenCalledWith(sessionTableName, authorizationCode);
         expect(getParametersSpy).toHaveBeenCalledWith(DEFAULT_CLIENT_ID);
         expect(issueCredentialSpy).toHaveBeenCalledWith(expect.any(String), accessTokenValue);
         expect(response.statusCode).toBe(500);
