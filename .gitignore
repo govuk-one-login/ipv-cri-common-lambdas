@@ -59,3 +59,5 @@ integration-tests/bin/
 session/bin/
 
 *venv/
+
+.npmrc
