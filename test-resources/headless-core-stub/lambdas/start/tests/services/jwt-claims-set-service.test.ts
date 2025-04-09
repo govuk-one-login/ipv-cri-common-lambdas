@@ -7,6 +7,7 @@ import {
 } from "../../src/services/jwt-claims-set-service";
 import { ClaimsSetOverrides } from "../../src/types/claims-set-overrides";
 import { TestData } from "../../../../utils/tests/test-data";
+import { base64Decode } from "../../../../utils/src/base64";
 
 describe("jwt-claims-set-service", () => {
     describe("parseJwtClaimsSetOverrides", () => {
@@ -105,7 +106,10 @@ describe("jwt-claims-set-service", () => {
             const jwtClaimsSet = await generateJwtClaimsSet(overrides, ssmParameters);
             const after = Math.round(Date.now() / 1000);
             expect(isValidUUID(jwtClaimsSet.govuk_signin_journey_id || "")).toBeTruthy();
-            expect(isValidUUID(jwtClaimsSet.state || "")).toBeTruthy();
+            expect(JSON.parse(base64Decode(jwtClaimsSet.state))).toEqual({
+                aud: ssmParameters.audience,
+                redirect_uri: ssmParameters.redirectUri,
+            });
             expect(jwtClaimsSet.iat && jwtClaimsSet.iat >= before && jwtClaimsSet.iat <= after);
             expect(jwtClaimsSet.nbf && jwtClaimsSet.nbf <= after);
             expect(jwtClaimsSet.exp && jwtClaimsSet.exp >= after);

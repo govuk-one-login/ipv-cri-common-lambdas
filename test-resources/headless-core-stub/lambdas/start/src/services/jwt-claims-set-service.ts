@@ -7,6 +7,7 @@ import { HeadlessCoreStubError } from "../errors/headless-core-stub-error";
 import { ClaimsSetOverrides } from "../types/claims-set-overrides";
 import { JWTClaimsSet } from "../types/jwt-claims-set";
 import { logger } from "../start-handler";
+import { base64Encode } from "../../../../utils/src/base64";
 
 export const DEFAULT_CLIENT_ID = "ipv-core-stub-aws-headless";
 
@@ -26,6 +27,7 @@ export const generateJwtClaimsSet = async (overrides: ClaimsSetOverrides, ssmPar
     const audience = overrides.aud || ssmParameters["audience"];
     const issuer = overrides.iss || ssmParameters["issuer"];
     const redirectUri = overrides.redirect_uri || ssmParameters["redirectUri"];
+    const state = overrides.state || base64Encode(JSON.stringify({ aud: audience, redirect_uri: redirectUri }));
 
     const now = Date.now();
     return {
@@ -38,7 +40,7 @@ export const generateJwtClaimsSet = async (overrides: ClaimsSetOverrides, ssmPar
         response_type: overrides.response_type || "code",
         client_id: overrides.client_id,
         redirect_uri: redirectUri,
-        state: overrides.state || uuidv4(),
+        state,
         govuk_signin_journey_id: overrides.govuk_signin_journey_id || uuidv4(),
         shared_claims: overrides.shared_claims != null ? overrides.shared_claims : defaultClaims,
         ...(overrides.evidence_requested && { evidence_requested: overrides.evidence_requested }),
