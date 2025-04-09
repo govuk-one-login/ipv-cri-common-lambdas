@@ -5,20 +5,25 @@ import { CallBackService } from "./services/callback-service";
 import { generatePrivateJwtParams } from "./services/private-key-jwt-helper";
 import { JWK } from "jose";
 import { SessionItem } from "./services/session-item";
+import { DEFAULT_CLIENT_ID } from "../../start/src/services/jwt-claims-set-service";
 import { ClientConfiguration } from "../../../utils/src/services/client-configuration";
 import config from "../../../utils/src/services/config";
 
 const { sessionTableName } = config;
 const logger = new Logger({ serviceName: "CallBackService" });
 const callback = new CallBackService(logger);
+
 export class CallbackLambdaHandler implements LambdaInterface {
     async handler(event: APIGatewayProxyEvent, _context: Context): Promise<APIGatewayProxyResult> {
         try {
             const authorizationCode = event.queryStringParameters?.code as string;
             logger.info({ message: "Received authorizationCode", authorizationCode });
 
+            const clientId = (event.queryStringParameters?.client_id as string) || DEFAULT_CLIENT_ID;
+            logger.info({ message: "Using client ID", clientId });
+
             const sessionItem = await callback.getSessionByAuthorizationCode(sessionTableName, authorizationCode);
-            const ssmParameter = await this.fetchSSMParameters(sessionItem.clientId);
+            const ssmParameter = await this.fetchSSMParameters(clientId);
             const audienceApi = this.formatAudience(ssmParameter.audience);
 
             const tokenEndpoint = `${audienceApi}/token`;

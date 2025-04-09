@@ -8,11 +8,13 @@ import { ClaimsSetOverrides } from "../types/claims-set-overrides";
 import { JWTClaimsSet } from "../types/jwt-claims-set";
 import { logger } from "../start-handler";
 
+export const DEFAULT_CLIENT_ID = "ipv-core-stub-aws-headless";
+
 export const parseJwtClaimsSetOverrides = (body: string | null): ClaimsSetOverrides => {
     try {
         const claimsSetOverrides = body ? JSON.parse(body) : {};
         if (!claimsSetOverrides.client_id) {
-            claimsSetOverrides.client_id = "ipv-core-stub-aws-headless";
+            claimsSetOverrides.client_id = DEFAULT_CLIENT_ID;
         }
         return claimsSetOverrides;
     } catch (e) {
