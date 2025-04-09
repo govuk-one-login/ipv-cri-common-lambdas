@@ -29,6 +29,6 @@ sam deploy --stack-name "$stack_name" \
   cri:deployment-source=manual \
   cri:stack-type=localdev \
   --parameter-overrides \
-  Environment=localdev \
+  Environment=dev \
   ${audit_event_name_prefix:+AuditEventNamePrefix=$audit_event_name_prefix} \
   ${cri_identifier:+CriIdentifier=$cri_identifier}
