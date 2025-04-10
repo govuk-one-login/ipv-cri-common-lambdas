@@ -1,12 +1,8 @@
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { APIGatewayProxyResult } from "aws-lambda";
 import { Logger } from "@aws-lambda-powertools/logger";
 
 export class CallBackService {
-    constructor(
-        private readonly logger: Logger,
-        private readonly dynamoDbClient = new DynamoDBClient({ region: process.env.REGION }),
-    ) {}
+    constructor(private readonly logger: Logger) {}
 
     public async invokeTokenEndpoint(tokenEndpoint: string, body: string): Promise<APIGatewayProxyResult> {
         const tokenResponse = await fetch(tokenEndpoint, {

@@ -1,4 +1,3 @@
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { CallBackService } from "../../src/services/callback-service";
 import { Logger } from "@aws-lambda-powertools/logger";
 
@@ -6,7 +5,6 @@ global.fetch = jest.fn();
 const mockFetch = fetch as jest.MockedFunction<typeof fetch>;
 
 describe("CallBack Service", () => {
-    let mockSend: jest.Mock;
     let mockLoggerError: jest.Mock;
     let mockLoggerInfo: jest.Mock;
     let mockLoggerWarn: jest.Mock;
@@ -14,15 +12,15 @@ describe("CallBack Service", () => {
     let callbackService: CallBackService;
 
     beforeEach(() => {
-        mockSend = jest.fn();
         mockLoggerError = jest.fn();
         mockLoggerInfo = jest.fn();
         mockLoggerWarn = jest.fn();
 
-        callbackService = new CallBackService(
-            { error: mockLoggerError, info: mockLoggerInfo, warn: mockLoggerWarn } as unknown as Logger,
-            { send: mockSend } as unknown as DynamoDBClient,
-        );
+        callbackService = new CallBackService({
+            error: mockLoggerError,
+            info: mockLoggerInfo,
+            warn: mockLoggerWarn,
+        } as unknown as Logger);
     });
     afterEach(() => jest.clearAllMocks());
 
