@@ -1,6 +1,6 @@
 import { GetPublicKeyCommand, KMSClient } from "@aws-sdk/client-kms";
 import { CompactEncrypt, importSPKI, KeyLike } from "jose";
-import { HeadlessCoreStubError } from "../errors/headless-core-stub-error";
+import { HeadlessCoreStubError } from "../../../../utils/src/errors/headless-core-stub-error";
 
 const kmsClient = new KMSClient({ region: "eu-west-2" });
 

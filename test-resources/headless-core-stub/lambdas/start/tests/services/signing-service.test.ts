@@ -2,7 +2,7 @@ import { clearCaches } from "@aws-lambda-powertools/parameters";
 import { GetPublicKeyCommand, KMSClient } from "@aws-sdk/client-kms";
 import { mockClient } from "aws-sdk-client-mock";
 import { generateKeyPairSync } from "crypto";
-import { HeadlessCoreStubError } from "../../src/errors/headless-core-stub-error";
+import { HeadlessCoreStubError } from "../../../../utils/src/errors/headless-core-stub-error";
 import { encryptSignedJwt, getPublicEncryptionKey } from "../../src/services/signing-service";
 import { TestData } from "../../../../utils/tests/test-data";
 

@@ -6,7 +6,7 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from "aws-lambda
 import { JWK, JWTPayload, KeyLike } from "jose";
 import { signJwt } from "../../../utils/src/crypto/signer";
 import { ClientConfiguration } from "../../../utils/src/services/client-configuration";
-import { handleErrorResponse } from "./errors/error-response";
+import { handleErrorResponse } from "./../../../utils/src/errors/error-response";
 import { generateJwtClaimsSet, parseJwtClaimsSetOverrides, validateClaimsSet } from "./services/jwt-claims-set-service";
 import { encryptSignedJwt, getPublicEncryptionKey } from "./services/signing-service";
 import { ClaimsSetOverrides } from "./types/claims-set-overrides";

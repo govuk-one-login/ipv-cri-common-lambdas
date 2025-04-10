@@ -31,6 +31,9 @@ describe("happy path core stub start endpoint", () => {
     });
 
     it("returns 200 with a valid JWT for a valid request", async () => {
+        // Decodes to {"aud":"https://test-aud","redirect_uri":"https://test-resources.review-hc.dev.account.gov.uk/callback"}
+        const defaultState =
+            "eyJhdWQiOiJodHRwczovL3Rlc3QtYXVkIiwicmVkaXJlY3RfdXJpIjoiaHR0cHM6Ly90ZXN0LXJlc291cmNlcy5yZXZpZXctaGMuZGV2LmFjY291bnQuZ292LnVrL2NhbGxiYWNrIn0="; // pragma: allowlist secret
         const data = await signedFetch(`${testHarnessExecuteUrl}start`, {
             method: "POST",
             headers: {
@@ -82,9 +85,13 @@ describe("happy path core stub start endpoint", () => {
                 },
             ],
         });
+        expect(payload?.state).toEqual(defaultState);
     });
 
     it("returns overridden shared claims if provided", async () => {
+        // Decodes to {"aud":"https://review-hc.dev.account.gov.uk","redirect_uri":"https://test-resources.review-hc.dev.account.gov.uk/callback"}
+        const stateOverride =
+            "eyJhdWQiOiJodHRwczovL3Jldmlldy1oYy5kZXYuYWNjb3VudC5nb3YudWsiLCJyZWRpcmVjdF91cmkiOiJodHRwczovL3Rlc3QtcmVzb3VyY2VzLnJldmlldy1oYy5kZXYuYWNjb3VudC5nb3YudWsvY2FsbGJhY2sifQ=="; // pragma: allowlist secret
         const sharedClaimsOverrides = {
             name: [
                 {
@@ -116,7 +123,13 @@ describe("happy path core stub start endpoint", () => {
             headers: {
                 "Content-Type": "application/json",
             },
-            body: JSON.stringify({ aud, client_id: clientId, iss, shared_claims: sharedClaimsOverrides }),
+            body: JSON.stringify({
+                aud,
+                client_id: clientId,
+                iss,
+                shared_claims: sharedClaimsOverrides,
+                state: stateOverride,
+            }),
         });
 
         const { client_id, request } = await data.json();
@@ -137,5 +150,6 @@ describe("happy path core stub start endpoint", () => {
         expect(payload?.iss).toEqual(iss);
         expect(payload?.aud).toEqual(aud);
         expect(payload?.shared_claims).toEqual(sharedClaimsOverrides);
+        expect(payload?.state).toEqual(stateOverride);
     });
 });

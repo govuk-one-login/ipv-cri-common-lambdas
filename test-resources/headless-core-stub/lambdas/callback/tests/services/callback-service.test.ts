@@ -1,4 +1,3 @@
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { CallBackService } from "../../src/services/callback-service";
 import { Logger } from "@aws-lambda-powertools/logger";
 
@@ -6,12 +5,6 @@ global.fetch = jest.fn();
 const mockFetch = fetch as jest.MockedFunction<typeof fetch>;
 
 describe("CallBack Service", () => {
-    const sessionTableName = "session-common-cri-api";
-    const authorizationCode = "an-authorization-code";
-    const clientId = "headless-core-stub";
-
-    const redirectUri = "https://test-resources.headless-core-stub.redirect/callback";
-    let mockSend: jest.Mock;
     let mockLoggerError: jest.Mock;
     let mockLoggerInfo: jest.Mock;
     let mockLoggerWarn: jest.Mock;
@@ -19,62 +12,18 @@ describe("CallBack Service", () => {
     let callbackService: CallBackService;
 
     beforeEach(() => {
-        mockSend = jest.fn();
         mockLoggerError = jest.fn();
         mockLoggerInfo = jest.fn();
         mockLoggerWarn = jest.fn();
 
-        callbackService = new CallBackService(
-            { error: mockLoggerError, info: mockLoggerInfo, warn: mockLoggerWarn } as unknown as Logger,
-            { send: mockSend } as unknown as DynamoDBClient,
-        );
+        callbackService = new CallBackService({
+            error: mockLoggerError,
+            info: mockLoggerInfo,
+            warn: mockLoggerWarn,
+        } as unknown as Logger);
     });
     afterEach(() => jest.clearAllMocks());
 
-    describe("getSessionByAuthorizationCode", () => {
-        it("returns a sessionItem when given a valid authorizationCode", async () => {
-            mockSend.mockResolvedValueOnce({
-                Items: [
-                    {
-                        clientId: { S: clientId },
-                        redirectUri: { S: redirectUri },
-                        authorizationCode: { S: authorizationCode },
-                    },
-                ],
-            });
-
-            const sessionItem = await callbackService.getSessionByAuthorizationCode(
-                sessionTableName,
-                authorizationCode,
-            );
-
-            expect(mockSend).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    input: {
-                        ExpressionAttributeValues: { ":authorizationCode": { S: authorizationCode } },
-                        IndexName: "authorizationCode-index",
-                        KeyConditionExpression: "authorizationCode = :authorizationCode",
-                        TableName: sessionTableName,
-                    },
-                }),
-            );
-            expect(sessionItem).toEqual(
-                expect.objectContaining({
-                    authorizationCode: "an-authorization-code",
-                    clientId: "headless-core-stub",
-                    redirectUri: "https://test-resources.headless-core-stub.redirect/callback",
-                }),
-            );
-        });
-
-        it("errors when no sessionItem is found when given an authorizationCode", async () => {
-            mockSend.mockResolvedValueOnce({ Count: 0, Items: [] });
-
-            await expect(
-                callbackService.getSessionByAuthorizationCode(sessionTableName, authorizationCode),
-            ).rejects.toThrow("No session item found for provided authorizationCode");
-        });
-    });
     describe("callTokenEndpoint", () => {
         const accessTokenValue = "mock-access-token";
         it("requests using POST with the correct headers and body succeeds", async () => {
