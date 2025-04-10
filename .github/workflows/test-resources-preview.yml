@@ -52,7 +52,6 @@ jobs:
         with:
           template: test-resources/infrastructure/template.yaml
           cache-name: test-resources-${{ steps.vars.outputs.sha_short }}
-          sam-version: 1.132.0
 
   deploy:
     name: Deploy stack
