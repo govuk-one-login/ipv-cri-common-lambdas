@@ -1,5 +1,5 @@
 import { validate as isValidUUID } from "uuid";
-import { HeadlessCoreStubError } from "../../src/errors/headless-core-stub-error";
+import { HeadlessCoreStubError } from "../../../../utils/src/errors/headless-core-stub-error";
 import {
     generateJwtClaimsSet,
     parseJwtClaimsSetOverrides,
