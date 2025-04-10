@@ -177,7 +177,7 @@ describe("callback-handler", () => {
 
         expect(getParametersSpy).toHaveBeenCalledWith(DEFAULT_CLIENT_ID);
         expect(response.statusCode).toBe(500);
-        expect(response.body).toBe("failed with 500 status");
+        expect(JSON.parse(response.body).message).toBe("Server error");
     });
 
     it("handles credential endpoint failure gracefully", async () => {
@@ -210,5 +210,37 @@ describe("callback-handler", () => {
         expect(issueCredentialSpy).toHaveBeenCalledWith(expect.any(String), accessTokenValue);
         expect(response.statusCode).toBe(500);
         expect(response.body).toBe("mock-credential-error");
+    });
+
+    it("returns a 400 if state is not base64 encoded JSON", async () => {
+        // This is "test string" encoded
+        const stateOverride = "dGVzdCBzdHJpbmc=";
+
+        jest.spyOn(ClientConfiguration, "getConfig").mockResolvedValueOnce({
+            redirectUri,
+            audience,
+            issuer: "https://issuer.example.com",
+            privateSigningKey: JSON.stringify({}),
+        });
+        jest.spyOn(KeyJwtHelper, "generatePrivateJwtParams").mockResolvedValueOnce(keyJwtValue);
+
+        jest.spyOn(CallBackService.prototype, "invokeTokenEndpoint").mockResolvedValueOnce({
+            statusCode: 200,
+            body: JSON.stringify({ access_token: accessTokenValue }),
+        });
+        jest.spyOn(CallBackService.prototype, "invokeCredentialEndpoint").mockResolvedValueOnce({
+            statusCode: 200,
+            body: "vc.jwt.credential",
+        });
+
+        const response = await lambdaHandler(
+            {
+                queryStringParameters: { code: authorizationCode, state: stateOverride },
+            } as unknown as APIGatewayProxyEvent,
+            {} as Context,
+        );
+
+        expect(response.statusCode).toBe(400);
+        expect(JSON.parse(response.body).message).toBe("State param is not a valid JSON bas64 encoded string");
     });
 });

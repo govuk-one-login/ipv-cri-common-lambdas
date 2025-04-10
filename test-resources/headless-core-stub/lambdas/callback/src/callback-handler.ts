@@ -5,6 +5,8 @@ import { CallBackService } from "./services/callback-service";
 import { generatePrivateJwtParams } from "./services/private-key-jwt-helper";
 import { JWK } from "jose";
 import { DEFAULT_CLIENT_ID } from "../../start/src/services/jwt-claims-set-service";
+import { HeadlessCoreStubError } from "../../start/src/errors/headless-core-stub-error";
+import { handleErrorResponse } from "../../start/src/errors/error-response";
 import { ClientConfiguration } from "../../../utils/src/services/client-configuration";
 import { base64Decode } from "../../../utils/src/base64";
 
@@ -46,10 +48,7 @@ export class CallbackLambdaHandler implements LambdaInterface {
 
             return { statusCode: statusCode, headers: { "Content-Type": "text/plain" }, body };
         } catch (error: unknown) {
-            const exception = error as Error;
-            logger.error("Error occurred: ", exception.message);
-
-            return { statusCode: 500, body: exception.message };
+            return handleErrorResponse(error, logger);
         }
     }
 
@@ -58,11 +57,15 @@ export class CallbackLambdaHandler implements LambdaInterface {
         let redirectUri;
 
         if (state) {
-            const statePayload = JSON.parse(base64Decode(state));
-            logger.info({ message: "State payload decoded", ...statePayload });
+            try {
+                const statePayload = JSON.parse(base64Decode(state));
+                logger.info({ message: "State payload decoded", ...statePayload });
 
-            audience = statePayload.aud;
-            redirectUri = statePayload.redirect_uri;
+                audience = statePayload.aud;
+                redirectUri = statePayload.redirect_uri;
+            } catch (error) {
+                throw new HeadlessCoreStubError("State param is not a valid JSON bas64 encoded string", 400);
+            }
         }
 
         return { audience, redirectUri };
