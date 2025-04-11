@@ -71,6 +71,49 @@ describe("callback-handler", () => {
         });
     });
 
+    it("returns forwards requests to criUrl if provided", async () => {
+        const criUrl = "https://test-cri";
+        sessionByAuthorizationCodeSpy = jest
+            .spyOn(CallBackService.prototype, "getSessionByAuthorizationCode")
+            .mockResolvedValueOnce({ clientId, redirectUri } as SessionItem);
+
+        jest.spyOn(KeyJwtHelper, "generatePrivateJwtParams").mockResolvedValueOnce(keyJwtValue);
+
+        getParametersSpy = jest.spyOn(ClientConfiguration, "getConfig").mockResolvedValueOnce({
+            redirectUri,
+            audience,
+            issuer: "https://issuer.example.com",
+            privateSigningKey: JSON.stringify({}),
+        });
+        getTokenSpy = jest.spyOn(CallBackService.prototype, "invokeTokenEndpoint").mockResolvedValueOnce({
+            statusCode: 200,
+            body: JSON.stringify({ access_token: accessTokenValue }),
+        });
+        issueCredentialSpy = jest.spyOn(CallBackService.prototype, "invokeCredentialEndpoint").mockResolvedValueOnce({
+            statusCode: 200,
+            body: "vc.jwt.credential",
+        });
+
+        const response = await lambdaHandler(
+            {
+                queryStringParameters: { code: authorizationCode, criUrl },
+            } as unknown as APIGatewayProxyEvent,
+            {} as Context,
+        );
+
+        expect(getParametersSpy).toHaveBeenCalledWith(clientId);
+        expect(getTokenSpy).toHaveBeenCalledWith(`${criUrl}/token`, keyJwtValue);
+        expect(issueCredentialSpy).toHaveBeenCalledWith(`${criUrl}/credential/issue`, "access_token_value");
+        expect(sessionByAuthorizationCodeSpy).toHaveBeenLastCalledWith("session-common-cri-api", authorizationCode);
+        expect(response).toEqual({
+            statusCode: 200,
+            headers: {
+                "Content-Type": "text/plain",
+            },
+            body: "vc.jwt.credential",
+        });
+    });
+
     it("returns 404 if session is not found", async () => {
         sessionByAuthorizationCodeSpy = jest
             .spyOn(CallBackService.prototype, "getSessionByAuthorizationCode")

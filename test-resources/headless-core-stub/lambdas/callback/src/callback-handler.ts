@@ -17,9 +17,12 @@ export class CallbackLambdaHandler implements LambdaInterface {
             const authorizationCode = event.queryStringParameters?.code as string;
             logger.info({ message: "Received authorizationCode", authorizationCode });
 
+            const criUrl = event.queryStringParameters?.criUrl as string;
+
             const sessionItem = await callback.getSessionByAuthorizationCode(sessionTableName, authorizationCode);
             const ssmParameter = await this.fetchSSMParameters(sessionItem.clientId);
-            const audienceApi = this.formatAudience(ssmParameter.audience);
+            const audienceApi = criUrl || this.formatAudience(ssmParameter.audience);
+            logger.info({ message: `Forwarding requests to CRI URL: ${audienceApi}` });
 
             const tokenEndpoint = `${audienceApi}/token`;
             const privateJwtParams = await this.generatePrivateJwtParams(sessionItem, authorizationCode, ssmParameter);
