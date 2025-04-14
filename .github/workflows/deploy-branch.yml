@@ -53,7 +53,6 @@ jobs:
           template: infrastructure/lambda/template.yaml
           cache-name: common-lambdas-${{ steps.vars.outputs.sha_short }}
           pull-repository: false
-          sam-version: 1.132.0
 
   deploy:
     name: Deploy stack
