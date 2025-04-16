@@ -26,8 +26,8 @@ export class StartLambdaHandler implements LambdaInterface {
             validateClaimsSet(jwtClaimsSet);
 
             const signingKey: JWK = JSON.parse(ssmParameters["privateSigningKey"]);
-
-            const signedJwt = await signJwt(jwtClaimsSet as JWTPayload, signingKey);
+            const jwtHeader = { alg: "ES256", typ: "JWT", kid: signingKey.kid };
+            const signedJwt = await signJwt(jwtClaimsSet as JWTPayload, signingKey, jwtHeader);
 
             const publicEncryptionKey: KeyLike = await getPublicEncryptionKey();
 

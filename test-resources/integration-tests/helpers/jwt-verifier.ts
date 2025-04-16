@@ -1,4 +1,4 @@
-import { importJWK, JWTPayload, jwtVerify } from "jose";
+import { importJWK, JWTVerifyResult, jwtVerify } from "jose";
 import { JWTVerifyOptions } from "jose/dist/types/jwt/verify";
 
 export interface JwtVerificationConfig {
@@ -27,7 +27,7 @@ export class JwtVerifier {
         encodedJwt: Buffer,
         mandatoryClaims: Set<string>,
         expectedClaimValues: Map<string, string>,
-    ): Promise<JWTPayload | null> {
+    ): Promise<JWTVerifyResult | null> {
         try {
             const signingPublicJwkBase64 = this.jwtVerifierConfig.publicSigningJwk;
             const signingAlgorithm = this.jwtVerifierConfig.jwtSigningAlgorithm;
@@ -35,17 +35,17 @@ export class JwtVerifier {
             const publicKey = await importJWK(signingPublicJwk, signingPublicJwk?.alg || signingAlgorithm);
 
             const jwtVerifyOptions = this.createJwtVerifyOptions(signingAlgorithm, expectedClaimValues);
-            const { payload } = await jwtVerify(encodedJwt, publicKey, jwtVerifyOptions);
+            const verifyResult = await jwtVerify(encodedJwt, publicKey, jwtVerifyOptions);
 
             if (!mandatoryClaims || mandatoryClaims?.size === 0) throw new Error("No mandatory claims provided");
 
             mandatoryClaims?.forEach((mandatoryClaim) => {
-                if (!payload[mandatoryClaim]) {
+                if (!verifyResult.payload[mandatoryClaim]) {
                     throw new Error(`Claims-set missing mandatory claim: ${mandatoryClaim}`);
                 }
             });
 
-            return payload;
+            return verifyResult;
         } catch (error) {
             // eslint-disable-next-line no-console
             console.error("JWT verification failed", error as Error);

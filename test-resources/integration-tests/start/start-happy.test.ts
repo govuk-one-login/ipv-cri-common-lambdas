@@ -46,7 +46,7 @@ describe("happy path core stub start endpoint", () => {
 
         const jwtBuffer = await jweDecrypter.decryptJwe(request);
         const jwtVerifier = jwtVerifierFactory.create(authenticationAlg, publicSigningJwkBase64);
-        const payload = await jwtVerifier.verify(
+        const verifyResult = await jwtVerifier.verify(
             jwtBuffer,
             new Set([ClaimNames.EXPIRATION_TIME, ClaimNames.SUBJECT, ClaimNames.NOT_BEFORE, ClaimNames.STATE]),
             new Map([
@@ -55,11 +55,15 @@ describe("happy path core stub start endpoint", () => {
             ]),
         );
 
+        // console.log("protectedHeader", verifyResult?.protectedHeader);
         expect(data.status).toBe(200);
         expect(client_id).toBe(clientId);
-        expect(payload?.iss).toEqual(iss);
-        expect(payload?.aud).toEqual(aud);
-        expect(payload?.shared_claims).toEqual({
+        expect(verifyResult?.protectedHeader.alg).toEqual("ES256");
+        expect(verifyResult?.protectedHeader.typ).toEqual("JWT");
+        expect(verifyResult?.protectedHeader.kid).toEqual("ipv-core-stub-2-from-mkjwk.org");
+        expect(verifyResult?.payload.iss).toEqual(iss);
+        expect(verifyResult?.payload.aud).toEqual(aud);
+        expect(verifyResult?.payload.shared_claims).toEqual({
             name: [
                 {
                     nameParts: [
@@ -85,7 +89,7 @@ describe("happy path core stub start endpoint", () => {
                 },
             ],
         });
-        expect(payload?.state).toEqual(defaultState);
+        expect(verifyResult?.payload.state).toEqual(defaultState);
     });
 
     it("returns overridden shared claims if provided", async () => {
@@ -136,7 +140,7 @@ describe("happy path core stub start endpoint", () => {
 
         const jwtBuffer = await jweDecrypter.decryptJwe(request);
         const jwtVerifier = jwtVerifierFactory.create(authenticationAlg, publicSigningJwkBase64);
-        const payload = await jwtVerifier.verify(
+        const verifyResult = await jwtVerifier.verify(
             jwtBuffer,
             new Set([ClaimNames.EXPIRATION_TIME, ClaimNames.SUBJECT, ClaimNames.NOT_BEFORE, ClaimNames.STATE]),
             new Map([
@@ -147,9 +151,12 @@ describe("happy path core stub start endpoint", () => {
 
         expect(data.status).toBe(200);
         expect(client_id).toBe(clientId);
-        expect(payload?.iss).toEqual(iss);
-        expect(payload?.aud).toEqual(aud);
-        expect(payload?.shared_claims).toEqual(sharedClaimsOverrides);
-        expect(payload?.state).toEqual(stateOverride);
+        expect(verifyResult?.protectedHeader.alg).toEqual("ES256");
+        expect(verifyResult?.protectedHeader.typ).toEqual("JWT");
+        expect(verifyResult?.protectedHeader.kid).toEqual("ipv-core-stub-2-from-mkjwk.org");
+        expect(verifyResult?.payload.iss).toEqual(iss);
+        expect(verifyResult?.payload.aud).toEqual(aud);
+        expect(verifyResult?.payload.shared_claims).toEqual(sharedClaimsOverrides);
+        expect(verifyResult?.payload.state).toEqual(stateOverride);
     });
 });
