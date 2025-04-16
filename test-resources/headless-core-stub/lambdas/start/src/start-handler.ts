@@ -5,8 +5,9 @@ import middy from "@middy/core";
 import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from "aws-lambda";
 import { JWK, JWTPayload, KeyLike } from "jose";
 import { signJwt } from "../../../utils/src/crypto/signer";
-import { ClientConfiguration } from "../../../utils/src/services/client-configuration";
 import { handleErrorResponse } from "./../../../utils/src/errors/error-response";
+import { getHashedKid } from "./../../../utils/src/hashing";
+import { ClientConfiguration } from "../../../utils/src/services/client-configuration";
 import { generateJwtClaimsSet, parseJwtClaimsSetOverrides, validateClaimsSet } from "./services/jwt-claims-set-service";
 import { encryptSignedJwt, getPublicEncryptionKey } from "./services/signing-service";
 import { ClaimsSetOverrides } from "./types/claims-set-overrides";
@@ -26,7 +27,11 @@ export class StartLambdaHandler implements LambdaInterface {
             validateClaimsSet(jwtClaimsSet);
 
             const signingKey: JWK = JSON.parse(ssmParameters["privateSigningKey"]);
-            const jwtHeader = { alg: "ES256", typ: "JWT", kid: signingKey.kid };
+            const jwtHeader = {
+                alg: "ES256",
+                typ: "JWT",
+                ...(signingKey.kid && { kid: getHashedKid(signingKey.kid) }),
+            };
             const signedJwt = await signJwt(jwtClaimsSet as JWTPayload, signingKey, jwtHeader);
 
             const publicEncryptionKey: KeyLike = await getPublicEncryptionKey();

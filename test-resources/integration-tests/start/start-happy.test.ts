@@ -55,12 +55,14 @@ describe("happy path core stub start endpoint", () => {
             ]),
         );
 
-        // console.log("protectedHeader", verifyResult?.protectedHeader);
         expect(data.status).toBe(200);
         expect(client_id).toBe(clientId);
         expect(verifyResult?.protectedHeader.alg).toEqual("ES256");
         expect(verifyResult?.protectedHeader.typ).toEqual("JWT");
-        expect(verifyResult?.protectedHeader.kid).toEqual("ipv-core-stub-2-from-mkjwk.org");
+        // ipv-core-stub-2-from-mkjwk.org hashed
+        expect(verifyResult?.protectedHeader.kid).toEqual(
+            "74c5b00d698a18178a738f5305ee67f9d50fc620f8be6b89d94638fa16a4c828", // pragma: allowlist secret
+        );
         expect(verifyResult?.payload.iss).toEqual(iss);
         expect(verifyResult?.payload.aud).toEqual(aud);
         expect(verifyResult?.payload.shared_claims).toEqual({
@@ -153,7 +155,10 @@ describe("happy path core stub start endpoint", () => {
         expect(client_id).toBe(clientId);
         expect(verifyResult?.protectedHeader.alg).toEqual("ES256");
         expect(verifyResult?.protectedHeader.typ).toEqual("JWT");
-        expect(verifyResult?.protectedHeader.kid).toEqual("ipv-core-stub-2-from-mkjwk.org");
+        // ipv-core-stub-2-from-mkjwk.org hashed
+        expect(verifyResult?.protectedHeader.kid).toEqual(
+            "74c5b00d698a18178a738f5305ee67f9d50fc620f8be6b89d94638fa16a4c828", // pragma: allowlist secret
+        );
         expect(verifyResult?.payload.iss).toEqual(iss);
         expect(verifyResult?.payload.aud).toEqual(aud);
         expect(verifyResult?.payload.shared_claims).toEqual(sharedClaimsOverrides);
