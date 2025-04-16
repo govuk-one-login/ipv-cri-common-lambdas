@@ -3,16 +3,19 @@ import { IssuerAuthorizationRequestClass } from "@govuk-one-login/data-vocab/cre
 import Ajv from "ajv";
 import addFormats from "ajv-formats";
 import { v4 as uuidv4 } from "uuid";
-import { HeadlessCoreStubError } from "../errors/headless-core-stub-error";
 import { ClaimsSetOverrides } from "../types/claims-set-overrides";
 import { JWTClaimsSet } from "../types/jwt-claims-set";
 import { logger } from "../start-handler";
+import { base64Encode } from "../../../../utils/src/base64";
+import { HeadlessCoreStubError } from "../../../../utils/src/errors/headless-core-stub-error";
+
+export const DEFAULT_CLIENT_ID = "ipv-core-stub-aws-headless";
 
 export const parseJwtClaimsSetOverrides = (body: string | null): ClaimsSetOverrides => {
     try {
         const claimsSetOverrides = body ? JSON.parse(body) : {};
         if (!claimsSetOverrides.client_id) {
-            claimsSetOverrides.client_id = "ipv-core-stub-aws-headless";
+            claimsSetOverrides.client_id = DEFAULT_CLIENT_ID;
         }
         return claimsSetOverrides;
     } catch (e) {
@@ -24,6 +27,7 @@ export const generateJwtClaimsSet = async (overrides: ClaimsSetOverrides, ssmPar
     const audience = overrides.aud || ssmParameters["audience"];
     const issuer = overrides.iss || ssmParameters["issuer"];
     const redirectUri = overrides.redirect_uri || ssmParameters["redirectUri"];
+    const state = overrides.state || base64Encode(JSON.stringify({ aud: audience, redirect_uri: redirectUri }));
 
     const now = Date.now();
     return {
@@ -36,7 +40,7 @@ export const generateJwtClaimsSet = async (overrides: ClaimsSetOverrides, ssmPar
         response_type: overrides.response_type || "code",
         client_id: overrides.client_id,
         redirect_uri: redirectUri,
-        state: overrides.state || uuidv4(),
+        state,
         govuk_signin_journey_id: overrides.govuk_signin_journey_id || uuidv4(),
         shared_claims: overrides.shared_claims != null ? overrides.shared_claims : defaultClaims,
         ...(overrides.evidence_requested && { evidence_requested: overrides.evidence_requested }),
