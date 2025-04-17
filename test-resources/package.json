@@ -27,6 +27,7 @@
         "ajv": "8.17.1",
         "ajv-formats": "3.0.1",
         "aws-sdk-client-mock": "4.1.0",
+        "crypto": "1.0.1",
         "ecdsa-sig-formatter": "1.0.11",
         "esbuild": "0.25.1",
         "jose": "5.10.0"
