@@ -354,9 +354,9 @@ Mappings:
       integration: None
       production: None
     di-ipv-cri-dl-api:
-      dev: None
-      build: None
-      staging: None
+      dev: PublishedVersions
+      build: PublishedVersions
+      staging: PublishedVersions
       integration: None
       production: None
     di-ipv-cri-passport-api:
