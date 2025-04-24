@@ -357,8 +357,8 @@ Mappings:
       dev: PublishedVersions
       build: PublishedVersions
       staging: PublishedVersions
-      integration: None
-      production: None
+      integration: PublishedVersions
+      production: PublishedVersions
     di-ipv-cri-passport-api:
       dev: PublishedVersions
       build: PublishedVersions
