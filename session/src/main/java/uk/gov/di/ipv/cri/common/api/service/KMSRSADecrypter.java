@@ -16,6 +16,7 @@ import software.amazon.awssdk.services.kms.KmsClient;
 import software.amazon.awssdk.services.kms.model.DecryptRequest;
 import software.amazon.awssdk.services.kms.model.DecryptResponse;
 import software.amazon.awssdk.services.kms.model.EncryptionAlgorithmSpec;
+import uk.gov.di.ipv.cri.common.library.util.EventProbe;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
@@ -36,15 +37,18 @@ class KMSRSADecrypter implements JWEDecrypter {
             "session_decryption_key_inactive_alias";
     private static final String SESSION_DECRYPTION_KEY_PREVIOUS_ALIAS =
             "session_decryption_key_previous_alias";
+    private static final String ALL_ALIASES_UNAVAILABLE = "all_aliases_unavailable_for_decryption";
     private final boolean keyRotationEnabled =
             Boolean.parseBoolean(System.getenv("ENV_VAR_FEATURE_FLAG_KEY_ROTATION"));
     private final JWEJCAContext jcaContext;
     private final KmsClient kmsClient;
+    private final EventProbe eventProbe;
     private final String keyId;
 
-    KMSRSADecrypter(String keyId, KmsClient kmsClient) {
+    KMSRSADecrypter(String keyId, KmsClient kmsClient, EventProbe eventProbe) {
         this.keyId = keyId;
         this.kmsClient = kmsClient;
+        this.eventProbe = eventProbe;
         this.jcaContext = new JWEJCAContext();
     }
 
@@ -114,12 +118,15 @@ class KMSRSADecrypter implements JWEDecrypter {
             try {
                 decryptResponse = kmsClient.decrypt(buildDecryptRequest(alias, encryptedKey));
                 LOGGER.info("Decryption successful with key alias: {}", alias);
-                break;
+                return decryptResponse;
             } catch (Exception e) {
                 LOGGER.warn(
                         "Failed to decrypt with key alias: {}. Error: {}", alias, e.getMessage());
             }
         }
+
+        eventProbe.counterMetric(ALL_ALIASES_UNAVAILABLE);
+
         return decryptResponse;
     }
 

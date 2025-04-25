@@ -66,15 +66,16 @@ public class SessionHandler
         this.sessionService =
                 new SessionService(
                         configurationService, clientProviderFactory.getDynamoDbEnhancedClient());
+        this.eventProbe = new EventProbe();
         this.sessionRequestService =
                 new SessionRequestService(
                         configurationService,
                         clientProviderFactory.getKMSClient(),
-                        sharedObjectMapper);
+                        sharedObjectMapper,
+                        eventProbe);
         this.personIdentityService =
                 new PersonIdentityService(
                         configurationService, clientProviderFactory.getDynamoDbEnhancedClient());
-        this.eventProbe = new EventProbe();
         this.auditService =
                 new AuditService(
                         clientProviderFactory.getSqsClient(),
