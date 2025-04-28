@@ -1,10 +1,10 @@
 type Config = {
-    commonParameterPrefix: string;
-    testResourcesParameterPrefix: string;
+    commonStackName: string;
+    testResourcesStackName: string;
 };
 const config: Config = {
-    commonParameterPrefix: process.env.AWS_STACK_NAME || "common-cri-api",
-    testResourcesParameterPrefix: process.env.TEST_RESOURCES_STACK_NAME || "test-resources",
+    commonStackName: process.env.COMMON_STACK_NAME || "common-cri-api",
+    testResourcesStackName: process.env.TEST_RESOURCES_STACK_NAME || "test-resources",
 };
 
 export default config;

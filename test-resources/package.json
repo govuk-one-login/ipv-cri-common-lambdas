@@ -19,8 +19,8 @@
         "@aws-lambda-powertools/commons": "2.16.0",
         "@aws-lambda-powertools/logger": "2.16.0",
         "@aws-lambda-powertools/parameters": "2.16.0",
-        "@aws-sdk/client-kms": "3.772.0",
-        "@aws-sdk/client-ssm": "3.772.0",
+        "@aws-sdk/client-kms": "3.777.0",
+        "@aws-sdk/client-ssm": "3.777.0",
         "@govuk-one-login/data-vocab": "1.9.3",
         "@govuk-one-login/data-vocab-schemas": "1.9.3",
         "@middy/core": "4.2.8",
@@ -33,9 +33,7 @@
         "jose": "5.10.0"
     },
     "devDependencies": {
-        "@aws-sdk/client-cloudformation": "3.777.0",
         "@aws-sdk/client-dynamodb": "3.777.0",
-        "@aws-sdk/credential-providers": "3.777.0",
         "@aws-sdk/types": "3.775.0",
         "@smithy/smithy-client": "4.2.0",
         "@smithy/types": "4.2.0",
@@ -43,7 +41,6 @@
         "@types/jest": "^29.5.13",
         "@typescript-eslint/eslint-plugin": "^6.11.0",
         "@typescript-eslint/parser": "^6.11.0",
-        "aws-sigv4-fetch": "4.4.1",
         "eslint": "^8.53.0",
         "eslint-config-prettier": "^9.0.0",
         "eslint-plugin-prettier": "^5.0.1",

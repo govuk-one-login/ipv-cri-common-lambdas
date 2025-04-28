@@ -4,8 +4,7 @@ import * as GetParameters from "../../src/parameter/get-parameters";
 jest.mock("@aws-lambda-powertools/parameters/ssm");
 
 describe("ClientConfiguration", () => {
-    const commonParameterPrefix = "mock-common-prefix";
-    const testResourcesParameterPrefix = "mock-test-resources-prefix";
+    const commonStackName = "mock-common-prefix";
     const issuer = "mock-issuer";
     const clientId = "headless-core-stub";
     const audience = "my-audience";
@@ -14,8 +13,7 @@ describe("ClientConfiguration", () => {
     beforeEach(() => {
         process.env = {
             ...process.env,
-            AWS_STACK_NAME: commonParameterPrefix,
-            TEST_RESOURCES_STACK_NAME: testResourcesParameterPrefix,
+            COMMON_STACK_NAME: commonStackName,
         };
         jest.clearAllMocks();
     });
@@ -27,10 +25,11 @@ describe("ClientConfiguration", () => {
         afterEach(() => jest.clearAllMocks());
         it("returns expected values when properly configured", async () => {
             const expectedParameters = [
-                `/${commonParameterPrefix}/clients/${clientId}/jwtAuthentication/audience`,
-                `/${commonParameterPrefix}/clients/${clientId}/jwtAuthentication/issuer`,
-                `/${commonParameterPrefix}/clients/${clientId}/jwtAuthentication/redirectUri`,
-                `/${testResourcesParameterPrefix}/ipv-core-stub-aws-headless/privateSigningKey`,
+                `/${commonStackName}/clients/${clientId}/jwtAuthentication/audience`,
+                `/${commonStackName}/clients/${clientId}/jwtAuthentication/issuer`,
+                `/${commonStackName}/clients/${clientId}/jwtAuthentication/redirectUri`,
+                `/${commonStackName}/clients/headless-core-stub/jwtAuthentication/publicSigningJwkBase64`,
+                `/test-resources/ipv-core-stub-aws-headless/privateSigningKey`,
             ];
 
             jest.spyOn(GetParameters, "getParametersValues").mockResolvedValueOnce({
