@@ -1,24 +1,26 @@
 import { stackOutputs } from "../helpers/cloudformation";
-import { signedFetch } from "../helpers/fetch";
 import { kmsClient } from "../helpers/kms";
 import { JweDecrypter } from "../helpers/jwe-decrypter";
 import { JwtVerifierFactory, ClaimNames } from "../helpers/jwt-verifier";
 import { getParametersValues } from "../../headless-core-stub/utils/src/parameter/get-parameters";
-
+import { base64Encode } from "../../headless-core-stub/utils/src/base64/index";
+import { Logger } from "@aws-lambda-powertools/logger";
+import { signedFetch } from "../helpers/fetch";
 describe("happy path core stub start endpoint", () => {
-    let authenticationAlg;
-    let publicSigningJwkBase64;
-    let testHarnessExecuteUrl;
-    let jweDecrypter;
+    let authenticationAlg: string;
+    let publicSigningJwkBase64: string;
+    let testHarnessExecuteUrl: string;
+    let jweDecrypter: JweDecrypter;
 
-    const jwtVerifierFactory = new JwtVerifierFactory();
+    const jwtVerifierFactory = new JwtVerifierFactory(new Logger());
     const clientId = "ipv-core-stub-aws-headless";
     const aud = "https://test-aud";
-    const iss = "https://test-issuer";
+    let iss: string;
 
     beforeAll(async () => {
         const { TestHarnessExecuteUrl, CommonStackName } = await stackOutputs(process.env.STACK_NAME);
         testHarnessExecuteUrl = TestHarnessExecuteUrl;
+        iss = TestHarnessExecuteUrl.replace(/\/+$/, "");
 
         const { CriDecryptionKey1Id: decryptionKeyId } = await stackOutputs("core-infrastructure");
 
@@ -31,17 +33,20 @@ describe("happy path core stub start endpoint", () => {
     });
 
     it("returns 200 with a valid JWT for a valid request", async () => {
-        // Decodes to {"aud":"https://test-aud","redirect_uri":"https://test-resources.review-hc.dev.account.gov.uk/callback"}
-        const defaultState =
-            "eyJhdWQiOiJodHRwczovL3Rlc3QtYXVkIiwicmVkaXJlY3RfdXJpIjoiaHR0cHM6Ly90ZXN0LXJlc291cmNlcy5yZXZpZXctaGMuZGV2LmFjY291bnQuZ292LnVrL2NhbGxiYWNrIn0="; // pragma: allowlist secret
-        const data = await signedFetch(`${testHarnessExecuteUrl}start`, {
+        const defaultState = base64Encode(
+            JSON.stringify({
+                aud,
+                redirect_uri: "https://test-resources.review-hc.dev.account.gov.uk/callback",
+            }),
+        );
+        const stubStartUrl = new URL("start", testHarnessExecuteUrl).toString();
+        const data = await signedFetch(stubStartUrl, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
             },
             body: JSON.stringify({ aud, client_id: clientId, iss }),
         });
-
         const { client_id, request } = await data.json();
 
         const jwtBuffer = await jweDecrypter.decryptJwe(request);
@@ -95,9 +100,12 @@ describe("happy path core stub start endpoint", () => {
     });
 
     it("returns overridden shared claims if provided", async () => {
-        // Decodes to {"aud":"https://review-hc.dev.account.gov.uk","redirect_uri":"https://test-resources.review-hc.dev.account.gov.uk/callback"}
-        const stateOverride =
-            "eyJhdWQiOiJodHRwczovL3Jldmlldy1oYy5kZXYuYWNjb3VudC5nb3YudWsiLCJyZWRpcmVjdF91cmkiOiJodHRwczovL3Rlc3QtcmVzb3VyY2VzLnJldmlldy1oYy5kZXYuYWNjb3VudC5nb3YudWsvY2FsbGJhY2sifQ=="; // pragma: allowlist secret
+        const stateOverride = base64Encode(
+            JSON.stringify({
+                aud: "https://review-hc.dev.account.gov.uk",
+                redirect_uri: `${new URL("callback", testHarnessExecuteUrl).toString()}`,
+            }),
+        );
         const sharedClaimsOverrides = {
             name: [
                 {
@@ -124,7 +132,8 @@ describe("happy path core stub start endpoint", () => {
                 },
             ],
         };
-        const data = await signedFetch(`${testHarnessExecuteUrl}start`, {
+        const stubStartUrl = new URL("start", testHarnessExecuteUrl).toString();
+        const data = await signedFetch(stubStartUrl, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",

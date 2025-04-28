@@ -12,6 +12,8 @@ import { HeadlessCoreStubError } from "../../../../utils/src/errors/headless-cor
 export const DEFAULT_CLIENT_ID = "ipv-core-stub-aws-headless";
 
 export const parseJwtClaimsSetOverrides = (body: string | null): ClaimsSetOverrides => {
+    logger.info("Calling parseJwtClaimsSetOverrides", `${body}`);
+
     try {
         const claimsSetOverrides = body ? JSON.parse(body) : {};
         if (!claimsSetOverrides.client_id) {
@@ -24,6 +26,8 @@ export const parseJwtClaimsSetOverrides = (body: string | null): ClaimsSetOverri
 };
 
 export const generateJwtClaimsSet = async (overrides: ClaimsSetOverrides, ssmParameters: Record<string, string>) => {
+    logger.info("Calling generateJwtClaimsSet", JSON.stringify(overrides));
+
     const audience = overrides.aud || ssmParameters["audience"];
     const issuer = overrides.iss || ssmParameters["issuer"];
     const redirectUri = overrides.redirect_uri || ssmParameters["redirectUri"];
@@ -50,6 +54,8 @@ export const generateJwtClaimsSet = async (overrides: ClaimsSetOverrides, ssmPar
 
 export const validateClaimsSet = (claimsSet: JWTClaimsSet) => {
     //Current data-vocab schemas do not exactly match what our CRIs so we have to validate context manually and add scope and nonce
+    logger.info("Calling validateClaimsSet", JSON.stringify(claimsSet));
+
     const claimsSetCopy = { ...claimsSet };
     if (claimsSetCopy.context) {
         if (typeof claimsSetCopy.context !== "string") {
@@ -78,6 +84,7 @@ export const validateClaimsSet = (claimsSet: JWTClaimsSet) => {
         const errorDetails = errorMessages?.length ? ": " + errorMessages.join(", ") : "";
         throw new HeadlessCoreStubError("Claims set failed validation" + errorDetails, 400);
     }
+    logger.info("Called validateClaimsSet validated schema successfully");
 };
 
 const msToSeconds = (ms: number) => Math.floor(ms / 1000);

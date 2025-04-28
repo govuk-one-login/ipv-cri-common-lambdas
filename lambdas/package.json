@@ -15,10 +15,10 @@
         "compile": "tsc"
     },
     "dependencies": {
-        "@aws-lambda-powertools/logger": "1.17.0",
-        "@aws-lambda-powertools/metrics": "1.17.0",
+        "@aws-lambda-powertools/logger": "1.7.0",
+        "@aws-lambda-powertools/metrics": "1.7.0",
         "@aws-lambda-powertools/parameters": "1.17.0",
-        "@aws-lambda-powertools/tracer": "1.17.0",
+        "@aws-lambda-powertools/tracer": "1.7.0",
         "@aws-sdk/client-dynamodb": "3.363.0",
         "@aws-sdk/client-kms": "3.363.0",
         "@aws-sdk/client-sqs": "3.363.0",
@@ -38,6 +38,7 @@
         "@pact-foundation/pact": "^13.1.2",
         "@smithy/smithy-client": "4.2.0",
         "@smithy/types": "4.2.0",
+        "aws-sigv4-fetch": "4.4.1",
         "esbuild": "0.25.0",
         "express": "^4.19.2",
         "express-asyncify": "^3.1.0",
