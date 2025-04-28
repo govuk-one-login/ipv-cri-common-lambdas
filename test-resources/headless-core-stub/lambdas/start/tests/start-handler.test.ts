@@ -8,13 +8,10 @@ import { TestData } from "../../../utils/tests/test-data";
 import { Context } from "aws-lambda";
 import { ClientConfiguration } from "../../../utils/src/services/client-configuration";
 
-jest.mock("../../../utils/src/services/client-configuration");
-
+const mockKMSClient = mockClient(KMSClient);
+let getParametersSpy: jest.SpyInstance;
 describe("start-handler", () => {
     process.env.DECRYPTION_KEY_ID = "abc123";
-    const mockKMSClient = mockClient(KMSClient);
-
-    let getParametersSpy: jest.SpyInstance;
 
     beforeEach(() => {
         getParametersSpy = jest.spyOn(ClientConfiguration, "getConfig").mockResolvedValueOnce({
@@ -45,15 +42,15 @@ describe("start-handler", () => {
     });
 
     it("returns 200 when body is empty", async () => {
-        expect(true);
         const startLambdaHandler = new StartLambdaHandler();
         const event = {
             body: JSON.stringify({}),
         } as unknown as APIGatewayProxyEvent;
 
         const result = await startLambdaHandler.handler(event, {} as Context);
-        expect(result.statusCode).toEqual(200);
         const body = JSON.parse(result.body);
+
+        expect(result.statusCode).toEqual(200);
         expect(body.client_id).toEqual("ipv-core-stub-aws-headless");
         expect(getParametersSpy).toHaveBeenCalledWith(body.client_id);
         expect(body.request).toMatch(
@@ -62,15 +59,15 @@ describe("start-handler", () => {
     });
 
     it("returns 200 when body is null", async () => {
-        expect(true);
         const startLambdaHandler = new StartLambdaHandler();
         const event = {
             body: null,
         } as unknown as APIGatewayProxyEvent;
 
         const result = await startLambdaHandler.handler(event, {} as Context);
-        expect(result.statusCode).toEqual(200);
         const body = JSON.parse(result.body);
+
+        expect(result.statusCode).toEqual(200);
         expect(body.client_id).toEqual("ipv-core-stub-aws-headless");
         expect(body.request).toMatch(
             /^eyJ[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+$/g,
@@ -78,15 +75,15 @@ describe("start-handler", () => {
     });
 
     it("returns 200 when body is fully populated with overrides", async () => {
-        expect(true);
         const startLambdaHandler = new StartLambdaHandler();
         const event = {
             body: JSON.stringify(TestData.jwtClaimsSet),
         } as unknown as APIGatewayProxyEvent;
 
         const result = await startLambdaHandler.handler(event, {} as Context);
-        expect(result.statusCode).toEqual(200);
         const body = JSON.parse(result.body);
+
+        expect(result.statusCode).toEqual(200);
         expect(body.client_id).toEqual("ipv-core-stub-aws-headless");
         expect(body.request).toMatch(
             /^eyJ[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+$/g,
@@ -94,15 +91,15 @@ describe("start-handler", () => {
     });
 
     it("returns 200 when body has an overridden client_id", async () => {
-        expect(true);
         const startLambdaHandler = new StartLambdaHandler();
         const event = {
             body: JSON.stringify({ client_id: "mock-client-id" }),
         } as unknown as APIGatewayProxyEvent;
 
         const result = await startLambdaHandler.handler(event, {} as Context);
-        expect(result.statusCode).toEqual(200);
         const body = JSON.parse(result.body);
+
+        expect(result.statusCode).toEqual(200);
         expect(body.client_id).toEqual("mock-client-id");
         expect(getParametersSpy).toHaveBeenCalledWith(body.client_id);
         expect(body.request).toMatch(
@@ -111,7 +108,6 @@ describe("start-handler", () => {
     });
 
     it("returns 400 when claims set fails validation - aud is not a valid uri", async () => {
-        expect(true);
         const startLambdaHandler = new StartLambdaHandler();
         const event = {
             body: JSON.stringify({
@@ -120,6 +116,7 @@ describe("start-handler", () => {
         } as unknown as APIGatewayProxyEvent;
 
         const result = await startLambdaHandler.handler(event, {} as Context);
+
         expect(result).toEqual({
             body: '{"message":"Claims set failed validation: /aud - must match format \\"uri\\""}',
             statusCode: 400,
@@ -127,13 +124,13 @@ describe("start-handler", () => {
     });
 
     it("returns 400 when body is not valid json", async () => {
-        expect(true);
         const startLambdaHandler = new StartLambdaHandler();
         const event = {
             body: "{",
         } as unknown as APIGatewayProxyEvent;
 
         const result = await startLambdaHandler.handler(event, {} as Context);
+
         expect(result).toEqual({
             body: '{"message":"Body is not valid JSON"}',
             statusCode: 400,

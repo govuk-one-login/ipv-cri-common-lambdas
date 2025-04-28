@@ -737,6 +737,17 @@ Resources:
       CodeUri: ../../lambdas
       Handler: session-handler.lambdaHandler
       Runtime: nodejs22.x
+      VpcConfig:
+        SecurityGroupIds: !If
+          - IsDevPlatformDeploy
+          - - !ImportValue cri-vpc-AWSServicesEndpointSecurityGroupId
+          - - !ImportValue cri-vpc-LambdaSecurityGroup
+        SubnetIds: !If
+          - IsDevPlatformDeploy
+          - - !ImportValue cri-vpc-ProtectedSubnetIdA
+            - !ImportValue cri-vpc-ProtectedSubnetIdB
+          - - !ImportValue cri-vpc-PrivateSubnetIdA
+            - !ImportValue cri-vpc-PrivateSubnetIdB
       Layers:
         - !Sub
           - "{{resolve:secretsmanager:${SecretArn}:SecretString:NODEJS_LAYER}}"

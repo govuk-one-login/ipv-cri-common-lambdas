@@ -92,7 +92,7 @@ Globals:
         NODE_OPTIONS: --enable-source-maps
         POWERTOOLS_METRICS_NAMESPACE: !Ref CriIdentifier
         POWERTOOLS_LOG_LEVEL: DEBUG
-        COMMON_PARAMETER_NAME_PREFIX: !Ref CommonStackName
+        COMMON_STACK_NAME: !Ref CommonStackName
         AWS_STACK_NAME: !Sub ${AWS::StackName}
     AutoPublishAlias: live
 
@@ -111,6 +111,42 @@ Resources:
       VpcId:
         Fn::ImportValue: !Sub "${VpcStackName}-VpcId"
 
+  MockJwkFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Sourcemap: true
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-MockJwkFunction"
+      Handler: headless-core-stub/lambdas/mock-jwks/src/mock-jwk-handler.lambdaHandler
+      CodeSigningConfigArn:
+        !If [EnforceCodeSigning, !Ref CodeSigningConfigArn, !Ref AWS::NoValue]
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - ssm:GetParametersByPath
+                - ssm:GetParameters
+                - ssm:GetParameter
+              Resource:
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${CommonStackName}/clients/*/jwtAuthentication/*"
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/test-resources/ipv-core-stub-aws-headless/privateSigningKey"
+
+
+  MockJwkFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${MockJwkFunction}"
+      RetentionInDays: 30
+
+  MockJwkFunctionAliasPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref MockJwkFunction.Alias
+      Principal: apigateway.amazonaws.com
+
   StartFunction:
     Type: AWS::Serverless::Function
     Metadata:
@@ -128,7 +164,7 @@ Resources:
         Variables:
           POWERTOOLS_SERVICE_NAME: HeadlessCoreStubStartFunction
           DECRYPTION_KEY_ID: !ImportValue core-infrastructure-CriDecryptionKey1Id
-          AWS_STACK_NAME: !Ref CommonStackName
+          TEST_RESOURCES_STACK_NAME: !Sub ${AWS::StackName}
       Policies:
         - Statement:
             Effect: Allow
@@ -143,7 +179,7 @@ Resources:
               Resource:
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${CommonStackName}/clients/*/jwtAuthentication/*"
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/test-resources/ipv-core-stub-aws-headless/privateSigningKey"
-  
+
   StartFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
@@ -171,8 +207,7 @@ Resources:
       Environment:
         Variables:
           CRI_IDENTIFIER: !Sub "${CriIdentifier}"
-          AWS_STACK_NAME: !Ref CommonStackName
-          TEST_RESOURCES_PARAMETER_PREFIX: "test-resources"
+          TEST_RESOURCES_STACK_NAME: !Sub ${AWS::StackName}
       Policies:
         - DynamoDBReadPolicy:
             TableName: !Sub "{{resolve:ssm:/${CommonStackName}/SessionTableName}}"
@@ -439,6 +474,7 @@ Outputs:
         - https://${URL}/
         - URL: !Ref TestHarnessCustomDomain
       - !Sub https://${APIGateway}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/
+
   CommonStackName:
     Description: Common stack name used by the test resources
     Export:

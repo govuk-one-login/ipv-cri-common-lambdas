@@ -6,12 +6,12 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from "aws-lambda
 import { JWK, JWTPayload, KeyLike } from "jose";
 import { signJwt } from "../../../utils/src/crypto/signer";
 import { handleErrorResponse } from "./../../../utils/src/errors/error-response";
-import { getHashedKid } from "./../../../utils/src/hashing";
 import { ClientConfiguration } from "../../../utils/src/services/client-configuration";
 import { generateJwtClaimsSet, parseJwtClaimsSetOverrides, validateClaimsSet } from "./services/jwt-claims-set-service";
 import { encryptSignedJwt, getPublicEncryptionKey } from "./services/signing-service";
 import { ClaimsSetOverrides } from "./types/claims-set-overrides";
 import { JWTClaimsSet } from "./types/jwt-claims-set";
+import { getHashedKid } from "../../../utils/src/hashing";
 
 export const logger = new Logger();
 
@@ -26,7 +26,7 @@ export class StartLambdaHandler implements LambdaInterface {
 
             validateClaimsSet(jwtClaimsSet);
 
-            const signingKey: JWK = JSON.parse(ssmParameters["privateSigningKey"]);
+            const signingKey: JWK = JSON.parse(ssmParameters.privateSigningKey);
             const jwtHeader = {
                 alg: "ES256",
                 typ: "JWT",
