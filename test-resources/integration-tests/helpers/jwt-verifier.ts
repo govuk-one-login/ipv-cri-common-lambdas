@@ -8,7 +8,6 @@ import {
 } from "jose";
 import { Logger } from "@aws-lambda-powertools/logger";
 interface JwtVerificationConfig {
-    publicSigningJwk: string;
     jwtSigningAlgorithm: string;
 }
 export enum ClaimNames {
@@ -36,7 +35,6 @@ export class JwtVerifier {
         mandatoryClaims: Set<string>,
         expectedClaimValues: Map<string, string>,
     ): Promise<JWTVerifyResult | null> {
-        if (!mandatoryClaims || mandatoryClaims?.size === 0) throw new Error("No mandatory claims provided");
         const jwtVerifyOptions = this.createJwtVerifyOptions(expectedClaimValues);
 
         try {
@@ -44,7 +42,7 @@ export class JwtVerifier {
 
             const verifyResult = await jwtVerify(
                 encodedJwt.toString(),
-                this.getPublicKeyUsingJwksUri(expectedClaimValues.get(JwtVerifier.ClaimNames.ISSUER)), // wellknown endpoint for test is the core-stub but in live it going to be the CRI
+                this.getPublicKeyUsingJwksUri(expectedClaimValues.get(JwtVerifier.ClaimNames.ISSUER)), // wellknown endpoint for test is the core-stub but in live it's going to be the CRI i.e audience
                 jwtVerifyOptions,
             );
             this.checkMandatoryClaims(verifyResult.payload, mandatoryClaims);
@@ -63,10 +61,8 @@ export class JwtVerifier {
     }
 
     private getPublicKeyUsingJwksUri(issuer?: string) {
-        this.logger.info({ message: "getPublicKeyUsingJwksUri:- using issuer", issuer });
-
-        this.logger.info("Retrieving publicSigningKey from JwkEndpoint");
         const jwkEndpoint = `${issuer}/.well-known/jwks.json`;
+        this.logger.info({ message: "Retrieving publicSigningKey from JwkEndpoint", jwkEndpoint });
 
         this.logger.info("JWK_ENDPOINT", jwkEndpoint.toString());
         return createRemoteJWKSet(new URL(jwkEndpoint), { cache: false } as RemoteJWKSetOptions);
@@ -84,11 +80,10 @@ export class JwtVerifier {
 
 export class JwtVerifierFactory {
     public constructor(private readonly logger: Logger) {}
-    public create(jwtSigningAlgo: string, jwtPublicSigningKey: string): JwtVerifier {
+    public create(jwtSigningAlgo: string): JwtVerifier {
         return new JwtVerifier(
             {
                 jwtSigningAlgorithm: jwtSigningAlgo,
-                publicSigningJwk: jwtPublicSigningKey,
             },
             this.logger,
         );

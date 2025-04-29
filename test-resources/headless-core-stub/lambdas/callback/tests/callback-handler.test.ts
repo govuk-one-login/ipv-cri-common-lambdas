@@ -3,7 +3,7 @@ import { CallbackLambdaHandler } from "../src/callback-handler";
 import { CallBackService } from "../src/services/callback-service";
 import * as KeyJwtHelper from "../src/services/private-key-jwt-helper";
 import { ClientConfiguration } from "../../../utils/src/services/client-configuration";
-import { DEFAULT_CLIENT_ID } from "../../start/src/services/jwt-claims-set-service";
+import { DEFAULT_CLIENT_ID } from "../../../utils/src/constants";
 
 jest.mock("../src/services/callback-service");
 jest.mock("../../../utils/src/services/client-configuration");

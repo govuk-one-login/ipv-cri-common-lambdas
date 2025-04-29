@@ -40,7 +40,6 @@ jest.mock("@aws-sdk/lib-dynamodb", () => {
         ...jest.requireActual("@aws-sdk/lib-dynamodb"),
         GetCommand: jest.fn(),
         UpdateCommand: jest.fn(),
-        send: jest.fn(),
     };
 });
 const AUTHORIZATION_SENT_METRIC = "authorization_sent";

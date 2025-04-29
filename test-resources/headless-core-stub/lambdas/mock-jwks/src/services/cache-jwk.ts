@@ -2,18 +2,18 @@ import { randomUUID } from "crypto";
 import { JSONWebKeySet, JWK } from "jose";
 import { getJwkKeyPair, GetJwkKeyPairOptions } from "../../../../utils/src/keypair";
 import { getHashedKid } from "../../../../utils/src/hashing";
-import { ClientConfiguration } from "../../../../utils/src/services/client-configuration";
-import { base64Decode } from "../../../../utils/src/base64";
+import { CORE_STUB_SIGNING_PUBLIC_JWK, STUB_PRIVATE_SIGNING_KEY_PARAMETER_PATH } from "../../../../utils/src/constants";
+import { getParametersValues } from "../../../../utils/src/parameter/get-parameters";
 
-let cachedKeys: { jwks: JSONWebKeySet; privateKeys?: JWK[] } | null = null;
+let cachedKeys: { jwks: JSONWebKeySet } | null = null;
 
-export const generateJWKS = async (clientId: string): Promise<{ jwks: JSONWebKeySet; privateKeys?: JWK[] }> => {
+export const generateJWKS = async (): Promise<{ jwks: JSONWebKeySet; privateKeys?: JWK[] }> => {
     if (cachedKeys) {
         return cachedKeys;
     }
 
-    const ssmParameters = await ClientConfiguration.getConfig(clientId);
-    const currentPublicKey = JSON.parse(base64Decode(ssmParameters.publicSigningJwkBase64)) as JWK;
+    const ssmParameters = await getParametersValues([STUB_PRIVATE_SIGNING_KEY_PARAMETER_PATH]);
+    const currentPublicKey = CORE_STUB_SIGNING_PUBLIC_JWK as JWK;
     const currentPrivateKey = JSON.parse(ssmParameters.privateSigningKey) as JWK;
 
     const [key1, key2] = await Promise.all([
@@ -25,7 +25,6 @@ export const generateJWKS = async (clientId: string): Promise<{ jwks: JSONWebKey
         jwks: {
             keys: [key1.publicKey, key2.publicKey],
         } as JSONWebKeySet,
-        privateKeys: [key1.privateKey, key2.privateKey],
     };
 
     cachedKeys = result;

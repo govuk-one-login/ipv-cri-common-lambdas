@@ -10,7 +10,7 @@ export class MockJwkHandler implements LambdaInterface {
     async handler(event: APIGatewayProxyEvent, _context: Context): Promise<APIGatewayProxyResult> {
         try {
             logger.info({ message: "Retrieving JWKS", path: event.path });
-            const { jwks } = await generateJWKS("ipv-core-stub-aws-headless");
+            const { jwks } = await generateJWKS();
 
             if (jwks.keys.length) {
                 logger.info({ message: "Retrieved JWKS", ...jwks });

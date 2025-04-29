@@ -8,7 +8,6 @@ import { Logger } from "@aws-lambda-powertools/logger";
 import { signedFetch } from "../helpers/fetch";
 describe("happy path core stub start endpoint", () => {
     let authenticationAlg: string;
-    let publicSigningJwkBase64: string;
     let testHarnessExecuteUrl: string;
     let jweDecrypter: JweDecrypter;
 
@@ -24,9 +23,8 @@ describe("happy path core stub start endpoint", () => {
 
         const { CriDecryptionKey1Id: decryptionKeyId } = await stackOutputs("core-infrastructure");
 
-        ({ authenticationAlg, publicSigningJwkBase64 } = await getParametersValues([
+        ({ authenticationAlg } = await getParametersValues([
             `/${CommonStackName}/clients/${clientId}/jwtAuthentication/authenticationAlg`,
-            `/${CommonStackName}/clients/${clientId}/jwtAuthentication/publicSigningJwkBase64`,
         ]));
 
         jweDecrypter = new JweDecrypter(kmsClient, () => decryptionKeyId);
@@ -36,7 +34,7 @@ describe("happy path core stub start endpoint", () => {
         const defaultState = base64Encode(
             JSON.stringify({
                 aud,
-                redirect_uri: "https://test-resources.review-hc.dev.account.gov.uk/callback",
+                redirect_uri: `https://test-resources.review-hc.dev.account.gov.uk/callback`,
             }),
         );
         const stubStartUrl = new URL("start", testHarnessExecuteUrl).toString();
@@ -50,7 +48,7 @@ describe("happy path core stub start endpoint", () => {
         const { client_id, request } = await data.json();
 
         const jwtBuffer = await jweDecrypter.decryptJwe(request);
-        const jwtVerifier = jwtVerifierFactory.create(authenticationAlg, publicSigningJwkBase64);
+        const jwtVerifier = jwtVerifierFactory.create(authenticationAlg);
         const verifyResult = await jwtVerifier.verify(
             jwtBuffer,
             new Set([ClaimNames.EXPIRATION_TIME, ClaimNames.SUBJECT, ClaimNames.NOT_BEFORE, ClaimNames.STATE]),
@@ -66,7 +64,7 @@ describe("happy path core stub start endpoint", () => {
         expect(verifyResult?.protectedHeader.typ).toEqual("JWT");
         // ipv-core-stub-2-from-mkjwk.org hashed
         expect(verifyResult?.protectedHeader.kid).toEqual(
-            "74c5b00d698a18178a738f5305ee67f9d50fc620f8be6b89d94638fa16a4c828", // pragma: allowlist secret
+            "74c5b00d698a18178a738f5305ee67f9d50fc620f8be6b89d94638fa16a4c828",
         );
         expect(verifyResult?.payload.iss).toEqual(iss);
         expect(verifyResult?.payload.aud).toEqual(aud);
@@ -150,7 +148,7 @@ describe("happy path core stub start endpoint", () => {
         const { client_id, request } = await data.json();
 
         const jwtBuffer = await jweDecrypter.decryptJwe(request);
-        const jwtVerifier = jwtVerifierFactory.create(authenticationAlg, publicSigningJwkBase64);
+        const jwtVerifier = jwtVerifierFactory.create(authenticationAlg);
         const verifyResult = await jwtVerifier.verify(
             jwtBuffer,
             new Set([ClaimNames.EXPIRATION_TIME, ClaimNames.SUBJECT, ClaimNames.NOT_BEFORE, ClaimNames.STATE]),
@@ -166,7 +164,7 @@ describe("happy path core stub start endpoint", () => {
         expect(verifyResult?.protectedHeader.typ).toEqual("JWT");
         // ipv-core-stub-2-from-mkjwk.org hashed
         expect(verifyResult?.protectedHeader.kid).toEqual(
-            "74c5b00d698a18178a738f5305ee67f9d50fc620f8be6b89d94638fa16a4c828", // pragma: allowlist secret
+            "74c5b00d698a18178a738f5305ee67f9d50fc620f8be6b89d94638fa16a4c828",
         );
         expect(verifyResult?.payload.iss).toEqual(iss);
         expect(verifyResult?.payload.aud).toEqual(aud);

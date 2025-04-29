@@ -10,7 +10,6 @@ export class JweDecrypter {
     ) {}
 
     public async decryptJwe(compactJwe: string): Promise<Buffer> {
-        // eslint-disable-next-line no-console
         const { 0: jweProtectedHeader, 1: encryptedKey, 2: iv, 3: ciphertext, 4: tag, length } = compactJwe.split(".");
 
         if (length !== 5) {

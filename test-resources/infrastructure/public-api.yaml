@@ -30,7 +30,7 @@ paths:
         "200":
           description: OK
           responseParameters:
-            method.response.header.Cache-Control: "'no-store'"
+            method.response.header.Cache-Control: "'max-age=900'"
             method.response.header.Strict-Transport-Security: "'max-age=31536000; includeSubDomains'"
             method.response.header.X-Content-Type-Options: "'nosniff'"
             method.response.header.X-Frame-Options: "'DENY'"
@@ -41,7 +41,8 @@ paths:
                 $ref: "#/components/schemas/JsonWebKeySet"
         "404":
           description: Not Found
-      x-amazon-apigateway-request-validator: "Validate both"
+        "500":
+          description: Internal server error
       x-amazon-apigateway-integration:
         httpMethod: "POST"
         uri:

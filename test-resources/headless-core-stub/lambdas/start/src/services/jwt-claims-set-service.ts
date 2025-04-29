@@ -8,8 +8,7 @@ import { JWTClaimsSet } from "../types/jwt-claims-set";
 import { logger } from "../start-handler";
 import { base64Encode } from "../../../../utils/src/base64";
 import { HeadlessCoreStubError } from "../../../../utils/src/errors/headless-core-stub-error";
-
-export const DEFAULT_CLIENT_ID = "ipv-core-stub-aws-headless";
+import { DEFAULT_CLIENT_ID } from "../../../../utils/src/constants";
 
 export const parseJwtClaimsSetOverrides = (body: string | null): ClaimsSetOverrides => {
     logger.info("Calling parseJwtClaimsSetOverrides", `${body}`);

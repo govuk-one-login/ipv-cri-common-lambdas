@@ -1,0 +1,13 @@
+{
+    "name": "headless-core-stub-mock-jwks",
+    "description": "Mock jwks lambda for the headless core stub",
+    "scripts": {
+        "lint": "eslint .",
+        "lint:fix": "eslint . --fix",
+        "unit": "jest",
+        "test": "npm run unit --",
+        "compile": "tsc"
+    },
+    "dependencies": {},
+    "devDependencies": {}
+}

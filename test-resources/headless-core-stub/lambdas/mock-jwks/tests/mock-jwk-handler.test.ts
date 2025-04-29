@@ -28,7 +28,7 @@ describe("MockJwkHandler", () => {
         const handler = new MockJwkHandler();
         const result = await handler.handler(event, {} as Context);
 
-        expect(generateJWKSSpy).toHaveBeenCalledWith("ipv-core-stub-aws-headless");
+        expect(generateJWKSSpy).toHaveBeenCalled();
         expect(result.statusCode).toBe(404);
         expect(JSON.parse(result.body)).toEqual({ error: "JWKS not found" });
     });
@@ -43,6 +43,6 @@ describe("MockJwkHandler", () => {
 
         expect(result.statusCode).toBe(200);
         expect(JSON.parse(result.body)).toEqual({ keys: [{ kid: "key-1" }] });
-        expect(generateJWKSSpy).toHaveBeenCalledWith("ipv-core-stub-aws-headless");
+        expect(generateJWKSSpy).toHaveBeenCalled();
     });
 });
