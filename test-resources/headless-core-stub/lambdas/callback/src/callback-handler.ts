@@ -4,11 +4,11 @@ import { Logger } from "@aws-lambda-powertools/logger";
 import { CallBackService } from "./services/callback-service";
 import { generatePrivateJwtParams } from "./services/private-key-jwt-helper";
 import { JWK } from "jose";
-import { DEFAULT_CLIENT_ID } from "../../start/src/services/jwt-claims-set-service";
 import { HeadlessCoreStubError } from "../../../utils/src//errors/headless-core-stub-error";
 import { handleErrorResponse } from "../../../utils/src/errors/error-response";
 import { ClientConfiguration } from "../../../utils/src/services/client-configuration";
 import { base64Decode } from "../../../utils/src/base64";
+import { DEFAULT_CLIENT_ID } from "../../../utils/src/constants";
 
 const logger = new Logger({ serviceName: "CallBackService" });
 const callback = new CallBackService(logger);

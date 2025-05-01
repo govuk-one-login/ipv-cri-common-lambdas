@@ -1,51 +1,56 @@
-import { stackOutputs } from "../helpers/cloudformation";
-import { signedFetch } from "../helpers/fetch";
-import { kmsClient } from "../helpers/kms";
-import { JweDecrypter } from "../helpers/jwe-decrypter";
-import { JwtVerifierFactory, ClaimNames } from "../helpers/jwt-verifier";
+import { Logger } from "@aws-lambda-powertools/logger";
+
+import { base64Encode } from "../../headless-core-stub/utils/src/base64/index";
+import { DEFAULT_CLIENT_ID } from "../../headless-core-stub/utils/src/constants";
+
 import { getParametersValues } from "../../headless-core-stub/utils/src/parameter/get-parameters";
 
-describe("happy path core stub start endpoint", () => {
-    let authenticationAlg;
-    let publicSigningJwkBase64;
-    let testHarnessExecuteUrl;
-    let jweDecrypter;
+import { stackOutputs } from "../helpers/cloudformation";
+import { JweDecrypter } from "../helpers/jwe-decrypter";
+import { signedFetch } from "../helpers/fetch";
+import { JwtVerifierFactory, ClaimNames } from "../helpers/jwt-verifier";
+import { kmsClient } from "../helpers/kms";
 
-    const jwtVerifierFactory = new JwtVerifierFactory();
-    const clientId = "ipv-core-stub-aws-headless";
+describe("happy path core stub start endpoint", () => {
+    let authenticationAlg: string;
+    let jweDecrypter: JweDecrypter;
+    let testHarnessExecuteUrl: string;
+    const jwtVerifierFactory = new JwtVerifierFactory(new Logger());
     const aud = "https://test-aud";
-    const iss = "https://test-issuer";
+    let iss: string;
 
     beforeAll(async () => {
         const { TestHarnessExecuteUrl, CommonStackName } = await stackOutputs(process.env.STACK_NAME);
         testHarnessExecuteUrl = TestHarnessExecuteUrl;
-
+        iss = testHarnessExecuteUrl.replace(/\/+$/, "");
         const { CriDecryptionKey1Id: decryptionKeyId } = await stackOutputs("core-infrastructure");
 
-        ({ authenticationAlg, publicSigningJwkBase64 } = await getParametersValues([
-            `/${CommonStackName}/clients/${clientId}/jwtAuthentication/authenticationAlg`,
-            `/${CommonStackName}/clients/${clientId}/jwtAuthentication/publicSigningJwkBase64`,
+        ({ authenticationAlg } = await getParametersValues([
+            `/${CommonStackName}/clients/${DEFAULT_CLIENT_ID}/jwtAuthentication/authenticationAlg`,
         ]));
 
         jweDecrypter = new JweDecrypter(kmsClient, () => decryptionKeyId);
     });
 
     it("returns 200 with a valid JWT for a valid request", async () => {
-        // Decodes to {"aud":"https://test-aud","redirect_uri":"https://test-resources.review-hc.dev.account.gov.uk/callback"}
-        const defaultState =
-            "eyJhdWQiOiJodHRwczovL3Rlc3QtYXVkIiwicmVkaXJlY3RfdXJpIjoiaHR0cHM6Ly90ZXN0LXJlc291cmNlcy5yZXZpZXctaGMuZGV2LmFjY291bnQuZ292LnVrL2NhbGxiYWNrIn0="; // pragma: allowlist secret
-        const data = await signedFetch(`${testHarnessExecuteUrl}start`, {
+        const defaultState = base64Encode(
+            JSON.stringify({
+                aud,
+                redirect_uri: `https://test-resources.review-hc.dev.account.gov.uk/callback`,
+            }),
+        );
+        const stubStartUrl = new URL("start", testHarnessExecuteUrl).href;
+        const data = await signedFetch(stubStartUrl, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
             },
-            body: JSON.stringify({ aud, client_id: clientId, iss }),
+            body: JSON.stringify({ aud, client_id: DEFAULT_CLIENT_ID, iss }),
         });
-
         const { client_id, request } = await data.json();
 
         const jwtBuffer = await jweDecrypter.decryptJwe(request);
-        const jwtVerifier = jwtVerifierFactory.create(authenticationAlg, publicSigningJwkBase64);
+        const jwtVerifier = jwtVerifierFactory.create(authenticationAlg);
         const verifyResult = await jwtVerifier.verify(
             jwtBuffer,
             new Set([ClaimNames.EXPIRATION_TIME, ClaimNames.SUBJECT, ClaimNames.NOT_BEFORE, ClaimNames.STATE]),
@@ -56,12 +61,12 @@ describe("happy path core stub start endpoint", () => {
         );
 
         expect(data.status).toBe(200);
-        expect(client_id).toBe(clientId);
+        expect(client_id).toBe(DEFAULT_CLIENT_ID);
         expect(verifyResult?.protectedHeader.alg).toEqual("ES256");
         expect(verifyResult?.protectedHeader.typ).toEqual("JWT");
         // ipv-core-stub-2-from-mkjwk.org hashed
         expect(verifyResult?.protectedHeader.kid).toEqual(
-            "74c5b00d698a18178a738f5305ee67f9d50fc620f8be6b89d94638fa16a4c828", // pragma: allowlist secret
+            "74c5b00d698a18178a738f5305ee67f9d50fc620f8be6b89d94638fa16a4c828",
         );
         expect(verifyResult?.payload.iss).toEqual(iss);
         expect(verifyResult?.payload.aud).toEqual(aud);
@@ -95,9 +100,12 @@ describe("happy path core stub start endpoint", () => {
     });
 
     it("returns overridden shared claims if provided", async () => {
-        // Decodes to {"aud":"https://review-hc.dev.account.gov.uk","redirect_uri":"https://test-resources.review-hc.dev.account.gov.uk/callback"}
-        const stateOverride =
-            "eyJhdWQiOiJodHRwczovL3Jldmlldy1oYy5kZXYuYWNjb3VudC5nb3YudWsiLCJyZWRpcmVjdF91cmkiOiJodHRwczovL3Rlc3QtcmVzb3VyY2VzLnJldmlldy1oYy5kZXYuYWNjb3VudC5nb3YudWsvY2FsbGJhY2sifQ=="; // pragma: allowlist secret
+        const stateOverride = base64Encode(
+            JSON.stringify({
+                aud: "https://review-hc.dev.account.gov.uk",
+                redirect_uri: new URL("callback", testHarnessExecuteUrl).href,
+            }),
+        );
         const sharedClaimsOverrides = {
             name: [
                 {
@@ -124,14 +132,15 @@ describe("happy path core stub start endpoint", () => {
                 },
             ],
         };
-        const data = await signedFetch(`${testHarnessExecuteUrl}start`, {
+        const stubStartUrl = new URL("start", testHarnessExecuteUrl).href;
+        const data = await signedFetch(stubStartUrl, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
             },
             body: JSON.stringify({
                 aud,
-                client_id: clientId,
+                client_id: DEFAULT_CLIENT_ID,
                 iss,
                 shared_claims: sharedClaimsOverrides,
                 state: stateOverride,
@@ -141,7 +150,7 @@ describe("happy path core stub start endpoint", () => {
         const { client_id, request } = await data.json();
 
         const jwtBuffer = await jweDecrypter.decryptJwe(request);
-        const jwtVerifier = jwtVerifierFactory.create(authenticationAlg, publicSigningJwkBase64);
+        const jwtVerifier = jwtVerifierFactory.create(authenticationAlg);
         const verifyResult = await jwtVerifier.verify(
             jwtBuffer,
             new Set([ClaimNames.EXPIRATION_TIME, ClaimNames.SUBJECT, ClaimNames.NOT_BEFORE, ClaimNames.STATE]),
@@ -152,12 +161,12 @@ describe("happy path core stub start endpoint", () => {
         );
 
         expect(data.status).toBe(200);
-        expect(client_id).toBe(clientId);
+        expect(client_id).toBe(DEFAULT_CLIENT_ID);
         expect(verifyResult?.protectedHeader.alg).toEqual("ES256");
         expect(verifyResult?.protectedHeader.typ).toEqual("JWT");
         // ipv-core-stub-2-from-mkjwk.org hashed
         expect(verifyResult?.protectedHeader.kid).toEqual(
-            "74c5b00d698a18178a738f5305ee67f9d50fc620f8be6b89d94638fa16a4c828", // pragma: allowlist secret
+            "74c5b00d698a18178a738f5305ee67f9d50fc620f8be6b89d94638fa16a4c828",
         );
         expect(verifyResult?.payload.iss).toEqual(iss);
         expect(verifyResult?.payload.aud).toEqual(aud);

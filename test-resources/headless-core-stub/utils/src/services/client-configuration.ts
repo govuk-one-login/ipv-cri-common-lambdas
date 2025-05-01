@@ -1,14 +1,15 @@
 import { getParametersValues } from "../parameter/get-parameters";
 import config from "./config";
-const { commonParameterPrefix, testResourcesParameterPrefix } = config;
+const { commonStackName } = config;
 
 export class ClientConfiguration {
     public static async getConfig(clientId: string) {
         const parameters = [
-            `/${commonParameterPrefix}/clients/${clientId}/jwtAuthentication/audience`,
-            `/${commonParameterPrefix}/clients/${clientId}/jwtAuthentication/issuer`,
-            `/${commonParameterPrefix}/clients/${clientId}/jwtAuthentication/redirectUri`,
-            `/${testResourcesParameterPrefix}/ipv-core-stub-aws-headless/privateSigningKey`,
+            `/${commonStackName}/clients/${clientId}/jwtAuthentication/audience`,
+            `/${commonStackName}/clients/${clientId}/jwtAuthentication/issuer`,
+            `/${commonStackName}/clients/${clientId}/jwtAuthentication/redirectUri`,
+            `/${commonStackName}/clients/${clientId}/jwtAuthentication/publicSigningJwkBase64`,
+            `/test-resources/${clientId}/privateSigningKey`,
         ];
         return getParametersValues(parameters);
     }

@@ -4,6 +4,55 @@ info:
   version: "1.0"
 
 paths:
+  /.well-known/jwks.json:
+    get:
+      summary: Retrieve the signing public keys to be used verify request for the core-stub.
+      description: |
+        Return the current valid public keys (JSON Web Key Set) used to
+        verify that request JAR are signed by core-stub.
+      headers:
+        Cache-Control:
+          schema:
+            type: "string"
+        Content-Type:
+          schema:
+            type: "string"
+        Strict-Transport-Security:
+          schema:
+            type: "string"
+        X-Content-Type-Options:
+          schema:
+            type: "string"
+        X-Frame-Options:
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: OK
+          responseParameters:
+            method.response.header.Cache-Control: "'max-age=900'"
+            method.response.header.Strict-Transport-Security: "'max-age=31536000; includeSubDomains'"
+            method.response.header.X-Content-Type-Options: "'nosniff'"
+            method.response.header.X-Frame-Options: "'DENY'"
+            method.response.header.Content-Type: "'application/json'"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonWebKeySet"
+        "404":
+          description: Not Found
+        "500":
+          description: Internal server error
+      x-amazon-apigateway-integration:
+        httpMethod: "POST"
+        uri:
+          Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${MockJwkFunction.Arn}:live/invocations
+        responses:
+          default:
+            statusCode: "200"
+        passthroughBehavior: "when_no_match"
+        contentHandling: "CONVERT_TO_TEXT"
+        type: "aws_proxy"
   /callback:
     get:
       summary: handles Callback initiated by ipv-core-stub-aws-headless
@@ -80,7 +129,7 @@ paths:
           description: Bad request, missing partitionKey or sortKey
         500:
           description: Internal server error
-      x-amazon-apigateway-request-validator: Validate both
+      x-amazon-apigateway-request-validator: "Validate both"
       x-amazon-apigateway-integration:
         httpMethod: POST
         passThroughBehavior: when_no_templates
@@ -235,3 +284,39 @@ components:
           example: "ipv-core-stub-aws-headless"
         request:
           type: "string"
+    JsonWebKeySet:
+      type: object
+      required: [keys]
+      properties:
+        keys:
+          type: array
+          items:
+            type: object
+            required: [kty, use, alg, kid, crv, x, y]
+            properties:
+              kty:
+                type: string
+                description: >-
+                  The `kty` (key type) parameter identifies the cryptographic algorithm family used with the
+                  key, such as `RSA or `EC`
+              use:
+                type: string
+              alg:
+                type: string
+                description: >-
+                  The `alg` (algorithm) parameter identifies the algorithm intended for use with the key.
+              kid:
+                type: string
+                description: >-
+                  The `kid` (key ID) parameter is used to match a specific key. This is used, for instance,
+                  to choose among a set of keys within a JWK Set during key rollover.  The structure of the
+                  `kid` value is unspecified.
+              crv:
+                type: string
+                description: Curve (for EC keys)
+              x:
+                type: string
+                description: X coordinate (for EC keys)
+              y:
+                type: string
+                description: Y coordinate (for EC keys)
