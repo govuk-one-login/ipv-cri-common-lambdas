@@ -18,13 +18,12 @@ export async function getJwkKeyPair({
     use = "sig",
     currentPublicKey,
 }: GetJwkKeyPairOptions): Promise<KeyPair> {
-    if (currentPublicKey && currentPublicKey.kid) {
-        const hashedKid = getHashedKid(`${currentPublicKey.kid}`);
-
+    if (currentPublicKey?.kid) {
         return {
-            publicKey: { ...currentPublicKey, alg, kid: hashedKid, use },
+            publicKey: { ...currentPublicKey, alg, kid: getHashedKid(`${currentPublicKey.kid}`), use },
         };
     }
+
     const { publicKey } = await generateKeyPair(alg, {
         modulusLength: alg.startsWith("RS") || alg.startsWith("PS") ? 2048 : undefined,
     });

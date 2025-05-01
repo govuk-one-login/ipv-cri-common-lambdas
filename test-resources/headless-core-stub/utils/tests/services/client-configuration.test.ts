@@ -28,8 +28,8 @@ describe("ClientConfiguration", () => {
                 `/${commonStackName}/clients/${clientId}/jwtAuthentication/audience`,
                 `/${commonStackName}/clients/${clientId}/jwtAuthentication/issuer`,
                 `/${commonStackName}/clients/${clientId}/jwtAuthentication/redirectUri`,
-                `/${commonStackName}/clients/headless-core-stub/jwtAuthentication/publicSigningJwkBase64`,
-                `/test-resources/ipv-core-stub-aws-headless/privateSigningKey`,
+                `/${commonStackName}/clients/${clientId}/jwtAuthentication/publicSigningJwkBase64`,
+                `/test-resources/${clientId}/privateSigningKey`,
             ];
 
             jest.spyOn(GetParameters, "getParametersValues").mockResolvedValueOnce({

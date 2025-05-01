@@ -1,4 +1,3 @@
-import { STUB_PRIVATE_SIGNING_KEY_PARAMETER_PATH } from "../constants";
 import { getParametersValues } from "../parameter/get-parameters";
 import config from "./config";
 const { commonStackName } = config;
@@ -10,7 +9,7 @@ export class ClientConfiguration {
             `/${commonStackName}/clients/${clientId}/jwtAuthentication/issuer`,
             `/${commonStackName}/clients/${clientId}/jwtAuthentication/redirectUri`,
             `/${commonStackName}/clients/${clientId}/jwtAuthentication/publicSigningJwkBase64`,
-            STUB_PRIVATE_SIGNING_KEY_PARAMETER_PATH,
+            `/test-resources/${clientId}/privateSigningKey`,
         ];
         return getParametersValues(parameters);
     }

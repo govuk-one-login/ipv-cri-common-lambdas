@@ -8,4 +8,3 @@ export const CORE_STUB_SIGNING_PUBLIC_JWK = {
     alg: "ES256",
 };
 export const DEFAULT_CLIENT_ID = "ipv-core-stub-aws-headless";
-export const STUB_PRIVATE_SIGNING_KEY_PARAMETER_PATH = "/test-resources/ipv-core-stub-aws-headless/privateSigningKey";
