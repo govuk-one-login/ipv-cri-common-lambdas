@@ -18,6 +18,7 @@ import software.amazon.awssdk.services.kms.KmsClient;
 import software.amazon.awssdk.services.kms.model.DecryptRequest;
 import software.amazon.awssdk.services.kms.model.DecryptResponse;
 import software.amazon.awssdk.services.kms.model.EncryptionAlgorithmSpec;
+import uk.gov.di.ipv.cri.common.library.util.EventProbe;
 import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
 import uk.org.webcompere.systemstubs.jupiter.SystemStub;
 import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
@@ -42,7 +43,9 @@ class KMSRSADecrypterTest {
     private static final EnvironmentVariables environmentVariables = new EnvironmentVariables();
 
     private static final String TEST_KEY_ID = "test-key";
+    private static final String ALL_ALIASES_UNAVAILABLE = "all_aliases_unavailable_for_decryption";
     @Mock private KmsClient mockKmsClient;
+    @Mock private EventProbe mockeventProbe;
     private static final String SESSION_DECRYPTION_KEY_PRIMARY_ALIAS =
             "session_decryption_key_active_alias";
     private static final String SESSION_DECRYPTION_KEY_SECONDARY_ALIAS =
@@ -57,7 +60,8 @@ class KMSRSADecrypterTest {
 
     @Test
     void shouldDecrypt() throws ParseException, JOSEException {
-        KMSRSADecrypter kmsRsaDecrypter = new KMSRSADecrypter(TEST_KEY_ID, this.mockKmsClient);
+        KMSRSADecrypter kmsRsaDecrypter =
+                new KMSRSADecrypter(TEST_KEY_ID, this.mockKmsClient, this.mockeventProbe);
         JWEHeader header = createHeader();
         Base64URL encryptedKey =
                 Base64URL.from(
@@ -99,7 +103,8 @@ class KMSRSADecrypterTest {
     @Test
     void shouldDecryptWithPrimaryAlias() throws ParseException, JOSEException {
         environmentVariables.set("ENV_VAR_FEATURE_FLAG_KEY_ROTATION", "true");
-        KMSRSADecrypter kmsRsaDecrypter = new KMSRSADecrypter(TEST_KEY_ID, this.mockKmsClient);
+        KMSRSADecrypter kmsRsaDecrypter =
+                new KMSRSADecrypter(TEST_KEY_ID, this.mockKmsClient, this.mockeventProbe);
         JWEHeader header = createHeader();
         Base64URL encryptedKey =
                 Base64URL.from(
@@ -142,7 +147,8 @@ class KMSRSADecrypterTest {
     @Test
     void shouldDecryptWithSecondaryAlias() throws ParseException, JOSEException {
         environmentVariables.set("ENV_VAR_FEATURE_FLAG_KEY_ROTATION", "true");
-        KMSRSADecrypter kmsRsaDecrypter = new KMSRSADecrypter(TEST_KEY_ID, this.mockKmsClient);
+        KMSRSADecrypter kmsRsaDecrypter =
+                new KMSRSADecrypter(TEST_KEY_ID, this.mockKmsClient, this.mockeventProbe);
         JWEHeader header = createHeader();
         Base64URL encryptedKey =
                 Base64URL.from(
@@ -187,7 +193,8 @@ class KMSRSADecrypterTest {
     @Test
     void shouldDecryptWithPreviousAlias() throws ParseException, JOSEException {
         environmentVariables.set("ENV_VAR_FEATURE_FLAG_KEY_ROTATION", "true");
-        KMSRSADecrypter kmsRsaDecrypter = new KMSRSADecrypter(TEST_KEY_ID, this.mockKmsClient);
+        KMSRSADecrypter kmsRsaDecrypter =
+                new KMSRSADecrypter(TEST_KEY_ID, this.mockKmsClient, this.mockeventProbe);
         JWEHeader header = createHeader();
         Base64URL encryptedKey =
                 Base64URL.from(
@@ -233,7 +240,8 @@ class KMSRSADecrypterTest {
     @Test
     void shouldThrowExceptionWhenAllKeyAliasesAreNotPresent() throws Exception {
         environmentVariables.set("ENV_VAR_FEATURE_FLAG_KEY_ROTATION", "true");
-        KMSRSADecrypter kmsRsaDecrypter = new KMSRSADecrypter(TEST_KEY_ID, this.mockKmsClient);
+        KMSRSADecrypter kmsRsaDecrypter =
+                new KMSRSADecrypter(TEST_KEY_ID, this.mockKmsClient, this.mockeventProbe);
         JWEHeader header = createHeader();
         Base64URL encryptedKey =
                 Base64URL.from(
@@ -248,21 +256,19 @@ class KMSRSADecrypterTest {
                 .thenThrow(new RuntimeException("secondary key failed to decrypt"))
                 .thenThrow(new RuntimeException("previous key failed to decrypt"));
         assertThrows(
-                Exception.class,
+                JOSEException.class,
                 () ->
                         kmsRsaDecrypter.decrypt(
-                                header,
-                                encryptedKey,
-                                iv,
-                                cipherText,
-                                authTag,
-                                AAD.compute(header)));
+                                header, encryptedKey, iv, cipherText, authTag, AAD.compute(header)),
+                "Failed to decrypt with all available key aliases.");
         verify(mockKmsClient, times(3)).decrypt(any(DecryptRequest.class));
+        verify(mockeventProbe, times(1)).counterMetric(ALL_ALIASES_UNAVAILABLE);
     }
 
     @Test
     void shouldThrowExceptionWhenEncryptedKeyIsNull() throws ParseException {
-        KMSRSADecrypter kmsRsaDecrypter = new KMSRSADecrypter(TEST_KEY_ID, this.mockKmsClient);
+        KMSRSADecrypter kmsRsaDecrypter =
+                new KMSRSADecrypter(TEST_KEY_ID, this.mockKmsClient, this.mockeventProbe);
         JWEHeader header = createHeader();
         Base64URL testBase64URL = Base64URL.from("esS");
         assertThrows(
@@ -280,7 +286,8 @@ class KMSRSADecrypterTest {
 
     @Test
     void shouldThrowExceptionWhenInitVectorIsNull() throws ParseException {
-        KMSRSADecrypter kmsRsaDecrypter = new KMSRSADecrypter(TEST_KEY_ID, this.mockKmsClient);
+        KMSRSADecrypter kmsRsaDecrypter =
+                new KMSRSADecrypter(TEST_KEY_ID, this.mockKmsClient, this.mockeventProbe);
         JWEHeader header = createHeader();
         Base64URL testBase64URL = Base64URL.from("esS");
         assertThrows(
@@ -298,7 +305,8 @@ class KMSRSADecrypterTest {
 
     @Test
     void shouldThrowExceptionWhenAuthTagIsNull() throws ParseException {
-        KMSRSADecrypter kmsRsaDecrypter = new KMSRSADecrypter(TEST_KEY_ID, this.mockKmsClient);
+        KMSRSADecrypter kmsRsaDecrypter =
+                new KMSRSADecrypter(TEST_KEY_ID, this.mockKmsClient, this.mockeventProbe);
         JWEHeader header = createHeader();
         Base64URL testBase64URL = Base64URL.from("esS");
         assertThrows(
@@ -316,7 +324,8 @@ class KMSRSADecrypterTest {
 
     @Test
     void shouldThrowExceptionWhenUnsupportedAlgorithmSupplied() throws ParseException {
-        KMSRSADecrypter kmsRsaDecrypter = new KMSRSADecrypter(TEST_KEY_ID, this.mockKmsClient);
+        KMSRSADecrypter kmsRsaDecrypter =
+                new KMSRSADecrypter(TEST_KEY_ID, this.mockKmsClient, this.mockeventProbe);
         JWEHeader header = createHeader(JWEAlgorithm.ECDH_1PU_A256KW);
         Base64URL testBase64URL = Base64URL.from("esS");
         assertThrows(

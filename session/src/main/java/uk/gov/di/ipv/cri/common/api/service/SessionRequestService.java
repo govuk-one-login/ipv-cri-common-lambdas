@@ -16,6 +16,7 @@ import uk.gov.di.ipv.cri.common.library.exception.ClientConfigurationException;
 import uk.gov.di.ipv.cri.common.library.exception.SessionValidationException;
 import uk.gov.di.ipv.cri.common.library.service.ConfigurationService;
 import uk.gov.di.ipv.cri.common.library.service.JWTVerifier;
+import uk.gov.di.ipv.cri.common.library.util.EventProbe;
 import uk.gov.di.ipv.cri.common.library.util.deserializers.PiiRedactingDeserializer;
 
 import java.net.URI;
@@ -43,7 +44,8 @@ public class SessionRequestService {
     public SessionRequestService(
             ConfigurationService configurationService,
             KmsClient kmsClient,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper,
+            EventProbe eventProbe) {
         this.configurationService = configurationService;
         this.objectMapper = objectMapper;
         this.objectMapper
@@ -58,7 +60,9 @@ public class SessionRequestService {
         this.jwtDecrypter =
                 new JWTDecrypter(
                         new KMSRSADecrypter(
-                                this.configurationService.getKmsEncryptionKeyId(), kmsClient));
+                                this.configurationService.getKmsEncryptionKeyId(),
+                                kmsClient,
+                                eventProbe));
     }
 
     public SessionRequestService(
