@@ -169,6 +169,94 @@ Globals:
 
 Mappings:
 
+  KeyRotationEnabled:
+    di-ipv-cri-address-api:
+      dev: true
+      build: true
+      staging: true
+      integration: false
+      production: false
+    di-ipv-cri-fraud-api:
+      dev: false
+      build: false
+      staging: false
+      integration: false
+      production: false
+    di-ipv-cri-kbv-api:
+      dev: false
+      build: false
+      staging: false
+      integration: false
+      production: false
+    di-ipv-cri-dl-api:
+      dev: false
+      build: false
+      staging: false
+      integration: false
+      production: false
+    di-ipv-cri-passport-api:
+      dev: false
+      build: false
+      staging: false
+      integration: false
+      production: false
+    di-ipv-cri-kbv-hmrc-api:
+      dev: false
+      build: false
+      staging: false
+      integration: false
+      production: false
+    di-ipv-cri-check-hmrc-api:
+      dev: false
+      build: false
+      staging: false
+      integration: false
+      production: false
+
+  JwkEndpoint:
+    di-ipv-cri-address-api:
+      dev: https://test-resources.review-a.dev.account.gov.uk/.well-known/jwks.json
+      build: https://test-resources.review-a.build.account.gov.uk/.well-known/jwks.json
+      staging: https://api.identity.staging.account.gov.uk/.well-known/jwks.json
+      integration: https://api.identity.integration.account.gov.uk/.well-known/jwks.json
+      production: https://api.identity.account.gov.uk/.well-known/jwks.json
+    di-ipv-cri-fraud-api:
+      dev: https://test-resources.review-f.dev.account.gov.uk/.well-known/jwks.json
+      build: https://test-resources.review-f.build.account.gov.uk/.well-known/jwks.json
+      staging: https://api.identity.staging.account.gov.uk/.well-known/jwks.json
+      integration: https://api.identity.integration.account.gov.uk/.well-known/jwks.json
+      production: https://api.identity.account.gov.uk/.well-known/jwks.json
+    di-ipv-cri-kbv-api:
+      dev: https://test-resources.review-k.dev.account.gov.uk/.well-known/jwks.json
+      build: https://test-resources.review-k.build.account.gov.uk/.well-known/jwks.json
+      staging: https://api.identity.staging.account.gov.uk/.well-known/jwks.json
+      integration: https://api.identity.integration.account.gov.uk/.well-known/jwks.json
+      production: https://api.identity.account.gov.uk/.well-known/jwks.json
+    di-ipv-cri-dl-api:
+      dev: https://test-resources.review-d.dev.account.gov.uk/.well-known/jwks.json
+      build: https://test-resources.review-d.build.account.gov.uk/.well-known/jwks.json
+      staging: https://api.identity.staging.account.gov.uk/.well-known/jwks.json
+      integration: https://api.identity.integration.account.gov.uk/.well-known/jwks.json
+      production: https://api.identity.account.gov.uk/.well-known/jwks.json
+    di-ipv-cri-passport-api:
+      dev: https://test-resources.review-p.dev.account.gov.uk/.well-known/jwks.json
+      build: https://test-resources.review-p.build.account.gov.uk/.well-known/jwks.json
+      staging: https://api.identity.staging.account.gov.uk/.well-known/jwks.json
+      integration: https://api.identity.integration.account.gov.uk/.well-known/jwks.json
+      production: https://api.identity.account.gov.uk/.well-known/jwks.json
+    di-ipv-cri-kbv-hmrc-api:
+      dev: https://test-resources.review-hk.dev.account.gov.uk/.well-known/jwks.json
+      build: https://test-resources.review-hk.build.account.gov.uk/.well-known/jwks.json
+      staging: https://api.identity.staging.account.gov.uk/.well-known/jwks.json
+      integration: https://api.identity.integration.account.gov.uk/.well-known/jwks.json
+      production: https://api.identity.account.gov.uk/.well-known/jwks.json
+    di-ipv-cri-check-hmrc-api:
+      dev: https://test-resources.review-hc.dev.account.gov.uk/.well-known/jwks.json
+      build: https://test-resources.review-hc.build.account.gov.uk/.well-known/jwks.json
+      staging: https://api.identity.staging.account.gov.uk/.well-known/jwks.json
+      integration: https://api.identity.integration.account.gov.uk/.well-known/jwks.json
+      production: https://api.identity.account.gov.uk/.well-known/jwks.json
+
   EnvironmentConfiguration:
     dev:
       dynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
@@ -659,7 +747,9 @@ Resources:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-session"
           SQS_AUDIT_EVENT_QUEUE_URL:
             Fn::ImportValue: !Sub ${TxmaStackName}-AuditEventQueueUrl
-          ENV_VAR_FEATURE_FLAG_KEY_ROTATION: !FindInMap [ KeyRotationMapping, !Ref CriIdentifier, !Ref Environment]
+          ENV_VAR_FEATURE_FLAG_KEY_ROTATION: !FindInMap [ KeyRotationMapping, !Ref CriIdentifier, !Ref Environment ]
+          ENV_VAR_FEATURE_CONSUME_PUBLIC_JWK: !FindInMap [ KeyRotationMapping, !Ref CriIdentifier, !Ref Environment]
+          PUBLIC_JWKS_ENDPOINT: !FindInMap [ JwkEndpoint, !Ref CriIdentifier, !Ref Environment ]
       AutoPublishAlias: live
       AutoPublishAliasAllProperties: true
       SnapStart:
@@ -974,6 +1064,8 @@ Resources:
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-access-token"
+          ENV_VAR_FEATURE_CONSUME_PUBLIC_JWK: !FindInMap [ KeyRotationEnabled, !Ref CriIdentifier, !Ref Environment ]
+          PUBLIC_JWKS_ENDPOINT: !FindInMap [ JwkEndpoint, !Ref CriIdentifier, !Ref Environment ]
       AutoPublishAlias: live
       AutoPublishAliasAllProperties: true
       SnapStart:
