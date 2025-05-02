@@ -387,8 +387,8 @@ Mappings:
       dev: 0
       build: 0
       staging: 0
-      integration: 1
-      production: 1
+      integration: 0
+      production: 0
     di-ipv-cri-kbv-api:
       dev: 0
       build: 0
