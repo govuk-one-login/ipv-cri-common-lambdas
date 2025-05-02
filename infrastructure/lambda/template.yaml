@@ -172,8 +172,8 @@ Mappings:
   KeyRotationEnabled:
     di-ipv-cri-address-api:
       dev: true
-      build: true
-      staging: true
+      build: false
+      staging: false
       integration: false
       production: false
     di-ipv-cri-fraud-api:
