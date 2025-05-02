@@ -748,7 +748,7 @@ Resources:
           SQS_AUDIT_EVENT_QUEUE_URL:
             Fn::ImportValue: !Sub ${TxmaStackName}-AuditEventQueueUrl
           ENV_VAR_FEATURE_FLAG_KEY_ROTATION: !FindInMap [ KeyRotationMapping, !Ref CriIdentifier, !Ref Environment ]
-          ENV_VAR_FEATURE_CONSUME_PUBLIC_JWK: !FindInMap [ KeyRotationMapping, !Ref CriIdentifier, !Ref Environment]
+          ENV_VAR_FEATURE_CONSUME_PUBLIC_JWK: !FindInMap [ KeyRotationEnabled, !Ref CriIdentifier, !Ref Environment ]
           PUBLIC_JWKS_ENDPOINT: !FindInMap [ JwkEndpoint, !Ref CriIdentifier, !Ref Environment ]
       AutoPublishAlias: live
       AutoPublishAliasAllProperties: true
