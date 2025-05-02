@@ -10,22 +10,6 @@ paths:
       description: |
         Return the current valid public keys (JSON Web Key Set) used to
         verify that request JAR are signed by core-stub.
-      headers:
-        Cache-Control:
-          schema:
-            type: "string"
-        Content-Type:
-          schema:
-            type: "string"
-        Strict-Transport-Security:
-          schema:
-            type: "string"
-        X-Content-Type-Options:
-          schema:
-            type: "string"
-        X-Frame-Options:
-          schema:
-            type: "string"
       responses:
         "200":
           description: OK
