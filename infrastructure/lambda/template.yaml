@@ -342,9 +342,9 @@ Mappings:
       integration: PublishedVersions
       production: PublishedVersions
     di-ipv-cri-fraud-api:
-      dev: None
-      build: None
-      staging: None
+      dev: PublishedVersions
+      build: PublishedVersions
+      staging: PublishedVersions
       integration: None
       production: None
     di-ipv-cri-kbv-api:
