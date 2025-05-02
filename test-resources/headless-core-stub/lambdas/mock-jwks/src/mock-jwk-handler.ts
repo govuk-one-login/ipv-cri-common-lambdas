@@ -18,6 +18,9 @@ export class MockJwkHandler implements LambdaInterface {
                 return {
                     statusCode: 200,
                     body: JSON.stringify(jwks),
+                    headers: {
+                        "Cache-Control": "max-age=900",
+                    },
                 };
             }
 

@@ -10,31 +10,9 @@ paths:
       description: |
         Return the current valid public keys (JSON Web Key Set) used to
         verify that request JAR are signed by core-stub.
-      headers:
-        Cache-Control:
-          schema:
-            type: "string"
-        Content-Type:
-          schema:
-            type: "string"
-        Strict-Transport-Security:
-          schema:
-            type: "string"
-        X-Content-Type-Options:
-          schema:
-            type: "string"
-        X-Frame-Options:
-          schema:
-            type: "string"
       responses:
         "200":
           description: OK
-          responseParameters:
-            method.response.header.Cache-Control: "'max-age=900'"
-            method.response.header.Strict-Transport-Security: "'max-age=31536000; includeSubDomains'"
-            method.response.header.X-Content-Type-Options: "'nosniff'"
-            method.response.header.X-Frame-Options: "'DENY'"
-            method.response.header.Content-Type: "'application/json'"
           content:
             application/json:
               schema:
