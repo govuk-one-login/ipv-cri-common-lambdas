@@ -1,6 +1,8 @@
+import { JWK, JWTPayload } from "jose";
 import { v4 as uuidv4 } from "uuid";
 import { signJwt } from "../../../../utils/src/crypto/signer";
-import { JWK, JWTPayload } from "jose";
+import { getHashedKid } from "../../../../utils/src/hashing";
+
 export const generatePrivateJwtParams = async (
     clientId: string,
     authorizationCode: string,
@@ -16,7 +18,13 @@ export const generatePrivateJwtParams = async (
         jti: uuidv4(),
     };
 
-    const signedJwt = await signJwt(signingClaims, privateJwtKey);
+    const jwtHeader = {
+        alg: "ES256",
+        typ: "JWT",
+        ...(privateJwtKey.kid && { kid: getHashedKid(privateJwtKey.kid) }),
+    };
+
+    const signedJwt = await signJwt(signingClaims, privateJwtKey, jwtHeader);
 
     return new URLSearchParams([
         ["client_assertion_type", "urn:ietf:params:oauth:client-assertion-type:jwt-bearer"],
