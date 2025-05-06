@@ -344,6 +344,7 @@ Resources:
   ApiGatewayDeployment:
     Type: AWS::ApiGateway::Deployment
     Properties:
+      Description: !Ref AWS::StackId
       RestApiId: !Ref APIGateway
 
   ApiGatewayStage:
