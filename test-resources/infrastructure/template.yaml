@@ -350,6 +350,7 @@ Resources:
   ApiGatewayStage:
     Type: AWS::ApiGateway::Stage
     Properties:
+      Description: !Ref AWS::StackId
       StageName: !Ref Environment
       DeploymentId: !Ref ApiGatewayDeployment
       RestApiId:
