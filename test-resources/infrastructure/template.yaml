@@ -312,10 +312,55 @@ Resources:
         Enabled: true
 
   APIGateway:
-    Type: AWS::Serverless::Api
+    Type: AWS::ApiGateway::RestApi
     Properties:
       Description: APIGW for the test harness
+      Body:
+        openapi: 3.0.1
+        paths:
+          /never-created:
+            options: { }
+        Fn::Transform:
+          Name: AWS::Include
+          Parameters:
+            Location: public-api.yaml
+      Policy:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Deny
+            Principal: "*"
+            Action: "execute-api:Invoke"
+            Resource:
+              - !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:*/${Environment}/GET/events*"
+            Condition:
+              StringNotEquals:
+                "aws:PrincipalAccount":
+                  - !Sub "${AWS::AccountId}"
+          - Effect: Allow
+            Principal: "*"
+            Action: "execute-api:Invoke"
+            Resource: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:*/${Environment}/*/*"
+
+  ApiGatewayDeployment:
+    Type: AWS::ApiGateway::Deployment
+    Properties:
+      RestApiId: !Ref APIGateway
+
+  ApiGatewayStage:
+    Type: AWS::ApiGateway::Stage
+    Properties:
       StageName: !Ref Environment
+      DeploymentId: !Ref ApiGatewayDeployment
+      RestApiId:
+        Ref: APIGateway
+      MethodSettings:
+        - LoggingLevel: INFO
+          ResourcePath: "/*"
+          HttpMethod: "*"
+          DataTraceEnabled: true
+          MetricsEnabled: true
+          ThrottlingRateLimit: 10000
+          ThrottlingBurstLimit: 20000
       AccessLogSetting:
         DestinationArn: !GetAtt ApiAccessLogGroup.Arn
         Format:
@@ -330,43 +375,6 @@ Resources:
             protocol: $context.protocol
             responseLatency: $context.responseLatency
             responseLength: $context.responseLength
-      TracingEnabled: false
-      OpenApiVersion: 3.0.1
-      MethodSettings:
-        - LoggingLevel: INFO
-          ResourcePath: /*
-          HttpMethod: "*"
-          DataTraceEnabled: false
-          MetricsEnabled: true
-          ThrottlingRateLimit: 10000
-          ThrottlingBurstLimit: 20000
-      DefinitionBody:
-        openapi: 3.0.1
-        paths:
-          /never-created:
-            options: { }
-        Fn::Transform:
-          Name: AWS::Include
-          Parameters:
-            Location: public-api.yaml
-      EndpointConfiguration:
-        Type: REGIONAL
-      Auth:
-        ResourcePolicy:
-          CustomStatements:
-            - Effect: Deny
-              Principal: "*"
-              Action: "execute-api:Invoke"
-              Resource:
-                - !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:*/${Environment}/GET/events*"
-              Condition:
-                StringNotEquals:
-                  "aws:PrincipalAccount":
-                    - !Sub "${AWS::AccountId}"
-            - Effect: Allow
-              Principal: "*"
-              Action: "execute-api:Invoke"
-              Resource: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:*/${Environment}/*/*"
 
   ApiAccessLogGroup:
     Type: AWS::Logs::LogGroup
@@ -430,7 +438,7 @@ Resources:
 
       # workaround for sam bug - see https://github.com/aws/serverless-application-model/issues/192#issuecomment-520893111
       # noinspection YamlUnresolvedReferences
-      Stage: !Ref APIGateway.Stage
+      Stage: !Ref ApiGatewayStage
 
   AuditEventsTableRole:
     Type: AWS::IAM::Role
