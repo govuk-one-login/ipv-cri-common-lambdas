@@ -149,7 +149,9 @@ public class SessionHandler
         } catch (ClientConfigurationException | SqsException e) {
 
             eventProbe.log(ERROR, e).counterMetric(EVENT_SESSION_CREATED, 0d);
-            eventProbe.counterMetric(JWT_VERIFICATION_FAILED);
+            if (e instanceof ClientConfigurationException) {
+                eventProbe.counterMetric(JWT_VERIFICATION_FAILED);
+            }
 
             return ApiGatewayResponseGenerator.proxyJsonResponse(
                     HttpStatusCode.INTERNAL_SERVER_ERROR, ErrorResponse.SERVER_CONFIG_ERROR);

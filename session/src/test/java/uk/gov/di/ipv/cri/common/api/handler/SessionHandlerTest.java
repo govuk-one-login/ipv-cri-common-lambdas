@@ -50,6 +50,7 @@ import static uk.gov.di.ipv.cri.common.api.handler.SessionHandler.STATE;
 @ExtendWith(MockitoExtension.class)
 class SessionHandlerTest {
     private static final String SESSION_CREATED_METRIC = "session_created";
+    private static final String JWT_VERIFICATION_FAILED = "jwt_verification_failed";
     private static final UUID SESSION_ID = UUID.randomUUID();
 
     @Mock private SessionService mockSessionService;
@@ -220,13 +221,15 @@ class SessionHandlerTest {
                 ErrorResponse.SESSION_VALIDATION_ERROR.getMessage(), responseBody.get("message"));
 
         verify(mockEventProbe).counterMetric(SESSION_CREATED_METRIC, 0d);
+        verify(mockEventProbe).counterMetric(JWT_VERIFICATION_FAILED);
+
         verify(mockEventProbe).log(Level.ERROR, sessionValidationException);
         verify(mockAuditService, never()).sendAuditEvent(any(AuditEventType.class));
         verify(mockSessionService, never()).saveSession(mockSessionRequest);
     }
 
     @Test
-    void shouldCatchServerExceptionAndReturn500Response()
+    void shouldCatchClientConfigurationExceptionAndReturn500Response()
             throws SessionValidationException, ClientConfigurationException,
                     JsonProcessingException, SqsException {
         ClientConfigurationException exception =
@@ -244,6 +247,7 @@ class SessionHandlerTest {
         assertEquals(ErrorResponse.SERVER_CONFIG_ERROR.getMessage(), responseBody.get("message"));
 
         verify(mockEventProbe).counterMetric(SESSION_CREATED_METRIC, 0d);
+        verify(mockEventProbe).counterMetric(JWT_VERIFICATION_FAILED);
         verify(mockEventProbe).log(Level.ERROR, exception);
         verify(mockAuditService, never()).sendAuditEvent(any(AuditEventType.class));
         verify(mockSessionService, never()).saveSession(mockSessionRequest);
