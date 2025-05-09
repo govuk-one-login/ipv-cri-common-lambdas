@@ -147,9 +147,10 @@ public class SessionHandler
             return ApiGatewayResponseGenerator.proxyJsonResponse(
                     HttpStatusCode.BAD_REQUEST, ErrorResponse.SESSION_VALIDATION_ERROR);
         } catch (ClientConfigurationException | SqsException e) {
+            eventProbe.log(ERROR, e);
 
-            eventProbe.log(ERROR, e).counterMetric(EVENT_SESSION_CREATED, 0d);
             if (e instanceof ClientConfigurationException) {
+                eventProbe.counterMetric(EVENT_SESSION_CREATED, 0d);
                 eventProbe.counterMetric(JWT_VERIFICATION_FAILED);
             }
 
