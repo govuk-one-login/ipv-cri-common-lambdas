@@ -255,11 +255,9 @@ class SessionHandlerTest {
     void shouldCatchSqsExceptionAndReturn500Response(String xForwardedForHeaderName)
             throws SessionValidationException, ClientConfigurationException,
                     JsonProcessingException, SqsException {
-        SqsException exception =
-                new SqsException(new NullPointerException());
+        SqsException exception = new SqsException(new NullPointerException());
 
         String clientIpAddress = "192.0.2.0";
-        String redirectUri = "https://www.example.com/callback";
         SharedClaims sharedClaims = new SharedClaims();
         Map<String, String> requestHeaders =
                 Map.of("header-name", "headerValue", xForwardedForHeaderName, clientIpAddress);
@@ -283,7 +281,9 @@ class SessionHandlerTest {
         when(mockSessionRequestService.validateSessionRequest("some json"))
                 .thenReturn(mockSessionRequest);
         when(mockSessionService.saveSession(mockSessionRequest)).thenReturn(SESSION_ID);
-        doThrow(exception).when(mockAuditService).sendAuditEvent(eq(AuditEventType.START), any(AuditEventContext.class), isNull());
+        doThrow(exception)
+                .when(mockAuditService)
+                .sendAuditEvent(eq(AuditEventType.START), any(AuditEventContext.class), isNull());
 
         APIGatewayProxyResponseEvent responseEvent =
                 sessionHandler.handleRequest(apiGatewayProxyRequestEvent, null);

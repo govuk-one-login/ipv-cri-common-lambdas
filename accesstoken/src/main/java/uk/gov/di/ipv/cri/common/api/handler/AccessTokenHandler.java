@@ -32,7 +32,7 @@ public class AccessTokenHandler
     private AccessTokenService accessTokenService;
     private SessionService sessionService;
     static final String METRIC_NAME_ACCESS_TOKEN = "accesstoken";
-    private static final String JWT_VERIFICATION_FAILED = "jwt_verification_failed";
+    static final String JWT_VERIFICATION_FAILED = "jwt_verification_failed";
 
     public AccessTokenHandler(
             AccessTokenService accessTokenService,
