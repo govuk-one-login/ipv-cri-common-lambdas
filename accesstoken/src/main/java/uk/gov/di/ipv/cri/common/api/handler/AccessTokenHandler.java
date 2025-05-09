@@ -32,6 +32,7 @@ public class AccessTokenHandler
     private AccessTokenService accessTokenService;
     private SessionService sessionService;
     static final String METRIC_NAME_ACCESS_TOKEN = "accesstoken";
+    static final String JWT_VERIFICATION_FAILED = "jwt_verification_failed";
 
     public AccessTokenHandler(
             AccessTokenService accessTokenService,
@@ -79,6 +80,7 @@ public class AccessTokenHandler
                     HttpStatusCode.OK, accessTokenResponse.toJSONObject());
         } catch (AccessTokenValidationException e) {
             eventProbe.log(Level.ERROR, e).counterMetric(METRIC_NAME_ACCESS_TOKEN, 0d);
+            eventProbe.counterMetric(JWT_VERIFICATION_FAILED);
             return ApiGatewayResponseGenerator.proxyJsonResponse(
                     HttpStatusCode.BAD_REQUEST, ErrorResponse.TOKEN_VALIDATION_ERROR);
         } catch (SessionExpiredException e) {

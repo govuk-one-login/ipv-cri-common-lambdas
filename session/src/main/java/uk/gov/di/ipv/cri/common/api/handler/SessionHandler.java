@@ -48,6 +48,7 @@ public class SessionHandler
     protected static final String STATE = "state";
     protected static final String REDIRECT_URI = "redirect_uri";
     private static final String EVENT_SESSION_CREATED = "session_created";
+    private static final String JWT_VERIFICATION_FAILED = "jwt_verification_failed";
     private static final String HEADER_IP_ADDRESS = "x-forwarded-for";
     private final SessionService sessionService;
     private final SessionRequestService sessionRequestService;
@@ -141,12 +142,17 @@ public class SessionHandler
         } catch (SessionValidationException e) {
 
             eventProbe.log(ERROR, e).counterMetric(EVENT_SESSION_CREATED, 0d);
+            eventProbe.counterMetric(JWT_VERIFICATION_FAILED);
 
             return ApiGatewayResponseGenerator.proxyJsonResponse(
                     HttpStatusCode.BAD_REQUEST, ErrorResponse.SESSION_VALIDATION_ERROR);
         } catch (ClientConfigurationException | SqsException e) {
+            eventProbe.log(ERROR, e);
 
-            eventProbe.log(ERROR, e).counterMetric(EVENT_SESSION_CREATED, 0d);
+            if (e instanceof ClientConfigurationException) {
+                eventProbe.counterMetric(EVENT_SESSION_CREATED, 0d);
+                eventProbe.counterMetric(JWT_VERIFICATION_FAILED);
+            }
 
             return ApiGatewayResponseGenerator.proxyJsonResponse(
                     HttpStatusCode.INTERNAL_SERVER_ERROR, ErrorResponse.SERVER_CONFIG_ERROR);
