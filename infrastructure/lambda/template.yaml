@@ -183,7 +183,7 @@ Mappings:
       integration: false
       production: false
     di-ipv-cri-kbv-api:
-      dev: false
+      dev: true
       build: false
       staging: false
       integration: false
@@ -842,6 +842,8 @@ Resources:
           SQS_AUDIT_EVENT_QUEUE_URL:
             Fn::ImportValue: !Sub ${TxmaStackName}-AuditEventQueueUrl
           CRI_IDENTIFIER: !Sub "${CriIdentifier}"
+          ENV_VAR_FEATURE_CONSUME_PUBLIC_JWK: !FindInMap [ KeyRotationEnabled, !Ref CriIdentifier, !Ref Environment]
+          PUBLIC_JWKS_ENDPOINT: !FindInMap [ JwkEndpoint, !Ref CriIdentifier, !Ref Environment ]
       AutoPublishAlias: live
       AutoPublishAliasAllProperties: true
       Policies:
@@ -1115,6 +1117,8 @@ Resources:
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-access-token-2"
+          ENV_VAR_FEATURE_CONSUME_PUBLIC_JWK: !FindInMap [ KeyRotationEnabled, !Ref CriIdentifier, !Ref Environment]
+          PUBLIC_JWKS_ENDPOINT: !FindInMap [ JwkEndpoint, !Ref CriIdentifier, !Ref Environment ]
       AutoPublishAlias: live
       AutoPublishAliasAllProperties: true
       Policies:
