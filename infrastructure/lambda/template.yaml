@@ -184,8 +184,8 @@ Mappings:
       production: false
     di-ipv-cri-kbv-api:
       dev: true
-      build: false
-      staging: false
+      build: true
+      staging: true
       integration: false
       production: false
     di-ipv-cri-dl-api:
