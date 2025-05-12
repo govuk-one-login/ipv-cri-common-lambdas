@@ -78,6 +78,9 @@ Conditions:
   IsDevPlatformDeploy: !Equals
     - !FindInMap [CriVpcMapping, !Ref CriIdentifier, !Ref Environment]
     - "di-devplatform-deploy"
+  IsKeyRotationEnabled: !Equals
+    - !FindInMap [KeyRotationEnabled, !Ref CriIdentifier, !Ref Environment]
+    - true
   UsePermissionsBoundary:
     Fn::Not:
       - Fn::Equals:
@@ -98,10 +101,16 @@ Globals:
         - [!ImportValue cri-vpc-LambdaSecurityGroup]
       SubnetIds: !If
         - IsDevPlatformDeploy
-        - [
+        - !If
+          - IsKeyRotationEnabled
+          - [ 
+            !ImportValue cri-vpc-ProtectedSubnetIdA,
+            !ImportValue cri-vpc-ProtectedSubnetIdB,
+            ]
+          - [ 
             !ImportValue cri-vpc-PrivateSubnetIdA,
             !ImportValue cri-vpc-PrivateSubnetIdB,
-          ]
+            ]
         - !Split [",", !ImportValue cri-vpc-PrivateSubnets]
     PermissionsBoundary: !If
       - UsePermissionsBoundary
@@ -207,7 +216,7 @@ Mappings:
       integration: false
       production: false
     di-ipv-cri-check-hmrc-api:
-      dev: false
+      dev: true
       build: false
       staging: false
       integration: false
