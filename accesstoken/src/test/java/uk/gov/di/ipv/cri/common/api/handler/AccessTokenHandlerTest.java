@@ -39,6 +39,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static uk.gov.di.ipv.cri.common.api.handler.AccessTokenHandler.JWT_VERIFICATION_FAILED;
 import static uk.gov.di.ipv.cri.common.api.handler.AccessTokenHandler.METRIC_NAME_ACCESS_TOKEN;
 
 @ExtendWith(MockitoExtension.class)
@@ -116,6 +117,7 @@ class AccessTokenHandlerTest {
         assertErrorResponse(response, ErrorResponse.TOKEN_VALIDATION_ERROR);
         verify(mockEventProbe).log(Level.ERROR, exception);
         verify(mockEventProbe).counterMetric(METRIC_NAME_ACCESS_TOKEN, 0d);
+        verify(mockEventProbe).counterMetric(JWT_VERIFICATION_FAILED);
         verifyNoMoreInteractions(mockAccessTokenService);
     }
 
@@ -151,6 +153,7 @@ class AccessTokenHandlerTest {
         verify(mockEventProbe).log(Level.INFO, FOUND_SESSION_LOG_MESSAGE);
         verify(mockEventProbe).log(Level.ERROR, exception);
         verify(mockEventProbe).counterMetric(METRIC_NAME_ACCESS_TOKEN, 0d);
+        verify(mockEventProbe).counterMetric(JWT_VERIFICATION_FAILED);
         verifyNoMoreInteractions(mockAccessTokenService);
     }
 

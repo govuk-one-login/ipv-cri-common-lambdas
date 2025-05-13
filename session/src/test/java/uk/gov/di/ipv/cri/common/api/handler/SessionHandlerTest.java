@@ -40,6 +40,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.isNull;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -50,6 +52,7 @@ import static uk.gov.di.ipv.cri.common.api.handler.SessionHandler.STATE;
 @ExtendWith(MockitoExtension.class)
 class SessionHandlerTest {
     private static final String SESSION_CREATED_METRIC = "session_created";
+    private static final String JWT_VERIFICATION_FAILED = "jwt_verification_failed";
     private static final UUID SESSION_ID = UUID.randomUUID();
 
     @Mock private SessionService mockSessionService;
@@ -220,13 +223,15 @@ class SessionHandlerTest {
                 ErrorResponse.SESSION_VALIDATION_ERROR.getMessage(), responseBody.get("message"));
 
         verify(mockEventProbe).counterMetric(SESSION_CREATED_METRIC, 0d);
+        verify(mockEventProbe).counterMetric(JWT_VERIFICATION_FAILED);
+
         verify(mockEventProbe).log(Level.ERROR, sessionValidationException);
         verify(mockAuditService, never()).sendAuditEvent(any(AuditEventType.class));
         verify(mockSessionService, never()).saveSession(mockSessionRequest);
     }
 
     @Test
-    void shouldCatchServerExceptionAndReturn500Response()
+    void shouldCatchClientConfigurationExceptionAndReturn500Response()
             throws SessionValidationException, ClientConfigurationException,
                     JsonProcessingException, SqsException {
         ClientConfigurationException exception =
@@ -244,9 +249,58 @@ class SessionHandlerTest {
         assertEquals(ErrorResponse.SERVER_CONFIG_ERROR.getMessage(), responseBody.get("message"));
 
         verify(mockEventProbe).counterMetric(SESSION_CREATED_METRIC, 0d);
+        verify(mockEventProbe).counterMetric(JWT_VERIFICATION_FAILED);
         verify(mockEventProbe).log(Level.ERROR, exception);
         verify(mockAuditService, never()).sendAuditEvent(any(AuditEventType.class));
         verify(mockSessionService, never()).saveSession(mockSessionRequest);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"X-Forwarded-For", "X-forwarded-fOR"})
+    void shouldCatchSqsExceptionAndReturn500Response(String xForwardedForHeaderName)
+            throws SessionValidationException, ClientConfigurationException,
+                    JsonProcessingException, SqsException {
+        SqsException exception = new SqsException(new NullPointerException());
+
+        String clientIpAddress = "192.0.2.0";
+        SharedClaims sharedClaims = new SharedClaims();
+        Map<String, String> requestHeaders =
+                Map.of("header-name", "headerValue", xForwardedForHeaderName, clientIpAddress);
+        String subject = "subject";
+        String persistentSessionId = "persistent_session_id_value";
+        String clientSessionId = "govuk_signin_journey_id_value";
+
+        when(mockEventProbe.addJourneyIdToLoggingContext(clientSessionId))
+                .thenReturn(mockEventProbe);
+        when(mockEventProbe.log(eq(Level.INFO), anyString())).thenReturn(mockEventProbe);
+        when(mockEventProbe.log(eq(Level.ERROR), any(Exception.class))).thenReturn(mockEventProbe);
+        when(mockEventProbe.counterMetric(SESSION_CREATED_METRIC)).thenReturn(mockEventProbe);
+        when(mockSessionRequest.getClientId()).thenReturn("ipv-core");
+        when(mockSessionRequest.hasSharedClaims()).thenReturn(Boolean.TRUE);
+        when(mockSessionRequest.getSharedClaims()).thenReturn(sharedClaims);
+        when(mockSessionRequest.getSubject()).thenReturn(subject);
+        when(mockSessionRequest.getPersistentSessionId()).thenReturn(persistentSessionId);
+        when(mockSessionRequest.getClientSessionId()).thenReturn(clientSessionId);
+        when(apiGatewayProxyRequestEvent.getBody()).thenReturn("some json");
+        when(apiGatewayProxyRequestEvent.getHeaders()).thenReturn(requestHeaders);
+        when(mockSessionRequestService.validateSessionRequest("some json"))
+                .thenReturn(mockSessionRequest);
+        when(mockSessionService.saveSession(mockSessionRequest)).thenReturn(SESSION_ID);
+        doThrow(exception)
+                .when(mockAuditService)
+                .sendAuditEvent(eq(AuditEventType.START), any(AuditEventContext.class), isNull());
+
+        APIGatewayProxyResponseEvent responseEvent =
+                sessionHandler.handleRequest(apiGatewayProxyRequestEvent, null);
+        assertEquals(HttpStatusCode.INTERNAL_SERVER_ERROR, responseEvent.getStatusCode());
+        Map<String, Object> responseBody =
+                new ObjectMapper().readValue(responseEvent.getBody(), new TypeReference<>() {});
+        assertEquals(ErrorResponse.SERVER_CONFIG_ERROR.getCode(), responseBody.get("code"));
+        assertEquals(ErrorResponse.SERVER_CONFIG_ERROR.getMessage(), responseBody.get("message"));
+
+        verify(mockEventProbe, never()).counterMetric(SESSION_CREATED_METRIC, 0d);
+        verify(mockEventProbe, never()).counterMetric(JWT_VERIFICATION_FAILED);
+        verify(mockEventProbe).log(Level.ERROR, exception);
     }
 
     private void setupEventProbeErrorBehaviour() {
