@@ -1,7 +1,8 @@
 import middy from "@middy/core";
 
-import { injectLambdaContext, Logger } from "@aws-lambda-powertools/logger";
-import { Metrics, MetricUnits } from "@aws-lambda-powertools/metrics";
+import { Logger } from "@aws-lambda-powertools/logger";
+import { injectLambdaContext } from "@aws-lambda-powertools/logger/middleware";
+import { Metrics, MetricUnit } from "@aws-lambda-powertools/metrics";
 import { APIGatewayProxyEvent, APIGatewayProxyEventHeaders, Context } from "aws-lambda";
 import { ClientConfigKey, CommonConfigKey, ConfigKey } from "../../../src/types/config-keys";
 import { ConfigService } from "../../../src/common/config/config-service";
@@ -384,7 +385,7 @@ describe("SessionLambda", () => {
         const metricSpy = jest.spyOn(metrics.prototype, "addMetric");
         await lambdaHandler(mockEvent, {} as Context);
         expect(dimensionSpy).toHaveBeenCalledWith("issuer", "test-client-id");
-        expect(metricSpy).toHaveBeenCalledWith("session_created", MetricUnits.Count, 1);
+        expect(metricSpy).toHaveBeenCalledWith("session_created", MetricUnit.Count, 1);
     });
 
     it("should successfully start the session", async () => {

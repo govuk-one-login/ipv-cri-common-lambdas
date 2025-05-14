@@ -1,5 +1,5 @@
 import { Logger } from "@aws-lambda-powertools/logger";
-import { Metrics, MetricUnits } from "@aws-lambda-powertools/metrics";
+import { Metrics, MetricUnit } from "@aws-lambda-powertools/metrics";
 import { MiddlewareObj, Request } from "@middy/core";
 import { errorPayload } from "../../common/utils/errors";
 
@@ -15,7 +15,15 @@ const errorMiddleware = (
     const onError = async (request: Request) => {
         if (request.response !== undefined) return;
 
-        metrics.addMetric(options.metric_name, MetricUnits.Count, 0);
+        // eslint-disable-next-line no-console
+        console.log("🍊 Error middleware");
+
+        metrics.addMetric("test_caitlin", MetricUnit.Count, 0);
+        // metrics.publishStoredMetrics();
+
+        // eslint-disable-next-line no-console
+        console.log("🍊 Metric has been added");
+
         return Promise.resolve(errorPayload(request.error as Error, logger, options.message));
     };
 

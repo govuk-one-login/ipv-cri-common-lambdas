@@ -15,8 +15,8 @@
         "compile": "tsc"
     },
     "dependencies": {
-        "@aws-lambda-powertools/logger": "1.7.0",
-        "@aws-lambda-powertools/metrics": "1.7.0",
+        "@aws-lambda-powertools/logger": "2.19.1",
+        "@aws-lambda-powertools/metrics": "2.19.1",
         "@aws-lambda-powertools/parameters": "1.17.0",
         "@aws-lambda-powertools/tracer": "1.7.0",
         "@aws-sdk/client-dynamodb": "3.363.0",
@@ -25,7 +25,7 @@
         "@aws-sdk/client-ssm": "3.363.0",
         "@aws-sdk/credential-providers": "3.363.0",
         "@aws-sdk/lib-dynamodb": "3.363.0",
-        "@middy/core": "4.2.8",
+        "@middy/core": "6.3.0",
         "@opentelemetry/instrumentation-aws-lambda": "^0.50.2",
         "@opentelemetry/instrumentation-aws-sdk": "^0.49.0",
         "@opentelemetry/instrumentation-dns": "^0.43.0",

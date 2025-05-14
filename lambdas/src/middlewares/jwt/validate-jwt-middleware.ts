@@ -28,6 +28,8 @@ const validateJwtMiddleware = (
             },
         };
         await request.event;
+
+        throw new Error("🍊 Validated jwt error");
     };
 
     const after = async (request: Request) => {

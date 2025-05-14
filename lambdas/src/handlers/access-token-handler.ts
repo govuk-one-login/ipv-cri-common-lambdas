@@ -14,8 +14,8 @@ import setGovUkSigningJourneyIdMiddleware from "../middlewares/session/set-gov-u
 import { LambdaInterface } from "@aws-lambda-powertools/commons";
 import getSessionByAuthCodeMiddleware from "../middlewares/session/get-session-by-auth-code-middleware";
 import { logger, metrics, tracer as _tracer } from "../common/utils/power-tool";
-import { MetricUnits } from "@aws-lambda-powertools/metrics";
-import { injectLambdaContext } from "@aws-lambda-powertools/logger/lib/middleware/middy";
+import { MetricUnit } from "@aws-lambda-powertools/metrics";
+import { injectLambdaContext } from "@aws-lambda-powertools/logger/middleware";
 import { RequestPayload } from "../types/request_payload";
 import getSessionByIdMiddleware from "../middlewares/session/get-session-by-id-middleware";
 import errorMiddleware from "../middlewares/error/error-middleware";
@@ -85,14 +85,14 @@ export class AccessTokenLambda implements LambdaInterface {
             await this.sessionService.createAccessTokenCodeAndRemoveAuthCode(sessionItem, accessTokenResponse);
 
             logger.info("Access token created");
-            metrics.addMetric(ACCESS_TOKEN, MetricUnits.Count, 1);
+            metrics.addMetric(ACCESS_TOKEN, MetricUnit.Count, 1);
 
             return {
                 statusCode: 200,
                 body: JSON.stringify(accessTokenResponse),
             };
         } catch (err: unknown) {
-            metrics.addMetric(ACCESS_TOKEN, MetricUnits.Count, 0);
+            metrics.addMetric(ACCESS_TOKEN, MetricUnit.Count, 0);
             return errorPayload(err as Error, logger, "Access Token Lambda error occurred");
         }
     }
