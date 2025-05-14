@@ -399,6 +399,7 @@ describe("access-token-handler.ts", () => {
                     Error("JWT signature verification failed"),
                 );
                 expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnits.Count, 0);
+                expect(metricsSpy).toHaveBeenCalledWith("jwt_verification_failed", MetricUnits.Count, 1);
             });
 
             it("should return http 403 when the session item is invalid", async () => {
