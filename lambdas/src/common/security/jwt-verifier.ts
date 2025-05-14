@@ -80,7 +80,7 @@ export class JwtVerifier {
     private async fetchAndCacheJWKS(jwksUrl: URL) {
         const jwksResponse = await fetch(jwksUrl);
         if (!jwksResponse.ok) {
-            throw new Error("Error recieved from the JWKS endpoint, status recieved: " + jwksResponse.status);
+            throw new Error("Error received from the JWKS endpoint, status received: " + jwksResponse.status);
         }
 
         cachedJWKS = await jwksResponse.json();
