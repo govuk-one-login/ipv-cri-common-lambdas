@@ -207,6 +207,7 @@ describe("SessionLambda", () => {
     });
 
     it("should error on JWE decryption fail", async () => {
+        const metricSpy = jest.spyOn(metrics.prototype, "addMetric");
         jest.spyOn(jweDecrypter.prototype, "decryptJwe").mockRejectedValueOnce(
             new SessionValidationError(
                 "Session Validation Exception",
@@ -222,6 +223,7 @@ describe("SessionLambda", () => {
             "Session Lambda error occurred: 1019: Session Validation Exception - Invalid request: JWT validation/verification failed: failure",
             expect.any(SessionValidationError),
         );
+        expect(metricSpy).toHaveBeenCalledWith("jwt_verification_failed", MetricUnits.Count, 1);
     });
 
     it("should initialise the client config if unavailable", async () => {
@@ -255,6 +257,7 @@ describe("SessionLambda", () => {
     });
 
     it("should error on JWT validation fail", async () => {
+        const metricSpy = jest.spyOn(metrics.prototype, "addMetric");
         jest.spyOn(sessionRequestValidator.prototype, "validateJwt").mockRejectedValueOnce(
             new SessionValidationError(
                 "Session Validation Exception",
@@ -265,6 +268,7 @@ describe("SessionLambda", () => {
         const result = await lambdaHandler(mockEvent, {} as Context);
         expect(result.statusCode).toBe(400);
         expect(result.body).toContain("1019: Session Validation Exception");
+        expect(metricSpy).toHaveBeenCalledWith("jwt_verification_failed", MetricUnits.Count, 1);
     });
 
     it("should save the session details", async () => {

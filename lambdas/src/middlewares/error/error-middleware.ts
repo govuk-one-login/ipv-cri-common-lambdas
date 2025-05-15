@@ -1,8 +1,10 @@
 import { Logger } from "@aws-lambda-powertools/logger";
 import { Metrics, MetricUnits } from "@aws-lambda-powertools/metrics";
 import { MiddlewareObj, Request } from "@middy/core";
-import { errorPayload } from "../../common/utils/errors";
+import { errorPayload, SessionValidationError } from "../../common/utils/errors";
 
+const SESSION_CREATED_METRIC = "session_created";
+const JWT_VERIFICATION_FAILED_METRIC = "jwt_verification_failed";
 const defaults = {};
 
 const errorMiddleware = (
@@ -16,6 +18,10 @@ const errorMiddleware = (
         if (request.response !== undefined) return;
 
         metrics.addMetric(options.metric_name, MetricUnits.Count, 0);
+        if (request.error instanceof SessionValidationError && options.metric_name === SESSION_CREATED_METRIC) {
+            metrics.addMetric(JWT_VERIFICATION_FAILED_METRIC, MetricUnits.Count, 1);
+        }
+        metrics.publishStoredMetrics();
         return Promise.resolve(errorPayload(request.error as Error, logger, options.message));
     };
 

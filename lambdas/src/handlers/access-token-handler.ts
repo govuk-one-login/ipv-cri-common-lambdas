@@ -5,7 +5,7 @@ import { AccessTokenRequestValidator } from "../services/token-request-validator
 import { JwtVerifierFactory } from "../common/security/jwt-verifier";
 import { ClientConfigKey, CommonConfigKey } from "../types/config-keys";
 import { BearerAccessTokenFactory } from "../services/bearer-access-token-factory";
-import { errorPayload } from "../common/utils/errors";
+import { errorPayload, InvalidRequestError } from "../common/utils/errors";
 import { SessionItem } from "../types/session-item";
 import accessTokenValidatorMiddleware from "../middlewares/access-token/validate-event-payload-middleware";
 import initialiseConfigMiddleware from "../middlewares/config/initialise-config-middleware";
@@ -29,6 +29,8 @@ initOpenTelemetry();
 
 const dynamoDbClient = createClient(AwsClientType.DYNAMO);
 const ACCESS_TOKEN = "accesstoken";
+const JWT_VERIFICATION_FAILED_METRIC = "jwt_verification_failed";
+const JWT_VERIFICATION_FAILED_ERR_MSG = "JWT signature verification failed";
 
 export class AccessTokenLambda implements LambdaInterface {
     private sessionService: SessionService;
@@ -92,6 +94,9 @@ export class AccessTokenLambda implements LambdaInterface {
                 body: JSON.stringify(accessTokenResponse),
             };
         } catch (err: unknown) {
+            if (err instanceof InvalidRequestError && err.message === JWT_VERIFICATION_FAILED_ERR_MSG) {
+                metrics.addMetric(JWT_VERIFICATION_FAILED_METRIC, MetricUnits.Count, 1);
+            }
             metrics.addMetric(ACCESS_TOKEN, MetricUnits.Count, 0);
             return errorPayload(err as Error, logger, "Access Token Lambda error occurred");
         }
