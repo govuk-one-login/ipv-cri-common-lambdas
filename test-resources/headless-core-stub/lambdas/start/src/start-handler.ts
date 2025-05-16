@@ -34,7 +34,7 @@ export class StartLambdaHandler implements LambdaInterface {
             };
             const signedJwt = await signJwt(jwtClaimsSet as JWTPayload, signingKey, jwtHeader);
 
-            const publicEncryptionKey: KeyLike = await getPublicEncryptionKey();
+            const publicEncryptionKey = (await getPublicEncryptionKey(jwtClaimsSet.aud)) as KeyLike;
 
             const encryptedSignedJwt = await encryptSignedJwt(signedJwt, publicEncryptionKey);
 
