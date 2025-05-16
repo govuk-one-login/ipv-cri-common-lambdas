@@ -1,16 +1,65 @@
 import { GetPublicKeyCommand, KMSClient } from "@aws-sdk/client-kms";
-import { CompactEncrypt, importSPKI, KeyLike } from "jose";
+import { CompactEncrypt, importJWK, importSPKI, KeyLike } from "jose";
 import { HeadlessCoreStubError } from "../../../../utils/src/errors/headless-core-stub-error";
+import { formatAudience } from "../../../../utils/src/audience-formatter";
+import { Logger } from "@aws-lambda-powertools/logger";
 
 const kmsClient = new KMSClient({ region: "eu-west-2" });
+export const logger = new Logger();
 
 let cachedPublicKey: KeyLike | undefined;
 
-export const getPublicEncryptionKey = async () => {
+export const getPublicEncryptionKey = async (audience: string) => {
     if (cachedPublicKey) {
         return cachedPublicKey;
     }
 
+    try {
+        await getPublicEncryptionKeyFromJwsUri(audience);
+    } catch (err) {
+        logger.warn({ message: "Failed to retrieve key from JWS URI, falling back to KMS", err });
+    }
+
+    if (!cachedPublicKey) {
+        logger.info({ message: "using KMS to retrieve encryption key" });
+        await getPublicEncryptionKeyFromKms();
+    }
+
+    return cachedPublicKey;
+};
+
+export const encryptSignedJwt = (signedJwt: string, publicEncryptionKey: KeyLike) => {
+    return new CompactEncrypt(new TextEncoder().encode(signedJwt))
+        .setProtectedHeader({ alg: "RSA-OAEP-256", enc: "A256GCM" })
+        .encrypt(publicEncryptionKey);
+};
+
+async function getPublicEncryptionKeyFromJwsUri(audience: string) {
+    const audienceApi = formatAudience(audience);
+    const criEncryptionJwksEndpoint = new URL("/.well-known/jwks.json", audienceApi).href;
+
+    logger.info({ message: "Attempting to use CRI hosted public encryption jwks endpoint", criEncryptionJwksEndpoint });
+
+    const data = await fetch(criEncryptionJwksEndpoint, {
+        method: "GET",
+        headers: { Accept: "application/json" },
+    });
+
+    if (!data.ok) {
+        throw new Error(`Failed to fetch JWKS: ${data.status} ${data.statusText}`);
+    }
+
+    const jwks = await data.json();
+
+    if (!jwks.keys || !Array.isArray(jwks.keys) || jwks.keys.length === 0) {
+        throw new Error(`Invalid or empty JWKS response from ${criEncryptionJwksEndpoint}`);
+    }
+    logger.info({ message: "Successfully retrieved public encryption jwks endpoint", ...jwks });
+
+    cachedPublicKey = (await importJWK(jwks.keys[0], "RSA-OAEP-256")) as KeyLike;
+}
+
+async function getPublicEncryptionKeyFromKms() {
     const decryptionKeyId = process.env.DECRYPTION_KEY_ID;
     if (!decryptionKeyId) {
         throw new HeadlessCoreStubError("Decryption key ID not present", 500);
@@ -28,11 +77,4 @@ export const getPublicEncryptionKey = async () => {
     const publicKeyPem = `${header}\n${value}\n${footer}`;
 
     cachedPublicKey = await importSPKI(publicKeyPem, "RS256");
-    return cachedPublicKey;
-};
-
-export const encryptSignedJwt = (signedJwt: string, publicEncryptionKey: KeyLike) => {
-    return new CompactEncrypt(new TextEncoder().encode(signedJwt))
-        .setProtectedHeader({ alg: "RSA-OAEP-256", enc: "A256GCM" })
-        .encrypt(publicEncryptionKey);
-};
+}
