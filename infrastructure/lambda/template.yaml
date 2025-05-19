@@ -96,13 +96,6 @@ Globals:
         - IsDevPlatformDeploy
         - [!ImportValue cri-vpc-AWSServicesEndpointSecurityGroupId]
         - [!ImportValue cri-vpc-LambdaSecurityGroup]
-      SubnetIds: !If
-        - IsDevPlatformDeploy
-        - [
-            !ImportValue cri-vpc-PrivateSubnetIdA,
-            !ImportValue cri-vpc-PrivateSubnetIdB,
-          ]
-        - !Split [",", !ImportValue cri-vpc-PrivateSubnets]
     PermissionsBoundary: !If
       - UsePermissionsBoundary
       - !Ref PermissionsBoundary
@@ -742,6 +735,14 @@ Resources:
                 !Ref Environment,
                 dynatraceSecretArn,
               ]
+      VpcConfig:
+        SubnetIds: !If
+          - IsDevPlatformDeploy
+          - [
+              !ImportValue cri-vpc-ProtectedSubnetIdA,
+              !ImportValue cri-vpc-ProtectedSubnetIdB,
+            ]
+          - !Split [",", !ImportValue cri-vpc-PrivateSubnets]
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-session"
@@ -836,6 +837,14 @@ Resources:
                 !Ref Environment,
                 dynatraceSecretArn,
               ]
+      VpcConfig:
+        SubnetIds: !If
+          - IsDevPlatformDeploy
+          - [
+              !ImportValue cri-vpc-ProtectedSubnetIdA,
+              !ImportValue cri-vpc-ProtectedSubnetIdB,
+            ]
+          - !Split [",", !ImportValue cri-vpc-PrivateSubnets]
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-sessionTS"
@@ -929,6 +938,14 @@ Resources:
                 !Ref Environment,
                 dynatraceSecretArn,
               ]
+      VpcConfig:
+        SubnetIds: !If
+          - IsDevPlatformDeploy
+          - [
+              !ImportValue cri-vpc-PrivateSubnetIdA,
+              !ImportValue cri-vpc-PrivateSubnetIdB,
+            ]
+          - !Split [",", !ImportValue cri-vpc-PrivateSubnets]
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-authorization"
@@ -983,6 +1000,14 @@ Resources:
                 !Ref Environment,
                 dynatraceSecretArn,
               ]
+      VpcConfig:
+        SubnetIds: !If
+          - IsDevPlatformDeploy
+          - [
+              !ImportValue cri-vpc-PrivateSubnetIdA,
+              !ImportValue cri-vpc-PrivateSubnetIdB,
+            ]
+          - !Split [",", !ImportValue cri-vpc-PrivateSubnets]
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-authorizationTS"
@@ -1063,6 +1088,14 @@ Resources:
                 !Ref Environment,
                 dynatraceSecretArn,
               ]
+      VpcConfig:
+        SubnetIds: !If
+          - IsDevPlatformDeploy
+          - [
+              !ImportValue cri-vpc-ProtectedSubnetIdA,
+              !ImportValue cri-vpc-ProtectedSubnetIdB,
+            ]
+          - !Split [",", !ImportValue cri-vpc-PrivateSubnets]
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-access-token"
@@ -1114,6 +1147,14 @@ Resources:
                 !Ref Environment,
                 dynatraceSecretArn,
               ]
+      VpcConfig:
+        SubnetIds: !If
+          - IsDevPlatformDeploy
+          - [
+              !ImportValue cri-vpc-ProtectedSubnetIdA,
+              !ImportValue cri-vpc-ProtectedSubnetIdB,
+            ]
+          - !Split [",", !ImportValue cri-vpc-PrivateSubnets]
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-access-token-2"
@@ -1744,6 +1785,14 @@ Resources:
                 !Ref Environment,
                 dynatraceSecretArn,
               ]
+      VpcConfig:
+        SubnetIds: !If
+          - IsDevPlatformDeploy
+          - [
+              !ImportValue cri-vpc-PrivateSubnetIdA,
+              !ImportValue cri-vpc-PrivateSubnetIdB,
+            ]
+          - !Split [",", !ImportValue cri-vpc-PrivateSubnets]
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-create-auth-code"
