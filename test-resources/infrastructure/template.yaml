@@ -20,8 +20,8 @@ Parameters:
   Environment:
     Type: String
     Default: dev
-    AllowedValues: [dev, localdev, build, staging]
-    ConstraintDescription: must be dev, localdev, build or staging
+    AllowedValues: [dev, localdev, build, staging, integration]
+    ConstraintDescription: must be dev, localdev, build, staging, integration
   VpcStackName:
     Type: String
     Default: "cri-vpc"
