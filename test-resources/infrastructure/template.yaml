@@ -40,9 +40,9 @@ Mappings:
       integration: false
       production: false
     di-ipv-cri-kbv-api:
-      dev: true
-      build: true
-      staging: true
+      dev: false
+      build: false
+      staging: false
       integration: false
       production: false
     di-ipv-cri-check-hmrc-api:
@@ -51,22 +51,27 @@ Mappings:
       staging: false
       integration: false
       production: false
+
   TestHarnessUrl:
     di-ipv-cri-check-hmrc-api:
       localdev: review-hc.dev.account.gov.uk
       dev: review-hc.dev.account.gov.uk
       build: review-hc.build.account.gov.uk
       staging: review-hc.staging.account.gov.uk
+      integration: review-hc.integration.account.gov.uk
     di-ipv-cri-address-api:
       localdev: review-a.dev.account.gov.uk
       dev: review-a.dev.account.gov.uk
       build: review-a.build.account.gov.uk
       staging: review-a.staging.account.gov.uk
+      integration: review-a.integration.account.gov.uk
     di-ipv-cri-kbv-api:
       localdev: review-k.dev.account.gov.uk
       dev: review-k.dev.account.gov.uk
       build: review-k.build.account.gov.uk
       staging: review-k.staging.account.gov.uk
+      integration: review-k.integration.account.gov.uk
+
   CriVpcMapping:
     di-ipv-cri-check-hmrc-api:
       pipeline: "di-devplatform-deploy"
