@@ -1,5 +1,11 @@
 import { GetPublicKeyCommand, KMSClient } from "@aws-sdk/client-kms";
-import { CompactEncrypt, importJWK, importSPKI, JSONWebKeySet, JWK, KeyLike } from "jose";
+import { CompactEncrypt, importJWK, importSPKI, JWK, KeyLike } from "jose";
+import {
+    clearJWKSCache,
+    fetchAndCacheJWKS,
+    getCachedJWKS,
+    isJWKSCacheValid,
+} from "../../../../utils/src/jwks-cache-control";
 import { HeadlessCoreStubError } from "../../../../utils/src/errors/headless-core-stub-error";
 import { formatAudience } from "../../../../utils/src/audience-formatter";
 import { Logger } from "@aws-lambda-powertools/logger";
@@ -10,17 +16,17 @@ export const logger = new Logger();
 let cachedPublicKey: KeyLike | undefined;
 
 export const getPublicEncryptionKey = async (audience: string) => {
-    if (cachedPublicKey) {
+    if (isJWKSCacheValid()) {
         return cachedPublicKey;
     }
 
     if (process.env.KEY_ROTATION_FEATURE_FLAG_ENABLED === "true") {
-        await getPublicEncryptionKeyJwksUri(audience);
+        await setCachedPublicEncryptionKeyFromJwks(audience);
     }
 
-    if (!cachedPublicKey) {
+    if (!getCachedJWKS()) {
         logger.info({ message: "using KMS to retrieve encryption key" });
-        await getPublicEncryptionKeyFromKms();
+        await setPublicEncryptionKeyFromKms();
     }
 
     return cachedPublicKey;
@@ -33,28 +39,28 @@ export const encryptSignedJwt = (signedJwt: string, publicEncryptionKey: KeyLike
 };
 
 export function _resetCachedPublicKeyForTest() {
-    cachedPublicKey = undefined;
+    clearJWKSCache();
 }
 
-async function getPublicEncryptionKeyJwksUri(audience: string) {
+async function setCachedPublicEncryptionKeyFromJwks(audience: string) {
     const audienceApi = formatAudience(audience);
-    const criEncryptionJwksEndpoint = new URL("/.well-known/jwks.json", audienceApi).href;
+    const criEncryptionJwksEndpoint = new URL("/.well-known/jwks.json", audienceApi);
 
     logger.info({ message: "Attempting to use CRI hosted public encryption jwks endpoint", criEncryptionJwksEndpoint });
 
-    const data = await fetch(criEncryptionJwksEndpoint, {
-        method: "GET",
-        headers: { Accept: "application/json" },
-    });
-
-    if (!data.ok) {
-        throw new Error(`Failed to fetch JWKS: ${data.status} ${data.statusText}`);
+    if (isJWKSCacheValid()) {
+        logger.info({ message: "Using locally cached JWKs", criEncryptionJwksEndpoint, ...getCachedJWKS() });
+    } else {
+        logger.info({ message: "JWKS cache expired or missing; fetching new JWKS..." });
+        await fetchAndCacheJWKS(criEncryptionJwksEndpoint, logger);
     }
 
-    const jwks = (await data.json()) as JSONWebKeySet;
+    const jwks = getCachedJWKS();
 
-    if (!jwks.keys || !Array.isArray(jwks.keys) || jwks.keys.length === 0) {
-        throw new Error(`Invalid or empty JWKS response from ${criEncryptionJwksEndpoint}`);
+    if (!jwks?.keys || !Array.isArray(jwks?.keys) || jwks?.keys?.length === 0) {
+        clearJWKSCache();
+        logger.error({ message: "Invalid or empty JWKS response", criEncryptionJwksEndpoint });
+        return;
     }
     logger.info({ message: "Successfully retrieved public encryption jwks endpoint", ...jwks });
 
@@ -63,10 +69,16 @@ async function getPublicEncryptionKeyJwksUri(audience: string) {
         .reverse()
         .find((k) => k.use === "enc") as JWK;
 
+    if (!encryptionKey) {
+        logger.error(`No encryption key (use: "enc") found in JWKS from ${criEncryptionJwksEndpoint}`);
+        clearJWKSCache();
+        return;
+    }
+
     cachedPublicKey = encryptionKey && ((await importJWK(encryptionKey, "RSA-OAEP-256")) as KeyLike);
 }
 
-async function getPublicEncryptionKeyFromKms() {
+async function setPublicEncryptionKeyFromKms() {
     const decryptionKeyId = process.env.DECRYPTION_KEY_ID;
     if (!decryptionKeyId) {
         throw new HeadlessCoreStubError("Decryption key ID not present", 500);

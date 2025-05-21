@@ -160,7 +160,10 @@ describe("signing-service", () => {
             process.env.DECRYPTION_KEY_ID = "abc123";
             const keyBuffer = Buffer.from(publicKey);
 
-            mockKMSClient.on(GetPublicKeyCommand, { KeyId: "abc123" }).resolvesOnce({ PublicKey: keyBuffer });
+            mockKMSClient
+                .on(GetPublicKeyCommand, { KeyId: "abc123" })
+                .resolvesOnce({ PublicKey: keyBuffer })
+                .resolvesOnce({ PublicKey: keyBuffer });
 
             const result = await getPublicEncryptionKey(audience);
             expect(result?.type).toBe("public");
@@ -194,6 +197,9 @@ describe("signing-service", () => {
             };
 
             const fetchSpy = jest.fn().mockResolvedValue({
+                headers: {
+                    get: jest.fn().mockReturnValue("max-age=300"),
+                },
                 ok: true,
                 json: () => Promise.resolve(mockJwks),
             });
@@ -231,7 +237,7 @@ describe("signing-service", () => {
             expect(fetchSpy).toHaveBeenCalledTimes(2);
         });
 
-        it("falls back to KMS if no JWKS encryption key is found and caches it", async () => {
+        it("falls back to KMS if no JWKS encryption key is found", async () => {
             process.env.KEY_ROTATION_FEATURE_FLAG_ENABLED = "true";
             process.env.DECRYPTION_KEY_ID = "abc123";
 
@@ -248,7 +254,10 @@ describe("signing-service", () => {
             const keyBuffer = Buffer.from(publicKey);
 
             global.fetch = jest.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve(mockJwks) });
-            mockKMSClient.on(GetPublicKeyCommand, { KeyId: "abc123" }).resolvesOnce({ PublicKey: keyBuffer });
+            mockKMSClient
+                .on(GetPublicKeyCommand, { KeyId: "abc123" })
+                .resolvesOnce({ PublicKey: keyBuffer })
+                .resolvesOnce({ PublicKey: keyBuffer });
 
             const importSpy = jest.spyOn(jose, "importSPKI").mockResolvedValue({ type: "public" } as jose.KeyLike);
 
@@ -256,7 +265,7 @@ describe("signing-service", () => {
             const key2 = await getPublicEncryptionKey(audience);
 
             expect(key1).toEqual(key2);
-            expect(importSpy).toHaveBeenCalledTimes(1);
+            expect(importSpy).toHaveBeenCalledTimes(2);
         });
 
         it("throws if KMS fails and cache is not set", async () => {
@@ -266,6 +275,80 @@ describe("signing-service", () => {
             mockKMSClient.on(GetPublicKeyCommand, { KeyId: "abc123" }).resolves({ PublicKey: undefined });
 
             await expect(getPublicEncryptionKey(audience)).rejects.toThrow("Unable to retrieve public encryption key");
+        });
+
+        it("refetches JWKS if cache has expired", async () => {
+            process.env.KEY_ROTATION_FEATURE_FLAG_ENABLED = "true";
+
+            const mockJwks = {
+                keys: [{ kty: "RSA", e: "AQAB", use: "enc", alg: "RS256", n: "mocked-n", kid: "mocked-kid" }],
+            };
+
+            const fetchSpy = jest
+                .fn()
+                .mockResolvedValueOnce({
+                    headers: {
+                        get: jest.fn().mockReturnValueOnce("max-age=300"),
+                    },
+                    ok: true,
+                    json: () => Promise.resolve(mockJwks),
+                })
+                .mockResolvedValueOnce({
+                    headers: {
+                        get: jest.fn().mockReturnValueOnce("max-age=300"),
+                    },
+                    ok: true,
+                    json: () => Promise.resolve(mockJwks),
+                });
+
+            global.fetch = fetchSpy;
+            const importSpy = jest
+                .spyOn(jose, "importJWK")
+                .mockResolvedValueOnce({ type: "public" } as jose.KeyLike)
+                .mockResolvedValueOnce({ type: "public" } as jose.KeyLike);
+
+            const now = Date.now();
+            const dateNowSpy = jest.spyOn(Date, "now").mockImplementation(() => now);
+
+            await getPublicEncryptionKey(audience);
+
+            const expiredTtl10MinutesLater = now + 1000 * 60 * 10;
+            dateNowSpy.mockImplementation(() => expiredTtl10MinutesLater);
+
+            await getPublicEncryptionKey(audience);
+
+            expect(fetchSpy).toHaveBeenCalledTimes(2);
+            expect(importSpy).toHaveBeenCalledTimes(2);
+            dateNowSpy.mockRestore();
+        });
+
+        it("does not refetch if JWKS cache is still valid", async () => {
+            process.env.KEY_ROTATION_FEATURE_FLAG_ENABLED = "true";
+
+            const mockJwks = {
+                keys: [{ kty: "RSA", e: "AQAB", use: "enc", alg: "RS256", n: "mocked-n", kid: "mocked-kid" }],
+            };
+
+            const fetchSpy = jest.fn().mockResolvedValueOnce({
+                headers: {
+                    get: jest.fn().mockReturnValueOnce("max-age=300"),
+                },
+                ok: true,
+                json: () => Promise.resolve(mockJwks),
+            });
+
+            global.fetch = fetchSpy;
+            const importSpy = jest.spyOn(jose, "importJWK").mockResolvedValueOnce({ type: "public" } as jose.KeyLike);
+
+            await getPublicEncryptionKey(audience);
+
+            const fourMinuteWithinTtl = Date.now() + 1000 * 60 * 4;
+            jest.spyOn(Date, "now").mockReturnValue(fourMinuteWithinTtl);
+
+            await getPublicEncryptionKey(audience);
+
+            expect(fetchSpy).toHaveBeenCalledTimes(1);
+            expect(importSpy).toHaveBeenCalledTimes(1);
         });
     });
 });
