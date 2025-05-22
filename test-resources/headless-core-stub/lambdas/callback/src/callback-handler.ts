@@ -9,7 +9,6 @@ import { handleErrorResponse } from "../../../utils/src/errors/error-response";
 import { ClientConfiguration } from "../../../utils/src/services/client-configuration";
 import { base64Decode } from "../../../utils/src/base64";
 import { DEFAULT_CLIENT_ID } from "../../../utils/src/constants";
-import { formatAudience } from "../../../utils/src/audience-formatter";
 
 const logger = new Logger({ serviceName: "CallBackService" });
 const callback = new CallBackService(logger);
@@ -30,7 +29,7 @@ export class CallbackLambdaHandler implements LambdaInterface {
             const audience = statePayload.audience || ssmParameters.audience;
             const redirectUri = statePayload.redirectUri || ssmParameters.redirectUri;
 
-            const audienceApi = formatAudience(audience, logger);
+            const audienceApi = this.formatAudience(audience);
             const tokenEndpoint = `${audienceApi}/token`;
 
             logger.info({ message: "Generating private JWT parameters" });
@@ -82,6 +81,12 @@ export class CallbackLambdaHandler implements LambdaInterface {
 
     private excludeFromRecord = (record: Record<string, string>, excludeKey: string): Record<string, string> => {
         return Object.fromEntries(Object.entries(record).filter(([key]) => key !== excludeKey));
+    };
+    private formatAudience = (audience: string) => {
+        const audienceApi = audience.includes("review-") ? audience.replace("review-", "api.review-") : audience;
+
+        logger.info({ message: "Using Audience", audienceApi });
+        return audienceApi;
     };
 }
 
