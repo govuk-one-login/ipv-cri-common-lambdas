@@ -281,7 +281,7 @@ Mappings:
 # Use key rotation aliases in session decryption
   KeyRotationMapping:
     di-ipv-cri-address-api:
-      dev: "false"
+      dev: "true"
       build: "false"
       staging: "false"
       integration: "false"
