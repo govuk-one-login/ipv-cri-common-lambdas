@@ -206,49 +206,50 @@ Mappings:
       integration: false
       production: false
 
-  JwkEndpoint:
+  CoreJwksEndpoint:
+    Environment:
+      dev: https://api.identity.staging.account.gov.uk/.well-known/jwks.json
+      build: https://api.identity.staging.account.gov.uk/.well-known/jwks.json
+      staging: https://api.identity.staging.account.gov.uk/.well-known/jwks.json
+      integration: https://api.identity.integration.account.gov.uk/.well-known/jwks.json
+      production: https://api.identity.account.gov.uk/.well-known/jwks.json
+
+  StubJwksEndpoint:
     di-ipv-cri-address-api:
       dev: https://test-resources.review-a.dev.account.gov.uk/.well-known/jwks.json
       build: https://test-resources.review-a.build.account.gov.uk/.well-known/jwks.json
-      staging: https://api.identity.staging.account.gov.uk/.well-known/jwks.json
-      integration: https://api.identity.integration.account.gov.uk/.well-known/jwks.json
-      production: https://api.identity.account.gov.uk/.well-known/jwks.json
+      staging: https://test-resources.review-a.staging.account.gov.uk/.well-known/jwks.json
+      integration: https://test-resources.review-a.integration.account.gov.uk/.well-known/jwks.json
     di-ipv-cri-fraud-api:
       dev: https://test-resources.review-f.dev.account.gov.uk/.well-known/jwks.json
       build: https://test-resources.review-f.build.account.gov.uk/.well-known/jwks.json
-      staging: https://api.identity.staging.account.gov.uk/.well-known/jwks.json
-      integration: https://api.identity.integration.account.gov.uk/.well-known/jwks.json
-      production: https://api.identity.account.gov.uk/.well-known/jwks.json
+      staging: https://test-resources.review-f.staging.account.gov.uk/.well-known/jwks.json
+      integration: https://test-resources.review-f.integration.account.gov.uk/.well-known/jwks.json
     di-ipv-cri-kbv-api:
       dev: https://test-resources.review-k.dev.account.gov.uk/.well-known/jwks.json
       build: https://test-resources.review-k.build.account.gov.uk/.well-known/jwks.json
-      staging: https://api.identity.staging.account.gov.uk/.well-known/jwks.json
-      integration: https://api.identity.integration.account.gov.uk/.well-known/jwks.json
-      production: https://api.identity.account.gov.uk/.well-known/jwks.json
+      staging: https://test-resources.review-k.staging.account.gov.uk/.well-known/jwks.json
+      integration: https://test-resources.review-k.integration.account.gov.uk/.well-known/jwks.json
     di-ipv-cri-dl-api:
       dev: https://test-resources.review-d.dev.account.gov.uk/.well-known/jwks.json
       build: https://test-resources.review-d.build.account.gov.uk/.well-known/jwks.json
-      staging: https://api.identity.staging.account.gov.uk/.well-known/jwks.json
-      integration: https://api.identity.integration.account.gov.uk/.well-known/jwks.json
-      production: https://api.identity.account.gov.uk/.well-known/jwks.json
+      staging: https://test-resources.review-d.staging.account.gov.uk/.well-known/jwks.json
+      integration: https://test-resources.review-d.integration.account.gov.uk/.well-known/jwks.json
     di-ipv-cri-passport-api:
       dev: https://test-resources.review-p.dev.account.gov.uk/.well-known/jwks.json
       build: https://test-resources.review-p.build.account.gov.uk/.well-known/jwks.json
-      staging: https://api.identity.staging.account.gov.uk/.well-known/jwks.json
-      integration: https://api.identity.integration.account.gov.uk/.well-known/jwks.json
-      production: https://api.identity.account.gov.uk/.well-known/jwks.json
+      staging: https://test-resources.review-p.staging.account.gov.uk/.well-known/jwks.json
+      integration: https://test-resources.review-p.integration.account.gov.uk/.well-known/jwks.json
     di-ipv-cri-kbv-hmrc-api:
       dev: https://test-resources.review-hk.dev.account.gov.uk/.well-known/jwks.json
       build: https://test-resources.review-hk.build.account.gov.uk/.well-known/jwks.json
-      staging: https://api.identity.staging.account.gov.uk/.well-known/jwks.json
-      integration: https://api.identity.integration.account.gov.uk/.well-known/jwks.json
-      production: https://api.identity.account.gov.uk/.well-known/jwks.json
+      staging: https://test-resources.review-hk.staging.account.gov.uk/.well-known/jwks.json
+      integration: https://test-resources.review-hk.integration.account.gov.uk/.well-known/jwks.json
     di-ipv-cri-check-hmrc-api:
       dev: https://test-resources.review-hc.dev.account.gov.uk/.well-known/jwks.json
       build: https://test-resources.review-hc.build.account.gov.uk/.well-known/jwks.json
-      staging: https://api.identity.staging.account.gov.uk/.well-known/jwks.json
-      integration: https://api.identity.integration.account.gov.uk/.well-known/jwks.json
-      production: https://api.identity.account.gov.uk/.well-known/jwks.json
+      staging: https://test-resources.review-hc.staging.account.gov.uk/.well-known/jwks.json
+      integration: https://test-resources.review-hc.integration.account.gov.uk/.well-known/jwks.json
 
   EnvironmentConfiguration:
     dev:
@@ -750,7 +751,6 @@ Resources:
             Fn::ImportValue: !Sub ${TxmaStackName}-AuditEventQueueUrl
           ENV_VAR_FEATURE_FLAG_KEY_ROTATION: !FindInMap [ KeyRotationMapping, !Ref CriIdentifier, !Ref Environment ]
           ENV_VAR_FEATURE_CONSUME_PUBLIC_JWK: !FindInMap [ KeyRotationEnabled, !Ref CriIdentifier, !Ref Environment ]
-          PUBLIC_JWKS_ENDPOINT: !FindInMap [ JwkEndpoint, !Ref CriIdentifier, !Ref Environment ]
       AutoPublishAlias: live
       AutoPublishAliasAllProperties: true
       SnapStart:
@@ -852,7 +852,6 @@ Resources:
             Fn::ImportValue: !Sub ${TxmaStackName}-AuditEventQueueUrl
           CRI_IDENTIFIER: !Sub "${CriIdentifier}"
           ENV_VAR_FEATURE_CONSUME_PUBLIC_JWK: !FindInMap [ KeyRotationEnabled, !Ref CriIdentifier, !Ref Environment]
-          PUBLIC_JWKS_ENDPOINT: !FindInMap [ JwkEndpoint, !Ref CriIdentifier, !Ref Environment ]
       AutoPublishAlias: live
       AutoPublishAliasAllProperties: true
       Policies:
@@ -1100,7 +1099,6 @@ Resources:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-access-token"
           ENV_VAR_FEATURE_CONSUME_PUBLIC_JWK: !FindInMap [ KeyRotationEnabled, !Ref CriIdentifier, !Ref Environment ]
-          PUBLIC_JWKS_ENDPOINT: !FindInMap [ JwkEndpoint, !Ref CriIdentifier, !Ref Environment ]
       AutoPublishAlias: live
       AutoPublishAliasAllProperties: true
       SnapStart:
@@ -1159,7 +1157,6 @@ Resources:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-access-token-2"
           ENV_VAR_FEATURE_CONSUME_PUBLIC_JWK: !FindInMap [ KeyRotationEnabled, !Ref CriIdentifier, !Ref Environment]
-          PUBLIC_JWKS_ENDPOINT: !FindInMap [ JwkEndpoint, !Ref CriIdentifier, !Ref Environment ]
       AutoPublishAlias: live
       AutoPublishAliasAllProperties: true
       Policies:
@@ -1655,6 +1652,95 @@ Resources:
           !Ref CriIdentifier,
           !Ref Environment,
         ]
+
+  IPVCoreStubAWSProdJwksEndpointParameter:
+    Condition: IsStubEnvironment
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod/jwtAuthentication/jwksEndpoint"
+      Type: String
+      Value:
+        !FindInMap [StubJwksEndpoint, !Ref CriIdentifier, !Ref Environment]
+  
+  IPVCoreStubAWSBuildJwksEndpointParameter:
+    Condition: IsStubEnvironment
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build/jwtAuthentication/jwksEndpoint"
+      Type: String
+      Value:
+        !FindInMap [StubJwksEndpoint, !Ref CriIdentifier, !Ref Environment]
+
+  IPVCoreStubJwksEndpointParameter:
+    Condition: IsStubEnvironment
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub/jwtAuthentication/jwksEndpoint"
+      Type: String
+      Value:
+        !FindInMap [StubJwksEndpoint, !Ref CriIdentifier, !Ref Environment]
+
+  IPVCoreStubPreProdAWSBuildJwksEndpointParameter:
+    Condition: IsStubEnvironment
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod-aws-build/jwtAuthentication/jwksEndpoint"
+      Type: String
+      Value:
+        !FindInMap [StubJwksEndpoint, !Ref CriIdentifier, !Ref Environment]
+
+  IPVCoreStubPreProdJwksEndpointParameter:
+    Condition: IsStubEnvironment
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod/jwtAuthentication/jwksEndpoint"
+      Type: String
+      Value:
+        !FindInMap [StubJwksEndpoint, !Ref CriIdentifier, !Ref Environment]
+
+  IPVCoreStubAWSHeadlessJwksEndpointParameter:
+    Condition: IsStubEnvironment
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-headless/jwtAuthentication/jwksEndpoint"
+      Type: String
+      Value:
+        !FindInMap [StubJwksEndpoint, !Ref CriIdentifier, !Ref Environment]
+
+  IPVCoreStubAWSProdThirdPartyJwksEndpointParameter:
+    Condition: IsStubEnvironment
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod_3rdparty/jwtAuthentication/jwksEndpoint"
+      Type: String
+      Value:
+        !FindInMap [StubJwksEndpoint, !Ref CriIdentifier, !Ref Environment]
+
+  IPVCoreStubAWSBuildThirdPartyJwksEndpointParameter:
+    Condition: IsStubEnvironment
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build_3rdparty/jwtAuthentication/jwksEndpoint"
+      Type: String
+      Value:
+        !FindInMap [StubJwksEndpoint, !Ref CriIdentifier, !Ref Environment]
+
+  IPVCoreThirdPartyStubsJwksEndpointParameter:
+    Condition: IsStubEnvironment
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-3rd-party-stubs/jwtAuthentication/jwksEndpoint"
+      Type: String
+      Value:
+        !FindInMap [CoreJwksEndpoint, Environment, !Ref Environment]
+
+  IPVCoreJwksEndpointParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core/jwtAuthentication/jwksEndpoint"
+      Type: String
+      Value:
+        !FindInMap [CoreJwksEndpoint, Environment, !Ref Environment]
 
   AuthRequestKmsEncryptionKeyIdParameter:
     Type: AWS::SSM::Parameter
