@@ -17,6 +17,8 @@ let cachedPublicKey: KeyLike | undefined;
 
 export const getPublicEncryptionKey = async (audience: string) => {
     if (isJWKSCacheValid()) {
+        logger.info({ message: "Using Cached JWKS Key" });
+
         return cachedPublicKey;
     }
 
@@ -75,6 +77,7 @@ async function setCachedPublicEncryptionKeyFromJwks(audience: string) {
         return;
     }
 
+    logger.info({ message: "Retrieved encryption key from JWKS", ...encryptionKey });
     cachedPublicKey = encryptionKey && ((await importJWK(encryptionKey, "RSA-OAEP-256")) as KeyLike);
 }
 
