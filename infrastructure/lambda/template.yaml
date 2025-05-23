@@ -283,7 +283,7 @@ Mappings:
   KeyRotationMapping:
     di-ipv-cri-address-api:
       dev: "true"
-      build: "false"
+      build: "true"
       staging: "false"
       integration: "false"
       production: "false"
