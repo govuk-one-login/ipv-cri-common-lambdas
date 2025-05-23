@@ -173,6 +173,10 @@ Globals:
 
 Mappings:
 
+  # LambdaCanaryAPIGatewayMapping:
+  # ApiGatewayName:
+
+
   KeyRotationEnabled:
     di-ipv-cri-address-api:
       dev: true
@@ -874,7 +878,7 @@ Resources:
         - Name: Method
           Value: POST
         - Name: ApiName
-          Value: !Sub "${AWS::StackName} - BAV Credential Issuer Private API"
+          Value: !ImportValue hmrc-check-cri-private
         - Name: Stage
           Value: !Ref Environment
         - Name: Resource
@@ -1031,7 +1035,7 @@ Resources:
         - Name: Method
           Value: POST
         - Name: ApiName
-          Value: !Sub "${AWS::StackName} - BAV Credential Issuer Private API"
+          Value: !ImportValue hmrc-check-cri-private
         - Name: Stage
           Value: !Ref Environment
         - Name: Resource
@@ -1147,13 +1151,13 @@ Resources:
       MetricName: 5XXError
       Dimensions:
         - Name: Method
-          Value: POST
+          Value: GET
         - Name: ApiName
-          Value: !Sub "${AWS::StackName} - BAV Credential Issuer Private API"
+          Value: !ImportValue hmrc-check-cri-private
         - Name: Stage
           Value: !Ref Environment
         - Name: Resource
-          Value: /session
+          Value: /authorization
       Statistic: Sum
       Unit: Count
       Period: 60
@@ -1291,13 +1295,13 @@ Resources:
       MetricName: 5XXError
       Dimensions:
         - Name: Method
-          Value: POST
+          Value: GET
         - Name: ApiName
-          Value: !Sub "${AWS::StackName} - BAV Credential Issuer Private API"
+          Value: !ImportValue hmrc-check-cri-private
         - Name: Stage
           Value: !Ref Environment
         - Name: Resource
-          Value: /session
+          Value: /authorization
       Statistic: Sum
       Unit: Count
       Period: 60
@@ -1408,11 +1412,11 @@ Resources:
         - Name: Method
           Value: POST
         - Name: ApiName
-          Value: !Sub "${AWS::StackName} - BAV Credential Issuer Private API"
+          Value: !ImportValue hmrc-check-cri-public
         - Name: Stage
           Value: !Ref Environment
         - Name: Resource
-          Value: /session
+          Value: /token
       Statistic: Sum
       Unit: Count
       Period: 60
@@ -1569,11 +1573,11 @@ Resources:
         - Name: Method
           Value: POST
         - Name: ApiName
-          Value: !Sub "${AWS::StackName} - BAV Credential Issuer Private API"
+          Value: !ImportValue hmrc-check-cri-public
         - Name: Stage
           Value: !Ref Environment
         - Name: Resource
-          Value: /session
+          Value: /token
       Statistic: Sum
       Unit: Count
       Period: 60
