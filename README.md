@@ -48,6 +48,36 @@ with the value set to true i.e. FRAUD_DEV_ENABLED KBV_BUILD_ENABLED
 **important:** One you've cloned the repo, run `pre-commit install` to install the pre-commit hooks.
 If you have not installed `pre-commit` then please do so [here](https://pre-commit.com/).
 
+## Authorising with GitHub Packages
+
+Some of the Node modules used in this repository are private modules stored in the One Login GitHub Packages repository. NPM therefore needs credentials in order to access the packages as you.
+
+This can be done as follows:
+
+### Step 1: Create a GitHub Personal Access Token.
+
+GitHub has a guide on this [here](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#creating-a-personal-access-token-classic).
+
+Currently (05-2025), this requires a 'classic' personal access token (see [here](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-npm-registry#authenticating-to-github-packages)). Quick testing indicates that you need to select at least the `read:packages` scope.
+
+### Step 2: Pass the token into NPM, via an .npmrc file in the root of the repository.
+
+It should look like the following:
+
+```
+//npm.pkg.github.com/:_authToken=${NPM_GITHUB_PACKAGES_TOKEN}
+```
+
+You can enter the auth token directly where `${NPM_GITHUB_PACKAGES_TOKEN}` is written, as .npmrc is in the .gitignore, but this is not recommended as it risks accidentally leaking your personal access token if .gitignore is changed.
+
+The recommended method is to export an environment variable with your token. You can do this by editing `~/.zprofile` if using zsh (macOS default terminal), or `~/.bashrc` for bash (the most common Linux terminal). Just add the following to the bottom:
+
+```sh
+export NPM_GITHUB_PACKAGES_TOKEN=ghp_mytokenblahblah
+```
+
+After restarting your terminal, the new environment variable should be set and NPM should be able to pull from GitHub Packages using the .npmrc definition.
+
 ## Run Cucumber tests
 
 Below runs and uses the core stub, with the following defaults:
@@ -76,9 +106,7 @@ NOTE: Since this is defaulting `CRI_DEV=common-lambda-dev`
 and contains keys configured for the common lambda account `di-ipv-cri-common-dev`the `API_GATEWAY_ID_PRIVATE` can be found
 in the output of the common lambda stack being targeted i.e the value of `PreMergeDevOnlyApiId` output.
 
-`
-STACK_NAME=di-ipv-cri-common-api-your-stack-name ENVIRONMENT=dev API_GATEWAY_ID_PRIVATE=xxxx IPV_CORE_STUB_BASIC_AUTH_USER=xxxx IPV_CORE_STUB_BASIC_AUTH_PASSWORD=xxxx IPV_CORE_STUB_URL="https://cri.core.build.stubs.account.gov.uk" gradle integration-tests:cucumber
-`
+`STACK_NAME=di-ipv-cri-common-api-your-stack-name ENVIRONMENT=dev API_GATEWAY_ID_PRIVATE=xxxx IPV_CORE_STUB_BASIC_AUTH_USER=xxxx IPV_CORE_STUB_BASIC_AUTH_PASSWORD=xxxx IPV_CORE_STUB_URL="https://cri.core.build.stubs.account.gov.uk" gradle integration-tests:cucumber`
 
 Run in KBV CRI specify `CRI_DEV=kbv-cri-dev` allows the command below to use keys in `ipv-config` pointing to keys in `di-ipv-cri-kbv-dev` for a common lambda stack deploy in that account.
 
@@ -86,7 +114,7 @@ Run in KBV CRI specify `CRI_DEV=kbv-cri-dev` allows the command below to use key
 
 Run in ADDRESS CRI specify `CRI_DEV=address-cri-dev` allow the command below to use keys in `ipv-config` pointing to keys in `di-ipv-cri-address-dev` for a common lambda stack deploy in that account.
 
-`CRI_DEV=address-cri-dev STACK_NAME=di-ipv-cri-common-api-your-stack-name ENVIRONMENT=dev API_GATEWAY_ID_PRIVATE=xxxx IPV_CORE_STUB_BASIC_AUTH_USER=xxxx IPV_CORE_STUB_BASIC_AUTH_PASSWORD=xxxx IPV_CORE_STUB_URL="https://cri.core.build.stubs.account.gov.uk" gradle integration-tests:cucumber   
+`CRI_DEV=address-cri-dev STACK_NAME=di-ipv-cri-common-api-your-stack-name ENVIRONMENT=dev API_GATEWAY_ID_PRIVATE=xxxx IPV_CORE_STUB_BASIC_AUTH_USER=xxxx IPV_CORE_STUB_BASIC_AUTH_PASSWORD=xxxx IPV_CORE_STUB_URL="https://cri.core.build.stubs.account.gov.uk" gradle integration-tests:cucumber
 
 You can run against localhost as follows:
 
