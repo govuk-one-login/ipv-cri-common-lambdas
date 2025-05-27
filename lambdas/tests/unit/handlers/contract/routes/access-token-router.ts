@@ -17,7 +17,8 @@ import { AccessTokenLambda } from "../../../../../src/handlers/access-token-hand
 import { AuthRequest } from "../utils/incoming-request-converters";
 import { CreateAccessTokenLambda } from "./access-token-factory";
 
-const { JWT_AUDIENCE, JWT_PUBLIC_SIGNING_KEY, JWT_REDIRECT_URI, JWT_SIGNING_ALGORITHM } = ClientConfigKey;
+const { JWT_AUDIENCE, JWT_PUBLIC_SIGNING_KEY, JWT_REDIRECT_URI, JWT_SIGNING_ALGORITHM, JWKS_ENDPOINT } =
+    ClientConfigKey;
 const { SESSION_TABLE_NAME, SESSION_TTL } = CommonConfigKey;
 
 class AccessTokenRouter {
@@ -72,7 +73,13 @@ class AccessTokenRouter {
             .use(
                 initialiseClientConfigMiddleware({
                     configService: lambda.getConfigService(),
-                    client_config_keys: [JWT_AUDIENCE, JWT_PUBLIC_SIGNING_KEY, JWT_REDIRECT_URI, JWT_SIGNING_ALGORITHM],
+                    client_config_keys: [
+                        JWT_AUDIENCE,
+                        JWT_PUBLIC_SIGNING_KEY,
+                        JWT_REDIRECT_URI,
+                        JWT_SIGNING_ALGORITHM,
+                        JWKS_ENDPOINT,
+                    ],
                 }),
             )
             .use(getSessionByIdMiddleware({ sessionService: lambda.getSessionService() }))

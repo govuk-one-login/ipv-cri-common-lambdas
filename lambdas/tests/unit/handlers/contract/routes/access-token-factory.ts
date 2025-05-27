@@ -13,7 +13,8 @@ import { MockDynamoDBDocument } from "../mocks/mock-dynamo-db-document";
 import { ClientConfigKey, CommonConfigKey } from "../../../../../src/types/config-keys";
 
 const parameterPathPrefix = process.env.AWS_STACK_NAME || "";
-const { JWT_AUDIENCE, JWT_PUBLIC_SIGNING_KEY, JWT_REDIRECT_URI, JWT_SIGNING_ALGORITHM } = ClientConfigKey;
+const { JWT_AUDIENCE, JWT_PUBLIC_SIGNING_KEY, JWT_REDIRECT_URI, JWT_SIGNING_ALGORITHM, JWKS_ENDPOINT } =
+    ClientConfigKey;
 const { SESSION_TABLE_NAME, SESSION_TTL } = CommonConfigKey;
 
 export const CreateAccessTokenLambda = (redirectUri: string, componentId: string) => {
@@ -40,6 +41,8 @@ export const CreateAccessTokenLambda = (redirectUri: string, componentId: string
             [`/${parameterPathPrefix}/clients/ipv-core/jwtAuthentication/${JWT_REDIRECT_URI}`]: redirectUri,
             [`/${parameterPathPrefix}/clients/ipv-core/jwtAuthentication/${JWT_AUDIENCE}`]: componentId,
             [`/${parameterPathPrefix}/clients/ipv-core/jwtAuthentication/${JWT_PUBLIC_SIGNING_KEY}`]: "mock_public_key",
+            [`/${parameterPathPrefix}/clients/ipv-core/jwtAuthentication/${JWT_PUBLIC_SIGNING_KEY}`]: "mock_public_key",
+            [`/${parameterPathPrefix}/clients/ipv-core/jwtAuthentication/${JWKS_ENDPOINT}`]: "mock_public_key",
         }) as unknown as SSMProvider,
     );
 
