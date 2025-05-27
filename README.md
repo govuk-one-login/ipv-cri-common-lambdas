@@ -76,7 +76,7 @@ The recommended method is to export an environment variable with your token. You
 export NPM_GITHUB_PACKAGES_TOKEN=ghp_mytokenblahblah
 ```
 
-After restarting your terminal, the new environment variable should be set and NPM should be able to pull from GitHub Packages using the .npmrc definition.
+After restarting your terminal, the new environment variable should be set and NPM should be able to pull from GitHub Packages using the .npmrc definition. You can also copy the same .npmrc content to any other repositories that need access to GitHub Packages, as the environment variable will be set globally for all terminals you launch in your account.
 
 ## Run Cucumber tests
 

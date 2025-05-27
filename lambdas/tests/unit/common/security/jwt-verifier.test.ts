@@ -39,6 +39,7 @@ describe("jwt-verifier.ts", () => {
                 jwtVerifierConfig = {
                     publicSigningJwk: "publicSigningJwk",
                     jwtSigningAlgorithm: "ES256",
+                    jwksEndpoint: "http://localhost",
                 };
                 jwtVerifyOptions = {
                     algorithms: ["ES256"],
@@ -81,7 +82,6 @@ describe("jwt-verifier.ts", () => {
                 beforeEach(() => {
                     global.fetch = jest.fn();
                     process.env.ENV_VAR_FEATURE_CONSUME_PUBLIC_JWK = "true";
-                    process.env.PUBLIC_JWKS_ENDPOINT = "http://localhost";
                     jwtVerifier = new JwtVerifier(jwtVerifierConfig, logger as Logger);
                     jwtVerifyMock.mockResolvedValue({
                         payload: MOCK_JWT,
@@ -590,7 +590,11 @@ describe("jwt-verifier.ts", () => {
         });
 
         it("should create a session request validator", () => {
-            const output = jwtVerifierFactory.create("test-signing-algo", "test-public-signing-key");
+            const output = jwtVerifierFactory.create(
+                "test-signing-algo",
+                "test-public-signing-key",
+                "http://localhost",
+            );
             expect(output).toBeInstanceOf(JwtVerifier);
         });
     });

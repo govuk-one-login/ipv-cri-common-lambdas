@@ -48,6 +48,7 @@ export class AccessTokenRequestValidator {
         const jwtVerifier = this.jwtVerifierFactory.create(
             clientConfig.get(ClientConfigKey.JWT_SIGNING_ALGORITHM) as string,
             clientConfig.get(ClientConfigKey.JWT_PUBLIC_SIGNING_KEY) as string,
+            clientConfig.get(ClientConfigKey.JWKS_ENDPOINT) as string,
         );
 
         const jwtPayload = await jwtVerifier.verify(

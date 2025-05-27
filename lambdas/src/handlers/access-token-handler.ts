@@ -127,6 +127,7 @@ export const lambdaHandler = middy(handlerClass.handler.bind(handlerClass))
                 ClientConfigKey.JWT_PUBLIC_SIGNING_KEY,
                 ClientConfigKey.JWT_REDIRECT_URI,
                 ClientConfigKey.JWT_SIGNING_ALGORITHM,
+                ClientConfigKey.JWKS_ENDPOINT,
             ],
         }),
     )

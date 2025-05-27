@@ -23,14 +23,14 @@ export enum ClaimNames {
 export class JwtVerifier {
     static ClaimNames = ClaimNames;
     private readonly usePublicJwksEndpoint;
-    private readonly publicJwksEndpoint;
+    private readonly jwksEndpoint;
 
     constructor(
         private jwtVerifierConfig: JwtVerificationConfig,
         private logger: Logger,
     ) {
         this.usePublicJwksEndpoint = process.env.ENV_VAR_FEATURE_CONSUME_PUBLIC_JWK ?? "false";
-        this.publicJwksEndpoint = process.env.PUBLIC_JWKS_ENDPOINT ?? "";
+        this.jwksEndpoint = jwtVerifierConfig.jwksEndpoint;
     }
 
     public async verify(
@@ -52,17 +52,17 @@ export class JwtVerifier {
         mandatoryClaims: Set<string>,
         jwtVerifyOptions: JWTVerifyOptions,
     ) {
-        this.logger.info("Using JWKS endpoint: " + this.publicJwksEndpoint);
+        this.logger.info("Using JWKS endpoint: " + this.jwksEndpoint);
         try {
-            if (this.publicJwksEndpoint === "") {
-                throw new Error("PUBLIC_JWKS_ENDPOINT env variable has not been set");
+            if (this.jwksEndpoint === "") {
+                throw new Error("Missing JWKS endpoint!");
             }
 
             if (cachedJWKS && cachedJWKSExpiry && cachedJWKSExpiry >= Date.now()) {
-                this.logger.info("Using locally cached JWKs from " + this.publicJwksEndpoint);
+                this.logger.info("Using locally cached JWKs from " + this.jwksEndpoint);
             } else {
-                this.logger.info("Fetching new JWKS from " + this.publicJwksEndpoint);
-                await this.fetchAndCacheJWKS(new URL(this.publicJwksEndpoint));
+                this.logger.info("Fetching new JWKS from " + this.jwksEndpoint);
+                await this.fetchAndCacheJWKS(new URL(this.jwksEndpoint));
             }
 
             const localJWKSet = createLocalJWKSet(cachedJWKS!);
@@ -142,11 +142,12 @@ export class JwtVerifier {
 
 export class JwtVerifierFactory {
     public constructor(private readonly logger: Logger) {}
-    public create(jwtSigningAlgo: string, jwtPublicSigningKey: string): JwtVerifier {
+    public create(jwtSigningAlgo: string, jwtPublicSigningKey: string, jwksEndpoint: string): JwtVerifier {
         return new JwtVerifier(
             {
                 jwtSigningAlgorithm: jwtSigningAlgo,
                 publicSigningJwk: jwtPublicSigningKey,
+                jwksEndpoint,
             },
             this.logger,
         );
