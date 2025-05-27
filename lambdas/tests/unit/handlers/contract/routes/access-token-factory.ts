@@ -41,7 +41,8 @@ export const CreateAccessTokenLambda = (redirectUri: string, componentId: string
             [`/${parameterPathPrefix}/clients/ipv-core/jwtAuthentication/${JWT_REDIRECT_URI}`]: redirectUri,
             [`/${parameterPathPrefix}/clients/ipv-core/jwtAuthentication/${JWT_AUDIENCE}`]: componentId,
             [`/${parameterPathPrefix}/clients/ipv-core/jwtAuthentication/${JWT_PUBLIC_SIGNING_KEY}`]: "mock_public_key",
-            [`/${parameterPathPrefix}/clients/ipv-core/jwtAuthentication/${JWKS_ENDPOINT}`]: "mock_public_key",
+            [`/${parameterPathPrefix}/clients/ipv-core/jwtAuthentication/${JWKS_ENDPOINT}`]:
+                "http://localhost/.well-known/jwks.json",
         }) as unknown as SSMProvider,
     );
 

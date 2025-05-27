@@ -23,14 +23,12 @@ export enum ClaimNames {
 export class JwtVerifier {
     static ClaimNames = ClaimNames;
     private readonly usePublicJwksEndpoint;
-    private readonly jwksEndpoint;
 
     constructor(
         private jwtVerifierConfig: JwtVerificationConfig,
         private logger: Logger,
     ) {
         this.usePublicJwksEndpoint = process.env.ENV_VAR_FEATURE_CONSUME_PUBLIC_JWK ?? "false";
-        this.jwksEndpoint = jwtVerifierConfig.jwksEndpoint ?? "";
     }
 
     public async verify(
@@ -52,17 +50,17 @@ export class JwtVerifier {
         mandatoryClaims: Set<string>,
         jwtVerifyOptions: JWTVerifyOptions,
     ) {
-        this.logger.info("Using JWKS endpoint: " + this.jwksEndpoint);
+        this.logger.info("Using JWKS endpoint: " + this.jwtVerifierConfig.jwksEndpoint);
         try {
-            if (this.jwksEndpoint === "") {
+            if (!this.jwtVerifierConfig.jwksEndpoint) {
                 throw new Error("Missing JWKS endpoint!");
             }
 
             if (cachedJWKS && cachedJWKSExpiry && cachedJWKSExpiry >= Date.now()) {
-                this.logger.info("Using locally cached JWKs from " + this.jwksEndpoint);
+                this.logger.info("Using locally cached JWKs from " + this.jwtVerifierConfig.jwksEndpoint);
             } else {
-                this.logger.info("Fetching new JWKS from " + this.jwksEndpoint);
-                await this.fetchAndCacheJWKS(new URL(this.jwksEndpoint));
+                this.logger.info("Fetching new JWKS from " + this.jwtVerifierConfig.jwksEndpoint);
+                await this.fetchAndCacheJWKS(new URL(this.jwtVerifierConfig.jwksEndpoint));
             }
 
             const localJWKSet = createLocalJWKSet(cachedJWKS!);
