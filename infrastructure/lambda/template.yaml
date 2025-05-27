@@ -852,7 +852,6 @@ Resources:
             Fn::ImportValue: !Sub ${TxmaStackName}-AuditEventQueueUrl
           CRI_IDENTIFIER: !Sub "${CriIdentifier}"
           ENV_VAR_FEATURE_CONSUME_PUBLIC_JWK: !FindInMap [ KeyRotationEnabled, !Ref CriIdentifier, !Ref Environment]
-          PUBLIC_JWKS_ENDPOINT: !FindInMap [ JwkEndpoint, !Ref CriIdentifier, !Ref Environment ]
       AutoPublishAlias: live
       AutoPublishAliasAllProperties: true
       Policies:
@@ -1159,7 +1158,6 @@ Resources:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-access-token-2"
           ENV_VAR_FEATURE_CONSUME_PUBLIC_JWK: !FindInMap [ KeyRotationEnabled, !Ref CriIdentifier, !Ref Environment]
-          PUBLIC_JWKS_ENDPOINT: !FindInMap [ JwkEndpoint, !Ref CriIdentifier, !Ref Environment ]
       AutoPublishAlias: live
       AutoPublishAliasAllProperties: true
       Policies:

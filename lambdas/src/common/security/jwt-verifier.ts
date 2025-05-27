@@ -30,7 +30,7 @@ export class JwtVerifier {
         private logger: Logger,
     ) {
         this.usePublicJwksEndpoint = process.env.ENV_VAR_FEATURE_CONSUME_PUBLIC_JWK ?? "false";
-        this.jwksEndpoint = jwtVerifierConfig.jwksEndpoint;
+        this.jwksEndpoint = jwtVerifierConfig.jwksEndpoint ?? "";
     }
 
     public async verify(

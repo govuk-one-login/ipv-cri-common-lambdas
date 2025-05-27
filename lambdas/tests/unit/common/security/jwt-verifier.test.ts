@@ -172,10 +172,9 @@ describe("jwt-verifier.ts", () => {
                 });
 
                 describe("JWKS Endpoint fail and fallback", () => {
-                    it("should use fallback method when PUBLIC_JWKS_ENDPOINT is not set", async () => {
-                        process.env.PUBLIC_JWKS_ENDPOINT = "";
+                    it("should use fallback method when jwksEndpoint is not set", async () => {
+                        jwtVerifier = new JwtVerifier({ ...jwtVerifierConfig, jwksEndpoint: "" }, logger as Logger);
 
-                        jwtVerifier = new JwtVerifier(jwtVerifierConfig, logger as Logger);
                         // @ts-expect-error: Private function
                         const fallbackSpy = jest.spyOn(jwtVerifier, "verifyWithJwksParam").mockImplementation(() => {
                             return {
@@ -195,10 +194,12 @@ describe("jwt-verifier.ts", () => {
                         });
                     });
 
-                    it("should use fallback method when PUBLIC_JWKS_ENDPOINT is not a valid url", async () => {
-                        process.env.PUBLIC_JWKS_ENDPOINT = "localhost";
+                    it("should use fallback method when jwksEndpoint is not a valid url", async () => {
+                        jwtVerifier = new JwtVerifier(
+                            { ...jwtVerifierConfig, jwksEndpoint: "localhost" },
+                            logger as Logger,
+                        );
 
-                        jwtVerifier = new JwtVerifier(jwtVerifierConfig, logger as Logger);
                         // @ts-expect-error: Private function
                         const fallbackSpy = jest.spyOn(jwtVerifier, "verifyWithJwksParam").mockImplementation(() => {
                             return {
@@ -280,7 +281,6 @@ describe("jwt-verifier.ts", () => {
                     } as unknown as Logger;
                     publicKey = new Uint8Array([3, 101, 120, 26, 14, 184, 5, 99, 172, 149]);
                     process.env.ENV_VAR_FEATURE_CONSUME_PUBLIC_JWK = "false";
-                    process.env.PUBLIC_JWKS_ENDPOINT = undefined;
                     jwtVerifier = new JwtVerifier(jwtVerifierConfig, logger as Logger);
                     signingPublicJwk = {
                         alg: "ES256",
