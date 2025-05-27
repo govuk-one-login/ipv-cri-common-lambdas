@@ -41,14 +41,14 @@ Mappings:
       integration: false
       production: false
     di-ipv-cri-kbv-api:
-      localdev: true
+      localdev: false
       dev: false
       build: false
       staging: false
       integration: false
       production: false
     di-ipv-cri-check-hmrc-api:
-      localdev: true
+      localdev: false
       dev: false
       build: false
       staging: false
