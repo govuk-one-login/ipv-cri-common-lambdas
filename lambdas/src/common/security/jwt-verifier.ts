@@ -4,8 +4,12 @@ import { Logger } from "@aws-lambda-powertools/logger";
 import { JwtVerificationConfig } from "../../types/jwt-verification-config";
 import { JWKS } from "../../types/jwks";
 
-let cachedJWKS: JWKS | null = null;
-let cachedJWKSExpiry: number | null = null;
+let cachedJWKS: {
+    [endpoint: string]: {
+        jwks: JWKS;
+        expiry: number;
+    };
+} = {};
 
 export enum ClaimNames {
     ISSUER = "iss",
@@ -56,14 +60,9 @@ export class JwtVerifier {
                 throw new Error("Missing JWKS endpoint!");
             }
 
-            if (cachedJWKS && cachedJWKSExpiry && cachedJWKSExpiry >= Date.now()) {
-                this.logger.info("Using locally cached JWKs from " + this.jwtVerifierConfig.jwksEndpoint);
-            } else {
-                this.logger.info("Fetching new JWKS from " + this.jwtVerifierConfig.jwksEndpoint);
-                await this.fetchAndCacheJWKS(new URL(this.jwtVerifierConfig.jwksEndpoint));
-            }
+            const jwks = await this.fetchJWKSWithCache(this.jwtVerifierConfig.jwksEndpoint);
 
-            const localJWKSet = createLocalJWKSet(cachedJWKS!);
+            const localJWKSet = createLocalJWKSet(jwks);
             const { payload } = await jwtVerify(encodedJwt.toString(), localJWKSet, jwtVerifyOptions);
             this.verifyMandatoryClaims(mandatoryClaims, payload);
             this.logger.info("Sucessfully verified JWT using Public JWKS Endpoint");
@@ -75,15 +74,38 @@ export class JwtVerifier {
         }
     }
 
-    private async fetchAndCacheJWKS(jwksUrl: URL) {
+    private async fetchJWKSWithCache(jwksUrl: string) {
+        const cachedJwkEntry = cachedJWKS[jwksUrl];
+
+        const now = Date.now();
+
+        if (cachedJwkEntry && cachedJwkEntry.expiry >= now) {
+            // If we have a valid cache entry, use it
+            this.logger.info(
+                `Using locally cached JWKs from ${this.jwtVerifierConfig.jwksEndpoint} (expiry: ${cachedJwkEntry.expiry} >= ${now})`,
+            );
+            return cachedJwkEntry.jwks;
+        }
+
+        // No valid cache entry - fetch fresh JWKS
+        this.logger.info(`Fetching new JWKS from ${this.jwtVerifierConfig.jwksEndpoint}...`);
+
         const jwksResponse = await fetch(jwksUrl);
         if (!jwksResponse.ok) {
             throw new Error("Error received from the JWKS endpoint, status received: " + jwksResponse.status);
         }
 
-        cachedJWKS = await jwksResponse.json();
-        cachedJWKSExpiry = this.parseCacheControlHeader(jwksResponse.headers.get("Cache-Control"));
-        this.logger.info("JWKS cache has been updated to " + cachedJWKSExpiry);
+        const jwks = (await jwksResponse.json()) as JWKS;
+        const expiry = this.parseCacheControlHeader(jwksResponse.headers.get("Cache-Control"));
+
+        cachedJWKS[jwksUrl] = {
+            jwks,
+            expiry,
+        };
+
+        this.logger.info(`JWKS cache for ${jwksUrl} has been updated - expiry: ${expiry}`);
+
+        return jwks;
     }
 
     private parseCacheControlHeader(cacheControlHeaderValue: string | null) {
@@ -93,8 +115,7 @@ export class JwtVerifier {
     }
 
     public clearJWKSCache() {
-        cachedJWKS = null;
-        cachedJWKSExpiry = null;
+        cachedJWKS = {};
     }
 
     private async verifyWithJwksParam(
