@@ -37,7 +37,7 @@ Mappings:
       localdev: true
       dev: true
       build: true
-      staging: true
+      staging: false
       integration: false
       production: false
     di-ipv-cri-kbv-api:
