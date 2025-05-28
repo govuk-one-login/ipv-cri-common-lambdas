@@ -93,7 +93,7 @@ describe("jwt-verifier.ts", () => {
 
                 afterEach(() => {
                     jest.clearAllMocks();
-                    jwtVerifier.clearJWKSCache();
+                    jwtVerifier.clearJWKSCacheForAllEndpoints();
                 });
 
                 it("should successfully verify JWT using JWKS endpoint", async () => {
@@ -131,7 +131,7 @@ describe("jwt-verifier.ts", () => {
                     expect(payloadTwo).toEqual(MOCK_JWT);
                     expect(global.fetch).toHaveBeenCalledTimes(1);
 
-                    jwtVerifier.clearJWKSCache();
+                    jwtVerifier.clearJWKSCacheForAllEndpoints();
                     const payloadThree = await jwtVerifier.verify(encodedJwt, mandatoryClaims, expectedClaimValues);
                     expect(payloadThree).toEqual(MOCK_JWT);
                     expect(global.fetch).toHaveBeenCalledTimes(2);

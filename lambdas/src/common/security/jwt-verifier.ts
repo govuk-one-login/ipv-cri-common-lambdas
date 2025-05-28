@@ -2,14 +2,9 @@ import { createLocalJWKSet, importJWK, JWTPayload, jwtVerify } from "jose";
 import { JWTVerifyOptions } from "jose/dist/types/jwt/verify";
 import { Logger } from "@aws-lambda-powertools/logger";
 import { JwtVerificationConfig } from "../../types/jwt-verification-config";
-import { JWKS } from "../../types/jwks";
+import { JWKCacheCollection, JWKS } from "../../types/jwks";
 
-let cachedJWKS: {
-    [endpoint: string]: {
-        jwks: JWKS;
-        expiry: number;
-    };
-} = {};
+let cachedJWKS: JWKCacheCollection = {};
 
 export enum ClaimNames {
     ISSUER = "iss",
@@ -57,7 +52,11 @@ export class JwtVerifier {
         this.logger.info("Using JWKS endpoint: " + this.jwtVerifierConfig.jwksEndpoint);
         try {
             if (!this.jwtVerifierConfig.jwksEndpoint) {
-                throw new Error("Missing JWKS endpoint!");
+                throw new Error(
+                    `Unable to retrieve jwksEndpoint SSM param from JWT verifier config! Got: ${JSON.stringify(
+                        this.jwtVerifierConfig.jwksEndpoint,
+                    )}`,
+                );
             }
 
             const jwks = await this.fetchJWKSWithCache(this.jwtVerifierConfig.jwksEndpoint);
@@ -68,7 +67,7 @@ export class JwtVerifier {
             this.logger.info("Sucessfully verified JWT using Public JWKS Endpoint");
             return payload;
         } catch (error) {
-            this.clearJWKSCache();
+            this.clearJWKSCacheForCurrentEndpoint();
             this.logger.error(
                 "Caught an error when using JWKS endpoint. Falling back on public JWKS parameter.",
                 error as Error,
@@ -119,7 +118,12 @@ export class JwtVerifier {
         return Date.now() + maxAgeSeconds * 1000;
     }
 
-    public clearJWKSCache() {
+    public clearJWKSCacheForCurrentEndpoint() {
+        const { [this.jwtVerifierConfig.jwksEndpoint]: _, ...remainingEntries } = cachedJWKS;
+        cachedJWKS = remainingEntries;
+    }
+
+    public clearJWKSCacheForAllEndpoints() {
         cachedJWKS = {};
     }
 
