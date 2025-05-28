@@ -113,7 +113,7 @@ describe("jwt-verifier.ts", () => {
                     expect(logger.info).toHaveBeenCalledWith("Sucessfully verified JWT using Public JWKS Endpoint");
                 });
 
-                it("should successfully uses the cached JWKS when populated", async () => {
+                it("should successfully use the cached JWKS when populated", async () => {
                     (global.fetch as jest.Mock).mockResolvedValue({
                         headers: {
                             get: jest.fn().mockReturnValue("max-age=300"),
@@ -137,6 +137,90 @@ describe("jwt-verifier.ts", () => {
                     expect(global.fetch).toHaveBeenCalledTimes(2);
 
                     expect(verifyWithJwksParamSpy).toHaveBeenCalledTimes(0);
+                });
+
+                it("should be able to cache separate JWKS for different endpoints simultaneously", async () => {
+                    (global.fetch as jest.Mock).mockResolvedValue({
+                        headers: {
+                            get: jest.fn().mockReturnValue("max-age=300"),
+                        },
+                        json: jest.fn().mockResolvedValue(MOCK_JWKS),
+                        status: 200,
+                        ok: true,
+                    });
+
+                    const verifierOne = new JwtVerifier({ ...jwtVerifierConfig, jwksEndpoint: "endpointA" }, logger);
+                    const payloadOne = await verifierOne.verify(encodedJwt, mandatoryClaims, expectedClaimValues);
+
+                    expect(payloadOne).toEqual(MOCK_JWT);
+                    expect(global.fetch).toHaveBeenCalledTimes(1);
+
+                    const verifierTwo = new JwtVerifier({ ...jwtVerifierConfig, jwksEndpoint: "endpointA" }, logger);
+                    const payloadTwo = await verifierTwo.verify(encodedJwt, mandatoryClaims, expectedClaimValues);
+
+                    expect(payloadTwo).toEqual(MOCK_JWT);
+                    expect(global.fetch).toHaveBeenCalledTimes(1);
+
+                    const verifierThree = new JwtVerifier({ ...jwtVerifierConfig, jwksEndpoint: "endpointB" }, logger);
+                    const payloadThree = await verifierThree.verify(encodedJwt, mandatoryClaims, expectedClaimValues);
+
+                    expect(payloadThree).toEqual(MOCK_JWT);
+                    expect(global.fetch).toHaveBeenCalledTimes(2);
+
+                    const verifierFour = new JwtVerifier({ ...jwtVerifierConfig, jwksEndpoint: "endpointA" }, logger);
+                    const payloadFour = await verifierFour.verify(encodedJwt, mandatoryClaims, expectedClaimValues);
+
+                    expect(payloadFour).toEqual(MOCK_JWT);
+                    expect(global.fetch).toHaveBeenCalledTimes(2);
+
+                    const verifierFive = new JwtVerifier({ ...jwtVerifierConfig, jwksEndpoint: "endpointB" }, logger);
+                    const payloadFive = await verifierFive.verify(encodedJwt, mandatoryClaims, expectedClaimValues);
+
+                    expect(payloadFive).toEqual(MOCK_JWT);
+                    expect(global.fetch).toHaveBeenCalledTimes(2);
+                });
+
+                it("should be able to clear cached JWKS for single endpoints without affecting other caches", async () => {
+                    (global.fetch as jest.Mock).mockResolvedValue({
+                        headers: {
+                            get: jest.fn().mockReturnValue("max-age=300"),
+                        },
+                        json: jest.fn().mockResolvedValue(MOCK_JWKS),
+                        status: 200,
+                        ok: true,
+                    });
+
+                    const verifierOne = new JwtVerifier({ ...jwtVerifierConfig, jwksEndpoint: "endpointA" }, logger);
+                    const payloadOne = await verifierOne.verify(encodedJwt, mandatoryClaims, expectedClaimValues);
+
+                    expect(payloadOne).toEqual(MOCK_JWT);
+                    expect(global.fetch).toHaveBeenCalledTimes(1);
+
+                    const verifierTwo = new JwtVerifier({ ...jwtVerifierConfig, jwksEndpoint: "endpointB" }, logger);
+                    const payloadTwo = await verifierTwo.verify(encodedJwt, mandatoryClaims, expectedClaimValues);
+
+                    expect(payloadTwo).toEqual(MOCK_JWT);
+                    expect(global.fetch).toHaveBeenCalledTimes(2);
+
+                    verifierTwo.clearJWKSCacheForCurrentEndpoint();
+
+                    const verifierThree = new JwtVerifier({ ...jwtVerifierConfig, jwksEndpoint: "endpointA" }, logger);
+                    const payloadThree = await verifierThree.verify(encodedJwt, mandatoryClaims, expectedClaimValues);
+
+                    expect(payloadThree).toEqual(MOCK_JWT);
+                    expect(global.fetch).toHaveBeenCalledTimes(2);
+
+                    const verifierFour = new JwtVerifier({ ...jwtVerifierConfig, jwksEndpoint: "endpointB" }, logger);
+                    const payloadFour = await verifierFour.verify(encodedJwt, mandatoryClaims, expectedClaimValues);
+
+                    expect(payloadFour).toEqual(MOCK_JWT);
+                    expect(global.fetch).toHaveBeenCalledTimes(3);
+
+                    const verifierFive = new JwtVerifier({ ...jwtVerifierConfig, jwksEndpoint: "endpointB" }, logger);
+                    const payloadFive = await verifierFive.verify(encodedJwt, mandatoryClaims, expectedClaimValues);
+
+                    expect(payloadFive).toEqual(MOCK_JWT);
+                    expect(global.fetch).toHaveBeenCalledTimes(3);
                 });
 
                 it("should successfully verify JWT using JWKS endpoint when Cache-Control regex does not match", async () => {
