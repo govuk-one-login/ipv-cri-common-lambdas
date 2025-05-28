@@ -69,7 +69,10 @@ export class JwtVerifier {
             return payload;
         } catch (error) {
             this.clearJWKSCache();
-            this.logger.error("Failed to call JWKS endpoint, attempting with params.", error as Error);
+            this.logger.error(
+                "Caught an error when using JWKS endpoint. Falling back on public JWKS parameter.",
+                error as Error,
+            );
             return this.verifyWithJwksParam(encodedJwt, mandatoryClaims, jwtVerifyOptions);
         }
     }
@@ -82,7 +85,9 @@ export class JwtVerifier {
         if (cachedJwkEntry && cachedJwkEntry.expiry >= now) {
             // If we have a valid cache entry, use it
             this.logger.info(
-                `Using locally cached JWKs from ${this.jwtVerifierConfig.jwksEndpoint} (expiry: ${cachedJwkEntry.expiry} >= ${now})`,
+                `Using locally cached JWKs from ${this.jwtVerifierConfig.jwksEndpoint} (expiry: ${new Date(
+                    cachedJwkEntry.expiry,
+                ).toISOString()} >= ${new Date(now).toISOString()})`,
             );
             return cachedJwkEntry.jwks;
         }
@@ -103,7 +108,7 @@ export class JwtVerifier {
             expiry,
         };
 
-        this.logger.info(`JWKS cache for ${jwksUrl} has been updated - expiry: ${expiry}`);
+        this.logger.info(`JWKS cache for ${jwksUrl} has been updated - expiry: ${new Date(expiry).toISOString()}`);
 
         return jwks;
     }
