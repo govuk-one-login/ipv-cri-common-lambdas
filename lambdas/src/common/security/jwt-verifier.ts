@@ -119,8 +119,7 @@ export class JwtVerifier {
     }
 
     public clearJWKSCacheForCurrentEndpoint() {
-        const { [this.jwtVerifierConfig.jwksEndpoint]: _, ...remainingEntries } = cachedJWKS;
-        cachedJWKS = remainingEntries;
+        delete cachedJWKS[this.jwtVerifierConfig.jwksEndpoint];
     }
 
     public clearJWKSCacheForAllEndpoints() {
