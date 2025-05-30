@@ -162,6 +162,7 @@ describe("SessionLambda", () => {
                         ClientConfigKey.JWT_PUBLIC_SIGNING_KEY,
                         ClientConfigKey.JWT_REDIRECT_URI,
                         ClientConfigKey.JWT_SIGNING_ALGORITHM,
+                        ClientConfigKey.JWKS_ENDPOINT,
                     ],
                 }),
             )
@@ -237,6 +238,7 @@ describe("SessionLambda", () => {
             ClientConfigKey.JWT_PUBLIC_SIGNING_KEY,
             ClientConfigKey.JWT_REDIRECT_URI,
             ClientConfigKey.JWT_SIGNING_ALGORITHM,
+            ClientConfigKey.JWKS_ENDPOINT,
         ]);
     });
 
@@ -479,6 +481,7 @@ describe("SessionLambda", () => {
                             ClientConfigKey.JWT_PUBLIC_SIGNING_KEY,
                             ClientConfigKey.JWT_REDIRECT_URI,
                             ClientConfigKey.JWT_SIGNING_ALGORITHM,
+                            ClientConfigKey.JWKS_ENDPOINT,
                         ],
                         client_absolute_paths: [
                             { prefix: previousCriIdentifier, suffix: ConfigKey.CRI_EVIDENCE_PROPERTIES },
@@ -734,6 +737,7 @@ describe("SessionLambda", () => {
                             ClientConfigKey.JWT_ISSUER,
                             ClientConfigKey.JWT_PUBLIC_SIGNING_KEY,
                             ClientConfigKey.JWT_REDIRECT_URI,
+                            ClientConfigKey.JWKS_ENDPOINT,
                             ClientConfigKey.JWT_SIGNING_ALGORITHM,
                         ],
                         client_absolute_paths: [

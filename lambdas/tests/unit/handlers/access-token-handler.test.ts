@@ -108,6 +108,7 @@ describe("access-token-handler.ts", () => {
         const jwtVerificationConfig: JwtVerificationConfig = {
             publicSigningJwk: "",
             jwtSigningAlgorithm: "",
+            jwksEndpoint: "",
         };
         let jwtVerifier: JwtVerifier;
         let mockMetrics: jest.MockedObjectDeep<typeof Metrics>;

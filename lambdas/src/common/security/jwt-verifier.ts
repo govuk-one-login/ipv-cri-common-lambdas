@@ -2,10 +2,9 @@ import { createLocalJWKSet, importJWK, JWTPayload, jwtVerify } from "jose";
 import { JWTVerifyOptions } from "jose/dist/types/jwt/verify";
 import { Logger } from "@aws-lambda-powertools/logger";
 import { JwtVerificationConfig } from "../../types/jwt-verification-config";
-import { JWKS } from "../../types/jwks";
+import { JWKCacheCollection, JWKS } from "../../types/jwks";
 
-let cachedJWKS: JWKS | null = null;
-let cachedJWKSExpiry: number | null = null;
+let cachedJWKS: JWKCacheCollection = {};
 
 export enum ClaimNames {
     ISSUER = "iss",
@@ -23,14 +22,12 @@ export enum ClaimNames {
 export class JwtVerifier {
     static ClaimNames = ClaimNames;
     private readonly usePublicJwksEndpoint;
-    private readonly publicJwksEndpoint;
 
     constructor(
         private jwtVerifierConfig: JwtVerificationConfig,
         private logger: Logger,
     ) {
         this.usePublicJwksEndpoint = process.env.ENV_VAR_FEATURE_CONSUME_PUBLIC_JWK ?? "false";
-        this.publicJwksEndpoint = process.env.PUBLIC_JWKS_ENDPOINT ?? "";
     }
 
     public async verify(
@@ -52,40 +49,67 @@ export class JwtVerifier {
         mandatoryClaims: Set<string>,
         jwtVerifyOptions: JWTVerifyOptions,
     ) {
-        this.logger.info("Using JWKS endpoint: " + this.publicJwksEndpoint);
+        this.logger.info("Using JWKS endpoint: " + this.jwtVerifierConfig.jwksEndpoint);
         try {
-            if (this.publicJwksEndpoint === "") {
-                throw new Error("PUBLIC_JWKS_ENDPOINT env variable has not been set");
+            if (!this.jwtVerifierConfig.jwksEndpoint) {
+                throw new Error(
+                    `Unable to retrieve jwksEndpoint SSM param from JWT verifier config! Got: ${JSON.stringify(
+                        this.jwtVerifierConfig.jwksEndpoint,
+                    )}`,
+                );
             }
 
-            if (cachedJWKS && cachedJWKSExpiry && cachedJWKSExpiry >= Date.now()) {
-                this.logger.info("Using locally cached JWKs from " + this.publicJwksEndpoint);
-            } else {
-                this.logger.info("Fetching new JWKS from " + this.publicJwksEndpoint);
-                await this.fetchAndCacheJWKS(new URL(this.publicJwksEndpoint));
-            }
+            const jwks = await this.fetchJWKSWithCache(this.jwtVerifierConfig.jwksEndpoint);
 
-            const localJWKSet = createLocalJWKSet(cachedJWKS!);
+            const localJWKSet = createLocalJWKSet(jwks);
             const { payload } = await jwtVerify(encodedJwt.toString(), localJWKSet, jwtVerifyOptions);
             this.verifyMandatoryClaims(mandatoryClaims, payload);
             this.logger.info("Sucessfully verified JWT using Public JWKS Endpoint");
             return payload;
         } catch (error) {
-            this.clearJWKSCache();
-            this.logger.error("Failed to call JWKS endpoint, attempting with params.", error as Error);
+            this.clearJWKSCacheForCurrentEndpoint();
+            this.logger.error(
+                "Caught an error when using JWKS endpoint. Falling back on public JWKS parameter.",
+                error as Error,
+            );
             return this.verifyWithJwksParam(encodedJwt, mandatoryClaims, jwtVerifyOptions);
         }
     }
 
-    private async fetchAndCacheJWKS(jwksUrl: URL) {
+    private async fetchJWKSWithCache(jwksUrl: string) {
+        const cachedJwkEntry = cachedJWKS[jwksUrl];
+
+        const now = Date.now();
+
+        if (cachedJwkEntry && cachedJwkEntry.expiry >= now) {
+            // If we have a valid cache entry, use it
+            this.logger.info(
+                `Using locally cached JWKs from ${this.jwtVerifierConfig.jwksEndpoint} (expiry: ${new Date(
+                    cachedJwkEntry.expiry,
+                ).toISOString()} >= ${new Date(now).toISOString()})`,
+            );
+            return cachedJwkEntry.jwks;
+        }
+
+        // No valid cache entry - fetch fresh JWKS
+        this.logger.info(`Fetching new JWKS from ${this.jwtVerifierConfig.jwksEndpoint}...`);
+
         const jwksResponse = await fetch(jwksUrl);
         if (!jwksResponse.ok) {
             throw new Error("Error received from the JWKS endpoint, status received: " + jwksResponse.status);
         }
 
-        cachedJWKS = await jwksResponse.json();
-        cachedJWKSExpiry = this.parseCacheControlHeader(jwksResponse.headers.get("Cache-Control"));
-        this.logger.info("JWKS cache has been updated to " + cachedJWKSExpiry);
+        const jwks = (await jwksResponse.json()) as JWKS;
+        const expiry = this.parseCacheControlHeader(jwksResponse.headers.get("Cache-Control"));
+
+        cachedJWKS[jwksUrl] = {
+            jwks,
+            expiry,
+        };
+
+        this.logger.info(`JWKS cache for ${jwksUrl} has been updated - expiry: ${new Date(expiry).toISOString()}`);
+
+        return jwks;
     }
 
     private parseCacheControlHeader(cacheControlHeaderValue: string | null) {
@@ -94,9 +118,12 @@ export class JwtVerifier {
         return Date.now() + maxAgeSeconds * 1000;
     }
 
-    public clearJWKSCache() {
-        cachedJWKS = null;
-        cachedJWKSExpiry = null;
+    public clearJWKSCacheForCurrentEndpoint() {
+        delete cachedJWKS[this.jwtVerifierConfig.jwksEndpoint];
+    }
+
+    public clearJWKSCacheForAllEndpoints() {
+        cachedJWKS = {};
     }
 
     private async verifyWithJwksParam(
@@ -142,11 +169,12 @@ export class JwtVerifier {
 
 export class JwtVerifierFactory {
     public constructor(private readonly logger: Logger) {}
-    public create(jwtSigningAlgo: string, jwtPublicSigningKey: string): JwtVerifier {
+    public create(jwtSigningAlgo: string, jwtPublicSigningKey: string, jwksEndpoint: string): JwtVerifier {
         return new JwtVerifier(
             {
                 jwtSigningAlgorithm: jwtSigningAlgo,
                 publicSigningJwk: jwtPublicSigningKey,
+                jwksEndpoint,
             },
             this.logger,
         );

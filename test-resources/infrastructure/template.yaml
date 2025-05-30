@@ -34,18 +34,21 @@ Parameters:
 Mappings:
   KeyRotationMapping:
     di-ipv-cri-address-api:
+      localdev: true
       dev: true
       build: true
-      staging: true
+      staging: false
       integration: false
       production: false
     di-ipv-cri-kbv-api:
+      localdev: false
       dev: false
       build: false
       staging: false
       integration: false
       production: false
     di-ipv-cri-check-hmrc-api:
+      localdev: false
       dev: false
       build: false
       staging: false

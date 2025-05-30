@@ -39,6 +39,7 @@ describe("jwt-verifier.ts", () => {
                 jwtVerifierConfig = {
                     publicSigningJwk: "publicSigningJwk",
                     jwtSigningAlgorithm: "ES256",
+                    jwksEndpoint: "http://localhost",
                 };
                 jwtVerifyOptions = {
                     algorithms: ["ES256"],
@@ -81,7 +82,6 @@ describe("jwt-verifier.ts", () => {
                 beforeEach(() => {
                     global.fetch = jest.fn();
                     process.env.ENV_VAR_FEATURE_CONSUME_PUBLIC_JWK = "true";
-                    process.env.PUBLIC_JWKS_ENDPOINT = "http://localhost";
                     jwtVerifier = new JwtVerifier(jwtVerifierConfig, logger as Logger);
                     jwtVerifyMock.mockResolvedValue({
                         payload: MOCK_JWT,
@@ -93,7 +93,7 @@ describe("jwt-verifier.ts", () => {
 
                 afterEach(() => {
                     jest.clearAllMocks();
-                    jwtVerifier.clearJWKSCache();
+                    jwtVerifier.clearJWKSCacheForAllEndpoints();
                 });
 
                 it("should successfully verify JWT using JWKS endpoint", async () => {
@@ -113,7 +113,7 @@ describe("jwt-verifier.ts", () => {
                     expect(logger.info).toHaveBeenCalledWith("Sucessfully verified JWT using Public JWKS Endpoint");
                 });
 
-                it("should successfully uses the cached JWKS when populated", async () => {
+                it("should successfully use the cached JWKS when populated", async () => {
                     (global.fetch as jest.Mock).mockResolvedValue({
                         headers: {
                             get: jest.fn().mockReturnValue("max-age=300"),
@@ -131,12 +131,96 @@ describe("jwt-verifier.ts", () => {
                     expect(payloadTwo).toEqual(MOCK_JWT);
                     expect(global.fetch).toHaveBeenCalledTimes(1);
 
-                    jwtVerifier.clearJWKSCache();
+                    jwtVerifier.clearJWKSCacheForAllEndpoints();
                     const payloadThree = await jwtVerifier.verify(encodedJwt, mandatoryClaims, expectedClaimValues);
                     expect(payloadThree).toEqual(MOCK_JWT);
                     expect(global.fetch).toHaveBeenCalledTimes(2);
 
                     expect(verifyWithJwksParamSpy).toHaveBeenCalledTimes(0);
+                });
+
+                it("should be able to cache separate JWKS for different endpoints simultaneously", async () => {
+                    (global.fetch as jest.Mock).mockResolvedValue({
+                        headers: {
+                            get: jest.fn().mockReturnValue("max-age=300"),
+                        },
+                        json: jest.fn().mockResolvedValue(MOCK_JWKS),
+                        status: 200,
+                        ok: true,
+                    });
+
+                    const verifierOne = new JwtVerifier({ ...jwtVerifierConfig, jwksEndpoint: "endpointA" }, logger);
+                    const payloadOne = await verifierOne.verify(encodedJwt, mandatoryClaims, expectedClaimValues);
+
+                    expect(payloadOne).toEqual(MOCK_JWT);
+                    expect(global.fetch).toHaveBeenCalledTimes(1);
+
+                    const verifierTwo = new JwtVerifier({ ...jwtVerifierConfig, jwksEndpoint: "endpointA" }, logger);
+                    const payloadTwo = await verifierTwo.verify(encodedJwt, mandatoryClaims, expectedClaimValues);
+
+                    expect(payloadTwo).toEqual(MOCK_JWT);
+                    expect(global.fetch).toHaveBeenCalledTimes(1);
+
+                    const verifierThree = new JwtVerifier({ ...jwtVerifierConfig, jwksEndpoint: "endpointB" }, logger);
+                    const payloadThree = await verifierThree.verify(encodedJwt, mandatoryClaims, expectedClaimValues);
+
+                    expect(payloadThree).toEqual(MOCK_JWT);
+                    expect(global.fetch).toHaveBeenCalledTimes(2);
+
+                    const verifierFour = new JwtVerifier({ ...jwtVerifierConfig, jwksEndpoint: "endpointA" }, logger);
+                    const payloadFour = await verifierFour.verify(encodedJwt, mandatoryClaims, expectedClaimValues);
+
+                    expect(payloadFour).toEqual(MOCK_JWT);
+                    expect(global.fetch).toHaveBeenCalledTimes(2);
+
+                    const verifierFive = new JwtVerifier({ ...jwtVerifierConfig, jwksEndpoint: "endpointB" }, logger);
+                    const payloadFive = await verifierFive.verify(encodedJwt, mandatoryClaims, expectedClaimValues);
+
+                    expect(payloadFive).toEqual(MOCK_JWT);
+                    expect(global.fetch).toHaveBeenCalledTimes(2);
+                });
+
+                it("should be able to clear cached JWKS for single endpoints without affecting other caches", async () => {
+                    (global.fetch as jest.Mock).mockResolvedValue({
+                        headers: {
+                            get: jest.fn().mockReturnValue("max-age=300"),
+                        },
+                        json: jest.fn().mockResolvedValue(MOCK_JWKS),
+                        status: 200,
+                        ok: true,
+                    });
+
+                    const verifierOne = new JwtVerifier({ ...jwtVerifierConfig, jwksEndpoint: "endpointA" }, logger);
+                    const payloadOne = await verifierOne.verify(encodedJwt, mandatoryClaims, expectedClaimValues);
+
+                    expect(payloadOne).toEqual(MOCK_JWT);
+                    expect(global.fetch).toHaveBeenCalledTimes(1);
+
+                    const verifierTwo = new JwtVerifier({ ...jwtVerifierConfig, jwksEndpoint: "endpointB" }, logger);
+                    const payloadTwo = await verifierTwo.verify(encodedJwt, mandatoryClaims, expectedClaimValues);
+
+                    expect(payloadTwo).toEqual(MOCK_JWT);
+                    expect(global.fetch).toHaveBeenCalledTimes(2);
+
+                    verifierTwo.clearJWKSCacheForCurrentEndpoint();
+
+                    const verifierThree = new JwtVerifier({ ...jwtVerifierConfig, jwksEndpoint: "endpointA" }, logger);
+                    const payloadThree = await verifierThree.verify(encodedJwt, mandatoryClaims, expectedClaimValues);
+
+                    expect(payloadThree).toEqual(MOCK_JWT);
+                    expect(global.fetch).toHaveBeenCalledTimes(2);
+
+                    const verifierFour = new JwtVerifier({ ...jwtVerifierConfig, jwksEndpoint: "endpointB" }, logger);
+                    const payloadFour = await verifierFour.verify(encodedJwt, mandatoryClaims, expectedClaimValues);
+
+                    expect(payloadFour).toEqual(MOCK_JWT);
+                    expect(global.fetch).toHaveBeenCalledTimes(3);
+
+                    const verifierFive = new JwtVerifier({ ...jwtVerifierConfig, jwksEndpoint: "endpointB" }, logger);
+                    const payloadFive = await verifierFive.verify(encodedJwt, mandatoryClaims, expectedClaimValues);
+
+                    expect(payloadFive).toEqual(MOCK_JWT);
+                    expect(global.fetch).toHaveBeenCalledTimes(3);
                 });
 
                 it("should successfully verify JWT using JWKS endpoint when Cache-Control regex does not match", async () => {
@@ -172,10 +256,9 @@ describe("jwt-verifier.ts", () => {
                 });
 
                 describe("JWKS Endpoint fail and fallback", () => {
-                    it("should use fallback method when PUBLIC_JWKS_ENDPOINT is not set", async () => {
-                        process.env.PUBLIC_JWKS_ENDPOINT = "";
+                    it("should use fallback method when jwksEndpoint is not set", async () => {
+                        jwtVerifier = new JwtVerifier({ ...jwtVerifierConfig, jwksEndpoint: "" }, logger as Logger);
 
-                        jwtVerifier = new JwtVerifier(jwtVerifierConfig, logger as Logger);
                         // @ts-expect-error: Private function
                         const fallbackSpy = jest.spyOn(jwtVerifier, "verifyWithJwksParam").mockImplementation(() => {
                             return {
@@ -195,10 +278,12 @@ describe("jwt-verifier.ts", () => {
                         });
                     });
 
-                    it("should use fallback method when PUBLIC_JWKS_ENDPOINT is not a valid url", async () => {
-                        process.env.PUBLIC_JWKS_ENDPOINT = "localhost";
+                    it("should use fallback method when jwksEndpoint is not a valid url", async () => {
+                        jwtVerifier = new JwtVerifier(
+                            { ...jwtVerifierConfig, jwksEndpoint: "localhost" },
+                            logger as Logger,
+                        );
 
-                        jwtVerifier = new JwtVerifier(jwtVerifierConfig, logger as Logger);
                         // @ts-expect-error: Private function
                         const fallbackSpy = jest.spyOn(jwtVerifier, "verifyWithJwksParam").mockImplementation(() => {
                             return {
@@ -280,7 +365,6 @@ describe("jwt-verifier.ts", () => {
                     } as unknown as Logger;
                     publicKey = new Uint8Array([3, 101, 120, 26, 14, 184, 5, 99, 172, 149]);
                     process.env.ENV_VAR_FEATURE_CONSUME_PUBLIC_JWK = "false";
-                    process.env.PUBLIC_JWKS_ENDPOINT = undefined;
                     jwtVerifier = new JwtVerifier(jwtVerifierConfig, logger as Logger);
                     signingPublicJwk = {
                         alg: "ES256",
@@ -590,7 +674,11 @@ describe("jwt-verifier.ts", () => {
         });
 
         it("should create a session request validator", () => {
-            const output = jwtVerifierFactory.create("test-signing-algo", "test-public-signing-key");
+            const output = jwtVerifierFactory.create(
+                "test-signing-algo",
+                "test-public-signing-key",
+                "http://localhost",
+            );
             expect(output).toBeInstanceOf(JwtVerifier);
         });
     });
