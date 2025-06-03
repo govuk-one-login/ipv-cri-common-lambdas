@@ -324,6 +324,51 @@ Mappings:
       integration: "false"
       production: "false"
 
+  # Enable fall back with key rotation aliases in session decryption
+  KeyRotationLegacyFallBackMapping:
+    di-ipv-cri-address-api:
+      dev: "false"
+      build: "false"
+      staging: "false"
+      integration: "false"
+      production: "false"
+    di-ipv-cri-fraud-api:
+      dev: "false"
+      build: "false"
+      staging: "false"
+      integration: "false"
+      production: "false"
+    di-ipv-cri-kbv-api:
+      dev: "false"
+      build: "false"
+      staging: "false"
+      integration: "false"
+      production: "false"
+    di-ipv-cri-dl-api:
+      dev: "false"
+      build: "false"
+      staging: "false"
+      integration: "false"
+      production: "false"
+    di-ipv-cri-passport-api:
+      dev: "true"
+      build: "false"
+      staging: "false"
+      integration: "false"
+      production: "false"
+    di-ipv-cri-kbv-hmrc-api:
+      dev: "false"
+      build: "false"
+      staging: "false"
+      integration: "false"
+      production: "false"
+    di-ipv-cri-check-hmrc-api:
+      dev: "false"
+      build: "false"
+      staging: "false"
+      integration: "false"
+      production: "false"
+
   # TS functions Only 0 = off
   TSProvisionedConcurrencyMapping:
     di-ipv-cri-address-api:
@@ -751,6 +796,7 @@ Resources:
             Fn::ImportValue: !Sub ${TxmaStackName}-AuditEventQueueUrl
           ENV_VAR_FEATURE_FLAG_KEY_ROTATION: !FindInMap [ KeyRotationMapping, !Ref CriIdentifier, !Ref Environment ]
           ENV_VAR_FEATURE_CONSUME_PUBLIC_JWK: !FindInMap [ CorePublicSigningJwksEnabled, !Ref CriIdentifier, !Ref Environment ]
+          ENV_VAR_FEATURE_FLAG_KEY_ROTATION_LEGACY_KEY_FALLBACK: !FindInMap [ KeyRotationLegacyFallBackMapping, !Ref CriIdentifier, !Ref Environment ]
       AutoPublishAlias: live
       AutoPublishAliasAllProperties: true
       SnapStart:
