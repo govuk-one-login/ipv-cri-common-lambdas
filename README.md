@@ -16,6 +16,8 @@ Common CRI secrets for dev environments:
 | ADDRESS_DEV_COMMON_CRI_GH_ACTIONS_ROLE_ARN         | Assumed role IAM ARN   |
 | ADDRESS_DEV_SIGNING_PROFILE_NAME                   | Signing profile name   |
 | FRAUD_DEV_COMMON_CRI_ARTIFACT_SOURCE_BUCKET_NAME   | Upload artifact bucket |
+
+
 | FRAUD_DEV_COMMON_CRI_GH_ACTIONS_ROLE_ARN           | Assumed role IAM ARN   |
 | FRAUD_DEV_SIGNING_PROFILE_NAME                     | Signing profile name   |
 | KBV_DEV_COMMON_CRI_ARTIFACT_SOURCE_BUCKET_NAME     | Upload artifact bucket |
