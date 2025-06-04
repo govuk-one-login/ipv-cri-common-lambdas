@@ -1579,7 +1579,7 @@ Resources:
           Value: POST
         - Name: ApiName
           Value: 
-          Fn::ImportValue: !Sub ${AWS::StackName}-PublicApiGatewayId
+            Fn::ImportValue: !Sub ${AWS::StackName}-PublicApiGatewayId
         - Name: Stage
           Value: !Ref Environment
         - Name: Resource
