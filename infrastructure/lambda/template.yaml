@@ -878,7 +878,8 @@ Resources:
         - Name: Method
           Value: POST
         - Name: ApiName
-          Value: !ImportValue !Sub ${AWS::StackName}-PrivateApiGatewayId
+          Value: 
+            Fn::ImportValue: !Sub ${AWS::StackName}-PrivateApiGatewayId
         - Name: Stage
           Value: !Ref Environment
         - Name: Resource
@@ -1035,7 +1036,8 @@ Resources:
         - Name: Method
           Value: POST
         - Name: ApiName
-          Value: !ImportValue !Sub ${AWS::StackName}-PrivateApiGatewayId
+          Value: 
+            Fn::ImportValue: !Sub ${AWS::StackName}-PrivateApiGatewayId
         - Name: Stage
           Value: !Ref Environment
         - Name: Resource
@@ -1153,7 +1155,8 @@ Resources:
         - Name: Method
           Value: GET
         - Name: ApiName
-          Value: !ImportValue !Sub ${AWS::StackName}-PrivateApiGatewayId
+          Value: 
+            Fn::ImportValue: !Sub ${AWS::StackName}-PrivateApiGatewayId
         - Name: Stage
           Value: !Ref Environment
         - Name: Resource
@@ -1297,7 +1300,8 @@ Resources:
         - Name: Method
           Value: GET
         - Name: ApiName
-          Value: !ImportValue !Sub ${AWS::StackName}-PrivateApiGatewayId
+          Value: 
+            Fn::ImportValue: !Sub ${AWS::StackName}-PrivateApiGatewayId
         - Name: Stage
           Value: !Ref Environment
         - Name: Resource
@@ -1412,7 +1416,8 @@ Resources:
         - Name: Method
           Value: POST
         - Name: ApiName
-          Value: !ImportValue !Sub ${AWS::StackName}-PublicApiGatewayId
+          Value: 
+            Fn::ImportValue: !Sub ${AWS::StackName}-PublicApiGatewayId
         - Name: Stage
           Value: !Ref Environment
         - Name: Resource
@@ -1573,7 +1578,8 @@ Resources:
         - Name: Method
           Value: POST
         - Name: ApiName
-          Value: !ImportValue !Sub ${AWS::StackName}-PublicApiGatewayId
+          Value: 
+          Fn::ImportValue: !Sub ${AWS::StackName}-PublicApiGatewayId
         - Name: Stage
           Value: !Ref Environment
         - Name: Resource
