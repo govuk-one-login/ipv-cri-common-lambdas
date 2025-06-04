@@ -840,7 +840,7 @@ Resources:
     Condition: UseCanaryDeploymentAlarms
     Properties:
       AlarmName: !Sub "${AWS::StackName}-SessionFunctionLambdaErrors"
-      AlarmDescription: !Sub "Trigger an alarm when lambda errors occurs. ${SupportManualURL}"
+      AlarmDescription: !Sub "Trigger an alarm when lambda errors occurs"
       ActionsEnabled: true
       AlarmActions:
         - !ImportValue platform-alarm-warning-alert-topic
@@ -997,7 +997,7 @@ Resources:
     Condition: UseCanaryDeploymentAlarms
     Properties:
       AlarmName: !Sub "${AWS::StackName}-SessionFunctionTSLambdaErrors"
-      AlarmDescription: !Sub "Trigger an alarm when lambda errors occurs. ${SupportManualURL}"
+      AlarmDescription: !Sub "Trigger an alarm when lambda errors occurs"
       ActionsEnabled: true
       AlarmActions:
         - !ImportValue platform-alarm-warning-alert-topic
@@ -1115,7 +1115,7 @@ Resources:
     Condition: UseCanaryDeploymentAlarms
     Properties:
       AlarmName: !Sub "${AWS::StackName}-AuthorizationFunctionLambdaErrors"
-      AlarmDescription: !Sub "Trigger an alarm when lambda errors occurs. ${SupportManualURL}"
+      AlarmDescription: !Sub "Trigger an alarm when lambda errors occurs"
       ActionsEnabled: true
       AlarmActions:
         - !ImportValue platform-alarm-warning-alert-topic
@@ -1259,7 +1259,7 @@ Resources:
     Condition: UseCanaryDeploymentAlarms
     Properties:
       AlarmName: !Sub "${AWS::StackName}-AuthorizationFunctionTSLambdaErrors"
-      AlarmDescription: !Sub "Trigger an alarm when lambda errors occurs. ${SupportManualURL}"
+      AlarmDescription: !Sub "Trigger an alarm when lambda errors occurs"
       ActionsEnabled: true
       AlarmActions:
         - !ImportValue platform-alarm-warning-alert-topic
@@ -1374,7 +1374,7 @@ Resources:
     Condition: UseCanaryDeploymentAlarms
     Properties:
       AlarmName: !Sub "${AWS::StackName}-AccessTokenFunctionLambdaErrors"
-      AlarmDescription: !Sub "Trigger an alarm when lambda errors occurs. ${SupportManualURL}"
+      AlarmDescription: !Sub "Trigger an alarm when lambda errors occurs"
       ActionsEnabled: true
       AlarmActions:
         - !ImportValue platform-alarm-warning-alert-topic
@@ -1535,7 +1535,7 @@ Resources:
     Condition: UseCanaryDeploymentAlarms
     Properties:
       AlarmName: !Sub "${AWS::StackName}-AccessTokenFunctionTSLambdaErrors"
-      AlarmDescription: !Sub "Trigger an alarm when lambda errors occurs. ${SupportManualURL}"
+      AlarmDescription: !Sub "Trigger an alarm when lambda errors occurs"
       ActionsEnabled: true
       AlarmActions:
         - !ImportValue platform-alarm-warning-alert-topic
