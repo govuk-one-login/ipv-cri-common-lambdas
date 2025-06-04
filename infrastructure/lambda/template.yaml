@@ -878,7 +878,7 @@ Resources:
         - Name: Method
           Value: POST
         - Name: ApiName
-          Value: !ImportValue hmrc-check-cri-private
+          Value: !ImportValue !Sub ${AWS::StackName}-PrivateApiGatewayId
         - Name: Stage
           Value: !Ref Environment
         - Name: Resource
@@ -1035,7 +1035,7 @@ Resources:
         - Name: Method
           Value: POST
         - Name: ApiName
-          Value: !ImportValue hmrc-check-cri-private
+          Value: !ImportValue !Sub ${AWS::StackName}-PrivateApiGatewayId
         - Name: Stage
           Value: !Ref Environment
         - Name: Resource
@@ -1153,7 +1153,7 @@ Resources:
         - Name: Method
           Value: GET
         - Name: ApiName
-          Value: !ImportValue hmrc-check-cri-private
+          Value: !ImportValue !Sub ${AWS::StackName}-PrivateApiGatewayId
         - Name: Stage
           Value: !Ref Environment
         - Name: Resource
@@ -1297,7 +1297,7 @@ Resources:
         - Name: Method
           Value: GET
         - Name: ApiName
-          Value: !ImportValue hmrc-check-cri-private
+          Value: !ImportValue !Sub ${AWS::StackName}-PrivateApiGatewayId
         - Name: Stage
           Value: !Ref Environment
         - Name: Resource
@@ -1412,7 +1412,7 @@ Resources:
         - Name: Method
           Value: POST
         - Name: ApiName
-          Value: !ImportValue hmrc-check-cri-public
+          Value: !ImportValue !Sub ${AWS::StackName}-PublicApiGatewayId
         - Name: Stage
           Value: !Ref Environment
         - Name: Resource
@@ -1573,7 +1573,7 @@ Resources:
         - Name: Method
           Value: POST
         - Name: ApiName
-          Value: !ImportValue hmrc-check-cri-public
+          Value: !ImportValue !Sub ${AWS::StackName}-PublicApiGatewayId
         - Name: Stage
           Value: !Ref Environment
         - Name: Resource
