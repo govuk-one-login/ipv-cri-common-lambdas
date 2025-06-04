@@ -835,7 +835,7 @@ Resources:
       FilterPattern: ""
       LogGroupName: !Ref SessionFunctionLogGroup
 
-    SessionFunctionLambdaErrors:
+  SessionFunctionLambdaErrors:
     Type: AWS::CloudWatch::Alarm
     Condition: UseCanaryDeploymentAlarms
     Properties:
