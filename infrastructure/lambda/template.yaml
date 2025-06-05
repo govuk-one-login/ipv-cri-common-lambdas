@@ -877,9 +877,9 @@ Resources:
       Dimensions:
         - Name: Method
           Value: POST
-        - Name: ApiName
+        - Name: ApiId
           Value: 
-            Fn::ImportValue: check-hmrc-cri-api-private
+            Fn::ImportValue: 09wiw3uycj
         - Name: Stage
           Value: !Ref Environment
         - Name: Resource
@@ -1035,9 +1035,9 @@ Resources:
       Dimensions:
         - Name: Method
           Value: POST
-        - Name: ApiName
+        - Name: ApiId
           Value: 
-            Fn::ImportValue: check-hmrc-cri-api-private
+            Fn::ImportValue: 09wiw3uycj
         - Name: Stage
           Value: !Ref Environment
         - Name: Resource
@@ -1154,9 +1154,9 @@ Resources:
       Dimensions:
         - Name: Method
           Value: GET
-        - Name: ApiName
+        - Name: ApiId
           Value: 
-            Fn::ImportValue: check-hmrc-cri-api-private
+            Fn::ImportValue: 09wiw3uycj
         - Name: Stage
           Value: !Ref Environment
         - Name: Resource
@@ -1299,9 +1299,9 @@ Resources:
       Dimensions:
         - Name: Method
           Value: GET
-        - Name: ApiName
+        - Name: ApiId
           Value: 
-            Fn::ImportValue: check-hmrc-cri-api-private
+            Fn::ImportValue: 09wiw3uycj
         - Name: Stage
           Value: !Ref Environment
         - Name: Resource
@@ -1415,9 +1415,9 @@ Resources:
       Dimensions:
         - Name: Method
           Value: POST
-        - Name: ApiName
+        - Name: ApiId
           Value: 
-            Fn::ImportValue: check-hmrc-cri-api-public
+            Fn::ImportValue: ygyzf5m3j2
         - Name: Stage
           Value: !Ref Environment
         - Name: Resource
@@ -1577,9 +1577,9 @@ Resources:
       Dimensions:
         - Name: Method
           Value: POST
-        - Name: ApiName
+        - Name: ApiId
           Value: 
-            Fn::ImportValue: check-hmrc-cri-api-public
+            Fn::ImportValue: ygyzf5m3j2
         - Name: Stage
           Value: !Ref Environment
         - Name: Resource
