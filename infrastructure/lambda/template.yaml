@@ -765,27 +765,28 @@ Mappings:
       production: "https://review-hc.account.gov.uk"
 
   CanaryDeploymentapigatewayidMapping:
-    # di-ipv-cri-address-api:
-    #   privateapigw: "address-cri-api-v1-PrivateAddressApiGatewayId"
-    #   publicapigw: "address-cri-api-v1-PublicAddressApiGatewayId"
-    # di-ipv-cri-fraud-api:
-    #   privateapigw: "fraud-cri-api-v1-PrivateFraudApiGatewayId"
-    #   publicapigw: "fraud-cri-api-v1-PublicFraudApiGatewayId"
-    # di-ipv-cri-kbv-api:
-    #   privateapigw: "kbv-cri-private-kbv-cri-api-v1-PrivateKBVApiGatewayId"
-    #   publicapigw: "kbv-cri-kbv-cri-api-v1-PublicKBVApiGatewayId"
-    # di-ipv-cri-dl-api:
-    #   privateapigw: "dl-cri-api-v1-PrivateDlApiGatewayId"
-    #   publicapigw: "dl-cri-api-v1-PublicDlApiGatewayId"
-    # di-ipv-cri-passport-api:
-    #   privateapigw: "ipv-cri-passport-api-PrivateUKPassportAPIGatewayID"
-    #   publicapigw: "ipv-cri-passport-api-PublicUKPassportAPIGatewayID"
-    # di-ipv-cri-kbv-hmrc-api:
-    #   privateapigw: "kbv-hmrc-cri-api-PrivateApiGatewayId"
-    #   publicapigw: "kbv-hmrc-cri-api-PublicApiGatewayId"
     di-ipv-cri-check-hmrc-api:
       privateapigw: "check-hmrc-cri-api-PrivateApiGatewayId"
       publicapigw: "check-hmrc-cri-api-PublicApiGatewayId"
+    di-ipv-cri-address-api:
+      privateapigw: "address-cri-api-v1-PrivateAddressApiGatewayId"
+      publicapigw: "address-cri-api-v1-PublicAddressApiGatewayId"
+    di-ipv-cri-kbv-api:
+      privateapigw: "kbv-cri-private-kbv-cri-api-v1-PrivateKBVApiGatewayId"
+      publicapigw: "kbv-cri-kbv-cri-api-v1-PublicKBVApiGatewayId"
+    # di-ipv-cri-kbv-hmrc-api:
+    #   privateapigw: "kbv-hmrc-cri-api-PrivateApiGatewayId"
+    #   publicapigw: "kbv-hmrc-cri-api-PublicApiGatewayId"
+    # di-ipv-cri-passport-api:
+    #   privateapigw: "ipv-cri-passport-api-PrivateUKPassportAPIGatewayID"
+    #   publicapigw: "ipv-cri-passport-api-PublicUKPassportAPIGatewayID"
+    # di-ipv-cri-dl-api:
+    #   privateapigw: "dl-cri-api-v1-PrivateDlApiGatewayId"
+    #   publicapigw: "dl-cri-api-v1-PublicDlApiGatewayId"
+    # di-ipv-cri-fraud-api:
+    #   privateapigw: "fraud-cri-api-v1-PrivateFraudApiGatewayId"
+    #   publicapigw: "fraud-cri-api-v1-PublicFraudApiGatewayId"
+
 
 Resources:
 
