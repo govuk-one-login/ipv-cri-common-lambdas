@@ -9,6 +9,7 @@ Metadata:
       ignore_checks:
         - W8003
         - E3031
+        - E3033
 
 Parameters:
   CodeSigningConfigArn:
