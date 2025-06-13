@@ -1549,6 +1549,13 @@ Resources:
       FunctionName: !GetAtt AccessTokenFunctionTS.Arn
       Principal: apigateway.amazonaws.com
 
+  AccessTokenTSAliasPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref AccessTokenFunctionTS.Alias
+      Principal: apigateway.amazonaws.com
+
   AccessTokenFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
@@ -2162,6 +2169,13 @@ Resources:
       FunctionName: !GetAtt SessionFunctionTS.Arn
       Principal: apigateway.amazonaws.com
 
+  SessionFunctionTSAliasPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref SessionFunctionTS.Alias
+      Principal: apigateway.amazonaws.com
+
   AccessTokenFunctionPermission:
     Type: AWS::Lambda::Permission
     Properties:
@@ -2195,6 +2209,13 @@ Resources:
     Properties:
       Action: lambda:InvokeFunction
       FunctionName: !GetAtt AuthorizationFunctionTS.Arn
+      Principal: apigateway.amazonaws.com
+
+  AuthorizationFunctionTSAliasPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref AuthorizationFunctionTS.Alias
       Principal: apigateway.amazonaws.com
 
   LoggingKmsKey:
