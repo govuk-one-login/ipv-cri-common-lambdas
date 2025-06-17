@@ -47,6 +47,14 @@ Parameters:
     Description: "Specifies the configuration to enable gradual Lambda deployments. This value is picked up from the LambdaCanaryDeployment on the pipeline "
     Type: String
     Default: AllAtOnce
+  privateapigwname:
+    Description: "Private API Gateway name create 5xx error alarms mapped to avoid import"
+    Type: String
+    Default: none
+  publicapigwname:
+    Description: "Public API Gateway name create 5xx error alarms mapped to avoid import"
+    Type: String
+    Default: none
 
 Conditions:
   UseCodeSigningConfigArn:
@@ -767,26 +775,33 @@ Mappings:
 
   CanaryDeploymentapigatewayidMapping:
     di-ipv-cri-check-hmrc-api:
-      privateapigw: "check-hmrc-cri-api-PrivateApiGatewayId"
-      publicapigw: "check-hmrc-cri-api-PublicApiGatewayId"
+      privateapigwname: "check-hmrc-cri-api-private"
+      publicapigwname: "check-hmrc-cri-api-public"
+      alarmtopicname: "platform-alarm-warning-alert-topic"
     di-ipv-cri-address-api:
-      privateapigw: "address-cri-api-v1-PrivateAddressApiGatewayId-placehonder"
-      publicapigw: "address-cri-api-v1-PublicAddressApiGatewayId-placehonder"
+      privateapigwname: "address-cri-api-v1-PrivateAddressApiGatewayId-placehonder"
+      publicapigwname: "address-cri-api-v1-PublicAddressApiGatewayId-placehonder"
+      alarmtopicname: "platform-alarm-warning-alert-topic"
     di-ipv-cri-kbv-api:
-      privateapigw: "kbv-cri-private-kbv-cri-api-v1-PrivateKBVApiGatewayId-placehonder"
-      publicapigw: "kbv-cri-kbv-cri-api-v1-PublicKBVApiGatewayId-placehonder"
+      privateapigwname: "kbv-cri-private-kbv-cri-api-v1-PrivateKBVApiGatewayId-placehonder"
+      publicapigwname: "kbv-cri-kbv-cri-api-v1-PublicKBVApiGatewayId-placehonder"
+      alarmtopicname: "platform-alarm-warning-alert-topic"
     di-ipv-cri-kbv-hmrc-api:
-      privateapigw: "kbv-hmrc-cri-api-PrivateApiGatewayId-placehonder"
-      publicapigw: "kbv-hmrc-cri-api-PublicApiGatewayId-placehonder"
+      privateapigwname: "kbv-hmrc-cri-api-PrivateApiGatewayId-placehonder"
+      publicapigwname: "kbv-hmrc-cri-api-PublicApiGatewayId-placehonder"
+      alarmtopicname: "platform-alarm-warning-alert-topic"
     di-ipv-cri-passport-api:
-      privateapigw: "ipv-cri-passport-api-PrivateUKPassportAPIGatewayID-placehonder"
-      publicapigw: "ipv-cri-passport-api-PublicUKPassportAPIGatewayID-placehonder"
+      privateapigwname: "ipv-cri-passport-api-PrivateUKPassportAPIGatewayID-placehonder"
+      publicapigwname: "ipv-cri-passport-api-PublicUKPassportAPIGatewayID-placehonder"
+      alarmtopicname: "platform-alarm-warning-alert-topic"
     di-ipv-cri-dl-api:
-      privateapigw: "dl-cri-api-v1-PrivateDlApiGatewayId-placehonder"
-      publicapigw: "dl-cri-api-v1-PublicDlApiGatewayId-placehonder"
+      privateapigwname: "dl-cri-api-v1-PrivateDlApiGatewayId-placehonder"
+      publicapigwname: "dl-cri-api-v1-PublicDlApiGatewayId-placehonder"
+      alarmtopicname: "platform-alarm-warning-alert-topic"
     di-ipv-cri-fraud-api:
-      privateapigw: "fraud-cri-api-v1-PrivateFraudApiGatewayId-placehonder"
-      publicapigw: "fraud-cri-api-v1-PublicFraudApiGatewayId-placehonder"
+      privateapigwname: "fraud-cri-api-v1-PrivateFraudApiGatewayId-placehonder"
+      publicapigwname: "fraud-cri-api-v1-PublicFraudApiGatewayId-placehonder"
+      alarmtopicname: "platform-alarm-warning-alert-topic"
 
 
 Resources:
@@ -911,10 +926,10 @@ Resources:
       AlarmName: !Sub "${AWS::StackName}-SessionFunctionLambdaErrors"
       AlarmDescription: !Sub "Trigger an alarm when lambda errors occurs"
       ActionsEnabled: true
-      AlarmActions:
-        - !ImportValue platform-alarm-warning-alert-topic
-      OKActions:
-        - !ImportValue platform-alarm-warning-alert-topic
+      AlarmActions: 
+        - Fn::ImportValue: !FindInMap [CanaryDeploymentapigatewayidMapping, !Ref CriIdentifier, alarmtopicname]
+      OKActions: 
+        - Fn::ImportValue: !FindInMap [CanaryDeploymentapigatewayidMapping, !Ref CriIdentifier, alarmtopicname]
       InsufficientDataActions: []
       MetricName: Errors
       Namespace: AWS/Lambda
@@ -935,10 +950,10 @@ Resources:
     Condition: UseCanaryDeploymentAlarms
     Properties:
       ActionsEnabled: true
-      AlarmActions:
-        - !ImportValue platform-alarm-warning-alert-topic
-      OKActions:
-        - !ImportValue platform-alarm-warning-alert-topic
+      AlarmActions: 
+        - Fn::ImportValue: !FindInMap [CanaryDeploymentapigatewayidMapping, !Ref CriIdentifier, alarmtopicname]
+      OKActions:  
+        - Fn::ImportValue: !FindInMap [CanaryDeploymentapigatewayidMapping, !Ref CriIdentifier, alarmtopicname]
       AlarmName: !Sub "${AWS::StackName}-SessionFunctionCanary5xxErrors"
       AlarmDescription: !Sub "SessionFunction Lambda returning 5xx response."
       Namespace: AWS/ApiGateway
@@ -946,9 +961,8 @@ Resources:
       Dimensions:
         - Name: Method
           Value: POST
-        - Name: ApiId
-          Value:
-            Fn::ImportValue: !FindInMap [CanaryDeploymentapigatewayidMapping, !Ref CriIdentifier, privateapigw]
+        - Name: ApiName
+          Value: !FindInMap [CanaryDeploymentapigatewayidMapping, !Ref CriIdentifier, privateapigwname]
         - Name: Stage
           Value: !Ref Environment
         - Name: Resource
@@ -1076,10 +1090,10 @@ Resources:
       AlarmName: !Sub "${AWS::StackName}-SessionFunctionTSLambdaErrors"
       AlarmDescription: !Sub "Trigger an alarm when lambda errors occurs"
       ActionsEnabled: true
-      AlarmActions:
-        - !ImportValue platform-alarm-warning-alert-topic
-      OKActions:
-        - !ImportValue platform-alarm-warning-alert-topic
+      AlarmActions: 
+        - Fn::ImportValue: !FindInMap [CanaryDeploymentapigatewayidMapping, !Ref CriIdentifier, alarmtopicname]
+      OKActions: 
+        - Fn::ImportValue: !FindInMap [CanaryDeploymentapigatewayidMapping, !Ref CriIdentifier, alarmtopicname]
       InsufficientDataActions: []
       MetricName: Errors
       Namespace: AWS/Lambda
@@ -1171,10 +1185,10 @@ Resources:
       AlarmName: !Sub "${AWS::StackName}-AuthorizationFunctionLambdaErrors"
       AlarmDescription: !Sub "Trigger an alarm when lambda errors occurs"
       ActionsEnabled: true
-      AlarmActions:
-        - !ImportValue platform-alarm-warning-alert-topic
-      OKActions:
-        - !ImportValue platform-alarm-warning-alert-topic
+      AlarmActions: 
+        - Fn::ImportValue: !FindInMap [CanaryDeploymentapigatewayidMapping, !Ref CriIdentifier, alarmtopicname]
+      OKActions: 
+        - Fn::ImportValue: !FindInMap [CanaryDeploymentapigatewayidMapping, !Ref CriIdentifier, alarmtopicname]
       InsufficientDataActions: []
       MetricName: Errors
       Namespace: AWS/Lambda
@@ -1195,10 +1209,10 @@ Resources:
     Condition: UseCanaryDeploymentAlarms
     Properties:
       ActionsEnabled: true
-      AlarmActions:
-        - !ImportValue platform-alarm-warning-alert-topic
-      OKActions:
-        - !ImportValue platform-alarm-warning-alert-topic
+      AlarmActions: 
+        - Fn::ImportValue: !FindInMap [CanaryDeploymentapigatewayidMapping, !Ref CriIdentifier, alarmtopicname]
+      OKActions: 
+        - Fn::ImportValue: !FindInMap [CanaryDeploymentapigatewayidMapping, !Ref CriIdentifier, alarmtopicname]
       AlarmName: !Sub "${AWS::StackName}-AuthorizationFunctionCanary5xxErrors"
       AlarmDescription: !Sub "AuthorizationFunction Lambda returning 5xx response."
       Namespace: AWS/ApiGateway
@@ -1206,9 +1220,8 @@ Resources:
       Dimensions:
         - Name: Method
           Value: GET
-        - Name: ApiId
-          Value:
-            Fn::ImportValue: !FindInMap [CanaryDeploymentapigatewayidMapping, !Ref CriIdentifier, privateapigw]
+        - Name: ApiName
+          Value: !FindInMap [CanaryDeploymentapigatewayidMapping, !Ref CriIdentifier, privateapigwname]
         - Name: Stage
           Value: !Ref Environment
         - Name: Resource
@@ -1324,10 +1337,10 @@ Resources:
       AlarmName: !Sub "${AWS::StackName}-AuthorizationFunctionTSLambdaErrors"
       AlarmDescription: !Sub "Trigger an alarm when lambda errors occurs"
       ActionsEnabled: true
-      AlarmActions:
-        - !ImportValue platform-alarm-warning-alert-topic
-      OKActions:
-        - !ImportValue platform-alarm-warning-alert-topic
+      AlarmActions: 
+        - Fn::ImportValue: !FindInMap [CanaryDeploymentapigatewayidMapping, !Ref CriIdentifier, alarmtopicname]
+      OKActions: 
+        - Fn::ImportValue: !FindInMap [CanaryDeploymentapigatewayidMapping, !Ref CriIdentifier, alarmtopicname]
       InsufficientDataActions: []
       MetricName: Errors
       Namespace: AWS/Lambda
@@ -1415,10 +1428,10 @@ Resources:
       AlarmName: !Sub "${AWS::StackName}-AccessTokenFunctionLambdaErrors"
       AlarmDescription: !Sub "Trigger an alarm when lambda errors occurs"
       ActionsEnabled: true
-      AlarmActions:
-        - !ImportValue platform-alarm-warning-alert-topic
-      OKActions:
-        - !ImportValue platform-alarm-warning-alert-topic
+      AlarmActions: 
+        - Fn::ImportValue: !FindInMap [CanaryDeploymentapigatewayidMapping, !Ref CriIdentifier, alarmtopicname]
+      OKActions: 
+        - Fn::ImportValue: !FindInMap [CanaryDeploymentapigatewayidMapping, !Ref CriIdentifier, alarmtopicname]
       InsufficientDataActions: []
       MetricName: Errors
       Namespace: AWS/Lambda
@@ -1439,10 +1452,10 @@ Resources:
     Condition: UseCanaryDeploymentAlarms
     Properties:
       ActionsEnabled: true
-      AlarmActions:
-        - !ImportValue platform-alarm-warning-alert-topic
-      OKActions:
-        - !ImportValue platform-alarm-warning-alert-topic
+      AlarmActions: 
+        - Fn::ImportValue: !FindInMap [CanaryDeploymentapigatewayidMapping, !Ref CriIdentifier, alarmtopicname]
+      OKActions: 
+        - Fn::ImportValue: !FindInMap [CanaryDeploymentapigatewayidMapping, !Ref CriIdentifier, alarmtopicname]
       AlarmName: !Sub "${AWS::StackName}-AccessTokenFunctionCanary5xxErrors"
       AlarmDescription: !Sub "AccessTokenFunction Lambda returning 5xx response."
       Namespace: AWS/ApiGateway
@@ -1450,9 +1463,8 @@ Resources:
       Dimensions:
         - Name: Method
           Value: POST
-        - Name: ApiId
-          Value:
-            Fn::ImportValue: !FindInMap [CanaryDeploymentapigatewayidMapping, !Ref CriIdentifier, publicapigw]
+        - Name: ApiName
+          Value: !FindInMap [CanaryDeploymentapigatewayidMapping, !Ref CriIdentifier, publicapigwname]
         - Name: Stage
           Value: !Ref Environment
         - Name: Resource
@@ -1591,10 +1603,10 @@ Resources:
       AlarmName: !Sub "${AWS::StackName}-AccessTokenFunctionTSLambdaErrors"
       AlarmDescription: !Sub "Trigger an alarm when lambda errors occurs"
       ActionsEnabled: true
-      AlarmActions:
-        - !ImportValue platform-alarm-warning-alert-topic
-      OKActions:
-        - !ImportValue platform-alarm-warning-alert-topic
+      AlarmActions: 
+        - Fn::ImportValue: !FindInMap [CanaryDeploymentapigatewayidMapping, !Ref CriIdentifier, alarmtopicname]
+      OKActions: 
+        - Fn::ImportValue: !FindInMap [CanaryDeploymentapigatewayidMapping, !Ref CriIdentifier, alarmtopicname]
       InsufficientDataActions: []
       MetricName: Errors
       Namespace: AWS/Lambda
