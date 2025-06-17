@@ -7,6 +7,8 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import software.amazon.awssdk.services.kms.KmsClient;
 import uk.gov.di.ipv.cri.common.api.domain.RawSessionRequest;
 import uk.gov.di.ipv.cri.common.library.annotations.ExcludeFromGeneratedCoverageReport;
@@ -14,6 +16,7 @@ import uk.gov.di.ipv.cri.common.library.domain.SessionRequest;
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.SharedClaims;
 import uk.gov.di.ipv.cri.common.library.exception.ClientConfigurationException;
 import uk.gov.di.ipv.cri.common.library.exception.SessionValidationException;
+import uk.gov.di.ipv.cri.common.library.persistence.item.EvidenceRequest;
 import uk.gov.di.ipv.cri.common.library.service.ConfigurationService;
 import uk.gov.di.ipv.cri.common.library.service.JWTVerifier;
 import uk.gov.di.ipv.cri.common.library.util.EventProbe;
@@ -26,12 +29,15 @@ import java.util.Map;
 import java.util.Objects;
 
 public class SessionRequestService {
+    private static final Logger LOGGER = LogManager.getLogger();
+
     private static final String SHARED_CLAIMS_NAME = "shared_claims";
     private static final String REDIRECT_URI = "redirect_uri";
     private static final String CLIENT_ID = "client_id";
     private static final String PERSISTENT_SESSION_ID = "persistent_session_id";
     private static final String CLIENT_SESSION_ID = "govuk_signin_journey_id";
     private static final String CONTEXT = "context";
+    private static final String EVIDENCE_REQUESTED = "evidence_requested";
 
     private final ObjectMapper objectMapper;
     private final JWTVerifier jwtVerifier;
@@ -136,6 +142,21 @@ public class SessionRequestService {
 
             if (jwtClaims.getClaims().containsKey(CONTEXT)) {
                 sessionRequest.setContext(jwtClaims.getStringClaim(CONTEXT));
+            }
+
+            LOGGER.info("Checking EVIDENCE_REQUESTED");
+            if (jwtClaims.getClaims().containsKey(EVIDENCE_REQUESTED)) {
+
+                LOGGER.info("Got EVIDENCE_REQUESTED");
+
+                EvidenceRequest evidenceRequest =
+                        this.objectMapper.readValue(
+                                objectMapper.writeValueAsString(
+                                        jwtClaims.getClaim(EVIDENCE_REQUESTED)),
+                                EvidenceRequest.class);
+                sessionRequest.setEvidenceRequest(evidenceRequest);
+
+                LOGGER.info("EVIDENCE_REQUESTED {}", evidenceRequest.getIdentityFraudScore());
             }
 
             return sessionRequest;

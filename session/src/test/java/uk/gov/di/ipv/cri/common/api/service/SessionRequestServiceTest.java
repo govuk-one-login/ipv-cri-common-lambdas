@@ -241,7 +241,6 @@ class SessionRequestServiceTest {
         void shouldValidateWithContext()
                 throws SessionValidationException, ClientConfigurationException,
                         java.text.ParseException, JOSEException, JsonProcessingException {
-
             signedJWTBuilder.setContext(INT_USER_CONTEXT);
             SignedJWT signedJWT = signedJWTBuilder.build();
 
@@ -286,6 +285,78 @@ class SessionRequestServiceTest {
                     sessionRequest.getClientSessionId(),
                     equalTo(jwtClaims.getStringClaim("govuk_signin_journey_id")));
         }
+    }
+
+    @Nested
+    class shouldValidateJWTWithEvidenceRequested{
+
+        private String testRequestBody;
+        private SignedJWTBuilder signedJWTBuilder;
+
+        @BeforeEach
+        void setup() {
+            JSONObject requestBody = new JSONObject();
+            requestBody.put("client_id", "ipv-core");
+            requestBody.put("request", "some.jwt.value");
+            testRequestBody = requestBody.toString();
+
+            signedJWTBuilder =
+                    new SignedJWTBuilder()
+                            .setPrivateKeyFile("signing_ec.pk8")
+                            .setCertificateFile("signing_ec.crt.pem")
+                            .setSigningAlgorithm(JWSAlgorithm.ES384)
+                            .setIncludeSharedClaims(Boolean.TRUE);
+        }
+
+        @Test
+        void shouldValidateWithEvidenceRequested()
+                throws SessionValidationException, ClientConfigurationException,
+                java.text.ParseException, JOSEException, JsonProcessingException {
+            signedJWTBuilder.setEvidenceRequestedClaims(Map.of("identityFraudScore", 1));
+            SignedJWT signedJWT = signedJWTBuilder.build();
+
+            RawSessionRequest rawSessionRequest = createRawSessionRequest(signedJWT);
+            when(mockJwtDecrypter.decrypt(any())).thenReturn(signedJWT);
+            Map<String, String> configMap = standardSSMConfigMap(signedJWTBuilder.getCertificate());
+            configMap.put("authenticationAlg", "ES384");
+            initMockConfigurationService(configMap);
+
+            SessionRequest result = sessionRequestService.validateSessionRequest(testRequestBody);
+
+            makeSessionRequestFieldValueAssertions(
+                    result, rawSessionRequest, signedJWT.getJWTClaimsSet());
+            assertEquals(1, result.getEvidenceRequest().getIdentityFraudScore());
+        }
+
+        private void makeSessionRequestFieldValueAssertions(
+                SessionRequest sessionRequest,
+                RawSessionRequest rawSessionRequest,
+                JWTClaimsSet jwtClaims)
+                throws java.text.ParseException, JsonProcessingException {
+            assertThat(sessionRequest.getAudience(), equalTo(jwtClaims.getAudience().get(0)));
+            assertThat(sessionRequest.getIssuer(), equalTo(jwtClaims.getIssuer()));
+            assertThat(sessionRequest.getSubject(), equalTo(jwtClaims.getSubject()));
+            assertThat(
+                    objectMapper.writeValueAsString(sessionRequest.getSharedClaims()),
+                    equalTo(objectMapper.writeValueAsString(testSharedClaims)));
+            assertThat(sessionRequest.getState(), equalTo(jwtClaims.getStringClaim("state")));
+            assertThat(sessionRequest.getClientId(), equalTo(rawSessionRequest.getClientId()));
+            assertThat(
+                    sessionRequest.getClientId(), equalTo(jwtClaims.getStringClaim("client_id")));
+            assertThat(
+                    sessionRequest.getRedirectUri(),
+                    equalTo(URI.create(jwtClaims.getStringClaim("redirect_uri"))));
+            assertThat(
+                    sessionRequest.getResponseType(),
+                    equalTo(jwtClaims.getStringClaim("response_type")));
+            assertThat(
+                    sessionRequest.getPersistentSessionId(),
+                    equalTo(jwtClaims.getStringClaim("persistent_session_id")));
+            assertThat(
+                    sessionRequest.getClientSessionId(),
+                    equalTo(jwtClaims.getStringClaim("govuk_signin_journey_id")));
+        }
+
     }
 
     private String marshallToJSON(Object sessionRequest) throws IOException {
