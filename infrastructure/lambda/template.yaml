@@ -10,6 +10,7 @@ Metadata:
         - W8003
         - E3031
         - E3033
+        - E1020
 
 Parameters:
   CodeSigningConfigArn:
@@ -47,14 +48,6 @@ Parameters:
     Description: "Specifies the configuration to enable gradual Lambda deployments. This value is picked up from the LambdaCanaryDeployment on the pipeline "
     Type: String
     Default: AllAtOnce
-  privateapigwname:
-    Description: "Private API Gateway name create 5xx error alarms mapped to avoid import"
-    Type: String
-    Default: none
-  publicapigwname:
-    Description: "Public API Gateway name create 5xx error alarms mapped to avoid import"
-    Type: String
-    Default: none
 
 Conditions:
   UseCodeSigningConfigArn:
