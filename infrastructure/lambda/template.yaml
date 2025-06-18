@@ -10,6 +10,7 @@ Metadata:
         - W8003
         - E3031
         - E3033
+        - E1020
 
 Parameters:
   CodeSigningConfigArn:
