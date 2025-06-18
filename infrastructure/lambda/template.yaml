@@ -770,31 +770,24 @@ Mappings:
     di-ipv-cri-check-hmrc-api:
       privateapigwname: "check-hmrc-cri-api-private"
       publicapigwname: "check-hmrc-cri-api-public"
-      alarmtopicname: "arn:aws:sns:eu-west-2:562670266496:platform-alarm-topic-warning-alert"
     di-ipv-cri-address-api:
       privateapigwname: "address-cri-api-v1-PrivateAddressApiGatewayId-placehonder"
       publicapigwname: "address-cri-api-v1-PublicAddressApiGatewayId-placehonder"
-      alarmtopicname: "arn:aws:sns:eu-west-2:562670266496:platform-alarm-topic-warning-alert"
     di-ipv-cri-kbv-api:
       privateapigwname: "kbv-cri-private-kbv-cri-api-v1-PrivateKBVApiGatewayId-placehonder"
       publicapigwname: "kbv-cri-kbv-cri-api-v1-PublicKBVApiGatewayId-placehonder"
-      alarmtopicname: "arn:aws:sns:eu-west-2:562670266496:platform-alarm-topic-warning-alert"
     di-ipv-cri-kbv-hmrc-api:
       privateapigwname: "kbv-hmrc-cri-api-PrivateApiGatewayId-placehonder"
       publicapigwname: "kbv-hmrc-cri-api-PublicApiGatewayId-placehonder"
-      alarmtopicname: "arn:aws:sns:eu-west-2:562670266496:platform-alarm-topic-warning-alert"
     di-ipv-cri-passport-api:
       privateapigwname: "ipv-cri-passport-api-PrivateUKPassportAPIGatewayID-placehonder"
       publicapigwname: "ipv-cri-passport-api-PublicUKPassportAPIGatewayID-placehonder"
-      alarmtopicname: "arn:aws:sns:eu-west-2:562670266496:platform-alarm-topic-warning-alert"
     di-ipv-cri-dl-api:
       privateapigwname: "dl-cri-api-v1-PrivateDlApiGatewayId-placehonder"
       publicapigwname: "dl-cri-api-v1-PublicDlApiGatewayId-placehonder"
-      alarmtopicname: "arn:aws:sns:eu-west-2:562670266496:platform-alarm-topic-warning-alert"
     di-ipv-cri-fraud-api:
       privateapigwname: "fraud-cri-api-v1-PrivateFraudApiGatewayId-placehonder"
       publicapigwname: "fraud-cri-api-v1-PublicFraudApiGatewayId-placehonder"
-      alarmtopicname: "arn:aws:sns:eu-west-2:562670266496:platform-alarm-topic-warning-alert"
 
 
 Resources:
@@ -920,9 +913,9 @@ Resources:
       AlarmDescription: !Sub "Trigger an alarm when lambda errors occurs"
       ActionsEnabled: true
       AlarmActions: 
-        - !FindInMap [CanaryDeploymentapigatewayidMapping, !Ref CriIdentifier, alarmtopicname]
+        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
       OKActions: 
-        - !FindInMap [CanaryDeploymentapigatewayidMapping, !Ref CriIdentifier, alarmtopicname]
+        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
       InsufficientDataActions: []
       MetricName: Errors
       Namespace: AWS/Lambda
@@ -944,9 +937,9 @@ Resources:
     Properties:
       ActionsEnabled: true
       AlarmActions: 
-        - !FindInMap [CanaryDeploymentapigatewayidMapping, !Ref CriIdentifier, alarmtopicname]
+        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
       OKActions:  
-        - !FindInMap [CanaryDeploymentapigatewayidMapping, !Ref CriIdentifier, alarmtopicname]
+        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
       AlarmName: !Sub "${AWS::StackName}-SessionFunctionCanary5xxErrors"
       AlarmDescription: !Sub "SessionFunction Lambda returning 5xx response."
       Namespace: AWS/ApiGateway
@@ -1084,9 +1077,9 @@ Resources:
       AlarmDescription: !Sub "Trigger an alarm when lambda errors occurs"
       ActionsEnabled: true
       AlarmActions: 
-        - !FindInMap [CanaryDeploymentapigatewayidMapping, !Ref CriIdentifier, alarmtopicname]
+        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
       OKActions: 
-        - !FindInMap [CanaryDeploymentapigatewayidMapping, !Ref CriIdentifier, alarmtopicname]
+        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
       InsufficientDataActions: []
       MetricName: Errors
       Namespace: AWS/Lambda
@@ -1179,9 +1172,9 @@ Resources:
       AlarmDescription: !Sub "Trigger an alarm when lambda errors occurs"
       ActionsEnabled: true
       AlarmActions: 
-        - !FindInMap [CanaryDeploymentapigatewayidMapping, !Ref CriIdentifier, alarmtopicname]
+        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
       OKActions: 
-        - !FindInMap [CanaryDeploymentapigatewayidMapping, !Ref CriIdentifier, alarmtopicname]
+        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
       InsufficientDataActions: []
       MetricName: Errors
       Namespace: AWS/Lambda
@@ -1203,9 +1196,9 @@ Resources:
     Properties:
       ActionsEnabled: true
       AlarmActions: 
-        - !FindInMap [CanaryDeploymentapigatewayidMapping, !Ref CriIdentifier, alarmtopicname]
+        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
       OKActions: 
-        - !FindInMap [CanaryDeploymentapigatewayidMapping, !Ref CriIdentifier, alarmtopicname]
+        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
       AlarmName: !Sub "${AWS::StackName}-AuthorizationFunctionCanary5xxErrors"
       AlarmDescription: !Sub "AuthorizationFunction Lambda returning 5xx response."
       Namespace: AWS/ApiGateway
@@ -1331,9 +1324,9 @@ Resources:
       AlarmDescription: !Sub "Trigger an alarm when lambda errors occurs"
       ActionsEnabled: true
       AlarmActions: 
-        - !FindInMap [CanaryDeploymentapigatewayidMapping, !Ref CriIdentifier, alarmtopicname]
+        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
       OKActions: 
-        - !FindInMap [CanaryDeploymentapigatewayidMapping, !Ref CriIdentifier, alarmtopicname]
+        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
       InsufficientDataActions: []
       MetricName: Errors
       Namespace: AWS/Lambda
@@ -1422,9 +1415,9 @@ Resources:
       AlarmDescription: !Sub "Trigger an alarm when lambda errors occurs"
       ActionsEnabled: true
       AlarmActions: 
-        - !FindInMap [CanaryDeploymentapigatewayidMapping, !Ref CriIdentifier, alarmtopicname]
+        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
       OKActions: 
-        - !FindInMap [CanaryDeploymentapigatewayidMapping, !Ref CriIdentifier, alarmtopicname]
+        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
       InsufficientDataActions: []
       MetricName: Errors
       Namespace: AWS/Lambda
@@ -1446,9 +1439,9 @@ Resources:
     Properties:
       ActionsEnabled: true
       AlarmActions: 
-        - !FindInMap [CanaryDeploymentapigatewayidMapping, !Ref CriIdentifier, alarmtopicname]
+        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
       OKActions: 
-        - !FindInMap [CanaryDeploymentapigatewayidMapping, !Ref CriIdentifier, alarmtopicname]
+        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
       AlarmName: !Sub "${AWS::StackName}-AccessTokenFunctionCanary5xxErrors"
       AlarmDescription: !Sub "AccessTokenFunction Lambda returning 5xx response."
       Namespace: AWS/ApiGateway
@@ -1597,9 +1590,9 @@ Resources:
       AlarmDescription: !Sub "Trigger an alarm when lambda errors occurs"
       ActionsEnabled: true
       AlarmActions: 
-        - !FindInMap [CanaryDeploymentapigatewayidMapping, !Ref CriIdentifier, alarmtopicname]
+        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
       OKActions: 
-        - !FindInMap [CanaryDeploymentapigatewayidMapping, !Ref CriIdentifier, alarmtopicname]
+        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
       InsufficientDataActions: []
       MetricName: Errors
       Namespace: AWS/Lambda
