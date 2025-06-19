@@ -13,6 +13,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import uk.gov.di.ipv.cri.common.api.domain.RawSessionRequest;
@@ -30,9 +33,11 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
 import java.text.ParseException;
 import java.util.Base64;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -256,6 +261,139 @@ class SessionRequestServiceTest {
             makeSessionRequestFieldValueAssertions(
                     result, rawSessionRequest, signedJWT.getJWTClaimsSet());
             assertEquals(INT_USER_CONTEXT, result.getContext());
+        }
+
+        private void makeSessionRequestFieldValueAssertions(
+                SessionRequest sessionRequest,
+                RawSessionRequest rawSessionRequest,
+                JWTClaimsSet jwtClaims)
+                throws java.text.ParseException, JsonProcessingException {
+            assertThat(sessionRequest.getAudience(), equalTo(jwtClaims.getAudience().get(0)));
+            assertThat(sessionRequest.getIssuer(), equalTo(jwtClaims.getIssuer()));
+            assertThat(sessionRequest.getSubject(), equalTo(jwtClaims.getSubject()));
+            assertThat(
+                    objectMapper.writeValueAsString(sessionRequest.getSharedClaims()),
+                    equalTo(objectMapper.writeValueAsString(testSharedClaims)));
+            assertThat(sessionRequest.getState(), equalTo(jwtClaims.getStringClaim("state")));
+            assertThat(sessionRequest.getClientId(), equalTo(rawSessionRequest.getClientId()));
+            assertThat(
+                    sessionRequest.getClientId(), equalTo(jwtClaims.getStringClaim("client_id")));
+            assertThat(
+                    sessionRequest.getRedirectUri(),
+                    equalTo(URI.create(jwtClaims.getStringClaim("redirect_uri"))));
+            assertThat(
+                    sessionRequest.getResponseType(),
+                    equalTo(jwtClaims.getStringClaim("response_type")));
+            assertThat(
+                    sessionRequest.getPersistentSessionId(),
+                    equalTo(jwtClaims.getStringClaim("persistent_session_id")));
+            assertThat(
+                    sessionRequest.getClientSessionId(),
+                    equalTo(jwtClaims.getStringClaim("govuk_signin_journey_id")));
+        }
+    }
+
+    @Nested
+    class shouldValidateJWTWithEvidenceRequested {
+
+        private String testRequestBody;
+        private SignedJWTBuilder signedJWTBuilder;
+
+        @BeforeEach
+        void setup() {
+            JSONObject requestBody = new JSONObject();
+            requestBody.put("client_id", "ipv-core");
+            requestBody.put("request", "some.jwt.value");
+            testRequestBody = requestBody.toString();
+
+            signedJWTBuilder =
+                    new SignedJWTBuilder()
+                            .setPrivateKeyFile("signing_ec.pk8")
+                            .setCertificateFile("signing_ec.crt.pem")
+                            .setSigningAlgorithm(JWSAlgorithm.ES384)
+                            .setIncludeSharedClaims(Boolean.TRUE);
+        }
+
+        @ParameterizedTest
+        @MethodSource("generateEvidenceRequestedScenarios")
+        void shouldValidateWithEvidenceRequested(Map<String, Object> evidenceRequestedClaims)
+                throws SessionValidationException, ClientConfigurationException,
+                        java.text.ParseException, JOSEException, JsonProcessingException {
+
+            signedJWTBuilder.setEvidenceRequestedClaims(evidenceRequestedClaims);
+            SignedJWT signedJWT = signedJWTBuilder.build();
+
+            RawSessionRequest rawSessionRequest = createRawSessionRequest(signedJWT);
+            when(mockJwtDecrypter.decrypt(any())).thenReturn(signedJWT);
+            Map<String, String> configMap = standardSSMConfigMap(signedJWTBuilder.getCertificate());
+            configMap.put("authenticationAlg", "ES384");
+            initMockConfigurationService(configMap);
+
+            SessionRequest result = sessionRequestService.validateSessionRequest(testRequestBody);
+
+            makeSessionRequestFieldValueAssertions(
+                    result, rawSessionRequest, signedJWT.getJWTClaimsSet());
+
+            if (evidenceRequestedClaims == null) {
+                assertNull(result.getEvidenceRequest());
+            } else {
+                assertEquals(
+                        evidenceRequestedClaims.get("scoringPolicy"),
+                        result.getEvidenceRequest().getScoringPolicy());
+                assertEquals(
+                        evidenceRequestedClaims.get("strengthScore"),
+                        result.getEvidenceRequest().getStrengthScore());
+                assertEquals(
+                        evidenceRequestedClaims.get("validityScore"),
+                        result.getEvidenceRequest().getValidityScore());
+                assertEquals(
+                        evidenceRequestedClaims.get("verificationScore"),
+                        result.getEvidenceRequest().getVerificationScore());
+                assertEquals(
+                        evidenceRequestedClaims.get("activityHistoryScore"),
+                        result.getEvidenceRequest().getActivityHistoryScore());
+                assertEquals(
+                        evidenceRequestedClaims.get("identityFraudScore"),
+                        result.getEvidenceRequest().getIdentityFraudScore());
+            }
+        }
+
+        static Stream<Arguments> generateEvidenceRequestedScenarios() {
+            return Stream.of(
+                    Arguments.of((Object) null),
+                    Arguments.of(Collections.emptyMap()),
+                    Arguments.of(evidenceRequestClaimFactory(null, null, null, null, null, 1)),
+                    Arguments.of(evidenceRequestClaimFactory("", 0, 0, 0, 0, 0)),
+                    Arguments.of(Map.of("unmappedKey", "unmappedValue")));
+        }
+
+        private static Map<String, Object> evidenceRequestClaimFactory(
+                String scoringPolicy,
+                Integer strengthScore,
+                Integer validityScore,
+                Integer verificationScore,
+                Integer activityHistoryScore,
+                Integer identityFraudScore) {
+            Map<String, Object> evidenceRequestMap = new HashMap<>();
+            if (scoringPolicy != null) {
+                evidenceRequestMap.put("scoringPolicy", scoringPolicy);
+            }
+            if (strengthScore != null) {
+                evidenceRequestMap.put("strengthScore", strengthScore);
+            }
+            if (validityScore != null) {
+                evidenceRequestMap.put("validityScore", validityScore);
+            }
+            if (verificationScore != null) {
+                evidenceRequestMap.put("verificationScore", verificationScore);
+            }
+            if (activityHistoryScore != null) {
+                evidenceRequestMap.put("activityHistoryScore", activityHistoryScore);
+            }
+            if (identityFraudScore != null) {
+                evidenceRequestMap.put("identityFraudScore", identityFraudScore);
+            }
+            return evidenceRequestMap;
         }
 
         private void makeSessionRequestFieldValueAssertions(

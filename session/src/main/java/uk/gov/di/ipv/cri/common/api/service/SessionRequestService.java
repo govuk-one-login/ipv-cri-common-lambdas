@@ -14,6 +14,7 @@ import uk.gov.di.ipv.cri.common.library.domain.SessionRequest;
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.SharedClaims;
 import uk.gov.di.ipv.cri.common.library.exception.ClientConfigurationException;
 import uk.gov.di.ipv.cri.common.library.exception.SessionValidationException;
+import uk.gov.di.ipv.cri.common.library.persistence.item.EvidenceRequest;
 import uk.gov.di.ipv.cri.common.library.service.ConfigurationService;
 import uk.gov.di.ipv.cri.common.library.service.JWTVerifier;
 import uk.gov.di.ipv.cri.common.library.util.EventProbe;
@@ -26,12 +27,14 @@ import java.util.Map;
 import java.util.Objects;
 
 public class SessionRequestService {
+
     private static final String SHARED_CLAIMS_NAME = "shared_claims";
     private static final String REDIRECT_URI = "redirect_uri";
     private static final String CLIENT_ID = "client_id";
     private static final String PERSISTENT_SESSION_ID = "persistent_session_id";
     private static final String CLIENT_SESSION_ID = "govuk_signin_journey_id";
     private static final String CONTEXT = "context";
+    private static final String EVIDENCE_REQUEST = "evidence_requested";
 
     private final ObjectMapper objectMapper;
     private final JWTVerifier jwtVerifier;
@@ -136,6 +139,15 @@ public class SessionRequestService {
 
             if (jwtClaims.getClaims().containsKey(CONTEXT)) {
                 sessionRequest.setContext(jwtClaims.getStringClaim(CONTEXT));
+            }
+
+            if (jwtClaims.getClaims().containsKey(EVIDENCE_REQUEST)) {
+                EvidenceRequest evidenceRequest =
+                        this.objectMapper.readValue(
+                                objectMapper.writeValueAsString(
+                                        jwtClaims.getClaim(EVIDENCE_REQUEST)),
+                                EvidenceRequest.class);
+                sessionRequest.setEvidenceRequest(evidenceRequest);
             }
 
             return sessionRequest;

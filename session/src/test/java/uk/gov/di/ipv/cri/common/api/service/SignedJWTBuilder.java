@@ -50,6 +50,7 @@ class SignedJWTBuilder {
     private String persistentSessionId = "persistentSessionIdTest";
     private String clientSessionId = "clientSessionIdTest";
     private Map<String, Object> sharedClaims = null;
+    private Map<String, Object> evidenceRequestedClaims = null;
     private String context;
 
     SignedJWTBuilder setNow(Instant now) {
@@ -112,6 +113,11 @@ class SignedJWTBuilder {
         return this;
     }
 
+    SignedJWTBuilder setEvidenceRequestedClaims(Map<String, Object> evidenceRequestedClaims) {
+        this.evidenceRequestedClaims = evidenceRequestedClaims;
+        return this;
+    }
+
     SignedJWTBuilder setPersistentSessionId(String persistentSessionId) {
         this.persistentSessionId = persistentSessionId;
         return this;
@@ -168,6 +174,10 @@ class SignedJWTBuilder {
                 if (Objects.nonNull(sharedClaims)) {
                     jwtClaimSetBuilder.claim("shared_claims", this.sharedClaims);
                 }
+            }
+
+            if (Objects.nonNull(evidenceRequestedClaims)) {
+                jwtClaimSetBuilder.claim("evidence_requested", evidenceRequestedClaims);
             }
 
             if (!StringUtils.isEmpty(context)) {
