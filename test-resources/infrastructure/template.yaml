@@ -41,9 +41,9 @@ Mappings:
       integration: false
       production: false
     di-ipv-cri-kbv-api:
-      localdev: false
-      dev: false
-      build: false
+      localdev: true
+      dev: true
+      build: true
       staging: false
       integration: false
       production: false
