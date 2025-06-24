@@ -228,30 +228,30 @@ Mappings:
       staging: https://test-resources.review-a.staging.account.gov.uk/.well-known/jwks.json
       integration: https://test-resources.review-a.integration.account.gov.uk/.well-known/jwks.json
     di-ipv-cri-fraud-api:
-      dev: https://test-resources.review-f.dev.account.gov.uk/.well-known/jwks.json
-      build: https://test-resources.review-f.build.account.gov.uk/.well-known/jwks.json
-      staging: https://test-resources.review-f.staging.account.gov.uk/.well-known/jwks.json
-      integration: https://test-resources.review-f.integration.account.gov.uk/.well-known/jwks.json
+      dev: https://cri.core.stubs.account.gov.uk/.well-known/jwks.json
+      build: https://cri.core.stubs.account.gov.uk/.well-known/jwks.json
+      staging: https://cri.core.stubs.account.gov.uk/.well-known/jwks.json
+      integration: https://cri.core.stubs.account.gov.uk/.well-known/jwks.json
     di-ipv-cri-kbv-api:
       dev: https://test-resources.review-k.dev.account.gov.uk/.well-known/jwks.json
       build: https://test-resources.review-k.build.account.gov.uk/.well-known/jwks.json
       staging: https://test-resources.review-k.staging.account.gov.uk/.well-known/jwks.json
       integration: https://test-resources.review-k.integration.account.gov.uk/.well-known/jwks.json
     di-ipv-cri-dl-api:
-      dev: https://test-resources.review-d.dev.account.gov.uk/.well-known/jwks.json
-      build: https://test-resources.review-d.build.account.gov.uk/.well-known/jwks.json
-      staging: https://test-resources.review-d.staging.account.gov.uk/.well-known/jwks.json
-      integration: https://test-resources.review-d.integration.account.gov.uk/.well-known/jwks.json
+      dev: https://cri.core.stubs.account.gov.uk/.well-known/jwks.json
+      build: https://cri.core.stubs.account.gov.uk/.well-known/jwks.json
+      staging: https://cri.core.stubs.account.gov.uk/.well-known/jwks.json
+      integration: https://cri.core.stubs.account.gov.uk/.well-known/jwks.json
     di-ipv-cri-passport-api:
-      dev: https://test-resources.review-p.dev.account.gov.uk/.well-known/jwks.json
-      build: https://test-resources.review-p.build.account.gov.uk/.well-known/jwks.json
-      staging: https://test-resources.review-p.staging.account.gov.uk/.well-known/jwks.json
-      integration: https://test-resources.review-p.integration.account.gov.uk/.well-known/jwks.json
+      dev: https://cri.core.stubs.account.gov.uk/.well-known/jwks.json
+      build: https://cri.core.stubs.account.gov.uk/.well-known/jwks.json
+      staging: https://cri.core.stubs.account.gov.uk/.well-known/jwks.json
+      integration: https://cri.core.stubs.account.gov.uk/.well-known/jwks.json
     di-ipv-cri-kbv-hmrc-api:
-      dev: https://test-resources.review-hk.dev.account.gov.uk/.well-known/jwks.json
-      build: https://test-resources.review-hk.build.account.gov.uk/.well-known/jwks.json
-      staging: https://test-resources.review-hk.staging.account.gov.uk/.well-known/jwks.json
-      integration: https://test-resources.review-hk.integration.account.gov.uk/.well-known/jwks.json
+      dev: https://cri.core.stubs.account.gov.uk/.well-known/jwks.json
+      build: https://cri.core.stubs.account.gov.uk/.well-known/jwks.json
+      staging: https://cri.core.stubs.account.gov.uk/.well-known/jwks.json
+      integration: https://cri.core.stubs.account.gov.uk/.well-known/jwks.json
     di-ipv-cri-check-hmrc-api:
       dev: https://test-resources.review-hc.dev.account.gov.uk/.well-known/jwks.json
       build: https://test-resources.review-hc.build.account.gov.uk/.well-known/jwks.json
