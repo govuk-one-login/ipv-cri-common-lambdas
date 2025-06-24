@@ -774,8 +774,8 @@ Mappings:
       privateapigwname: "address-cri-api-v1-PrivateAddressApiGatewayId-placehonder"
       publicapigwname: "address-cri-api-v1-PublicAddressApiGatewayId-placehonder"
     di-ipv-cri-kbv-api:
-      privateapigwname: "kbv-cri-private-kbv-cri-api-v1-PrivateKBVApiGatewayId-placehonder"
-      publicapigwname: "kbv-cri-kbv-cri-api-v1-PublicKBVApiGatewayId-placehonder"
+      privateapigwname: "kbv-cri-private-kbv-cri-api-v1"
+      publicapigwname: "kbv-cri-kbv-cri-api-v1"
     di-ipv-cri-kbv-hmrc-api:
       privateapigwname: "kbv-hmrc-cri-api-PrivateApiGatewayId-placehonder"
       publicapigwname: "kbv-hmrc-cri-api-PublicApiGatewayId-placehonder"
