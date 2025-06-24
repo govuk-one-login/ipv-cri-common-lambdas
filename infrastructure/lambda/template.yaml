@@ -9,6 +9,8 @@ Metadata:
       ignore_checks:
         - W8003
         - E3031
+        - E3033
+        - E1020
 
 Parameters:
   CodeSigningConfigArn:
@@ -42,6 +44,10 @@ Parameters:
     Description: "The stack containing the TXMA infrastructure"
     Type: String
     Default: txma-infrastructure
+  LambdaDeploymentPreference:
+    Description: "Specifies the configuration to enable gradual Lambda deployments. This value is picked up from the LambdaCanaryDeployment on the pipeline "
+    Type: String
+    Default: AllAtOnce
 
 Conditions:
   UseCodeSigningConfigArn:
@@ -88,6 +94,7 @@ Conditions:
   UseNewCSLSDestinationArn: !Or
     - !Equals [!Ref CriIdentifier, "di-ipv-cri-kbv-hmrc-api"]
     - !Equals [!Ref CriIdentifier, "di-ipv-cri-check-hmrc-api"]
+  UseCanaryDeploymentAlarms: !Not [ !Equals [ !Ref LambdaDeploymentPreference, AllAtOnce ]]
 
 Globals:
   Function:
@@ -759,6 +766,30 @@ Mappings:
       integration: "https://review-hc.integration.account.gov.uk"
       production: "https://review-hc.account.gov.uk"
 
+  CanaryDeploymentapigatewayidMapping:
+    di-ipv-cri-check-hmrc-api:
+      privateapigwname: "check-hmrc-cri-api-private"
+      publicapigwname: "check-hmrc-cri-api-public"
+    di-ipv-cri-address-api:
+      privateapigwname: "address-cri-api-v1-PrivateAddressApiGatewayId-placehonder"
+      publicapigwname: "address-cri-api-v1-PublicAddressApiGatewayId-placehonder"
+    di-ipv-cri-kbv-api:
+      privateapigwname: "kbv-cri-private-kbv-cri-api-v1-PrivateKBVApiGatewayId-placehonder"
+      publicapigwname: "kbv-cri-kbv-cri-api-v1-PublicKBVApiGatewayId-placehonder"
+    di-ipv-cri-kbv-hmrc-api:
+      privateapigwname: "kbv-hmrc-cri-api-PrivateApiGatewayId-placehonder"
+      publicapigwname: "kbv-hmrc-cri-api-PublicApiGatewayId-placehonder"
+    di-ipv-cri-passport-api:
+      privateapigwname: "ipv-cri-passport-api-PrivateUKPassportAPIGatewayID-placehonder"
+      publicapigwname: "ipv-cri-passport-api-PublicUKPassportAPIGatewayID-placehonder"
+    di-ipv-cri-dl-api:
+      privateapigwname: "dl-cri-api-v1-PrivateDlApiGatewayId-placehonder"
+      publicapigwname: "dl-cri-api-v1-PublicDlApiGatewayId-placehonder"
+    di-ipv-cri-fraud-api:
+      privateapigwname: "fraud-cri-api-v1-PrivateFraudApiGatewayId-placehonder"
+      publicapigwname: "fraud-cri-api-v1-PublicFraudApiGatewayId-placehonder"
+
+
 Resources:
 
   #########################
@@ -769,6 +800,13 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub "${AWS::StackName}-SessionFunction"
+      DeploymentPreference:
+        Type: !Ref LambdaDeploymentPreference
+        Role: !GetAtt CodeDeployServiceRole.Arn
+        Alarms: !If
+          - UseCanaryDeploymentAlarms
+          - [!Ref SessionFunctionLambdaErrors, !Ref SessionFunctionCanary5xxErrors]
+          - [!Ref AWS::NoValue]
       CodeUri: ../../session
       Handler: uk.gov.di.ipv.cri.common.api.handler.SessionHandler::handleRequest
       Runtime: java17
@@ -867,10 +905,74 @@ Resources:
       FilterPattern: ""
       LogGroupName: !Ref SessionFunctionLogGroup
 
+  SessionFunctionLambdaErrors:
+    Type: AWS::CloudWatch::Alarm
+    Condition: UseCanaryDeploymentAlarms
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-SessionFunctionLambdaErrors"
+      AlarmDescription: !Sub "Trigger an alarm when lambda errors occurs"
+      ActionsEnabled: true
+      AlarmActions: 
+        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
+      OKActions: 
+        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
+      InsufficientDataActions: []
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Dimensions:
+        - Name: Resource
+          Value: !Sub "${AWS::StackName}-SessionFunction:live"
+        - Name: ExecutedVersion
+          Value: !Sub SessionFunction.Version.Version
+      Period: 60
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+
+  SessionFunctionCanary5xxErrors:
+    Type: AWS::CloudWatch::Alarm
+    Condition: UseCanaryDeploymentAlarms
+    Properties:
+      ActionsEnabled: true
+      AlarmActions: 
+        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
+      OKActions:  
+        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
+      AlarmName: !Sub "${AWS::StackName}-SessionFunctionCanary5xxErrors"
+      AlarmDescription: !Sub "SessionFunction Lambda returning 5xx response."
+      Namespace: AWS/ApiGateway
+      MetricName: 5XXError
+      Dimensions:
+        - Name: Method
+          Value: POST
+        - Name: ApiName
+          Value: !FindInMap [CanaryDeploymentapigatewayidMapping, !Ref CriIdentifier, privateapigwname]
+        - Name: Stage
+          Value: !Ref Environment
+        - Name: Resource
+          Value: /session
+      Statistic: Sum
+      Unit: Count
+      Period: 60
+      EvaluationPeriods: 3
+      DatapointsToAlarm: 2
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+
   SessionFunctionTS:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub "${AWS::StackName}-SessionFunctionTS"
+      DeploymentPreference:
+        Type: !Ref LambdaDeploymentPreference
+        Role: !GetAtt CodeDeployServiceRole.Arn
+        Alarms: !If
+          - UseCanaryDeploymentAlarms
+          - [!Ref SessionFunctionTSLambdaErrors, !Ref SessionFunctionCanary5xxErrors]
+          - [!Ref AWS::NoValue]
       CodeUri: ../../lambdas
       Handler: session-handler.lambdaHandler
       Runtime: nodejs22.x
@@ -967,10 +1069,43 @@ Resources:
       FilterPattern: ""
       LogGroupName: !Ref SessionFunctionTSLogGroup
 
+  SessionFunctionTSLambdaErrors:
+    Type: AWS::CloudWatch::Alarm
+    Condition: UseCanaryDeploymentAlarms
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-SessionFunctionTSLambdaErrors"
+      AlarmDescription: !Sub "Trigger an alarm when lambda errors occurs"
+      ActionsEnabled: true
+      AlarmActions: 
+        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
+      OKActions: 
+        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
+      InsufficientDataActions: []
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Dimensions:
+        - Name: Resource
+          Value: !Sub "${AWS::StackName}-SessionTSFunction:live"
+        - Name: ExecutedVersion
+          Value: !Sub SessionFunctionTS.Version.Version
+      Period: 60
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+
   AuthorizationFunction:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub "${AWS::StackName}-AuthorizationFunction"
+      DeploymentPreference:
+        Type: !Ref LambdaDeploymentPreference
+        Role: !GetAtt CodeDeployServiceRole.Arn
+        Alarms: !If
+          - UseCanaryDeploymentAlarms
+          - [!Ref AuthorizationFunctionLambdaErrors, !Ref AuthorizationFunctionCanary5xxErrors]
+          - [!Ref AWS::NoValue]
       CodeUri: ../../authorization
       Handler: uk.gov.di.ipv.cri.common.api.handler.AuthorizationHandler::handleRequest
       Runtime: java17
@@ -1029,10 +1164,74 @@ Resources:
       LogGroupName: !Sub "/aws/lambda/${AuthorizationFunction}"
       RetentionInDays: 30
 
+  AuthorizationFunctionLambdaErrors:
+    Type: AWS::CloudWatch::Alarm
+    Condition: UseCanaryDeploymentAlarms
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-AuthorizationFunctionLambdaErrors"
+      AlarmDescription: !Sub "Trigger an alarm when lambda errors occurs"
+      ActionsEnabled: true
+      AlarmActions: 
+        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
+      OKActions: 
+        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
+      InsufficientDataActions: []
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Dimensions:
+        - Name: Resource
+          Value: !Sub "${AWS::StackName}-AuthorizationFunction:live"
+        - Name: ExecutedVersion
+          Value: !Sub AuthorizationFunction.Version.Version
+      Period: 60
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+
+  AuthorizationFunctionCanary5xxErrors:
+    Type: AWS::CloudWatch::Alarm
+    Condition: UseCanaryDeploymentAlarms
+    Properties:
+      ActionsEnabled: true
+      AlarmActions: 
+        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
+      OKActions: 
+        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
+      AlarmName: !Sub "${AWS::StackName}-AuthorizationFunctionCanary5xxErrors"
+      AlarmDescription: !Sub "AuthorizationFunction Lambda returning 5xx response."
+      Namespace: AWS/ApiGateway
+      MetricName: 5XXError
+      Dimensions:
+        - Name: Method
+          Value: GET
+        - Name: ApiName
+          Value: !FindInMap [CanaryDeploymentapigatewayidMapping, !Ref CriIdentifier, privateapigwname]
+        - Name: Stage
+          Value: !Ref Environment
+        - Name: Resource
+          Value: /authorization
+      Statistic: Sum
+      Unit: Count
+      Period: 60
+      EvaluationPeriods: 3
+      DatapointsToAlarm: 2
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+
   AuthorizationFunctionTS:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub "${AWS::StackName}-AuthorizationFunctionTS"
+      DeploymentPreference:
+        Type: !Ref LambdaDeploymentPreference
+        Role: !GetAtt CodeDeployServiceRole.Arn
+        Alarms: !If
+          - UseCanaryDeploymentAlarms
+          - [!Ref AuthorizationFunctionTSLambdaErrors, !Ref AuthorizationFunctionCanary5xxErrors]
+          - [!Ref AWS::NoValue]
       CodeUri: ../../lambdas
       Handler: authorization-handler.lambdaHandler
       Runtime: nodejs22.x
@@ -1117,10 +1316,43 @@ Resources:
       FilterPattern: ""
       LogGroupName: !Ref AuthorizationFunctionTSLogGroup
 
+  AuthorizationFunctionTSLambdaErrors:
+    Type: AWS::CloudWatch::Alarm
+    Condition: UseCanaryDeploymentAlarms
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-AuthorizationFunctionTSLambdaErrors"
+      AlarmDescription: !Sub "Trigger an alarm when lambda errors occurs"
+      ActionsEnabled: true
+      AlarmActions: 
+        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
+      OKActions: 
+        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
+      InsufficientDataActions: []
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Dimensions:
+        - Name: Resource
+          Value: !Sub "${AWS::StackName}-AuthorizationFunctionTS:live"
+        - Name: ExecutedVersion
+          Value: !Sub AuthorizationFunctionTS.Version.Version
+      Period: 60
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+
   AccessTokenFunction:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub "${AWS::StackName}-AccessTokenFunction"
+      DeploymentPreference:
+        Type: !Ref LambdaDeploymentPreference
+        Role: !GetAtt CodeDeployServiceRole.Arn
+        Alarms: !If
+          - UseCanaryDeploymentAlarms
+          - [!Ref AccessTokenFunctionLambdaErrors, !Ref AccessTokenFunctionCanary5xxErrors]
+          - [!Ref AWS::NoValue]
       CodeUri: ../../accesstoken
       Handler: uk.gov.di.ipv.cri.common.api.handler.AccessTokenHandler::handleRequest
       Runtime: java17
@@ -1175,10 +1407,74 @@ Resources:
         - ProvisionedConcurrentExecutions: !FindInMap [JavaProvisionedConcurrencyMapping, !Ref CriIdentifier, !Ref Environment]
         - !Ref AWS::NoValue
 
+  AccessTokenFunctionLambdaErrors:
+    Type: AWS::CloudWatch::Alarm
+    Condition: UseCanaryDeploymentAlarms
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-AccessTokenFunctionLambdaErrors"
+      AlarmDescription: !Sub "Trigger an alarm when lambda errors occurs"
+      ActionsEnabled: true
+      AlarmActions: 
+        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
+      OKActions: 
+        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
+      InsufficientDataActions: []
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Dimensions:
+        - Name: Resource
+          Value: !Sub "${AWS::StackName}-AccessTokenFunction:live"
+        - Name: ExecutedVersion
+          Value: !Sub AccessTokenFunction.Version.Version
+      Period: 60
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+
+  AccessTokenFunctionCanary5xxErrors:
+    Type: AWS::CloudWatch::Alarm
+    Condition: UseCanaryDeploymentAlarms
+    Properties:
+      ActionsEnabled: true
+      AlarmActions: 
+        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
+      OKActions: 
+        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
+      AlarmName: !Sub "${AWS::StackName}-AccessTokenFunctionCanary5xxErrors"
+      AlarmDescription: !Sub "AccessTokenFunction Lambda returning 5xx response."
+      Namespace: AWS/ApiGateway
+      MetricName: 5XXError
+      Dimensions:
+        - Name: Method
+          Value: POST
+        - Name: ApiName
+          Value: !FindInMap [CanaryDeploymentapigatewayidMapping, !Ref CriIdentifier, publicapigwname]
+        - Name: Stage
+          Value: !Ref Environment
+        - Name: Resource
+          Value: /token
+      Statistic: Sum
+      Unit: Count
+      Period: 60
+      EvaluationPeriods: 3
+      DatapointsToAlarm: 2
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+
   AccessTokenFunctionTS:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub "${AWS::StackName}-AccessTokenFunctionTS"
+      DeploymentPreference:
+        Type: !Ref LambdaDeploymentPreference
+        Role: !GetAtt CodeDeployServiceRole.Arn
+        Alarms: !If
+          - UseCanaryDeploymentAlarms
+          - [!Ref AccessTokenFunctionTSLambdaErrors, !Ref AccessTokenFunctionCanary5xxErrors]
+          - [!Ref AWS::NoValue]
       Handler: access-token-handler.lambdaHandler
       CodeUri: ../../lambdas
       Runtime: nodejs22.x
@@ -1251,6 +1547,13 @@ Resources:
       FunctionName: !GetAtt AccessTokenFunctionTS.Arn
       Principal: apigateway.amazonaws.com
 
+  AccessTokenTSAliasPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref AccessTokenFunctionTS.Alias
+      Principal: apigateway.amazonaws.com
+
   AccessTokenFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
@@ -1278,6 +1581,32 @@ Resources:
         - "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython" 
       FilterPattern: ""
       LogGroupName: !Ref AccessTokenTSFunctionLogGroup
+
+  AccessTokenFunctionTSLambdaErrors:
+    Type: AWS::CloudWatch::Alarm
+    Condition: UseCanaryDeploymentAlarms
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-AccessTokenFunctionTSLambdaErrors"
+      AlarmDescription: !Sub "Trigger an alarm when lambda errors occurs"
+      ActionsEnabled: true
+      AlarmActions: 
+        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
+      OKActions: 
+        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
+      InsufficientDataActions: []
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Dimensions:
+        - Name: Resource
+          Value: !Sub "${AWS::StackName}-AccessTokenFunctionTS:live"
+        - Name: ExecutedVersion
+          Value: !Sub AccessTokenFunctionTS.Version.Version
+      Period: 60
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
 
   SessionTable:
     Type: "AWS::DynamoDB::Table"
@@ -1838,6 +2167,13 @@ Resources:
       FunctionName: !GetAtt SessionFunctionTS.Arn
       Principal: apigateway.amazonaws.com
 
+  SessionFunctionTSAliasPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref SessionFunctionTS.Alias
+      Principal: apigateway.amazonaws.com
+
   AccessTokenFunctionPermission:
     Type: AWS::Lambda::Permission
     Properties:
@@ -1871,6 +2207,13 @@ Resources:
     Properties:
       Action: lambda:InvokeFunction
       FunctionName: !GetAtt AuthorizationFunctionTS.Arn
+      Principal: apigateway.amazonaws.com
+
+  AuthorizationFunctionTSAliasPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref AuthorizationFunctionTS.Alias
       Principal: apigateway.amazonaws.com
 
   LoggingKmsKey:
@@ -2204,6 +2547,22 @@ Resources:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build_3rdparty/jwtAuthentication/authenticationAlg"
       Type: String
       Value: ES256
+
+  CodeDeployServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Action:
+              - sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - codedeploy.amazonaws.com
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSCodeDeployRoleForLambda
+      PermissionsBoundary: !If [ UsePermissionsBoundary, !Ref PermissionsBoundary, !Ref AWS::NoValue ]
 
 Outputs:
   PreMergeDevOnlyApiId:
