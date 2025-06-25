@@ -196,7 +196,7 @@ Mappings:
       production: false
     di-ipv-cri-passport-api:
       dev: true
-      build: false
+      build: true
       staging: false
       integration: false
       production: false
