@@ -95,148 +95,214 @@ describe("JweDecrypter", () => {
 
     it("should throw an error on KmsClient send operation", async () => {
         const kmsClientMock = <jest.Mock>kmsClient.send;
-        kmsClientMock.mockRejectedValue(new Error("Failed to decrypt CEK with any available alias or KMS Id"));
+        kmsClientMock.mockRejectedValue(new Error("Failed to decrypt with legacy key"));
 
-        await expect(jweDecrypter.decryptJwe(compactJwe)).rejects.toThrowError(
-            "Failed to decrypt CEK with any available alias or KMS Id",
-        );
+        await expect(jweDecrypter.decryptJwe(compactJwe)).rejects.toThrowError("Failed to decrypt with legacy key");
     });
 
-    describe("decryption using kms alias", () => {
+    describe("session encrypted with legacy key", () => {
         beforeEach(() => {
             delete process.env.ENV_VAR_FEATURE_FLAG_KEY_ROTATION;
+            delete process.env.ENV_VAR_FEATURE_FLAG_KEY_ROTATION_LEGACY_KEY_FALLBACK;
         });
-        it("decrypts using an alias successfully", async () => {
-            process.env.ENV_VAR_FEATURE_FLAG_KEY_ROTATION = "true";
+        describe("given key rotation flag is true", () => {
+            describe("legacy fallback flag to true", () => {
+                it("fails to decrypt with any alias initially, then the legacy key was successfully used for decryption", async () => {
+                    process.env.ENV_VAR_FEATURE_FLAG_KEY_ROTATION = "true";
+                    process.env.ENV_VAR_FEATURE_FLAG_KEY_ROTATION_LEGACY_KEY_FALLBACK = "true";
+                    const kmsClientMock = <jest.Mock>kmsClient.send;
+                    const decodedIv = new Uint8Array([1, 2, 3, 4]);
 
-            const kmsClientMock = <jest.Mock>kmsClient.send;
-            kmsClientMock.mockResolvedValueOnce({ Plaintext: new Uint8Array([1, 2, 3, 4]) });
+                    kmsClientMock
+                        .mockRejectedValueOnce(new Error("active alias failed"))
+                        .mockRejectedValueOnce(new Error("inactive alias failed"))
+                        .mockRejectedValueOnce(new Error("previous alias failed"))
+                        .mockResolvedValueOnce({ Plaintext: decodedIv });
 
-            const decrypter = new JweDecrypter(kmsClient, getEncryptionKeyId);
-            const result = await decrypter.decryptJwe(compactJwe);
+                    const decrypter = new JweDecrypter(kmsClient, getEncryptionKeyId);
+                    const result = await decrypter.decryptJwe(compactJwe);
 
-            expect(result).toBeInstanceOf(Buffer);
-            expect(kmsClientMock).toHaveBeenCalledTimes(1);
-            expect(logger.info).toHaveBeenCalledWith({
-                message: "Key rotation enabled",
-                status: "Successfully decrypted using Alias",
-                alias: "alias/session_decryption_key_active_alias",
+                    expect(result).toBeInstanceOf(Buffer);
+                    expect(kmsClientMock).toHaveBeenCalledTimes(4);
+                    expect(logger.info).toHaveBeenCalledWith({ message: "Decryption successful with legacy key" });
+                });
+
+                it("fails to decrypt with any alias initially, then the legacy key also failed at decryption", async () => {
+                    process.env.ENV_VAR_FEATURE_FLAG_KEY_ROTATION = "true";
+                    process.env.ENV_VAR_FEATURE_FLAG_KEY_ROTATION_LEGACY_KEY_FALLBACK = "true";
+
+                    const kmsClientMock = <jest.Mock>kmsClient.send;
+
+                    kmsClientMock
+                        .mockRejectedValueOnce(new Error("active alias failed"))
+                        .mockRejectedValueOnce(new Error("inactive alias failed"))
+                        .mockRejectedValueOnce(new Error("previous alias failed"))
+                        .mockRejectedValueOnce(new Error("failed using KMS Id"));
+
+                    const decrypter = new JweDecrypter(kmsClient, getEncryptionKeyId);
+
+                    await expect(decrypter.decryptJwe(compactJwe)).rejects.toThrow("Failed to decrypt with legacy key");
+
+                    expect(metrics.addMetric).toHaveBeenCalledWith(
+                        "all_aliases_unavailable_for_decryption",
+                        "Count",
+                        1,
+                    );
+                    expect(logger.warn).toHaveBeenCalledWith({
+                        message: "Key rotation enabled",
+                        alias: "alias/session_decryption_key_previous_alias",
+                        error: new Error("previous alias failed"),
+                    });
+                    expect(logger.warn).toHaveBeenCalledWith({
+                        message: "Key rotation enabled",
+                        alias: "alias/session_decryption_key_inactive_alias",
+                        error: new Error("inactive alias failed"),
+                    });
+                    expect(logger.warn).toHaveBeenCalledWith({
+                        message: "Key rotation enabled",
+                        alias: "alias/session_decryption_key_active_alias",
+                        error: new Error("active alias failed"),
+                    });
+                    expect(metrics.addMetric).toHaveBeenCalledWith(
+                        "all_aliases_unavailable_for_decryption",
+                        "Count",
+                        1,
+                    );
+                });
+            });
+            describe("legacy fallback flag to false", () => {
+                it("fails when trying all aliases and legacy fallback disabled", async () => {
+                    process.env.ENV_VAR_FEATURE_FLAG_KEY_ROTATION = "true";
+                    process.env.ENV_VAR_FEATURE_FLAG_KEY_ROTATION_LEGACY_KEY_FALLBACK = "false";
+
+                    const kmsClientMock = <jest.Mock>kmsClient.send;
+                    kmsClientMock
+                        .mockRejectedValueOnce(new Error("active alias failed"))
+                        .mockRejectedValueOnce(new Error("inactive alias failed"))
+                        .mockRejectedValueOnce(new Error("previous alias failed"));
+
+                    const decrypter = new JweDecrypter(kmsClient, getEncryptionKeyId);
+
+                    await expect(decrypter.decryptJwe(compactJwe)).rejects.toThrow(
+                        "Failed to decrypt with all available key aliases.",
+                    );
+
+                    expect(metrics.addMetric).toHaveBeenCalledWith(
+                        "all_aliases_unavailable_for_decryption",
+                        "Count",
+                        1,
+                    );
+                });
+            });
+            it("decrypts successfully using active alias", async () => {
+                process.env.ENV_VAR_FEATURE_FLAG_KEY_ROTATION = "true";
+
+                const kmsClientMock = <jest.Mock>kmsClient.send;
+                kmsClientMock.mockResolvedValueOnce({ Plaintext: new Uint8Array([1, 2, 3, 4]) });
+
+                const decrypter = new JweDecrypter(kmsClient, getEncryptionKeyId);
+                const result = await decrypter.decryptJwe(compactJwe);
+
+                expect(result).toBeInstanceOf(Buffer);
+                expect(kmsClientMock).toHaveBeenCalledTimes(1);
+                expect(logger.info).toHaveBeenCalledWith({
+                    message: "Key rotation enabled",
+                    status: "Successfully decrypted using Alias",
+                    alias: "alias/session_decryption_key_active_alias",
+                });
+            });
+
+            it("fails to decrypt with the other aliases but succeeds decryption using the previous alias", async () => {
+                process.env.ENV_VAR_FEATURE_FLAG_KEY_ROTATION = "true";
+                const kmsClientMock = <jest.Mock>kmsClient.send;
+                const decodedIv = new Uint8Array([1, 2, 3, 4]);
+
+                kmsClientMock
+                    .mockRejectedValueOnce(new Error("active alias failed"))
+                    .mockRejectedValueOnce(new Error("inactive alias failed"))
+                    .mockResolvedValueOnce({ Plaintext: decodedIv });
+
+                const decrypter = new JweDecrypter(kmsClient, getEncryptionKeyId);
+                const result = await decrypter.decryptJwe(compactJwe);
+
+                expect(result).toBeInstanceOf(Buffer);
+                expect(kmsClientMock).toHaveBeenCalledTimes(3);
+                expect(logger.info).toHaveBeenCalledWith({
+                    message: "Key rotation enabled",
+                    status: "Successfully decrypted using Alias",
+                    alias: "alias/session_decryption_key_previous_alias",
+                });
             });
         });
+        describe("given key rotation flag is false", () => {
+            beforeEach(() => {
+                delete process.env.ENV_VAR_FEATURE_FLAG_KEY_ROTATION;
+                delete process.env.ENV_VAR_FEATURE_FLAG_KEY_ROTATION_LEGACY_KEY_FALLBACK;
+            });
+            it("decrypts using legacy Kms key Id", async () => {
+                process.env.ENV_VAR_FEATURE_FLAG_KEY_ROTATION = "false";
 
-        it("decrypts using kms Id given key rotation flag is false", async () => {
-            process.env.ENV_VAR_FEATURE_FLAG_KEY_ROTATION = "false";
+                const kmsClientMock = <jest.Mock>kmsClient.send;
+                kmsClientMock.mockResolvedValueOnce({ Plaintext: new Uint8Array([1, 2, 3, 4]) });
 
-            const kmsClientMock = <jest.Mock>kmsClient.send;
-            kmsClientMock.mockResolvedValueOnce({ Plaintext: new Uint8Array([1, 2, 3, 4]) });
+                const decrypter = new JweDecrypter(kmsClient, getEncryptionKeyId);
+                const result = await decrypter.decryptJwe(compactJwe);
 
-            const decrypter = new JweDecrypter(kmsClient, getEncryptionKeyId);
-            const result = await decrypter.decryptJwe(compactJwe);
+                expect(result).toBeInstanceOf(Buffer);
+                expect(kmsClientMock).toHaveBeenCalledTimes(1);
+                expect(result).toBeInstanceOf(Buffer);
+                expect(logger.info).toHaveBeenCalledWith({ message: "Decryption successful with legacy key" });
+            });
+            it("throws an error if legacy Key fails using Kms Id", async () => {
+                process.env.ENV_VAR_FEATURE_FLAG_KEY_ROTATION = "false";
+                const kmsClientMock = <jest.Mock>kmsClient.send;
+                kmsClientMock.mockRejectedValueOnce(new Error("KMS decryption failed"));
 
-            expect(result).toBeInstanceOf(Buffer);
-            expect(kmsClientMock).toHaveBeenCalledTimes(1);
-            expect(result).toBeInstanceOf(Buffer);
-            expect(logger.info).toHaveBeenCalledWith({ message: "Successfully decrypted using KMS Id" });
-        });
+                const decrypter = new JweDecrypter(kmsClient, getEncryptionKeyId);
 
-        it("throws error if KMS decryption fails using KMS ID only", async () => {
-            process.env.ENV_VAR_FEATURE_FLAG_KEY_ROTATION = "false";
-            const kmsClientMock = <jest.Mock>kmsClient.send;
-            kmsClientMock.mockRejectedValueOnce(new Error("KMS decryption failed"));
-
-            const decrypter = new JweDecrypter(kmsClient, getEncryptionKeyId);
-
-            await expect(decrypter.decryptJwe(compactJwe)).rejects.toThrow(
-                "Failed to decrypt CEK with any available alias or KMS Id",
-            );
-            expect(kmsClientMock).toHaveBeenCalledTimes(1);
-        });
-
-        it("fails to decrypt with some alias but succeeds decryption using an alias successfully", async () => {
-            process.env.ENV_VAR_FEATURE_FLAG_KEY_ROTATION = "true";
-            const kmsClientMock = <jest.Mock>kmsClient.send;
-            const decodedIv = new Uint8Array([1, 2, 3, 4]);
-
-            kmsClientMock
-                .mockRejectedValueOnce(new Error("active alias failed"))
-                .mockRejectedValueOnce(new Error("inactive alias failed"))
-                .mockResolvedValueOnce({ Plaintext: decodedIv });
-
-            const decrypter = new JweDecrypter(kmsClient, getEncryptionKeyId);
-            const result = await decrypter.decryptJwe(compactJwe);
-
-            expect(result).toBeInstanceOf(Buffer);
-            expect(kmsClientMock).toHaveBeenCalledTimes(3);
-            expect(logger.info).toHaveBeenCalledWith({
-                message: "Key rotation enabled",
-                status: "Successfully decrypted using Alias",
-                alias: "alias/session_decryption_key_previous_alias",
+                await expect(decrypter.decryptJwe(compactJwe)).rejects.toThrow("Failed to decrypt with legacy key");
+                expect(kmsClientMock).toHaveBeenCalledTimes(1);
             });
         });
-
-        it("uses KMS ID to after trying all aliases and failing", async () => {
-            process.env.ENV_VAR_FEATURE_FLAG_KEY_ROTATION = "true";
-            const kmsClientMock = <jest.Mock>kmsClient.send;
-            const decodedIv = new Uint8Array([1, 2, 3, 4]);
-
-            kmsClientMock
-                .mockRejectedValueOnce(new Error("active alias failed"))
-                .mockRejectedValueOnce(new Error("inactive alias failed"))
-                .mockRejectedValueOnce(new Error("previous alias failed"))
-                .mockResolvedValueOnce({ Plaintext: decodedIv });
-
-            const decrypter = new JweDecrypter(kmsClient, getEncryptionKeyId);
-            const result = await decrypter.decryptJwe(compactJwe);
-
-            expect(result).toBeInstanceOf(Buffer);
-            expect(kmsClientMock).toHaveBeenCalledTimes(4);
-            expect(logger.info).toHaveBeenCalledWith({
-                message: "Key rotation enabled",
-                status: "All aliases failed.",
-            });
-            expect(logger.info).toHaveBeenCalledWith({ message: "Successfully decrypted using KMS Id" });
+    });
+    describe("session encrypted with active key alias", () => {
+        beforeEach(() => {
+            delete process.env.ENV_VAR_FEATURE_FLAG_KEY_ROTATION;
+            delete process.env.ENV_VAR_FEATURE_FLAG_KEY_ROTATION_LEGACY_KEY_FALLBACK;
         });
+        describe("given key rotation flag is true", () => {
+            it("decrypts successfully using active alias", async () => {
+                process.env.ENV_VAR_FEATURE_FLAG_KEY_ROTATION = "true";
 
-        it("throws if all decryption attempts fail", async () => {
-            process.env.ENV_VAR_FEATURE_FLAG_KEY_ROTATION = "true";
-            const kmsClientMock = <jest.Mock>kmsClient.send;
+                const kmsClientMock = <jest.Mock>kmsClient.send;
+                kmsClientMock.mockResolvedValueOnce({ Plaintext: new Uint8Array([1, 2, 3, 4]) });
 
-            kmsClientMock
-                .mockRejectedValueOnce(new Error("active alias failed"))
-                .mockRejectedValueOnce(new Error("inactive alias failed"))
-                .mockRejectedValueOnce(new Error("previous alias failed"))
-                .mockRejectedValueOnce(new Error("failed using KMS Id"));
+                const decrypter = new JweDecrypter(kmsClient, getEncryptionKeyId);
+                const result = await decrypter.decryptJwe(compactJwe);
 
-            const decrypter = new JweDecrypter(kmsClient, getEncryptionKeyId);
-
-            await expect(decrypter.decryptJwe(compactJwe)).rejects.toThrow(
-                "Failed to decrypt CEK with any available alias or KMS Id",
-            );
-
-            expect(metrics.addMetric).toHaveBeenCalledWith("all_aliases_unavailable_for_decryption", "Count", 1);
-            expect(logger.error).toHaveBeenCalledWith({
-                message: "Key rotation enabled",
-                alias: "alias/session_decryption_key_previous_alias",
-                error: new Error("previous alias failed"),
+                expect(result).toBeInstanceOf(Buffer);
+                expect(kmsClientMock).toHaveBeenCalledTimes(1);
+                expect(logger.info).toHaveBeenCalledWith({
+                    message: "Key rotation enabled",
+                    status: "Successfully decrypted using Alias",
+                    alias: "alias/session_decryption_key_active_alias",
+                });
             });
-            expect(logger.error).toHaveBeenCalledWith({
-                message: "Key rotation enabled",
-                alias: "alias/session_decryption_key_inactive_alias",
-                error: new Error("inactive alias failed"),
+        });
+        describe("given key rotation flag is false", () => {
+            beforeEach(() => {
+                delete process.env.ENV_VAR_FEATURE_FLAG_KEY_ROTATION;
+                delete process.env.ENV_VAR_FEATURE_FLAG_KEY_ROTATION_LEGACY_KEY_FALLBACK;
             });
-            expect(logger.error).toHaveBeenCalledWith({
-                message: "Key rotation enabled",
-                alias: "alias/session_decryption_key_active_alias",
-                error: new Error("active alias failed"),
-            });
-            expect(logger.error).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    message: "Failed to decrypt with KMS keyId",
-                }),
-            );
-            expect(logger.info).toHaveBeenCalledWith({
-                message: "Key rotation enabled",
-                status: "All aliases failed.",
+            it("decrypts fails using legacy Kms key Id", async () => {
+                process.env.ENV_VAR_FEATURE_FLAG_KEY_ROTATION = "false";
+                const kmsClientMock = <jest.Mock>kmsClient.send;
+                kmsClientMock.mockRejectedValueOnce(new Error("KMS decryption failed"));
+
+                const decrypter = new JweDecrypter(kmsClient, getEncryptionKeyId);
+
+                await expect(decrypter.decryptJwe(compactJwe)).rejects.toThrow("Failed to decrypt with legacy key");
+                expect(kmsClientMock).toHaveBeenCalledTimes(1);
             });
         });
     });
