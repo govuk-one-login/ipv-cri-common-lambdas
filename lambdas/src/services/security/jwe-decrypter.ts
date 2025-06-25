@@ -2,6 +2,16 @@ import { base64url } from "jose";
 import { CipherGCMTypes, createDecipheriv, KeyObject } from "crypto";
 import { DecryptCommand, EncryptionAlgorithmSpec, KMSClient } from "@aws-sdk/client-kms";
 import { JweDecrypterError } from "../../common/utils/errors";
+import { logger, metrics } from "../../common/utils/power-tool";
+import { MetricUnits } from "@aws-lambda-powertools/metrics";
+
+const DecryptionKeyAliases = [
+    "session_decryption_key_active_alias",
+    "session_decryption_key_inactive_alias",
+    "session_decryption_key_previous_alias",
+] as const;
+
+const ALL_ALIASES_UNAVAILABLE = "all_aliases_unavailable_for_decryption";
 
 export class JweDecrypter {
     private kmsEncryptionKeyId: string | undefined;
@@ -17,7 +27,7 @@ export class JweDecrypter {
             throw new Error(`Invalid number of JWE parts encountered: ${length}`);
         }
 
-        const decryptedContentEncKey = (await this.getKey(encryptedKey)) as Uint8Array;
+        const decryptedContentEncKey = await this.getDecryptedCek(encryptedKey);
 
         const buff = Buffer.from(jweProtectedHeader, "base64");
         const jweHeader = JSON.parse(buff.toString("utf8"));
@@ -27,7 +37,7 @@ export class JweDecrypter {
         try {
             return this.gcmDecrypt(
                 jweHeader.enc,
-                decryptedContentEncKey,
+                decryptedContentEncKey as Uint8Array,
                 base64url.decode(ciphertext),
                 base64url.decode(iv),
                 base64url.decode(tag),
@@ -61,18 +71,79 @@ export class JweDecrypter {
         return plainText;
     }
 
-    private async getKey(encryptedKey: string): Promise<Uint8Array | undefined> {
+    private async getDecryptedCek(encryptedKey: string): Promise<Uint8Array | undefined> {
+        const ciphertextBlob = base64url.decode(encryptedKey);
+        const isKeyRotationEnabled = process.env.ENV_VAR_FEATURE_FLAG_KEY_ROTATION === "true";
+
+        if (isKeyRotationEnabled) {
+            const decryptedWithAlias = await this.tryDecryptWithAliases(ciphertextBlob);
+            if (decryptedWithAlias) {
+                return decryptedWithAlias;
+            }
+            logger.info({ message: "Key rotation enabled", status: "All aliases failed." });
+            metrics.addMetric(ALL_ALIASES_UNAVAILABLE, MetricUnits.Count, 1);
+        }
+
+        const decryptedWithKmsId = await this.tryDecryptWithKmsId(ciphertextBlob);
+
+        if (decryptedWithKmsId) {
+            return decryptedWithKmsId;
+        }
+        throw new Error("Failed to decrypt CEK with any available alias or KMS Id");
+    }
+
+    private async tryDecryptWithAliases(ciphertextBlob: Uint8Array): Promise<Uint8Array | undefined> {
+        for (const alias of DecryptionKeyAliases) {
+            const aliasName = `alias/${alias}`;
+            try {
+                const cek = await this.getKey(ciphertextBlob, aliasName);
+                this.logSuccessfulAliasDecryption(aliasName);
+                return cek;
+            } catch (err: unknown) {
+                this.logFailedAliasDecryption(aliasName, err as Error);
+            }
+        }
+        return undefined;
+    }
+
+    private async tryDecryptWithKmsId(ciphertextBlob: Uint8Array): Promise<Uint8Array | undefined> {
         if (!this.kmsEncryptionKeyId) {
             this.kmsEncryptionKeyId = this.getEncryptionKeyId();
         }
         const kmsDecryptionKeyId = this.kmsEncryptionKeyId;
-        const jweEncryptedKeyAsBytes = base64url.decode(encryptedKey);
+        try {
+            const cek = await this.getKey(ciphertextBlob, kmsDecryptionKeyId);
+            logger.info({ message: "Successfully decrypted using KMS Id" });
+            return cek;
+        } catch (error: unknown) {
+            logger.error({
+                message: "Failed to decrypt with KMS keyId",
+                error,
+            });
+            return undefined;
+        }
+    }
+
+    private async getKey(jweEncryptedKeyAsBytes: Uint8Array, keyId: string): Promise<Uint8Array | undefined> {
         const decryptCommand = new DecryptCommand({
             CiphertextBlob: jweEncryptedKeyAsBytes,
-            KeyId: kmsDecryptionKeyId,
+            KeyId: keyId,
             EncryptionAlgorithm: EncryptionAlgorithmSpec.RSAES_OAEP_SHA_256,
         });
         const response = await this.kmsClient.send(decryptCommand);
         return response.Plaintext;
     }
+    private readonly logSuccessfulAliasDecryption = (alias: string) =>
+        logger.info({
+            message: "Key rotation enabled",
+            alias,
+            status: "Successfully decrypted using Alias",
+        });
+
+    private readonly logFailedAliasDecryption = (alias: string, error: Error) =>
+        logger.error({
+            message: "Key rotation enabled",
+            alias,
+            error,
+        });
 }
