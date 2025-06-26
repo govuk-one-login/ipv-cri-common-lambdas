@@ -72,55 +72,56 @@ export class JweDecrypter {
     }
 
     private async getDecryptedCek(encryptedKey: string): Promise<Uint8Array | undefined> {
-        const ciphertextBlob = base64url.decode(encryptedKey);
-        const isKeyRotationEnabled = process.env.ENV_VAR_FEATURE_FLAG_KEY_ROTATION === "true";
-
-        if (isKeyRotationEnabled) {
-            const decryptedWithAlias = await this.tryDecryptWithAliases(ciphertextBlob);
-            if (decryptedWithAlias) {
-                return decryptedWithAlias;
-            }
-            logger.info({ message: "Key rotation enabled", status: "All aliases failed." });
-            metrics.addMetric(ALL_ALIASES_UNAVAILABLE, MetricUnits.Count, 1);
+        const cipherTextBlob = base64url.decode(encryptedKey);
+        if (process.env.ENV_VAR_FEATURE_FLAG_KEY_ROTATION === "true") {
+            return await this.decryptWithKeyRotation(cipherTextBlob);
         }
-
-        const decryptedWithKmsId = await this.tryDecryptWithKmsId(ciphertextBlob);
-
-        if (decryptedWithKmsId) {
-            return decryptedWithKmsId;
-        }
-        throw new Error("Failed to decrypt CEK with any available alias or KMS Id");
+        return await this.decryptWithLegacyKey(cipherTextBlob);
     }
 
-    private async tryDecryptWithAliases(ciphertextBlob: Uint8Array): Promise<Uint8Array | undefined> {
+    private async decryptWithKeyRotation(cipherTextBlob: Uint8Array): Promise<Uint8Array | undefined> {
+        logger.info("Key rotation enabled. Attempting to decrypt with key aliases.");
+        const decryptedWithAlias = await this.decryptWithAliases(cipherTextBlob);
+        if (decryptedWithAlias) {
+            return decryptedWithAlias;
+        }
+        if (process.env.ENV_VAR_FEATURE_FLAG_LEGACY_KEY_FALLBACK === "true") {
+            logger.warn("Failed to decrypt with all available key aliases, falling back to legacy key.");
+            return await this.decryptWithLegacyKey(cipherTextBlob);
+        }
+        throw new Error("Failed to decrypt with all available key aliases.");
+    }
+
+    private async decryptWithAliases(cipherTextBlob: Uint8Array): Promise<Uint8Array | undefined> {
         for (const alias of DecryptionKeyAliases) {
             const aliasName = `alias/${alias}`;
             try {
-                const cek = await this.getKey(ciphertextBlob, aliasName);
+                const cek = await this.getKey(cipherTextBlob, aliasName);
                 this.logSuccessfulAliasDecryption(aliasName);
                 return cek;
             } catch (err: unknown) {
                 this.logFailedAliasDecryption(aliasName, err as Error);
             }
         }
-        return undefined;
+        logger.info({ message: "Key rotation enabled", status: "All aliases failed." });
+        metrics.addMetric(ALL_ALIASES_UNAVAILABLE, MetricUnits.Count, 1);
     }
 
-    private async tryDecryptWithKmsId(ciphertextBlob: Uint8Array): Promise<Uint8Array | undefined> {
+    private async decryptWithLegacyKey(cipherTextBlob: Uint8Array): Promise<Uint8Array | undefined> {
         if (!this.kmsEncryptionKeyId) {
             this.kmsEncryptionKeyId = this.getEncryptionKeyId();
         }
         const kmsDecryptionKeyId = this.kmsEncryptionKeyId;
         try {
-            const cek = await this.getKey(ciphertextBlob, kmsDecryptionKeyId);
-            logger.info({ message: "Successfully decrypted using KMS Id" });
+            const cek = await this.getKey(cipherTextBlob, kmsDecryptionKeyId);
+            logger.info({ message: "Decryption successful with legacy key" });
             return cek;
         } catch (error: unknown) {
             logger.error({
-                message: "Failed to decrypt with KMS keyId",
+                message: "Legacy key decryption threw an exception",
                 error,
             });
-            return undefined;
+            throw Error("Failed to decrypt with legacy key");
         }
     }
 
@@ -141,7 +142,7 @@ export class JweDecrypter {
         });
 
     private readonly logFailedAliasDecryption = (alias: string, error: Error) =>
-        logger.error({
+        logger.warn({
             message: "Key rotation enabled",
             alias,
             error,
