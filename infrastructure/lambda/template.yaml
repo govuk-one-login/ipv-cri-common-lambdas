@@ -771,8 +771,8 @@ Mappings:
       privateapigwname: "check-hmrc-cri-api-private"
       publicapigwname: "check-hmrc-cri-api-public"
     di-ipv-cri-address-api:
-      privateapigwname: "address-cri-api-v1-PrivateAddressApiGatewayId-placehonder"
-      publicapigwname: "address-cri-api-v1-PublicAddressApiGatewayId-placehonder"
+      privateapigwname: "address-cri-api-v1-PrivateAddressApi"
+      publicapigwname: "address-cri-api-v1-PublicAddressApi"
     di-ipv-cri-kbv-api:
       privateapigwname: "kbv-cri-private-kbv-cri-api-v1"
       publicapigwname: "kbv-cri-kbv-cri-api-v1"
