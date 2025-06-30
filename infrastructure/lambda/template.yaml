@@ -301,8 +301,8 @@ Mappings:
       integration: "false"
       production: "false"
     di-ipv-cri-kbv-api:
-      dev: "false"
-      build: "false"
+      dev: "true"
+      build: "true"
       staging: "false"
       integration: "false"
       production: "false"
@@ -346,8 +346,8 @@ Mappings:
       integration: "false"
       production: "false"
     di-ipv-cri-kbv-api:
-      dev: "false"
-      build: "false"
+      dev: "true"
+      build: "true"
       staging: "false"
       integration: "false"
       production: "false"
@@ -999,7 +999,9 @@ Resources:
           SQS_AUDIT_EVENT_QUEUE_URL:
             Fn::ImportValue: !Sub ${TxmaStackName}-AuditEventQueueUrl
           CRI_IDENTIFIER: !Sub "${CriIdentifier}"
+          ENV_VAR_FEATURE_FLAG_KEY_ROTATION: !FindInMap [ KeyRotationMapping, !Ref CriIdentifier, !Ref Environment ]
           ENV_VAR_FEATURE_CONSUME_PUBLIC_JWK: !FindInMap [ CorePublicSigningJwksEnabled, !Ref CriIdentifier, !Ref Environment]
+          ENV_VAR_FEATURE_FLAG_KEY_ROTATION_LEGACY_KEY_FALLBACK: !FindInMap [ KeyRotationLegacyFallBackMapping, !Ref CriIdentifier, !Ref Environment ]
       AutoPublishAlias: live
       AutoPublishAliasAllProperties: true
       Policies:
