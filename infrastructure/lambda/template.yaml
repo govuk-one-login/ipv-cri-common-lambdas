@@ -957,7 +957,7 @@ Resources:
       Unit: Count
       Period: 60
       EvaluationPeriods: 1
-      Threshold: 1
+      Threshold: 2
       ComparisonOperator: GreaterThanOrEqualToThreshold
       TreatMissingData: notBreaching
 
@@ -1217,7 +1217,7 @@ Resources:
       Unit: Count
       Period: 60
       EvaluationPeriods: 1
-      Threshold: 1
+      Threshold: 2
       ComparisonOperator: GreaterThanOrEqualToThreshold
       TreatMissingData: notBreaching
 
@@ -1459,7 +1459,7 @@ Resources:
       Unit: Count
       Period: 60
       EvaluationPeriods: 1
-      Threshold: 1
+      Threshold: 2
       ComparisonOperator: GreaterThanOrEqualToThreshold
       TreatMissingData: notBreaching
 
