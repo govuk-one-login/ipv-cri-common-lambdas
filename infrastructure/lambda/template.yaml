@@ -956,8 +956,7 @@ Resources:
       Statistic: Sum
       Unit: Count
       Period: 60
-      EvaluationPeriods: 3
-      DatapointsToAlarm: 2
+      EvaluationPeriods: 1
       Threshold: 1
       ComparisonOperator: GreaterThanOrEqualToThreshold
       TreatMissingData: notBreaching
@@ -1217,8 +1216,7 @@ Resources:
       Statistic: Sum
       Unit: Count
       Period: 60
-      EvaluationPeriods: 3
-      DatapointsToAlarm: 2
+      EvaluationPeriods: 1
       Threshold: 1
       ComparisonOperator: GreaterThanOrEqualToThreshold
       TreatMissingData: notBreaching
@@ -1460,8 +1458,7 @@ Resources:
       Statistic: Sum
       Unit: Count
       Period: 60
-      EvaluationPeriods: 3
-      DatapointsToAlarm: 2
+      EvaluationPeriods: 1
       Threshold: 1
       ComparisonOperator: GreaterThanOrEqualToThreshold
       TreatMissingData: notBreaching
