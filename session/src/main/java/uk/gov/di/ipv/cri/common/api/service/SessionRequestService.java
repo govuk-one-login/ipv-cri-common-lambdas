@@ -16,7 +16,9 @@ import uk.gov.di.ipv.cri.common.library.exception.ClientConfigurationException;
 import uk.gov.di.ipv.cri.common.library.exception.SessionValidationException;
 import uk.gov.di.ipv.cri.common.library.persistence.item.EvidenceRequest;
 import uk.gov.di.ipv.cri.common.library.service.ConfigurationService;
+import uk.gov.di.ipv.cri.common.library.service.JWTDecrypter;
 import uk.gov.di.ipv.cri.common.library.service.JWTVerifier;
+import uk.gov.di.ipv.cri.common.library.service.KMSRSADecrypter;
 import uk.gov.di.ipv.cri.common.library.util.EventProbe;
 import uk.gov.di.ipv.cri.common.library.util.deserializers.PiiRedactingDeserializer;
 
