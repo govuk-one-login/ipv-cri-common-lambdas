@@ -783,8 +783,8 @@ Mappings:
       privateapigwname: "ipv-cri-passport-api-PrivateUKPassportAPIGatewayID-placehonder"
       publicapigwname: "ipv-cri-passport-api-PublicUKPassportAPIGatewayID-placehonder"
     di-ipv-cri-dl-api:
-      privateapigwname: "dl-cri-api-v1-PrivateDlApiGatewayId-placehonder"
-      publicapigwname: "dl-cri-api-v1-PublicDlApiGatewayId-placehonder"
+      privateapigwname: "dl-cri-api-v1-PrivateDLApi"
+      publicapigwname: "dl-cri-api-v1-PublicDLApi"
     di-ipv-cri-fraud-api:
       privateapigwname: "fraud-cri-api-v1-PrivateFraudApiGatewayId-placehonder"
       publicapigwname: "fraud-cri-api-v1-PublicFraudApiGatewayId-placehonder"
