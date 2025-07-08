@@ -110,7 +110,7 @@ describe("jwt-verifier.ts", () => {
 
                     expect(payload).toEqual(MOCK_JWT);
                     expect(verifyWithJwksParamSpy).not.toHaveBeenCalled();
-                    expect(logger.info).toHaveBeenCalledWith("Sucessfully verified JWT using Public JWKS Endpoint");
+                    expect(logger.info).toHaveBeenCalledWith("Successfully verified JWT using Public JWKS Endpoint");
                 });
 
                 it("should successfully use the cached JWKS when populated", async () => {
