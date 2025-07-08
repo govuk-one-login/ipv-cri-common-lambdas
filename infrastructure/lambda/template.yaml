@@ -780,8 +780,8 @@ Mappings:
       privateapigwname: "kbv-hmrc-cri-api-PrivateApiGatewayId-placehonder"
       publicapigwname: "kbv-hmrc-cri-api-PublicApiGatewayId-placehonder"
     di-ipv-cri-passport-api:
-      privateapigwname: "ipv-cri-passport-api-PrivateUKPassportAPIGatewayID-placehonder"
-      publicapigwname: "ipv-cri-passport-api-PublicUKPassportAPIGatewayID-placehonder"
+      privateapigwname: "ipv-cri-passport-api-PrivateUKPassportApi"
+      publicapigwname: "ipv-cri-passport-api-PublicUKPassportApi"
     di-ipv-cri-dl-api:
       privateapigwname: "dl-cri-api-v1-PrivateDlApiGatewayId-placehonder"
       publicapigwname: "dl-cri-api-v1-PublicDlApiGatewayId-placehonder"
