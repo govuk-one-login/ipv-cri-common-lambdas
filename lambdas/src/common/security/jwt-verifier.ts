@@ -1,5 +1,5 @@
-import { createLocalJWKSet, importJWK, JWTPayload, jwtVerify } from "jose";
-import { JWTVerifyOptions } from "jose/dist/types/jwt/verify";
+import { createLocalJWKSet, importJWK, JWTPayload, jwtVerify, KeyLike, errors as joseErrors } from "jose";
+import { JWTVerifyGetKey, JWTVerifyOptions } from "jose/dist/types/jwt/verify";
 import { Logger } from "@aws-lambda-powertools/logger";
 import { JwtVerificationConfig } from "../../types/jwt-verification-config";
 import { JWKCacheCollection, JWKS } from "../../types/jwks";
@@ -49,7 +49,7 @@ export class JwtVerifier {
         mandatoryClaims: Set<string>,
         jwtVerifyOptions: JWTVerifyOptions,
     ) {
-        this.logger.info("Using JWKS endpoint: " + this.jwtVerifierConfig.jwksEndpoint);
+        this.logger.info(`Using JWKS endpoint: ${this.jwtVerifierConfig.jwksEndpoint}`);
         try {
             if (!this.jwtVerifierConfig.jwksEndpoint) {
                 throw new Error(
@@ -58,13 +58,11 @@ export class JwtVerifier {
                     )}`,
                 );
             }
-
             const jwks = await this.fetchJWKSWithCache(this.jwtVerifierConfig.jwksEndpoint);
-
-            const localJWKSet = createLocalJWKSet(jwks);
-            const { payload } = await jwtVerify(encodedJwt.toString(), localJWKSet, jwtVerifyOptions);
+            const { payload } = await this.verifyJwt(encodedJwt.toString(), jwtVerifyOptions, createLocalJWKSet(jwks));
             this.verifyMandatoryClaims(mandatoryClaims, payload);
-            this.logger.info("Sucessfully verified JWT using Public JWKS Endpoint");
+
+            this.logger.info("Successfully verified JWT using Public JWKS Endpoint");
             return payload;
         } catch (error) {
             this.clearJWKSCacheForCurrentEndpoint();
@@ -73,6 +71,35 @@ export class JwtVerifier {
                 error as Error,
             );
             return this.verifyWithJwksParam(encodedJwt, mandatoryClaims, jwtVerifyOptions);
+        }
+    }
+
+    private async verifyJwt(jwt: string, options: JWTVerifyOptions, JWKS: JWTVerifyGetKey) {
+        try {
+            return await jwtVerify(jwt, JWKS, options);
+        } catch (error: unknown) {
+            const err = error as { code?: string };
+            if ((err as { code?: string }).code === "ERR_JWKS_MULTIPLE_MATCHING_KEYS") {
+                this.logger.info("Multiple matching keys detected, verifying...");
+
+                for await (const publicKey of error as AsyncIterable<KeyLike>) {
+                    try {
+                        return await jwtVerify(jwt, publicKey, options);
+                    } catch (innerError: unknown) {
+                        const err = innerError as { code?: string };
+                        if (err?.code === "ERR_JWS_SIGNATURE_VERIFICATION_FAILED") {
+                            this.logger.error(
+                                "Signature verification failed for a matching key, trying next one...",
+                                err,
+                            );
+                            continue;
+                        }
+                        throw innerError;
+                    }
+                }
+                throw new joseErrors.JWSSignatureVerificationFailed();
+            }
+            throw error;
         }
     }
 
@@ -90,9 +117,7 @@ export class JwtVerifier {
             );
             return cachedJwkEntry.jwks;
         }
-
-        // No valid cache entry - fetch fresh JWKS
-        this.logger.info(`Fetching new JWKS from ${this.jwtVerifierConfig.jwksEndpoint}...`);
+        this.logger.info(`No valid cache entry - fetch fresh JWKS from ${this.jwtVerifierConfig.jwksEndpoint}...`);
 
         const jwksResponse = await fetch(jwksUrl);
         if (!jwksResponse.ok) {
@@ -138,10 +163,12 @@ export class JwtVerifier {
             const signingPublicJwk = JSON.parse(Buffer.from(signingPublicJwkBase64, "base64").toString("utf8"));
             const publicKey = await importJWK(signingPublicJwk, signingPublicJwk?.alg || signingAlgorithm);
             const { payload } = await jwtVerify(encodedJwt, publicKey, jwtVerifyOptions);
+
             this.verifyMandatoryClaims(mandatoryClaims, payload);
-            this.logger.info("Sucessfully verified JWT using Public JWKS Parameter");
+
+            this.logger.info("Successfully verified JWT using Public JWKS Parameter");
             return payload;
-        } catch (error) {
+        } catch (error: unknown) {
             this.logger.error("JWT verification failed with JWKS parameter", error as Error);
             return null;
         }
