@@ -2,13 +2,21 @@ import { Logger } from "@aws-lambda-powertools/logger";
 import { JwtVerificationConfig } from "../../../../src/types/jwt-verification-config";
 import { JwtVerifier, JwtVerifierFactory } from "../../../../src/common/security/jwt-verifier";
 import * as jose from "jose";
-import { importJWK, JWTHeaderParameters, jwtVerify } from "jose";
+import { importJWK, JWTHeaderParameters, jwtVerify, KeyLike } from "jose";
 import { JwkKeyExportOptions } from "crypto";
 
 jest.mock("jose", () => ({
     importJWK: jest.fn(),
     jwtVerify: jest.fn(),
     createLocalJWKSet: jest.fn(),
+    errors: {
+        JWSSignatureVerificationFailed: class JWSSignatureVerificationFailed extends Error {
+            constructor() {
+                super("JWS signature verification failed");
+                this.name = "JWSSignatureVerificationFailed";
+            }
+        },
+    },
 }));
 
 type JwkKeyExtendedExportOptions = JwkKeyExportOptions & {
@@ -87,6 +95,12 @@ describe("jwt-verifier.ts", () => {
                         payload: MOCK_JWT,
                         protectedHeader: {} as JWTHeaderParameters,
                     } as unknown as Promise<jose.JWTVerifyResult & jose.ResolvedKey>);
+
+                    const createLocalJWKSetMock = jose.createLocalJWKSet as jest.MockedFunction<
+                        typeof jose.createLocalJWKSet
+                    >;
+                    createLocalJWKSetMock.mockReturnValue(() => Promise.resolve({} as KeyLike));
+
                     // @ts-expect-error: Private function
                     verifyWithJwksParamSpy = jest.spyOn(jwtVerifier, "verifyWithJwksParam");
                 });
@@ -94,6 +108,11 @@ describe("jwt-verifier.ts", () => {
                 afterEach(() => {
                     jest.clearAllMocks();
                     jwtVerifier.clearJWKSCacheForAllEndpoints();
+                    // Reset jwtVerify mock to default behavior
+                    jwtVerifyMock.mockResolvedValue({
+                        payload: MOCK_JWT,
+                        protectedHeader: {} as JWTHeaderParameters,
+                    } as unknown as Promise<jose.JWTVerifyResult & jose.ResolvedKey>);
                 });
 
                 it("should successfully verify JWT using JWKS endpoint", async () => {
@@ -137,6 +156,151 @@ describe("jwt-verifier.ts", () => {
                     expect(global.fetch).toHaveBeenCalledTimes(2);
 
                     expect(verifyWithJwksParamSpy).toHaveBeenCalledTimes(0);
+                });
+
+                it("recovers from ERR_JWS_SIGNATURE_VERIFICATION_FAILED and verify with a succeeding key", async () => {
+                    const invalidKey = {} as KeyLike;
+                    const validKey = {} as KeyLike;
+
+                    (global.fetch as jest.Mock).mockResolvedValueOnce({
+                        headers: {
+                            get: jest.fn().mockReturnValueOnce("max-age=300"),
+                        },
+                        json: jest.fn().mockResolvedValueOnce({
+                            keys: [{ kid: "validKey" }, { kid: "invalidKey" }],
+                        }),
+                        status: 200,
+                        ok: true,
+                    });
+
+                    const multiKeyError = new Error("Multiple matching keys") as Error & { code: string };
+                    multiKeyError.code = "ERR_JWKS_MULTIPLE_MATCHING_KEYS";
+                    Object.defineProperty(multiKeyError, Symbol.asyncIterator, {
+                        value: async function* () {
+                            yield invalidKey;
+                            yield validKey;
+                        },
+                        writable: true,
+                        configurable: true,
+                    });
+
+                    (jwtVerifyMock as jest.Mock)
+                        .mockRejectedValueOnce(multiKeyError)
+                        .mockRejectedValueOnce({ code: "ERR_JWS_SIGNATURE_VERIFICATION_FAILED" })
+                        .mockResolvedValueOnce({ payload: MOCK_JWT, protectedHeader: {} });
+
+                    const payload = await jwtVerifier.verify(encodedJwt, mandatoryClaims, expectedClaimValues);
+
+                    expect(payload).toEqual(MOCK_JWT);
+                    expect(logger.error).toHaveBeenCalledWith(
+                        "Signature verification failed for a matching key, trying next one...",
+                        expect.any(Object),
+                    );
+                    expect(logger.info).toHaveBeenCalledWith("Successfully verified JWT using Public JWKS Endpoint");
+                });
+
+                it("tries all keys and fails, then falls back to verifyWithJwksParam", async () => {
+                    const invalidKey1 = {} as KeyLike;
+                    const invalidKey2 = {} as KeyLike;
+
+                    (global.fetch as jest.Mock).mockResolvedValueOnce({
+                        headers: {
+                            get: jest.fn().mockReturnValueOnce("max-age=300"),
+                        },
+                        json: jest.fn().mockResolvedValueOnce({
+                            keys: [{ kid: "invalidKey1" }, { kid: "invalidKey2" }],
+                        }),
+                        status: 200,
+                        ok: true,
+                    });
+
+                    const multiKeyError = new Error("Multiple matching keys") as Error & { code: string };
+                    multiKeyError.code = "ERR_JWKS_MULTIPLE_MATCHING_KEYS";
+                    Object.defineProperty(multiKeyError, Symbol.asyncIterator, {
+                        value: async function* () {
+                            yield invalidKey1;
+                            yield invalidKey2;
+                        },
+                        writable: true,
+                        configurable: true,
+                    });
+
+                    (jwtVerifyMock as jest.Mock)
+                        .mockRejectedValueOnce(multiKeyError)
+                        .mockRejectedValueOnce({ code: "ERR_JWS_SIGNATURE_VERIFICATION_FAILED" })
+                        .mockRejectedValueOnce({ code: "ERR_JWS_SIGNATURE_VERIFICATION_FAILED" });
+
+                    verifyWithJwksParamSpy.mockResolvedValueOnce(MOCK_JWT);
+
+                    const payload = await jwtVerifier.verify(encodedJwt, mandatoryClaims, expectedClaimValues);
+
+                    expect(payload).toEqual(MOCK_JWT);
+                    expect(logger.error).toHaveBeenCalledWith(
+                        "Signature verification failed for a matching key, trying next one...",
+                        expect.any(Object),
+                    );
+                    expect(logger.error).toHaveBeenCalledTimes(3);
+                    expect(verifyWithJwksParamSpy).toHaveBeenCalled();
+                });
+
+                it("throws if a matching key fails with an unexpected error", async () => {
+                    const unexpectedError = new Error("Something else went wrong");
+                    const matchingKey = {} as KeyLike;
+
+                    const multiKeyError = new Error("Multiple matching keys") as Error & { code: string };
+                    multiKeyError.code = "ERR_JWKS_MULTIPLE_MATCHING_KEYS";
+                    Object.defineProperty(multiKeyError, Symbol.asyncIterator, {
+                        value: async function* () {
+                            yield matchingKey;
+                        },
+                        configurable: true,
+                    });
+
+                    (global.fetch as jest.Mock).mockResolvedValueOnce({
+                        headers: {
+                            get: jest.fn().mockReturnValue("max-age=300"),
+                        },
+                        json: jest.fn().mockResolvedValueOnce({ keys: [{}] }),
+                        ok: true,
+                        status: 200,
+                    });
+
+                    (jwtVerifyMock as jest.Mock)
+                        .mockRejectedValueOnce(multiKeyError)
+                        .mockRejectedValueOnce(unexpectedError);
+
+                    await expect(
+                        jwtVerifier.verify(encodedJwt, mandatoryClaims, expectedClaimValues),
+                    ).resolves.toBeNull();
+
+                    expect(logger.error).toHaveBeenCalledWith(
+                        "JWT verification failed with JWKS parameter",
+                        expect.any(Error),
+                    );
+                });
+
+                it("rethrows unexpected errors from jwtVerify", async () => {
+                    const unexpectedError = new Error("An unexpected error occurred");
+
+                    (global.fetch as jest.Mock).mockResolvedValueOnce({
+                        headers: {
+                            get: jest.fn().mockReturnValue("max-age=300"),
+                        },
+                        json: jest.fn().mockResolvedValueOnce(MOCK_JWKS),
+                        status: 200,
+                        ok: true,
+                    });
+
+                    (jwtVerifyMock as jest.Mock).mockRejectedValue(unexpectedError);
+
+                    await expect(
+                        jwtVerifier.verify(encodedJwt, mandatoryClaims, expectedClaimValues),
+                    ).resolves.toBeNull();
+
+                    expect(logger.error).toHaveBeenCalledWith(
+                        "Caught an error when using JWKS endpoint. Falling back on public JWKS parameter.",
+                        unexpectedError,
+                    );
                 });
 
                 it("should be able to cache separate JWKS for different endpoints simultaneously", async () => {
