@@ -1,6 +1,7 @@
 import { APIGatewayProxyResult } from "aws-lambda";
 import { Logger } from "@aws-lambda-powertools/logger";
 import { stackOutputs } from "../../../../utils/src/stack-outputs";
+import config from "../../../../utils/src/services/config";
 export class CallBackService {
     constructor(private readonly logger: Logger) {}
 
@@ -59,7 +60,11 @@ export class CallBackService {
         return { statusCode: status, body: responseBody };
     }
     private async getApiKey() {
-        const stack = "core-infrastructure";
-        return (await stackOutputs(stack))?.ApiKey1 ?? Promise.reject(new Error(`API key not found in ${stack}`));
+        this.logger.info("Retrieving API key from stack outputs");
+        const { ApiKey1: apiKey } = await stackOutputs(config.coreInfrastructureStackName);
+        if (!apiKey) {
+            throw new Error(`API key not found in ${config.coreInfrastructureStackName}`);
+        }
+        return apiKey;
     }
 }
