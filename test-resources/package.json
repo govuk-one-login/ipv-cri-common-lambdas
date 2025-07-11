@@ -16,6 +16,7 @@
         "unit:logs": "jest"
     },
     "dependencies": {
+        "@aws-sdk/client-cloudformation": "3.777.0",
         "@aws-lambda-powertools/commons": "2.16.0",
         "@aws-lambda-powertools/logger": "2.16.0",
         "@aws-lambda-powertools/parameters": "2.16.0",
@@ -33,7 +34,6 @@
         "jose": "5.10.0"
     },
     "devDependencies": {
-        "@aws-sdk/client-cloudformation": "3.777.0",
         "@aws-sdk/credential-providers": "3.777.0",
         "aws-sigv4-fetch": "4.4.1",
         "@aws-sdk/client-dynamodb": "3.777.0",

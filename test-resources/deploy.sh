@@ -5,6 +5,7 @@ set -eu
 stack_name="${1:-}"
 common_stack_name="${2:-}"
 test_txma_stack="${3:-}"
+core_infra_stack="${4:-}"
 
 if ! [[ "$stack_name" ]]; then
   [[ $(aws sts get-caller-identity --query Arn --output text) =~ \/([^\/\.]+)\. ]] && user="${BASH_REMATCH[1]}" || exit
@@ -31,5 +32,6 @@ sam deploy --stack-name "$stack_name" \
   --parameter-overrides \
   Environment=localdev \
   ${common_stack_name:+CommonStackName=$common_stack_name} \
-  ${test_txma_stack:+TxmaStackName=$test_txma_stack}
+  ${test_txma_stack:+TxmaStackName=$test_txma_stack} \
+  ${core_infra_stack:+CoreInfraStackName=$core_infra_stack}
 

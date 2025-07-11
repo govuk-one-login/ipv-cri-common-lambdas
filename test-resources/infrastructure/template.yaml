@@ -17,6 +17,10 @@ Parameters:
     Description: "The stack containing the TXMA infrastructure"
     Type: String
     Default: txma-infrastructure
+  CoreInfraStackName:
+    Description: "The stack containing the Core Infra infrastructure"
+    Type: String
+    Default: core-infrastructure
   Environment:
     Type: String
     Default: dev
@@ -240,6 +244,7 @@ Resources:
         Variables:
           CRI_IDENTIFIER: !Sub "${CriIdentifier}"
           TEST_RESOURCES_STACK_NAME: !Sub ${AWS::StackName}
+          CORE_INFRASTRUCTURE: !Sub "${CoreInfraStackName}"
       Policies:
         - DynamoDBReadPolicy:
             TableName: !Sub "{{resolve:ssm:/${CommonStackName}/SessionTableName}}"
@@ -252,6 +257,9 @@ Resources:
               Resource:
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${CommonStackName}/clients/*/jwtAuthentication/*"
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/test-resources/ipv-core-stub-aws-headless/privateSigningKey"
+            - Effect: Allow
+              Action: cloudformation:DescribeStacks
+              Resource: !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/core-infrastructure/*
 
   CallbackFunctionLogGroup:
     Type: AWS::Logs::LogGroup
