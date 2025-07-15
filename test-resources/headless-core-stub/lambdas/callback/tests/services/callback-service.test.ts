@@ -1,8 +1,10 @@
 import { CallBackService } from "../../src/services/callback-service";
 import { Logger } from "@aws-lambda-powertools/logger";
+import * as CloudFormation from "../../../../utils/src/stack-outputs";
 
 global.fetch = jest.fn();
 const mockFetch = fetch as jest.MockedFunction<typeof fetch>;
+let spyStackOutputs: jest.SpyInstance;
 
 describe("CallBack Service", () => {
     let mockLoggerError: jest.Mock;
@@ -15,6 +17,8 @@ describe("CallBack Service", () => {
         mockLoggerError = jest.fn();
         mockLoggerInfo = jest.fn();
         mockLoggerWarn = jest.fn();
+
+        spyStackOutputs = jest.spyOn(CloudFormation, "stackOutputs").mockResolvedValue({ ApiKey1: "test-api-key" });
 
         callbackService = new CallBackService({
             error: mockLoggerError,
@@ -47,6 +51,7 @@ describe("CallBack Service", () => {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+                    "x-api-key": "test-api-key",
                 },
                 body: requestBody,
             });
@@ -68,9 +73,116 @@ describe("CallBack Service", () => {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+                    "x-api-key": "test-api-key",
                 },
                 body: requestBody,
             });
+        });
+
+        it("handles non-200 response from token endpoint", async () => {
+            const mockResponse = {
+                status: 400,
+                ok: false,
+                text: async () => "Bad Request",
+                headers: new Map([["content-type", "application/json"]]),
+            } as unknown as Response;
+
+            mockFetch.mockResolvedValueOnce(mockResponse);
+
+            const tokenUrl = "https://cri-api.host/token";
+            const requestBody = "test-body";
+
+            await expect(callbackService.invokeTokenEndpoint(tokenUrl, requestBody)).rejects.toThrow(
+                "Failed with 400 status: Bad Request",
+            );
+
+            expect(mockLoggerError).toHaveBeenCalledWith({
+                message: "Request to token endpoint failed",
+                tokenEndpoint: tokenUrl,
+                status: 400,
+                responseBody: "Bad Request",
+                headers: { "content-type": "application/json" },
+            });
+        });
+
+        it("handles missing API key from stack outputs", async () => {
+            spyStackOutputs.mockResolvedValueOnce({});
+
+            const tokenUrl = "https://cri-api.host/token";
+            const requestBody = "test-body";
+
+            await expect(callbackService.invokeTokenEndpoint(tokenUrl, requestBody)).rejects.toThrow(
+                "API key not found in core-infrastructure",
+            );
+        });
+    });
+
+    describe("invokeCredentialEndpoint", () => {
+        it("requests using POST with correct headers and succeeds", async () => {
+            const mockResponse = {
+                status: 200,
+                ok: true,
+                text: async () => JSON.stringify({ credential: "test-credential" }),
+            } as unknown as Response;
+
+            mockFetch.mockResolvedValueOnce(mockResponse);
+
+            const credentialUrl = "https://cri-api.host/credential/issue";
+            const accessToken = "test-access-token";
+
+            const response = await callbackService.invokeCredentialEndpoint(credentialUrl, accessToken);
+
+            expect(mockFetch).toHaveBeenCalledWith(credentialUrl, {
+                method: "POST",
+                headers: {
+                    Authorization: "Bearer test-access-token",
+                    "x-api-key": "test-api-key",
+                },
+            });
+            expect(response).toEqual({
+                statusCode: 200,
+                body: JSON.stringify({ credential: "test-credential" }),
+            });
+            expect(mockLoggerInfo).toHaveBeenCalledWith({
+                message: "Successfully called /credential/issue endpoint",
+            });
+        });
+
+        it("handles non-200 response from credential endpoint", async () => {
+            const mockResponse = {
+                status: 401,
+                ok: false,
+                text: async () => "Unauthorized",
+            } as unknown as Response;
+
+            mockFetch.mockResolvedValueOnce(mockResponse);
+
+            const credentialUrl = "https://cri-api.host/credential/issue";
+            const accessToken = "invalid-token";
+
+            const response = await callbackService.invokeCredentialEndpoint(credentialUrl, accessToken);
+
+            expect(response).toEqual({
+                statusCode: 401,
+                body: "Unauthorized",
+            });
+            expect(mockLoggerError).toHaveBeenCalledWith({
+                message: "Request to credential endpoint failed",
+                credentialEndpoint: credentialUrl,
+                status: 401,
+                responseBody: "Unauthorized",
+            });
+        });
+
+        it("handles fetch error for credential endpoint", async () => {
+            mockFetch.mockRejectedValueOnce(new Error("Network error"));
+
+            const credentialUrl = "https://cri-api.host/credential/issue";
+            const accessToken = "test-token";
+
+            await expect(callbackService.invokeCredentialEndpoint(credentialUrl, accessToken)).rejects.toThrow(
+                "Network error",
+            );
         });
     });
 });
