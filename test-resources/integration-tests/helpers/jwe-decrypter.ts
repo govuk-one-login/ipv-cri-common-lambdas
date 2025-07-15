@@ -109,7 +109,8 @@ export class JweDecrypter {
             console.log({ message: "Decryption successful with legacy key" });
             return cek;
         } catch (error: unknown) {
-            throw Error(`Failed to decrypt with legacy key: ${error}`);
+            const message = error instanceof Error ? error.message : String(error);
+            throw new Error(`Failed to decrypt with legacy key: ${message}`);
         }
     }
 

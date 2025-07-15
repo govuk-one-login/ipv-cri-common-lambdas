@@ -106,13 +106,12 @@ export class JweDecrypter {
         if (!this.kmsEncryptionKeyId) {
             this.kmsEncryptionKeyId = this.getEncryptionKeyId();
         }
-        const kmsDecryptionKeyId = this.kmsEncryptionKeyId;
         try {
-            const key = await this.decryptKeyWithKms(encryptedContentEncKey, kmsDecryptionKeyId);
+            const key = await this.decryptKeyWithKms(encryptedContentEncKey, this.kmsEncryptionKeyId);
             logger.info({ message: "Decryption successful with legacy key" });
             return key;
         } catch (error: unknown) {
-            throw Error(`Failed to decrypt with legacy key: ${error}`);
+            throw new Error(`Failed to decrypt with legacy key: ${error}`);
         }
     }
 
