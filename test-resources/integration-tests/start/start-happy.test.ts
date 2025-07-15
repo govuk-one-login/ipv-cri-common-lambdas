@@ -16,7 +16,7 @@ describe("happy path core stub start endpoint", () => {
     let jweDecrypter: JweDecrypter;
     let testHarnessExecuteUrl: string;
     const jwtVerifierFactory = new JwtVerifierFactory(new Logger());
-    const aud = "https://test-aud";
+    const aud = "https://review-hc.dev.account.gov.uk";
     let iss: string;
 
     beforeAll(async () => {
