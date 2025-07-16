@@ -102,7 +102,7 @@ describe("happy path core stub start endpoint", () => {
     it("returns overridden shared claims if provided", async () => {
         const stateOverride = base64Encode(
             JSON.stringify({
-                aud: "https://review-hc.dev.account.gov.uk",
+                aud,
                 redirect_uri: new URL("callback", testHarnessExecuteUrl).href,
             }),
         );

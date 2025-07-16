@@ -46,7 +46,7 @@ export function _resetCachedPublicKeyForTest() {
 
 async function setCachedPublicEncryptionKeyFromJwks(audience: string) {
     const audienceApi = formatAudience(audience);
-    const criEncryptionJwksEndpoint = new URL("/.well-known/jwks.json", audienceApi);
+    const criEncryptionJwksEndpoint = new URL(".well-known/jwks.json", audienceApi);
 
     logger.info({ message: "Attempting to use CRI hosted public encryption jwks endpoint", criEncryptionJwksEndpoint });
 

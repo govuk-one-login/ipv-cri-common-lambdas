@@ -11,7 +11,7 @@ jest.mock("../../../utils/src/services/client-configuration");
 describe("callback-handler", () => {
     const authorizationCode = "an-authorization-code";
     const accessTokenValue = "access_token_value";
-    const audience = "my-audience";
+    const audience = "https://my-audience.example.com";
     const redirectUri = "https://test-resources.headless-core-stub.redirect/callback";
     const keyJwtValue =
         "client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion-type%3Ajwt-bearer&code=an-authorization-code&grant_type=authorization_code&redirect_uri=https%3A%2F%2Ftest-resources.headless-core-stub.redirect%2Fcallback&client_assertion=fake.jwt.key";
@@ -53,8 +53,11 @@ describe("callback-handler", () => {
         );
 
         expect(getParametersSpy).toHaveBeenCalledWith(DEFAULT_CLIENT_ID);
-        expect(getTokenSpy).toHaveBeenCalledWith("my-audience/token", keyJwtValue);
-        expect(issueCredentialSpy).toHaveBeenCalledWith("my-audience/credential/issue", "access_token_value");
+        expect(getTokenSpy).toHaveBeenCalledWith("https://my-audience.example.com/token", keyJwtValue);
+        expect(issueCredentialSpy).toHaveBeenCalledWith(
+            "https://my-audience.example.com/credential/issue",
+            "access_token_value",
+        );
         expect(response).toEqual({
             statusCode: 200,
             headers: {
@@ -92,8 +95,11 @@ describe("callback-handler", () => {
         );
 
         expect(getParametersSpy).toHaveBeenCalledWith(clientIdOverride);
-        expect(getTokenSpy).toHaveBeenCalledWith("my-audience/token", keyJwtValue);
-        expect(issueCredentialSpy).toHaveBeenCalledWith("my-audience/credential/issue", "access_token_value");
+        expect(getTokenSpy).toHaveBeenCalledWith("https://my-audience.example.com/token", keyJwtValue);
+        expect(issueCredentialSpy).toHaveBeenCalledWith(
+            "https://my-audience.example.com/credential/issue",
+            "access_token_value",
+        );
         expect(response).toEqual({
             statusCode: 200,
             headers: {
@@ -104,13 +110,11 @@ describe("callback-handler", () => {
     });
 
     it("uses state from request params if provided", async () => {
-        // This is { aud: "audience-override", redirect_uri: "redirect-uri-override" } encoded
+        // This is { aud: "https://audience-override.example.com", redirect_uri: "redirect-uri-override" } encoded
         const stateOverride =
-            "eyJhdWQiOiJhdWRpZW5jZS1vdmVycmlkZSIsInJlZGlyZWN0X3VyaSI6InJlZGlyZWN0LXVyaS1vdmVycmlkZSJ9"; // pragma: allowlist secret
+            "eyJhdWQiOiJodHRwczovL2F1ZGllbmNlLW92ZXJyaWRlLmV4YW1wbGUuY29tIiwicmVkaXJlY3RfdXJpIjoicmVkaXJlY3QtdXJpLW92ZXJyaWRlIn0="; // pragma: allowlist secret
 
-        const generatePrivateJwtParamsSpy = jest
-            .spyOn(KeyJwtHelper, "generatePrivateJwtParams")
-            .mockResolvedValueOnce(keyJwtValue);
+        jest.spyOn(KeyJwtHelper, "generatePrivateJwtParams").mockResolvedValueOnce(keyJwtValue);
 
         getParametersSpy = jest.spyOn(ClientConfiguration, "getConfig").mockResolvedValueOnce({
             redirectUri,
@@ -135,15 +139,11 @@ describe("callback-handler", () => {
         );
 
         expect(getParametersSpy).toHaveBeenCalledWith(DEFAULT_CLIENT_ID);
-        expect(generatePrivateJwtParamsSpy).toHaveBeenCalledWith(
-            DEFAULT_CLIENT_ID,
-            authorizationCode,
-            "redirect-uri-override",
-            {},
-            "audience-override",
+        expect(getTokenSpy).toHaveBeenCalledWith("https://audience-override.example.com/token", keyJwtValue);
+        expect(issueCredentialSpy).toHaveBeenCalledWith(
+            "https://audience-override.example.com/credential/issue",
+            "access_token_value",
         );
-        expect(getTokenSpy).toHaveBeenCalledWith("audience-override/token", keyJwtValue);
-        expect(issueCredentialSpy).toHaveBeenCalledWith("audience-override/credential/issue", "access_token_value");
         expect(response).toEqual({
             statusCode: 200,
             headers: {
