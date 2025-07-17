@@ -31,7 +31,7 @@ export class CallbackLambdaHandler implements LambdaInterface {
             const redirectUri = statePayload.redirectUri || ssmParameters.redirectUri;
 
             const audienceApi = formatAudience(audience, logger);
-            const tokenEndpoint = `${audienceApi}/token`;
+            const tokenEndpoint = new URL("token", audienceApi).href;
 
             logger.info({ message: "Generating private JWT parameters" });
             const privateJwtParams = await generatePrivateJwtParams(
@@ -44,7 +44,7 @@ export class CallbackLambdaHandler implements LambdaInterface {
             const tokenResponse = await callback.invokeTokenEndpoint(tokenEndpoint, privateJwtParams);
 
             const { access_token } = JSON.parse(tokenResponse.body);
-            const credentialEndpoint = `${audienceApi}/credential/issue`;
+            const credentialEndpoint = new URL("credential/issue", audienceApi).href;
             const { statusCode, body } = await callback.invokeCredentialEndpoint(credentialEndpoint, access_token);
 
             return { statusCode: statusCode, headers: { "Content-Type": "text/plain" }, body };
