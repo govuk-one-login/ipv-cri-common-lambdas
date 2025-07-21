@@ -190,7 +190,7 @@ Mappings:
       production: true
     di-ipv-cri-dl-api:
       dev: true
-      build: false
+      build: true
       staging: false
       integration: false
       production: false
