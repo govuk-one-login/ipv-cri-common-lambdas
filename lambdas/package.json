@@ -35,7 +35,7 @@
         "@opentelemetry/instrumentation-undici": "^0.10.0",
         "@opentelemetry/resource-detector-aws": "^1.11.0",
         "@opentelemetry/sdk-node": "^0.57.1",
-        "@pact-foundation/pact": "^13.1.2",
+        "@pact-foundation/pact": "15.0.1",
         "@smithy/smithy-client": "4.2.0",
         "@smithy/types": "4.2.0",
         "aws-sigv4-fetch": "4.4.1",
@@ -61,6 +61,9 @@
         "ts-jest": "29.1.0",
         "ts-node": "10.9.1",
         "typescript": "5.3.2",
-        "wait-on": "^7.2.0"
+        "wait-on": "8.0.3"
+    },
+    "overrides": {
+        "form-data": ">=4.0.4"
     }
 }
