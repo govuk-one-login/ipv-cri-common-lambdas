@@ -271,6 +271,23 @@ describe("SessionLambda", () => {
         expect(result.statusCode).toBe(400);
         expect(result.body).toContain("1019: Session Validation Exception");
         expect(metricSpy).toHaveBeenCalledWith("jwt_verification_failed", MetricUnits.Count, 1);
+        expect(metricSpy).not.toHaveBeenCalledWith("jwt_expired", MetricUnits.Count, 1);
+    });
+
+    it("should error on JWT validation fail and send expired metirc", async () => {
+        const metricSpy = jest.spyOn(metrics.prototype, "addMetric");
+        jest.spyOn(sessionRequestValidator.prototype, "validateJwt").mockRejectedValueOnce(
+            new SessionValidationError(
+                "Session Validation Exception",
+                "Invalid request: JWT validation/verification failed: ERR_JWT_EXPIRED",
+            ),
+        );
+
+        const result = await lambdaHandler(mockEvent, {} as Context);
+        expect(result.statusCode).toBe(400);
+        expect(result.body).toContain("1019: Session Validation Exception");
+        expect(metricSpy).toHaveBeenCalledWith("jwt_expired", MetricUnits.Count, 1);
+        expect(metricSpy).not.toHaveBeenCalledWith("jwt_verification_failed", MetricUnits.Count, 1);
     });
 
     it("should save the session details", async () => {

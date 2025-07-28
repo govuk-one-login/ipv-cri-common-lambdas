@@ -34,7 +34,7 @@ export class JwtVerifier {
         encodedJwt: Buffer,
         mandatoryClaims: Set<string>,
         expectedClaimValues: Map<string, string>,
-    ): Promise<JWTPayload | null> {
+    ): Promise<JWTPayload> {
         const jwtVerifyOptions = this.createJwtVerifyOptions(expectedClaimValues);
         if (this.usePublicJwksEndpoint === "true") {
             return await this.verifyWithJwksEndpoint(encodedJwt, mandatoryClaims, jwtVerifyOptions);
@@ -143,7 +143,7 @@ export class JwtVerifier {
             return payload;
         } catch (error) {
             this.logger.error("JWT verification failed with JWKS parameter", error as Error);
-            return null;
+            throw error;
         }
     }
 

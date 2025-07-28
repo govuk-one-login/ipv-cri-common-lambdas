@@ -458,7 +458,7 @@ describe("jwt-verifier.ts", () => {
                     expect(jwtVerifyMock).toBeCalledWith(encodedJwt, publicKey, jwtVerifyOptions);
                     expect(logger.error).not.toHaveBeenCalled();
                 });
-                it("should return null when mandatory claim is missing in JWT payload", async () => {
+                it("should throw an error when mandatory claim is missing in JWT payload", async () => {
                     const encodedJwt = Buffer.from("example.encoded.jwt");
                     jest.spyOn(global.Buffer, "from").mockReturnValueOnce(encodedJwt);
                     jest.spyOn(global.JSON, "parse").mockReturnValueOnce(signingPublicJwk);
@@ -483,34 +483,30 @@ describe("jwt-verifier.ts", () => {
                         protectedHeader: {} as JWTHeaderParameters,
                     } as unknown as Promise<jose.JWTVerifyResult & jose.ResolvedKey>);
 
-                    const payload = await jwtVerifier.verify(encodedJwt, mandatoryClaims, expectedClaimValues);
-
-                    expect(payload).toBeNull();
+                    await expect(
+                        jwtVerifier.verify(encodedJwt, mandatoryClaims, expectedClaimValues),
+                    ).rejects.toThrowError("Claims-set missing mandatory claim: sub");
                     expect(logger.error).toHaveBeenCalledWith(
                         "JWT verification failed with JWKS parameter",
                         Error("Claims-set missing mandatory claim: sub"),
                     );
                 });
 
-                it("should return null when it fails to import JWK", async () => {
+                it("should throw an error when it fails to import JWK", async () => {
                     jest.spyOn(jose, "importJWK").mockRejectedValue(new Error("Failed to import JWK"));
                     jest.spyOn(global.JSON, "parse").mockReturnValueOnce("some-parsed-value");
                     const encodedJwt = Buffer.from("expect.jwt.value");
 
-                    const payload = await jwtVerifier.verify(
-                        encodedJwt,
-                        new Set(["iss"]),
-                        new Map([["iss", "some-issuer"]]),
-                    );
-
-                    expect(payload).toBeNull();
+                    await expect(
+                        jwtVerifier.verify(encodedJwt, new Set(["iss"]), new Map([["iss", "some-issuer"]])),
+                    ).rejects.toThrowError("Failed to import JWK");
                     expect(logger.error).toHaveBeenCalledWith(
                         "JWT verification failed with JWKS parameter",
                         Error("Failed to import JWK"),
                     );
                 });
 
-                it("should return null when it fails to verify JWT", async () => {
+                it("should throw an error when it fails to verify JWT", async () => {
                     jest.spyOn(jose, "jwtVerify").mockRejectedValue(
                         new Error("JWT verification failed with JWKS parameter"),
                     );
@@ -519,34 +515,26 @@ describe("jwt-verifier.ts", () => {
                     const importJWKMock = importJWK as jest.MockedFunction<typeof importJWK>;
                     importJWKMock.mockResolvedValueOnce(publicKey);
 
-                    const payload = await jwtVerifier.verify(
-                        encodedJwt,
-                        new Set(["iss"]),
-                        new Map([["iss", "some-issuer"]]),
-                    );
-
-                    expect(payload).toBeNull();
+                    await expect(
+                        jwtVerifier.verify(encodedJwt, new Set(["iss"]), new Map([["iss", "some-issuer"]])),
+                    ).rejects.toThrowError("JWT verification failed with JWKS parameter");
                     expect(logger.error).toHaveBeenCalledWith(
                         "JWT verification failed with JWKS parameter",
                         Error("JWT verification failed with JWKS parameter"),
                     );
                 });
-                it("should return null and log an error if JWT verification fails due to invalid public signing jwk", async () => {
+                it("should throw and log an error if JWT verification fails due to invalid public signing jwk", async () => {
                     const encodedJwt = Buffer.from("exampleEncodedJwt");
 
-                    const payload = await jwtVerifier.verify(
-                        encodedJwt,
-                        new Set(["iss"]),
-                        new Map([["iss", "some-issuer"]]),
-                    );
-
-                    expect(payload).toBeNull();
+                    await expect(
+                        jwtVerifier.verify(encodedJwt, new Set(["iss"]), new Map([["iss", "some-issuer"]])),
+                    ).rejects.toThrowError();
                     expect(logger.error).toHaveBeenCalledWith(
                         "JWT verification failed with JWKS parameter",
                         expect.objectContaining({ message: expect.stringMatching(/Unexpected token '?�'?/) }),
                     );
                 });
-                it("should return null and log an error if one of JWT verification Options is invalid", async () => {
+                it("should thrown and log an error if one of JWT verification Options is invalid", async () => {
                     const jwtVerifyOptions = {
                         algorithms: ["HS256"],
                         audience: "some-audience",
@@ -569,9 +557,10 @@ describe("jwt-verifier.ts", () => {
                     ]);
                     importJWKMock.mockResolvedValueOnce(publicKey);
 
-                    const payload = await jwtVerifier.verify(encodedJwt, mandatoryClaims, expectedClaimValues);
+                    await expect(
+                        jwtVerifier.verify(encodedJwt, mandatoryClaims, expectedClaimValues),
+                    ).rejects.toThrowError();
 
-                    expect(payload).toBeNull;
                     expect(Buffer.from).toHaveBeenCalledWith("publicSigningJwk", "base64");
                     expect(JSON.parse).toHaveBeenCalledWith("example.encoded.jwt");
                     expect(importJWKMock).toBeCalledWith(signingPublicJwk, signingPublicJwk.alg);
@@ -581,7 +570,7 @@ describe("jwt-verifier.ts", () => {
                         Error("JWT verification failed with JWKS parameter"),
                     );
                 });
-                it("should return null when mandatory claims is empty", async () => {
+                it("should throw an error when mandatory claims is empty", async () => {
                     const encodedJwt = Buffer.from("example.encoded.jwt");
                     jest.spyOn(global.Buffer, "from").mockReturnValueOnce(encodedJwt);
                     jest.spyOn(global.JSON, "parse").mockReturnValueOnce(signingPublicJwk);
@@ -607,9 +596,9 @@ describe("jwt-verifier.ts", () => {
                         protectedHeader: {} as JWTHeaderParameters,
                     } as unknown as Promise<jose.JWTVerifyResult & jose.ResolvedKey>);
 
-                    const payload = await jwtVerifier.verify(encodedJwt, mandatoryClaims, expectedClaimValues);
-
-                    expect(payload).toBeNull;
+                    await expect(
+                        jwtVerifier.verify(encodedJwt, mandatoryClaims, expectedClaimValues),
+                    ).rejects.toThrowError();
                     expect(Buffer.from).toHaveBeenCalledWith("publicSigningJwk", "base64");
                     expect(JSON.parse).toHaveBeenCalledWith("example.encoded.jwt");
                     expect(importJWKMock).toBeCalledWith(signingPublicJwk, signingPublicJwk.alg);
@@ -619,7 +608,7 @@ describe("jwt-verifier.ts", () => {
                         Error("No mandatory claims provided"),
                     );
                 });
-                it("should return null when mandatory claims is undefined", async () => {
+                it("should throw an error when mandatory claims is undefined", async () => {
                     const encodedJwt = Buffer.from("example.encoded.jwt");
                     jest.spyOn(global.Buffer, "from").mockReturnValueOnce(encodedJwt);
                     jest.spyOn(global.JSON, "parse").mockReturnValueOnce(signingPublicJwk);
@@ -644,13 +633,9 @@ describe("jwt-verifier.ts", () => {
                         protectedHeader: {} as JWTHeaderParameters,
                     } as unknown as Promise<jose.JWTVerifyResult & jose.ResolvedKey>);
 
-                    const payload = await jwtVerifier.verify(
-                        encodedJwt,
-                        undefined as unknown as Set<string>,
-                        expectedClaimValues,
-                    );
-
-                    expect(payload).toBeNull;
+                    await expect(
+                        jwtVerifier.verify(encodedJwt, undefined as unknown as Set<string>, expectedClaimValues),
+                    ).rejects.toThrowError();
                     expect(Buffer.from).toHaveBeenCalledWith("publicSigningJwk", "base64");
                     expect(JSON.parse).toHaveBeenCalledWith("example.encoded.jwt");
                     expect(importJWKMock).toBeCalledWith(signingPublicJwk, signingPublicJwk.alg);
