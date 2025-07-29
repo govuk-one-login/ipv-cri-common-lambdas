@@ -5,6 +5,7 @@ import { errorPayload, SessionValidationError } from "../../common/utils/errors"
 
 const SESSION_CREATED_METRIC = "session_created";
 const JWT_VERIFICATION_FAILED_METRIC = "jwt_verification_failed";
+const JWT_EXPIRED_METRIC = "jwt_expired";
 const defaults = {};
 
 const errorMiddleware = (
@@ -19,7 +20,11 @@ const errorMiddleware = (
 
         metrics.addMetric(options.metric_name, MetricUnits.Count, 0);
         if (request.error instanceof SessionValidationError && options.metric_name === SESSION_CREATED_METRIC) {
-            metrics.addMetric(JWT_VERIFICATION_FAILED_METRIC, MetricUnits.Count, 1);
+            if (request.error.details?.includes("ERR_JWT_EXPIRED")) {
+                metrics.addMetric(JWT_EXPIRED_METRIC, MetricUnits.Count, 1);
+            } else {
+                metrics.addMetric(JWT_VERIFICATION_FAILED_METRIC, MetricUnits.Count, 1);
+            }
         }
         metrics.publishStoredMetrics();
         return Promise.resolve(errorPayload(request.error as Error, logger, options.message));

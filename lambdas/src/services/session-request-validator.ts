@@ -1,11 +1,12 @@
 import { JwtVerifier } from "../common/security/jwt-verifier";
-import { JWTPayload } from "jose";
+import { JWTPayload, errors } from "jose";
 import { SessionRequestValidationConfig } from "../types/session-request-validation-config";
 import { ClientConfigKey, ConfigKey } from "../types/config-keys";
 import { Logger } from "@aws-lambda-powertools/logger";
 import { SessionValidationError } from "../common/utils/errors";
 import { EvidenceRequest } from "./evidence_request";
 import { CRIEvidenceProperties } from "./cri_evidence_properties";
+
 export class SessionRequestValidator {
     constructor(
         private validationConfig: SessionRequestValidationConfig,
@@ -17,12 +18,6 @@ export class SessionRequestValidator {
         const configuredStrengthScore = this.criEvidenceProperties?.strengthScore;
 
         const payload = await this.verifyJwtSignature(jwt);
-        if (!payload) {
-            throw new SessionValidationError(
-                "Session Validation Exception",
-                "Invalid request: JWT validation/verification failed: JWT verification failure",
-            );
-        }
 
         const evidenceRequested = payload["evidence_requested"] as EvidenceRequest;
         const state = payload["state"] as string;
@@ -82,22 +77,30 @@ export class SessionRequestValidator {
         );
     }
 
-    private async verifyJwtSignature(jwt: Buffer): Promise<JWTPayload | null> {
+    private async verifyJwtSignature(jwt: Buffer): Promise<JWTPayload> {
         const expectedIssuer = this.validationConfig.expectedJwtIssuer;
         const expectedAudience = this.validationConfig.expectedJwtAudience;
-        return await this.jwtVerifier.verify(
-            jwt,
-            new Set([
-                JwtVerifier.ClaimNames.EXPIRATION_TIME,
-                JwtVerifier.ClaimNames.SUBJECT,
-                JwtVerifier.ClaimNames.NOT_BEFORE,
-                JwtVerifier.ClaimNames.STATE,
-            ]),
-            new Map([
-                [JwtVerifier.ClaimNames.AUDIENCE, expectedAudience],
-                [JwtVerifier.ClaimNames.ISSUER, expectedIssuer],
-            ]),
-        );
+        try {
+            return await this.jwtVerifier.verify(
+                jwt,
+                new Set([
+                    JwtVerifier.ClaimNames.EXPIRATION_TIME,
+                    JwtVerifier.ClaimNames.SUBJECT,
+                    JwtVerifier.ClaimNames.NOT_BEFORE,
+                    JwtVerifier.ClaimNames.STATE,
+                ]),
+                new Map([
+                    [JwtVerifier.ClaimNames.AUDIENCE, expectedAudience],
+                    [JwtVerifier.ClaimNames.ISSUER, expectedIssuer],
+                ]),
+            );
+        } catch (error) {
+            const errorDetails = error instanceof errors.JOSEError ? error.code : "JWT verification failure";
+            throw new SessionValidationError(
+                "Session Validation Exception",
+                `Invalid request: JWT validation/verification failed: ${errorDetails}`,
+            );
+        }
     }
 }
 

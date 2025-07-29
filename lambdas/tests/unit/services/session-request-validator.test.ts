@@ -1,5 +1,5 @@
 import { Logger } from "@aws-lambda-powertools/logger";
-import { JWTPayload } from "jose";
+import { errors, JWTPayload } from "jose";
 import { JwtVerifier } from "../../../src/common/security/jwt-verifier";
 import {
     SessionRequestValidator,
@@ -27,7 +27,7 @@ describe("session-request-validator.ts", () => {
         });
 
         it("should return an error on JWT verification failure", async () => {
-            jest.spyOn(jwtVerifier.prototype, "verify").mockResolvedValue(null);
+            jest.spyOn(jwtVerifier.prototype, "verify").mockRejectedValue(new Error());
 
             await expect(
                 sessionRequestValidator.validateJwt(Buffer.from("test-jwt"), "request-client-id"),
@@ -35,6 +35,19 @@ describe("session-request-validator.ts", () => {
                 expect.objectContaining({
                     message: "Session Validation Exception",
                     details: "Invalid request: JWT validation/verification failed: JWT verification failure",
+                }),
+            );
+        });
+
+        it("should return an expired error on JWT Expired failures", async () => {
+            jest.spyOn(jwtVerifier.prototype, "verify").mockRejectedValue(new errors.JWTExpired("", {}));
+
+            await expect(
+                sessionRequestValidator.validateJwt(Buffer.from("test-jwt"), "request-client-id"),
+            ).rejects.toThrow(
+                expect.objectContaining({
+                    message: "Session Validation Exception",
+                    details: "Invalid request: JWT validation/verification failed: ERR_JWT_EXPIRED",
                 }),
             );
         });
