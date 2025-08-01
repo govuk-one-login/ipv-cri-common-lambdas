@@ -315,7 +315,7 @@ Mappings:
     di-ipv-cri-passport-api:
       dev: "true"
       build: "true"
-      staging: "false"
+      staging: "true"
       integration: "false"
       production: "false"
     di-ipv-cri-kbv-hmrc-api:
@@ -358,9 +358,9 @@ Mappings:
       integration: "false"
       production: "false"
     di-ipv-cri-passport-api:
-      dev: "true"
+      dev: "false"
       build: "false"
-      staging: "false"
+      staging: "true"
       integration: "false"
       production: "false"
     di-ipv-cri-kbv-hmrc-api:
