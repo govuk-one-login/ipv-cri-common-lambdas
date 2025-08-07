@@ -317,7 +317,7 @@ Mappings:
       build: "true"
       staging: "true"
       integration: "true"
-      production: "false"
+      production: "true"
     di-ipv-cri-kbv-hmrc-api:
       dev: "false"
       build: "false"
@@ -361,8 +361,8 @@ Mappings:
       dev: "false"
       build: "false"
       staging: "false"
-      integration: "true"
-      production: "false"
+      integration: "false"
+      production: "true"
     di-ipv-cri-kbv-hmrc-api:
       dev: "false"
       build: "false"
