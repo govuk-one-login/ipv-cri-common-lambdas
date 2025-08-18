@@ -27,7 +27,7 @@ jobs:
       sha_short: ${{ steps.vars.outputs.sha_short }}    
     steps:
       - name: Pull repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Gradle
         uses: gradle/gradle-build-action@v2
