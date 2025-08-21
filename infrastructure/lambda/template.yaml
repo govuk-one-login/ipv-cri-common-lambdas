@@ -416,10 +416,10 @@ Mappings:
       production: 0
     di-ipv-cri-check-hmrc-api:
       dev: 0
-      build: 0
+      build: 1
       staging: 0
       integration: 0
-      production: 0
+      production: 1
 
   # CANNOT be >= 1 with JavaSnapStart enabled - (Enables per cri&env role out)
   JavaProvisionedConcurrencyMapping:
