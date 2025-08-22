@@ -308,7 +308,7 @@ Mappings:
       production: "false"
     di-ipv-cri-dl-api:
       dev: "true"
-      build: "false"
+      build: "true"
       staging: "false"
       integration: "false"
       production: "false"
@@ -353,7 +353,7 @@ Mappings:
       production: "false"
     di-ipv-cri-dl-api:
       dev: "false"
-      build: "false"
+      build: "true"
       staging: "false"
       integration: "false"
       production: "false"
