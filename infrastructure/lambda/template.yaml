@@ -180,7 +180,7 @@ Mappings:
       dev: true
       build: true
       staging: true
-      integration: false
+      integration: true
       production: false
     di-ipv-cri-kbv-api:
       dev: true
