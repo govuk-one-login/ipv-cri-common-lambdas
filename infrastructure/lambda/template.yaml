@@ -298,7 +298,7 @@ Mappings:
       dev: "true"
       build: "true"
       staging: "true"
-      integration: "false"
+      integration: "true"
       production: "false"
     di-ipv-cri-kbv-api:
       dev: "true"
@@ -343,7 +343,7 @@ Mappings:
       dev: "false"
       build: "false"
       staging: "false"
-      integration: "false"
+      integration: "true"
       production: "false"
     di-ipv-cri-kbv-api:
       dev: "true"
