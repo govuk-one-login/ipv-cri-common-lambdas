@@ -297,7 +297,7 @@ Mappings:
     di-ipv-cri-fraud-api:
       dev: "true"
       build: "true"
-      staging: "false"
+      staging: "true"
       integration: "false"
       production: "false"
     di-ipv-cri-kbv-api:
@@ -342,7 +342,7 @@ Mappings:
     di-ipv-cri-fraud-api:
       dev: "false"
       build: "false"
-      staging: "false"
+      staging: "true"
       integration: "false"
       production: "false"
     di-ipv-cri-kbv-api:
