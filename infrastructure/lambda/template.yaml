@@ -344,7 +344,7 @@ Mappings:
       build: "false"
       staging: "false"
       integration: "false"
-      production: "true"
+      production: "false"
     di-ipv-cri-kbv-api:
       dev: "true"
       build: "true"
