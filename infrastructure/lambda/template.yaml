@@ -328,8 +328,8 @@ Mappings:
       dev: "true"
       build: "true"
       staging: "true"
-      integration: "false"
-      production: "false"
+      integration: "true"
+      production: "true"
 
   # Enable fall back with key rotation aliases in session decryption
   KeyRotationLegacyFallBackMapping:
@@ -373,8 +373,8 @@ Mappings:
       dev: "true"
       build: "true"
       staging: "true"
-      integration: "false"
-      production: "false"
+      integration: "true"
+      production: "true"
 
   # TS functions Only 0 = off
   TSProvisionedConcurrencyMapping:
