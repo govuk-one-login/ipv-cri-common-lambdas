@@ -48,7 +48,7 @@ Mappings:
       localdev: true
       dev: true
       build: true
-      staging: false
+      staging: true
       integration: false
       production: false
     di-ipv-cri-check-hmrc-api:
