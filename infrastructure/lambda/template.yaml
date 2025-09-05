@@ -811,7 +811,7 @@ Resources:
       Handler: uk.gov.di.ipv.cri.common.api.handler.SessionHandler::handleRequest
       Runtime: java17
       Layers:
-        - arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_311_51_20250331-143707_with_collector_java:1
+        - arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_313_36_20250507-184408_with_collector_java:1
       VpcConfig:
         SubnetIds: !If
           - IsDevPlatformDeploy
@@ -969,7 +969,7 @@ Resources:
       Handler: session-handler.lambdaHandler
       Runtime: nodejs22.x
       Layers:
-        - arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_311_2_20250307-045250_with_collector_nodejs:1
+        - arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_313_2_20250404-043044_with_collector_nodejs:1
       VpcConfig:
         SubnetIds: !If
           - IsDevPlatformDeploy
@@ -1097,7 +1097,7 @@ Resources:
       Handler: uk.gov.di.ipv.cri.common.api.handler.AuthorizationHandler::handleRequest
       Runtime: java17
       Layers:
-        - arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_311_51_20250331-143707_with_collector_java:1
+        - arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_313_36_20250507-184408_with_collector_java:1
       VpcConfig:
         SubnetIds: !If
           - IsDevPlatformDeploy
@@ -1215,7 +1215,7 @@ Resources:
       Handler: authorization-handler.lambdaHandler
       Runtime: nodejs22.x
       Layers:
-        - arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_311_2_20250307-045250_with_collector_nodejs:1
+        - arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_313_2_20250404-043044_with_collector_nodejs:1
       VpcConfig:
         SubnetIds: !If
           - IsDevPlatformDeploy
@@ -1329,7 +1329,7 @@ Resources:
       Handler: uk.gov.di.ipv.cri.common.api.handler.AccessTokenHandler::handleRequest
       Runtime: java17
       Layers:
-        - arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_311_51_20250331-143707_with_collector_java:1
+        - arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_313_36_20250507-184408_with_collector_java:1
       VpcConfig:
         SubnetIds: !If
           - IsDevPlatformDeploy
@@ -1443,7 +1443,7 @@ Resources:
       CodeUri: ../../lambdas
       Runtime: nodejs22.x
       Layers:
-        - arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_311_2_20250307-045250_with_collector_nodejs:1
+        - arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_313_2_20250404-043044_with_collector_nodejs:1
       VpcConfig:
         SubnetIds: !If
           - IsDevPlatformDeploy
@@ -2209,7 +2209,7 @@ Resources:
       Handler: create-auth-code-handler.lambdaHandler
       Runtime: nodejs22.x
       Layers:
-        - arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_311_2_20250307-045250_with_collector_nodejs:1
+        - arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_313_2_20250404-043044_with_collector_nodejs:1
       VpcConfig:
         SubnetIds: !If
           - IsDevPlatformDeploy
