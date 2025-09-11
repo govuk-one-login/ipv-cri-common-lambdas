@@ -305,7 +305,7 @@ Mappings:
       build: "true"
       staging: "true"
       integration: "true"
-      production: "true"
+      production: "false"
     di-ipv-cri-dl-api:
       dev: "true"
       build: "true"
