@@ -311,7 +311,7 @@ Mappings:
       build: "true"
       staging: "true"
       integration: "true"
-      production: "false"
+      production: "true"
     di-ipv-cri-passport-api:
       dev: "true"
       build: "true"
@@ -356,7 +356,7 @@ Mappings:
       build: "false"
       staging: "false"
       integration: "false"
-      production: "false"
+      production: "true"
     di-ipv-cri-passport-api:
       dev: "false"
       build: "false"
