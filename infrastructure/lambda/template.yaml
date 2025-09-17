@@ -470,11 +470,11 @@ Mappings:
   # Permitted values : PublishedVersions or None
   JavaSnapStartMapping:
     di-ipv-cri-address-api:
-      dev: PublishedVersions
-      build: PublishedVersions
-      staging: PublishedVersions
-      integration: PublishedVersions
-      production: PublishedVersions
+      dev: None
+      build: None
+      staging: None
+      integration: None
+      production: None
     di-ipv-cri-fraud-api:
       dev: PublishedVersions
       build: PublishedVersions
