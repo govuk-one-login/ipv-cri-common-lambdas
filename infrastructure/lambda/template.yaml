@@ -2291,6 +2291,9 @@ Resources:
       OpenApiVersion: 3.0.1
       EndpointConfiguration:
         Type: REGIONAL
+      Tags:
+        FMSRegionalPolicy: false
+        CustomPolicy: true
 
   PreMergeDevOnlyApiAccessLogGroup:
     Type: AWS::Logs::LogGroup

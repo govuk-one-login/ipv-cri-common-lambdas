@@ -364,6 +364,11 @@ Resources:
           Name: AWS::Include
           Parameters:
             Location: public-api.yaml
+      Tags:
+        - Key: FMSRegionalPolicy
+          Value: false
+        - Key: CustomPolicy
+          Value: true
       Policy:
         Version: '2012-10-17'
         Statement:
