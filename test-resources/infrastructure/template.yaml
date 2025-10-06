@@ -420,6 +420,11 @@ Resources:
             protocol: $context.protocol
             responseLatency: $context.responseLatency
             responseLength: $context.responseLength
+      Tags:
+        - Key: FMSRegionalPolicy
+          Value: false
+        - Key: CustomPolicy
+          Value: true
 
   ApiAccessLogGroup:
     Type: AWS::Logs::LogGroup
