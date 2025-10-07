@@ -125,12 +125,11 @@ export class SessionLambda implements LambdaInterface {
                     },
                 },
             }),
-            ...(evidenceRequested && {
-                ...(evidenceRequested.verificationScore && {
-                    evidence_requested: {
-                        verificationScore: evidenceRequested.verificationScore,
-                    },
-                }),
+
+            ...(evidenceRequested?.verificationScore && {
+                evidence_requested: {
+                    verificationScore: evidenceRequested.verificationScore,
+                },
             }),
         });
     }

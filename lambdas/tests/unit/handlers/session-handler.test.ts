@@ -611,7 +611,7 @@ describe("SessionLambda", () => {
             );
         });
 
-        it("should save the session details with the context field but still audit identity_check context", async () => {
+        it("should save the session details without the context field", async () => {
             jest.spyOn(sessionRequestValidator.prototype, "validateJwt").mockReturnValue(
                 new Promise<JWTPayload>((res) =>
                     res({
