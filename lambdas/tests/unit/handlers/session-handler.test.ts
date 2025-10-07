@@ -432,37 +432,6 @@ describe("SessionLambda", () => {
         expect(result.body).toContain("1025: Request failed due to a server error");
     });
 
-    it("should save the session details with the context field", async () => {
-        jest.spyOn(sessionRequestValidator.prototype, "validateJwt").mockReturnValue(
-            new Promise<JWTPayload>((res) =>
-                res({
-                    client_id: "test-client-id",
-                    govuk_signin_journey_id: "test-journey-id",
-                    persistent_session_id: "test-persistent-session-id",
-                    redirect_uri: "test-redirect-uri",
-                    state: "test-state",
-                    sub: "test-sub",
-                    shared_claims: mockPerson,
-                    context: "test-context",
-                } as JWTPayload),
-            ),
-        );
-        const spy = jest.spyOn(sessionService.prototype, "saveSession");
-        await lambdaHandler(mockEvent, {} as Context);
-
-        const expectedSessionRequestSummary = {
-            clientId: "test-client-id",
-            clientIpAddress: "test-client-ip-address",
-            clientSessionId: "test-journey-id",
-            persistentSessionId: "test-persistent-session-id",
-            redirectUri: "test-redirect-uri",
-            state: "test-state",
-            subject: "test-sub",
-            context: "test-context",
-        };
-        expect(spy).toHaveBeenCalledWith(expectedSessionRequestSummary);
-    });
-
     describe("SessionLambda has evidenceRequested", () => {
         const previousCriIdentifier = process.env.CRI_IDENTIFIER as string;
         beforeEach(() => {
@@ -547,15 +516,8 @@ describe("SessionLambda", () => {
                     persistentSessionId: "test-persistent-session-id",
                     clientSessionId: "test-journey-id",
                 },
-                extensions: {
-                    evidence: [
-                        {
-                            context: "identity_check",
-                        },
-                    ],
-                    evidence_requested: {
-                        verificationScore: 2,
-                    },
+                evidence_requested: {
+                    verificationScore: 2,
                 },
             });
         });
@@ -589,13 +551,6 @@ describe("SessionLambda", () => {
                     subject: "test-sub",
                     persistentSessionId: "test-persistent-session-id",
                     clientSessionId: "test-journey-id",
-                },
-                extensions: {
-                    evidence: [
-                        {
-                            context: "identity_check",
-                        },
-                    ],
                 },
             });
         });
@@ -656,7 +611,7 @@ describe("SessionLambda", () => {
             );
         });
 
-        it("should save the session details with the context field but still audit identity_check context", async () => {
+        it("should save the session details without the context field", async () => {
             jest.spyOn(sessionRequestValidator.prototype, "validateJwt").mockReturnValue(
                 new Promise<JWTPayload>((res) =>
                     res({
@@ -672,7 +627,6 @@ describe("SessionLambda", () => {
                             strengthScore: 2,
                             verificationScore: 2,
                         },
-                        context: "test-context",
                     } as JWTPayload),
                 ),
             );
@@ -694,7 +648,6 @@ describe("SessionLambda", () => {
                     strengthScore: 2,
                     verificationScore: 2,
                 },
-                context: "test-context",
             };
             expect(spySaveSession).toHaveBeenCalledWith(expectedSessionRequestSummary);
 
@@ -706,15 +659,8 @@ describe("SessionLambda", () => {
                     persistentSessionId: "test-persistent-session-id",
                     clientSessionId: "test-journey-id",
                 },
-                extensions: {
-                    evidence: [
-                        {
-                            context: "identity_check",
-                        },
-                    ],
-                    evidence_requested: {
-                        verificationScore: 2,
-                    },
+                evidence_requested: {
+                    verificationScore: 2,
                 },
             });
         });
