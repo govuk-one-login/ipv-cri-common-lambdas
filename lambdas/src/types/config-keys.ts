@@ -1,10 +1,16 @@
 export enum CommonConfigKey {
-    PERSON_IDENTITY_TABLE_NAME = "PersonIdentityTableName",
-    SESSION_TABLE_NAME = "SessionTableName",
+    PERSON_IDENTITY_TABLE_NAME = "PERSON_IDENTITY_TABLE",
+    SESSION_TABLE_NAME = "SESSION_TABLE",
     SESSION_TTL = "SessionTtl",
     DECRYPTION_KEY_ID = "AuthRequestKmsEncryptionKeyId",
-    VC_ISSUER = "verifiable-credential/issuer",
+    VC_ISSUER = "VC_ISSUER",
 }
+
+export const EnvVarConfigKeys: CommonConfigKey[] = [
+    CommonConfigKey.SESSION_TABLE_NAME,
+    CommonConfigKey.PERSON_IDENTITY_TABLE_NAME,
+    CommonConfigKey.VC_ISSUER,
+];
 
 export enum ClientConfigKey {
     JWT_ISSUER = "issuer",
