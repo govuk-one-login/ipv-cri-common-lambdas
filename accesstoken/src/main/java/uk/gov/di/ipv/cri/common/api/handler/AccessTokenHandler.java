@@ -63,7 +63,7 @@ public class AccessTokenHandler
     public APIGatewayProxyResponseEvent handleRequest(
             APIGatewayProxyRequestEvent input, Context context) {
         try {
-            System.out.println("2");
+            System.out.println("4");
             TokenRequest tokenRequest = accessTokenService.createTokenRequest(input.getBody());
             String authCode = accessTokenService.getAuthorizationCode(tokenRequest);
             SessionItem sessionItem = sessionService.getSessionByAuthorisationCode(authCode);
