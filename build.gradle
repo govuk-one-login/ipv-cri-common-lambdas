@@ -17,8 +17,8 @@ ext {
 		aspectjrt_version        : "1.9.22.1", // https://docs.powertools.aws.dev/lambda/java/#java-compatibility (>= Java17)
 		opentelemetry_version    : "2.12.0-alpha",
 		aws_powertools_version   : "1.18.0",
-		nimbusds_oauth_version   : "11.20.1",
-		nimbusds_jwt_version     : "9.36",
+		nimbusds_oauth_version   : "11.29.1",
+		nimbusds_jwt_version     : "10.4",
 		protobuf_version         : "3.19.4",
 		junit                    : "5.10.1",
 		mockito                  : "4.3.1",
