@@ -11,12 +11,12 @@ java {
 
 ext {
 	dependencyVersions = [
+		jackson_version          : "2.17.2",
 		aws_sdk_version          : "2.29.1",
 		aws_lambda_events_version: "3.11.6",
 		aspectjrt_version        : "1.9.22.1", // https://docs.powertools.aws.dev/lambda/java/#java-compatibility (>= Java17)
 		opentelemetry_version    : "2.12.0-alpha",
 		aws_powertools_version   : "1.18.0",
-		jackson_version          : "2.17.2", // Use AWS POM version only
 		nimbusds_oauth_version   : "11.20.1",
 		nimbusds_jwt_version     : "9.36",
 		protobuf_version         : "3.19.4",
@@ -108,6 +108,13 @@ subprojects {
 	}
 
 	dependencies {
+		jackson platform("com.fasterxml.jackson:jackson-bom:${dependencyVersions.jackson_version}"),
+				"com.fasterxml.jackson.core:jackson-core",
+				"com.fasterxml.jackson.core:jackson-databind",
+				"com.fasterxml.jackson.core:jackson-annotations",
+				"com.fasterxml.jackson.datatype:jackson-datatype-jsr310",
+				"com.fasterxml.jackson.datatype:jackson-datatype-jdk8"
+
 		aws platform("software.amazon.awssdk:bom:${dependencyVersions.aws_sdk_version}")
 		aws_crt_client "software.amazon.awssdk:aws-crt-client:${dependencyVersions.aws_sdk_version}"
 
@@ -129,13 +136,6 @@ subprojects {
 		kms "software.amazon.awssdk:kms"
 
 		lambda_tests "software.amazon.awssdk:aws-lambda-java-tests:1.1.1"
-
-		jackson platform("com.fasterxml.jackson:jackson-bom:${dependencyVersions.jackson_version}"),
-				"com.fasterxml.jackson.core:jackson-core",
-				"com.fasterxml.jackson.core:jackson-databind",
-				"com.fasterxml.jackson.core:jackson-annotations",
-				"com.fasterxml.jackson.datatype:jackson-datatype-jsr310",
-				"com.fasterxml.jackson.datatype:jackson-datatype-jdk8"
 
 		powertools "software.amazon.lambda:powertools-logging:${dependencyVersions.aws_powertools_version}",
 				"software.amazon.lambda:powertools-metrics:${dependencyVersions.aws_powertools_version}",
