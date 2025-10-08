@@ -31,4 +31,5 @@ sam deploy --stack-name "$stack_name" \
   --parameter-overrides \
   Environment=dev \
   ${audit_event_name_prefix:+AuditEventNamePrefix=$audit_event_name_prefix} \
-  ${cri_identifier:+CriIdentifier=$cri_identifier}
+  ${cri_identifier:+CriIdentifier=$cri_identifier} \
+  ForceLambdaUpdate="$(date +%s)"
