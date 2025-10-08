@@ -69,6 +69,10 @@ jobs:
       stack-name: ${{ steps.deploy.outputs.stack-name }}
       stack-outputs: ${{ steps.deploy.outputs.stack-outputs }}
     steps:
+      - name: Set timestamp
+        id: set_timestamp
+        run: echo "timestamp=$(date +%s)" >> $GITHUB_OUTPUT
+
       - name: Deploy stack
         uses: govuk-one-login/github-actions/sam/deploy-stack@ca188729ecb0c92e5fe5ae7c024f9894815da3a1
         id: deploy
@@ -88,3 +92,4 @@ jobs:
             cri:deployment-source=github-actions
           parameters: |
             Environment=dev
+            ForceLambdaUpdate=${{ steps.set_timestamp.outputs.timestamp }}

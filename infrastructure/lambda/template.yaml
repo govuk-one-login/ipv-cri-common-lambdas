@@ -8,6 +8,7 @@ Metadata:
     config:
       ignore_checks:
         - W8003
+        - W1028
         - E3031
         - E3033
         - E1020
@@ -48,6 +49,10 @@ Parameters:
     Description: "Specifies the configuration to enable gradual Lambda deployments. This value is picked up from the LambdaCanaryDeployment on the pipeline "
     Type: String
     Default: AllAtOnce
+  ForceLambdaUpdate:
+    Type: String
+    Default: "initial"
+    Description: "For dev only - used to force Java Lambda version updates for locally deployed and pre-merge stacks"
 
 Conditions:
   UseCodeSigningConfigArn:
@@ -123,6 +128,7 @@ Globals:
         POWERTOOLS_LOG_LEVEL: INFO
         POWERTOOLS_METRICS_NAMESPACE: !Ref CriIdentifier
         SQS_AUDIT_EVENT_PREFIX: !Ref AuditEventNamePrefix
+        FORCE_LAMBDA_UPDATE: !If [IsDevEnvironment, !Ref ForceLambdaUpdate, !Ref AWS::NoValue]
         AWS_LAMBDA_EXEC_WRAPPER: /opt/dynatrace
         DT_CONNECTION_AUTH_TOKEN: !Sub
           - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_CONNECTION_AUTH_TOKEN}}"
