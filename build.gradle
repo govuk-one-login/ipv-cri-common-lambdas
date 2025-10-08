@@ -11,7 +11,7 @@ java {
 
 ext {
 	dependencyVersions = [
-		aws_sdk_version          : "2.29.1",
+		aws_sdk_version          : "2.35.1",
 		aws_lambda_events_version: "3.11.6",
 		aspectjrt_version        : "1.9.22.1", // https://docs.powertools.aws.dev/lambda/java/#java-compatibility (>= Java17)
 		opentelemetry_version    : "2.12.0-alpha",
