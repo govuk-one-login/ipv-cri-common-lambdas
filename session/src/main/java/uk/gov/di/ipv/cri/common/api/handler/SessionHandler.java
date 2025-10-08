@@ -103,7 +103,7 @@ public class SessionHandler
     @Metrics(captureColdStart = true)
     public APIGatewayProxyResponseEvent handleRequest(
             APIGatewayProxyRequestEvent input, Context context) {
-        System.out.println("Hello");
+        System.out.println("2");
         try {
             SessionRequest sessionRequest =
                     sessionRequestService.validateSessionRequest(input.getBody());

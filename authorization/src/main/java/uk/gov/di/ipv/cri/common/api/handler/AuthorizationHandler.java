@@ -74,7 +74,7 @@ public class AuthorizationHandler
             APIGatewayProxyRequestEvent input, Context context) {
 
         try {
-            System.out.println("Hello");
+            System.out.println("2");
             // populate all details from incoming request
             Map<String, List<String>> queryStringParameters = getQueryStringParametersAsMap(input);
             AuthenticationRequest authenticationRequest =
