@@ -101,6 +101,21 @@ subprojects {
 		webcompere
 	}
 
+	/**
+	 * Jackson was being upgraded by transitive dependencies so we have added this block in.
+	 *
+	 * Without it, the Lambdas will not start and instead throw an error:
+	 * java.lang.NoSuchFieldError: CAMEL_CASE_TO_LOWER_CASE_WITH_UNDERSCORES
+	 *
+	 * The version of jackson needs to match what AWS supports i.e. what is defined in their BOM:
+	 * https://github.com/aws/aws-sdk-java-v2/blob/master/pom.xml
+	 */
+	configurations.all {
+		resolutionStrategy {
+			force 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
+		}
+	}
+
 	configurations.all {
 		// https://aws.amazon.com/blogs/developer/tuning-the-aws-java-sdk-2-x-to-reduce-startup-time/
 		exclude group:"software.amazon.awssdk", module: "apache-client"
