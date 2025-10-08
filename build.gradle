@@ -16,7 +16,7 @@ ext {
 		aspectjrt_version        : "1.9.22.1", // https://docs.powertools.aws.dev/lambda/java/#java-compatibility (>= Java17)
 		opentelemetry_version    : "2.12.0-alpha",
 		aws_powertools_version   : "1.18.0",
-		jackson_version          : "2.15.2", // Use AWS POM version only
+		jackson_version          : "2.17.2", // Use AWS POM version only
 		nimbusds_oauth_version   : "11.20.1",
 		nimbusds_jwt_version     : "9.36",
 		protobuf_version         : "3.19.4",
