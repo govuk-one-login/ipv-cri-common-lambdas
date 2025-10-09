@@ -841,6 +841,7 @@ Resources:
             !Ref CriIdentifier,
             !Ref Environment,
           ]
+          AUTH_REQUEST_KMS_ENCRYPTION_KEY_ID: !ImportValue core-infrastructure-CriDecryptionKey1Id
       AutoPublishAlias: live
       AutoPublishAliasAllProperties: true
       SnapStart:
