@@ -834,6 +834,14 @@ Resources:
           ENV_VAR_FEATURE_FLAG_KEY_ROTATION: !FindInMap [ KeyRotationMapping, !Ref CriIdentifier, !Ref Environment ]
           ENV_VAR_FEATURE_CONSUME_PUBLIC_JWK: !FindInMap [ CorePublicSigningJwksEnabled, !Ref CriIdentifier, !Ref Environment ]
           ENV_VAR_FEATURE_FLAG_KEY_ROTATION_LEGACY_KEY_FALLBACK: !FindInMap [ KeyRotationLegacyFallBackMapping, !Ref CriIdentifier, !Ref Environment ]
+          SESSION_TABLE: !Ref SessionTable
+          PERSON_IDENTITY_TABLE: !Ref PersonIdentityTable
+          VERIFIABLE_CREDENTIAL_ISSUER: !FindInMap [
+            VerifiableCredentialIssuerMapping,
+            !Ref CriIdentifier,
+            !Ref Environment,
+          ]
+          AUTH_REQUEST_KMS_ENCRYPTION_KEY_ID: !ImportValue core-infrastructure-CriDecryptionKey1Id
       AutoPublishAlias: live
       AutoPublishAliasAllProperties: true
       SnapStart:
@@ -993,6 +1001,13 @@ Resources:
           ENV_VAR_FEATURE_FLAG_KEY_ROTATION: !FindInMap [ KeyRotationMapping, !Ref CriIdentifier, !Ref Environment ]
           ENV_VAR_FEATURE_CONSUME_PUBLIC_JWK: !FindInMap [ CorePublicSigningJwksEnabled, !Ref CriIdentifier, !Ref Environment]
           ENV_VAR_FEATURE_FLAG_KEY_ROTATION_LEGACY_KEY_FALLBACK: !FindInMap [ KeyRotationLegacyFallBackMapping, !Ref CriIdentifier, !Ref Environment ]
+          SESSION_TABLE: !Ref SessionTable
+          PERSON_IDENTITY_TABLE: !Ref PersonIdentityTable
+          VERIFIABLE_CREDENTIAL_ISSUER: !FindInMap [
+            VerifiableCredentialIssuerMapping,
+            !Ref CriIdentifier,
+            !Ref Environment,
+          ]
       AutoPublishAlias: live
       AutoPublishAliasAllProperties: true
       Policies:
@@ -1115,6 +1130,7 @@ Resources:
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-authorization"
+          SESSION_TABLE: !Ref SessionTable
       AutoPublishAlias: live
       AutoPublishAliasAllProperties: true
       SnapStart:
@@ -1233,6 +1249,7 @@ Resources:
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-authorizationTS"
+          SESSION_TABLE: !Ref SessionTable
       AutoPublishAlias: live
       AutoPublishAliasAllProperties: true
       Policies:
@@ -1348,6 +1365,7 @@ Resources:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-access-token"
           ENV_VAR_FEATURE_CONSUME_PUBLIC_JWK: !FindInMap [ CorePublicSigningJwksEnabled, !Ref CriIdentifier, !Ref Environment ]
+          SESSION_TABLE: !Ref SessionTable
       AutoPublishAlias: live
       AutoPublishAliasAllProperties: true
       SnapStart:
@@ -1462,6 +1480,7 @@ Resources:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-access-token-2"
           ENV_VAR_FEATURE_CONSUME_PUBLIC_JWK: !FindInMap [ CorePublicSigningJwksEnabled, !Ref CriIdentifier, !Ref Environment]
+          SESSION_TABLE: !Ref SessionTable
       AutoPublishAlias: live
       AutoPublishAliasAllProperties: true
       Policies:
@@ -2227,6 +2246,7 @@ Resources:
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-create-auth-code"
+          SESSION_TABLE: !Ref SessionTable
       Policies:
         - DynamoDBWritePolicy:
             TableName:

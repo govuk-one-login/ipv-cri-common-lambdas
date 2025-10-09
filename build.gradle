@@ -11,7 +11,7 @@ java {
 
 ext {
 	dependencyVersions = [
-		aws_sdk_version          : "2.28.8",
+		aws_sdk_version          : "2.35.1",
 		aws_lambda_events_version: "3.11.6",
 		aspectjrt_version        : "1.9.22.1", // https://docs.powertools.aws.dev/lambda/java/#java-compatibility (>= Java17)
 		opentelemetry_version    : "2.12.0-alpha",
@@ -23,7 +23,7 @@ ext {
 		junit                    : "5.10.1",
 		mockito                  : "4.3.1",
 		glassfish_version        : "3.0.3",
-		cri_common_lib           : "6.4.2",
+		cri_common_lib           : "7.0.0",
 		webcompere_version       : "2.1.7",
 	]
 }
@@ -99,6 +99,21 @@ subprojects {
 		cri_common_lib
 		pact_tests
 		webcompere
+	}
+
+	/**
+	 * Jackson was being upgraded by transitive dependencies so we have added this block in.
+	 *
+	 * Without it, the Lambdas will not start and instead throw an error:
+	 * java.lang.NoSuchFieldError: CAMEL_CASE_TO_LOWER_CASE_WITH_UNDERSCORES
+	 *
+	 * The version of jackson needs to match what AWS supports i.e. what is defined in their BOM:
+	 * https://github.com/aws/aws-sdk-java-v2/blob/master/pom.xml
+	 */
+	configurations.all {
+		resolutionStrategy {
+			force 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
+		}
 	}
 
 	configurations.all {
