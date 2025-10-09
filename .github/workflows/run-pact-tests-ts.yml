@@ -3,11 +3,11 @@ name: Unit pact tests (TypeScript)
 on:
   workflow_call:
     inputs:
-      cri-provider: {required: true, type: string}
+      cri-provider: { required: true, type: string }
     secrets:
-      pact-broker-host: {required: true}
-      pact-broker-username: {required: true}
-      pact-broker-password: {required: true}
+      pact-broker-host: { required: true }
+      pact-broker-username: { required: true }
+      pact-broker-password: { required: true }
 
 concurrency:
   group: pact-tests-ts-${{ inputs.cri-provider }}-${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
@@ -46,4 +46,6 @@ jobs:
           PACT_BROKER_HOST: ${{ secrets.pact-broker-host }}
           PACT_BROKER_USERNAME: ${{ secrets.pact-broker-username }}
           PACT_BROKER_PASSWORD: ${{ secrets.pact-broker-password }}
-
+          SESSION_TABLE: some-session-table
+          PERSON_IDENTITY_TABLE: some-personidentity-table
+          VC_ISSUER: some-vc-issuer
