@@ -1003,7 +1003,7 @@ Resources:
           ENV_VAR_FEATURE_FLAG_KEY_ROTATION_LEGACY_KEY_FALLBACK: !FindInMap [ KeyRotationLegacyFallBackMapping, !Ref CriIdentifier, !Ref Environment ]
           SESSION_TABLE: !Ref SessionTable
           PERSON_IDENTITY_TABLE: !Ref PersonIdentityTable
-          VERIFIABLE_CREDENTIAL_ISSUER: !FindInMap [
+          VC_ISSUER: !FindInMap [
             VerifiableCredentialIssuerMapping,
             !Ref CriIdentifier,
             !Ref Environment,

@@ -13,9 +13,20 @@ describe("ConfigService", () => {
     let ssmClient: SSMClient;
     let configService: ConfigService;
 
+    const mockSessionTable = "sessionTable";
+    const mockPersonIdentityTable = "personIdentityTable";
+    const mockVcIssuer = "mockVcIssuer";
+
     beforeEach(() => {
         ssmClient = new SSMClient({});
         configService = new ConfigService(new SSMProvider({ awsSdkV3Client: ssmClient }));
+
+        process.env = {
+            ...process.env,
+            [CommonConfigKey.SESSION_TABLE_NAME]: mockSessionTable,
+            [CommonConfigKey.PERSON_IDENTITY_TABLE_NAME]: mockPersonIdentityTable,
+            [CommonConfigKey.VC_ISSUER]: mockVcIssuer,
+        };
     });
 
     afterEach(() => {
@@ -30,7 +41,7 @@ describe("ConfigService", () => {
                 "/di-ipv-cri-common-lambdas/SessionTtl": "100",
             });
 
-            await configService.init([CommonConfigKey.SESSION_TABLE_NAME]);
+            await configService.init([CommonConfigKey.SESSION_TTL]);
             const epoch = configService.getSessionExpirationEpoch();
             expect(epoch).toEqual(Math.floor((Date.now() + 100 * 1000) / 1000));
         });
@@ -39,15 +50,22 @@ describe("ConfigService", () => {
     describe("init", () => {
         it("should initialise the default config", async () => {
             ssmProvider.getParametersByName.mockResolvedValue({});
-            await configService.init([CommonConfigKey.SESSION_TABLE_NAME]);
+            await configService.init([CommonConfigKey.SESSION_TTL]);
 
             expect(ssmProvider.getParametersByName).toBeCalledWith(
                 {
-                    "/di-ipv-cri-common-lambdas/SessionTableName": {},
+                    "/di-ipv-cri-common-lambdas/SessionTtl": {},
                 },
                 expect.objectContaining({
                     maxAge: 300,
                 }),
+            );
+        });
+
+        it("should throw if an environment variable is missing", async () => {
+            process.env.SESSION_TABLE = undefined;
+            await expect(() => configService.init([CommonConfigKey.SESSION_TABLE_NAME])).rejects.toThrowError(
+                `Missing environment variable SESSION_TABLE! Got: undefined`,
             );
         });
     });
@@ -141,7 +159,7 @@ describe("ConfigService", () => {
         });
     });
 
-    describe("initConfigUsingAbsolutePath", () => {
+    describe("initConfigWithCriIdentifierInPath", () => {
         it("should successfully initialise the client config", async () => {
             ssmProvider.getParametersByName.mockResolvedValue({
                 "/di-ipv-cri-check-hmrc-api/strengthScore": "2",
@@ -164,9 +182,30 @@ describe("ConfigService", () => {
             expect(configService.hasClientConfig("test")).toBe(true);
         });
 
-        it("should throw an error for an invalid client ID", async () => {
+        it("should handle an empty SSM response due to an invalid client ID", async () => {
             ssmProvider.getParametersByName.mockResolvedValue({
                 _errors: [],
+            });
+
+            configService.initConfigWithCriIdentifierInPath(
+                "test",
+                "di-ipv-cri-check-hmrc-api",
+                ConfigKey.CRI_EVIDENCE_PROPERTIES,
+            );
+
+            expect(ssmProvider.getParametersByName).toBeCalledWith(
+                {
+                    "/di-ipv-cri-check-hmrc-api/evidence-properties": {},
+                },
+                expect.objectContaining({
+                    maxAge: 300,
+                }),
+            );
+        });
+
+        it("should handle an SSM response containing errors", async () => {
+            ssmProvider.getParametersByName.mockResolvedValue({
+                _errors: ["blah", "blah", "no"],
             });
 
             configService.initConfigWithCriIdentifierInPath(
@@ -223,28 +262,15 @@ describe("ConfigService", () => {
 
     describe("getConfigEntry", () => {
         it("should successfully return the config", async () => {
-            ssmProvider.getParametersByName.mockResolvedValue({
-                "/di-ipv-cri-common-lambdas/SessionTableName": ["session-cic-common-cri-api-local"],
-            });
-
             await configService.init([CommonConfigKey.SESSION_TABLE_NAME]);
             const response = configService.getConfigEntry(CommonConfigKey.SESSION_TABLE_NAME);
 
-            expect(ssmProvider.getParametersByName).toBeCalledWith(
-                {
-                    "/di-ipv-cri-common-lambdas/SessionTableName": {},
-                },
-                {
-                    maxAge: 300,
-                    throwOnError: false,
-                },
-            );
-            expect(response).toEqual(["session-cic-common-cri-api-local"]);
+            expect(response).toEqual(mockSessionTable);
         });
 
         it("should throw an error if the parameter is unavailable", async () => {
             expect(() => configService.getConfigEntry(CommonConfigKey.SESSION_TABLE_NAME)).toThrowError(
-                "Missing SSM parameter /di-ipv-cri-common-lambdas/SessionTableName",
+                "Request for a parameter that was not requested at init: SESSION_TABLE",
             );
         });
     });
@@ -278,7 +304,7 @@ describe("ConfigService", () => {
             await configService.init([CommonConfigKey.SESSION_TABLE_NAME]);
 
             expect(() => configService.getAuditConfig()).toThrowError(
-                "Missing SSM parameter /di-ipv-cri-common-lambdas/verifiable-credential/issuer",
+                "Request for a parameter that was not requested at init: VC_ISSUER",
             );
         });
 
@@ -290,24 +316,11 @@ describe("ConfigService", () => {
                 SQS_AUDIT_EVENT_QUEUE_URL: mockUrl,
             };
 
-            ssmProvider.getParametersByName.mockResolvedValue({
-                "/di-ipv-cri-common-lambdas/verifiable-credential/issuer": "session-cic-common-cri-api-local",
-            });
-
             await configService.init([CommonConfigKey.VC_ISSUER]);
-
-            expect(ssmProvider.getParametersByName).toBeCalledWith(
-                {
-                    "/di-ipv-cri-common-lambdas/verifiable-credential/issuer": {},
-                },
-                expect.objectContaining({
-                    maxAge: 300,
-                }),
-            );
 
             expect(configService.getAuditConfig()).toEqual({
                 auditEventNamePrefix: "IPV_ADDRESS_CRI",
-                issuer: "session-cic-common-cri-api-local",
+                issuer: mockVcIssuer,
                 queueUrl: mockUrl,
             });
         });

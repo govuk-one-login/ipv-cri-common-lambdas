@@ -1,6 +1,6 @@
 import { SSMClient, Parameter } from "@aws-sdk/client-ssm";
 import { CriAuditConfig } from "../../types/cri-audit-config";
-import { ClientConfigKey, CommonConfigKey } from "../../types/config-keys";
+import { ClientConfigKey, CommonConfigKey, EnvVarConfigKeys } from "../../types/config-keys";
 import { SSMProvider } from "@aws-lambda-powertools/parameters/ssm";
 import { logger } from "../utils/power-tool";
 
@@ -19,8 +19,20 @@ export class ConfigService {
         }),
     ) {}
 
-    public init(keys: CommonConfigKey[]): Promise<void> {
-        return this.getDefaultConfig(keys);
+    public async init(keys: CommonConfigKey[]): Promise<void> {
+        const environmentConfigKeys = keys.filter((k) => EnvVarConfigKeys.includes(k));
+        for (const k of environmentConfigKeys) {
+            const value = process.env[k];
+            if (!value) throw new Error(`Missing environment variable ${k}! Got: ${value}`);
+            this.configEntries.set(k, value);
+        }
+
+        const ssmConfigKeys = keys.filter((k) => !EnvVarConfigKeys.includes(k));
+        const ssmParamNameMapping = Object.fromEntries(ssmConfigKeys.map((k) => [this.getSSMParameterName(k), k]));
+        const ssmParameters = await this.getSSMParameters(Object.keys(ssmParamNameMapping));
+        for (const p of ssmParameters ?? []) {
+            this.configEntries.set(ssmParamNameMapping[p.Name as string], p.Value as string);
+        }
     }
 
     public async initClientConfig(clientId: string, paramNameSuffixes: ClientConfigKey[]) {
@@ -29,9 +41,9 @@ export class ConfigService {
             throw new Error("Undefined clientId supplied");
         }
         const ssmParamNames: string[] = paramNameSuffixes.map((paramNameSuffix) => {
-            return this.getParameterName(`${parameterPrefix}/${paramNameSuffix}`);
+            return this.getSSMParameterName(`${parameterPrefix}/${paramNameSuffix}`);
         });
-        const ssmParameters = await this.getParameters(ssmParamNames);
+        const ssmParameters = await this.getSSMParameters(ssmParamNames);
         if (ssmParameters.length === 0) {
             throw new Error(`No client config found. Invalid client id encountered: ${clientId}`);
         }
@@ -70,11 +82,10 @@ export class ConfigService {
     }
 
     public getConfigEntry(key: CommonConfigKey) {
-        const paramName = `/${AWS_STACK_NAME_PREFIX}/${key}`;
-        if (!this.configEntries.has(paramName)) {
-            throw new Error(`Missing SSM parameter ${paramName}`);
+        if (!this.configEntries.has(key)) {
+            throw new Error(`Request for a parameter that was not requested at init: ${key}`);
         }
-        return this.configEntries.get(paramName) as string;
+        return this.configEntries.get(key) as string;
     }
 
     public getAuditConfig(): CriAuditConfig {
@@ -111,7 +122,7 @@ export class ConfigService {
         return Math.floor((Date.now() + this.getBearerAccessTokenTtl() * 1000) / 1000);
     }
 
-    private getParameterName(parameterNameSuffix: string) {
+    private getSSMParameterName(parameterNameSuffix: string) {
         return `/${AWS_STACK_NAME_PREFIX}/${parameterNameSuffix}`;
     }
 
@@ -127,12 +138,6 @@ export class ConfigService {
         return [name, value];
     }
 
-    private async getDefaultConfig(paramNameSuffixes: CommonConfigKey[]): Promise<void> {
-        const ssmParamNames = paramNameSuffixes.map((p) => this.getParameterName(p));
-        const ssmParameters = await this.getParameters(ssmParamNames);
-        ssmParameters?.forEach((p) => this.configEntries.set(p.Name as string, p.Value as string));
-    }
-
     private async getCriIdentifierParameters(ssmParamNames: string[]): Promise<Parameter[]> {
         const { _errors: errors, ...parameters } = await this.ssmProvider.getParametersByName<string>(
             Object.fromEntries(ssmParamNames.map((parameter) => [parameter, {}])),
@@ -146,7 +151,7 @@ export class ConfigService {
         return Object.entries(parameters).map(([name, value]) => ({ Name: name, Value: value }));
     }
 
-    private async getParameters(ssmParamNames: string[]): Promise<Parameter[]> {
+    private async getSSMParameters(ssmParamNames: string[]): Promise<Parameter[]> {
         const { _errors: errors, ...parameters } = await this.ssmProvider.getParametersByName<string>(
             Object.fromEntries(ssmParamNames.map((parameter) => [parameter, {}])),
             { maxAge: PARAMETER_TTL, throwOnError: false },
