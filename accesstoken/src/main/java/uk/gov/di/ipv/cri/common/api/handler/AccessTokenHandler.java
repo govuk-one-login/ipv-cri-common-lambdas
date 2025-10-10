@@ -8,9 +8,9 @@ import com.nimbusds.oauth2.sdk.AccessTokenResponse;
 import com.nimbusds.oauth2.sdk.TokenRequest;
 import org.apache.logging.log4j.Level;
 import software.amazon.awssdk.http.HttpStatusCode;
-import software.amazon.lambda.powertools.logging.CorrelationIdPathConstants;
+import software.amazon.lambda.powertools.logging.CorrelationIdPaths;
 import software.amazon.lambda.powertools.logging.Logging;
-import software.amazon.lambda.powertools.metrics.Metrics;
+import software.amazon.lambda.powertools.metrics.FlushMetrics;
 import uk.gov.di.ipv.cri.common.library.annotations.ExcludeFromGeneratedCoverageReport;
 import uk.gov.di.ipv.cri.common.library.error.ErrorResponse;
 import uk.gov.di.ipv.cri.common.library.exception.AccessTokenValidationException;
@@ -58,8 +58,8 @@ public class AccessTokenHandler
     }
 
     @Override
-    @Logging(correlationIdPath = CorrelationIdPathConstants.API_GATEWAY_REST, clearState = true)
-    @Metrics(captureColdStart = true)
+    @Logging(correlationIdPath = CorrelationIdPaths.API_GATEWAY_REST, clearState = true)
+    @FlushMetrics(captureColdStart = true)
     public APIGatewayProxyResponseEvent handleRequest(
             APIGatewayProxyRequestEvent input, Context context) {
         try {
