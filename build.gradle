@@ -15,7 +15,7 @@ ext {
 		aws_lambda_events_version: "3.11.6",
 		aspectjrt_version        : "1.9.22.1", // https://docs.powertools.aws.dev/lambda/java/#java-compatibility (>= Java17)
 		opentelemetry_version    : "2.12.0-alpha",
-		aws_powertools_version   : "1.18.0",
+		aws_powertools_version   : "2.4.0",
 		jackson_version          : "2.15.2", // Use AWS POM version only
 		nimbusds_oauth_version   : "11.20.1",
 		nimbusds_jwt_version     : "9.36",
@@ -23,7 +23,7 @@ ext {
 		junit                    : "5.10.1",
 		mockito                  : "4.3.1",
 		glassfish_version        : "3.0.3",
-		cri_common_lib           : "7.0.0",
+		cri_common_lib           : "8.0.0",
 		webcompere_version       : "2.1.7",
 	]
 }
@@ -153,9 +153,12 @@ subprojects {
 				"com.fasterxml.jackson.datatype:jackson-datatype-jdk8"
 
 		powertools "software.amazon.lambda:powertools-logging:${dependencyVersions.aws_powertools_version}",
+				"software.amazon.lambda:powertools-logging-log4j:${dependencyVersions.aws_powertools_version}",
 				"software.amazon.lambda:powertools-metrics:${dependencyVersions.aws_powertools_version}",
 				"software.amazon.lambda:powertools-tracing:${dependencyVersions.aws_powertools_version}",
-				"software.amazon.lambda:powertools-parameters:${dependencyVersions.aws_powertools_version}"
+				"software.amazon.lambda:powertools-parameters-ssm:${dependencyVersions.aws_powertools_version}",
+				"software.amazon.lambda:powertools-parameters-secrets:${dependencyVersions.aws_powertools_version}"
+
 
 		tests "org.junit.jupiter:junit-jupiter-api:${dependencyVersions.junit}",
 				"org.junit.jupiter:junit-jupiter-params:${dependencyVersions.junit}",
@@ -171,7 +174,7 @@ subprojects {
 
 		test_runtime "org.junit.jupiter:junit-jupiter-engine:${dependencyVersions.junit}"
 
-		logging_runtime "com.amazonaws:aws-lambda-java-log4j2:1.5.1"
+		logging_runtime "com.amazonaws:aws-lambda-java-log4j2:1.6.0"
 
 		lambda_tests "software.amazon.awssdk:aws-lambda-java-tests:1.1.1"
 
