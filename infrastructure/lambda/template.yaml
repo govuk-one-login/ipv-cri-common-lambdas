@@ -858,6 +858,8 @@ Resources:
               Fn::ImportValue: !Sub ${TxmaStackName}-AuditEventQueueName
         - KMSDecryptPolicy:
             KeyId: !ImportValue core-infrastructure-CriDecryptionKey1Id
+        - KMSDecryptPolicy:
+            KeyId: !Ref DynamoTablesEncryptionKey
         - Statement:
             - Effect: Allow
               Action:
@@ -1022,6 +1024,8 @@ Resources:
               Fn::ImportValue: !Sub ${TxmaStackName}-AuditEventQueueName
         - KMSDecryptPolicy:
             KeyId: !ImportValue core-infrastructure-CriDecryptionKey1Id
+        - KMSDecryptPolicy:
+            KeyId: !Ref DynamoTablesEncryptionKey
         - SSMParameterReadPolicy:
             ParameterName: !Sub "${AWS::StackName}/clients/*"
         - Statement:
@@ -1142,6 +1146,8 @@ Resources:
             TableName: !Ref SessionTable
         - DynamoDBWritePolicy:
             TableName: !Ref SessionTable
+        - KMSDecryptPolicy:
+            KeyId: !Ref DynamoTablesEncryptionKey
         - Statement:
             - Effect: Allow
               Action:
@@ -1259,6 +1265,8 @@ Resources:
             TableName: !Ref SessionTable
         - DynamoDBWritePolicy:
             TableName: !Ref SessionTable
+        - KMSDecryptPolicy:
+            KeyId: !Ref DynamoTablesEncryptionKey
         - SSMParameterReadPolicy:
             ParameterName: !Sub "${AWS::StackName}/clients/*"
         - Statement:
@@ -1377,6 +1385,8 @@ Resources:
         - DynamoDBWritePolicy:
             TableName:
               Ref: SessionTable
+        - KMSDecryptPolicy:
+            KeyId: !Ref DynamoTablesEncryptionKey
         - Statement:
             - Effect: Allow
               Action:
@@ -1492,6 +1502,8 @@ Resources:
         - DynamoDBWritePolicy:
             TableName:
               Ref: SessionTable
+        - KMSDecryptPolicy:
+            KeyId: !Ref DynamoTablesEncryptionKey
         - Statement:
             - Effect: Allow
               Action:
@@ -1589,6 +1601,45 @@ Resources:
       Threshold: 1
       ComparisonOperator: GreaterThanThreshold
       TreatMissingData: notBreaching
+
+  DynamoTablesEncryptionKey:
+    Type: AWS::KMS::Key
+    Properties:
+      EnableKeyRotation: true
+      Description: !Sub ${AWS::StackName} customer-managed key for DynamoDB at-rest encryption
+      KeyPolicy:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
+            Action:
+              - kms:*
+            Resource: "*"
+          - Effect: Allow
+            Principal:
+              Service: "dynamodb.amazonaws.com"
+            Action:
+              - "kms:Encrypt*"
+              - "kms:Decrypt*"
+              - "kms:ReEncrypt*"
+              - "kms:GenerateDataKey*"
+              - "kms:Describe*"
+            Resource: "*"
+            Condition:
+              StringEquals:
+                "kms:CallerAccount": !Sub "${AWS::AccountId}"
+                "kms:ViaService":
+                  - "dynamodb.amazonaws.com"
+                  - !Sub "lambda.${AWS::Region}.amazonaws.com"
+
+  DynamoDBCustomerManagedKeyIDParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/DynamoDBCustomerManagedKeyID"
+      Type: String
+      Value: !Ref DynamoTablesEncryptionKey
+      Description: DynamoDB customer managed key ID to be consumed by CRI stacks
 
   SessionTable:
     Type: "AWS::DynamoDB::Table"
@@ -2251,6 +2302,8 @@ Resources:
         - DynamoDBWritePolicy:
             TableName:
               Ref: SessionTable
+        - KMSDecryptPolicy:
+            KeyId: !Ref DynamoTablesEncryptionKey
         - Statement:
             - Effect: Allow
               Action:
