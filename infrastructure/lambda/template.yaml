@@ -100,6 +100,9 @@ Conditions:
     - !Equals [!Ref CriIdentifier, "di-ipv-cri-kbv-hmrc-api"]
     - !Equals [!Ref CriIdentifier, "di-ipv-cri-check-hmrc-api"]
   UseCanaryDeploymentAlarms: !Not [ !Equals [ !Ref LambdaDeploymentPreference, AllAtOnce ]]
+  UseCustomerManagedKey: !Equals
+    - !FindInMap [CustomerManagedKey, !Ref "CriIdentifier", useCMK]
+    - true
 
 Globals:
   Function:
@@ -174,6 +177,22 @@ Globals:
 
 
 Mappings:
+
+  CustomerManagedKey:
+    di-ipv-cri-address-api: 
+      useCMK: true
+    di-ipv-cri-check-hmrc-api: 
+      useCMK: true
+    di-ipv-cri-kbv-api: 
+      useCMK: true
+    di-ipv-cri-fraud-api: 
+      useCMK: false
+    di-ipv-cri-dl-api: 
+      useCMK: false
+    di-ipv-cri-passport-api: 
+      useCMK: false
+    di-ipv-cri-kbv-hmrc-api: 
+      useCMK: false
 
   CorePublicSigningJwksEnabled:
     di-ipv-cri-address-api:
@@ -1692,6 +1711,13 @@ Resources:
       TimeToLiveSpecification:
         AttributeName: expiryDate
         Enabled: true
+      SSESpecification: !If
+        - UseCustomerManagedKey
+        - 
+          KMSMasterKeyId: !Ref DynamoTablesEncryptionKey
+          SSEEnabled: true
+          SSEType: KMS
+        - !Ref "AWS::NoValue"
 
   PersonIdentityTable:
     Type: "AWS::DynamoDB::Table"
@@ -1709,6 +1735,13 @@ Resources:
       TimeToLiveSpecification:
         AttributeName: expiryDate
         Enabled: true
+      SSESpecification: !If
+        - UseCustomerManagedKey
+        - 
+          KMSMasterKeyId: !Ref DynamoTablesEncryptionKey
+          SSEEnabled: true
+          SSEType: KMS
+        - !Ref "AWS::NoValue"
 
   ParameterSessionTableName:
     Type: AWS::SSM::Parameter
