@@ -87,18 +87,18 @@ export const validateClaimsSet = (claimsSet: JWTClaimsSet) => {
 };
 
 const createState = (audience: string, redirectUri: string, existingState?: string): string => {
-    const defaultStatePayload = { aud: audience, redirect_uri: redirectUri };
+    const defaultState = { aud: audience, redirect_uri: redirectUri };
 
     if (!existingState) {
-        return base64Encode(JSON.stringify(defaultStatePayload));
+        return base64Encode(JSON.stringify(defaultState));
     }
 
     try {
         const decodedState = JSON.parse(base64Decode(existingState));
-        const mergedState = { ...defaultStatePayload, ...decodedState };
+        const mergedState = { ...defaultState, ...decodedState };
         return base64Encode(JSON.stringify(mergedState));
     } catch {
-        return base64Encode(JSON.stringify(defaultStatePayload));
+        return base64Encode(JSON.stringify(defaultState));
     }
 };
 
