@@ -1,4 +1,4 @@
-import { createLocalJWKSet, importJWK, JWTPayload, jwtVerify } from "jose";
+import { createLocalJWKSet, JWTPayload, jwtVerify } from "jose";
 import { JWTVerifyOptions } from "jose/dist/types/jwt/verify";
 import { Logger } from "@aws-lambda-powertools/logger";
 import { JwtVerificationConfig } from "../../types/jwt-verification-config";
@@ -21,14 +21,11 @@ export enum ClaimNames {
 
 export class JwtVerifier {
     static ClaimNames = ClaimNames;
-    private readonly usePublicJwksEndpoint;
 
     constructor(
         private jwtVerifierConfig: JwtVerificationConfig,
         private logger: Logger,
-    ) {
-        this.usePublicJwksEndpoint = process.env.ENV_VAR_FEATURE_CONSUME_PUBLIC_JWK ?? "false";
-    }
+    ) {}
 
     public async verify(
         encodedJwt: Buffer,
@@ -36,19 +33,7 @@ export class JwtVerifier {
         expectedClaimValues: Map<string, string>,
     ): Promise<JWTPayload> {
         const jwtVerifyOptions = this.createJwtVerifyOptions(expectedClaimValues);
-        if (this.usePublicJwksEndpoint === "true") {
-            return await this.verifyWithJwksEndpoint(encodedJwt, mandatoryClaims, jwtVerifyOptions);
-        } else {
-            this.logger.info("Using public JWKS endpoint is disabled");
-            return await this.verifyWithJwksParam(encodedJwt, mandatoryClaims, jwtVerifyOptions);
-        }
-    }
 
-    private async verifyWithJwksEndpoint(
-        encodedJwt: Buffer,
-        mandatoryClaims: Set<string>,
-        jwtVerifyOptions: JWTVerifyOptions,
-    ) {
         this.logger.info("Using JWKS endpoint: " + this.jwtVerifierConfig.jwksEndpoint);
         try {
             if (!this.jwtVerifierConfig.jwksEndpoint) {
@@ -60,19 +45,16 @@ export class JwtVerifier {
             }
 
             const jwks = await this.fetchJWKSWithCache(this.jwtVerifierConfig.jwksEndpoint);
-
             const localJWKSet = createLocalJWKSet(jwks);
             const { payload } = await jwtVerify(encodedJwt.toString(), localJWKSet, jwtVerifyOptions);
+
             this.verifyMandatoryClaims(mandatoryClaims, payload);
-            this.logger.info("Sucessfully verified JWT using Public JWKS Endpoint");
+            this.logger.info("Successfully verified JWT using Public JWKS Endpoint");
             return payload;
         } catch (error) {
             this.clearJWKSCacheForCurrentEndpoint();
-            this.logger.error(
-                "Caught an error when using JWKS endpoint. Falling back on public JWKS parameter.",
-                error as Error,
-            );
-            return this.verifyWithJwksParam(encodedJwt, mandatoryClaims, jwtVerifyOptions);
+            this.logger.error("JWT verification failed with JWKS Endpoint", error as Error);
+            throw error;
         }
     }
 
@@ -124,27 +106,6 @@ export class JwtVerifier {
 
     public clearJWKSCacheForAllEndpoints() {
         cachedJWKS = {};
-    }
-
-    private async verifyWithJwksParam(
-        encodedJwt: Buffer,
-        mandatoryClaims: Set<string>,
-        jwtVerifyOptions: JWTVerifyOptions,
-    ) {
-        this.logger.info("Attempting to verify JWT using Public JWKS parameter");
-        try {
-            const signingPublicJwkBase64 = this.jwtVerifierConfig.publicSigningJwk;
-            const signingAlgorithm = this.jwtVerifierConfig.jwtSigningAlgorithm;
-            const signingPublicJwk = JSON.parse(Buffer.from(signingPublicJwkBase64, "base64").toString("utf8"));
-            const publicKey = await importJWK(signingPublicJwk, signingPublicJwk?.alg || signingAlgorithm);
-            const { payload } = await jwtVerify(encodedJwt, publicKey, jwtVerifyOptions);
-            this.verifyMandatoryClaims(mandatoryClaims, payload);
-            this.logger.info("Sucessfully verified JWT using Public JWKS Parameter");
-            return payload;
-        } catch (error) {
-            this.logger.error("JWT verification failed with JWKS parameter", error as Error);
-            throw error;
-        }
     }
 
     private verifyMandatoryClaims(mandatoryClaims: Set<string>, payload: JWTPayload) {
