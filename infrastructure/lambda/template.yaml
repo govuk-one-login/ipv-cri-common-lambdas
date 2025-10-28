@@ -179,19 +179,19 @@ Globals:
 Mappings:
 
   CustomerManagedKey:
-    di-ipv-cri-address-api: 
+    di-ipv-cri-address-api:
       useCMK: true
-    di-ipv-cri-check-hmrc-api: 
+    di-ipv-cri-check-hmrc-api:
       useCMK: true
-    di-ipv-cri-kbv-api: 
+    di-ipv-cri-kbv-api:
       useCMK: true
-    di-ipv-cri-fraud-api: 
+    di-ipv-cri-fraud-api:
       useCMK: false
-    di-ipv-cri-dl-api: 
+    di-ipv-cri-dl-api:
       useCMK: false
-    di-ipv-cri-passport-api: 
+    di-ipv-cri-passport-api:
       useCMK: false
-    di-ipv-cri-kbv-hmrc-api: 
+    di-ipv-cri-kbv-hmrc-api:
       useCMK: false
 
   CorePublicSigningJwksEnabled:
@@ -1691,7 +1691,7 @@ Resources:
         Enabled: true
       SSESpecification: !If
         - UseCustomerManagedKey
-        - 
+        -
           KMSMasterKeyId: !Ref DynamoTablesEncryptionKey
           SSEEnabled: true
           SSEType: KMS
@@ -1715,7 +1715,7 @@ Resources:
         Enabled: true
       SSESpecification: !If
         - UseCustomerManagedKey
-        - 
+        -
           KMSMasterKeyId: !Ref DynamoTablesEncryptionKey
           SSEEnabled: true
           SSEType: KMS
