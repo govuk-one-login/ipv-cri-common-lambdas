@@ -1,5 +1,5 @@
 import middy from "@middy/core";
-import { injectLambdaContext } from "@aws-lambda-powertools/logger/lib/middleware/middy";
+import { injectLambdaContext } from "@aws-lambda-powertools/logger/middleware";
 
 import { DynamoDBDocument } from "@aws-sdk/lib-dynamodb";
 import { AuthorizationLambda } from "../../../src/handlers/authorization-handler";

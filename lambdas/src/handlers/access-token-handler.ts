@@ -11,11 +11,11 @@ import accessTokenValidatorMiddleware from "../middlewares/access-token/validate
 import initialiseConfigMiddleware from "../middlewares/config/initialise-config-middleware";
 import { AwsClientType, createClient } from "../common/aws-client-factory";
 import setGovUkSigningJourneyIdMiddleware from "../middlewares/session/set-gov-uk-signing-journey-id-middleware";
-import { LambdaInterface } from "@aws-lambda-powertools/commons";
+import { LambdaInterface } from "@aws-lambda-powertools/commons/types";
 import getSessionByAuthCodeMiddleware from "../middlewares/session/get-session-by-auth-code-middleware";
 import { logger, metrics, tracer as _tracer } from "../common/utils/power-tool";
-import { MetricUnits } from "@aws-lambda-powertools/metrics";
-import { injectLambdaContext } from "@aws-lambda-powertools/logger/lib/middleware/middy";
+import { MetricUnit } from "@aws-lambda-powertools/metrics";
+import { injectLambdaContext } from "@aws-lambda-powertools/logger/middleware";
 import { RequestPayload } from "../types/request_payload";
 import getSessionByIdMiddleware from "../middlewares/session/get-session-by-id-middleware";
 import errorMiddleware from "../middlewares/error/error-middleware";
@@ -87,7 +87,7 @@ export class AccessTokenLambda implements LambdaInterface {
             await this.sessionService.createAccessTokenCodeAndRemoveAuthCode(sessionItem, accessTokenResponse);
 
             logger.info("Access token created");
-            metrics.addMetric(ACCESS_TOKEN, MetricUnits.Count, 1);
+            metrics.addMetric(ACCESS_TOKEN, MetricUnit.Count, 1);
 
             return {
                 statusCode: 200,
@@ -95,9 +95,9 @@ export class AccessTokenLambda implements LambdaInterface {
             };
         } catch (err: unknown) {
             if (err instanceof InvalidRequestError && err.message === JWT_VERIFICATION_FAILED_ERR_MSG) {
-                metrics.addMetric(JWT_VERIFICATION_FAILED_METRIC, MetricUnits.Count, 1);
+                metrics.addMetric(JWT_VERIFICATION_FAILED_METRIC, MetricUnit.Count, 1);
             }
-            metrics.addMetric(ACCESS_TOKEN, MetricUnits.Count, 0);
+            metrics.addMetric(ACCESS_TOKEN, MetricUnit.Count, 0);
             return errorPayload(err as Error, logger, "Access Token Lambda error occurred");
         }
     }

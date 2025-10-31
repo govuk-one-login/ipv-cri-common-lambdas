@@ -1,5 +1,5 @@
 import { Logger } from "@aws-lambda-powertools/logger";
-import { Metrics, MetricUnits } from "@aws-lambda-powertools/metrics";
+import { Metrics, MetricUnit } from "@aws-lambda-powertools/metrics";
 import { MiddlewareObj, Request } from "@middy/core";
 import { errorPayload, SessionValidationError } from "../../common/utils/errors";
 
@@ -18,12 +18,12 @@ const errorMiddleware = (
     const onError = async (request: Request) => {
         if (request.response !== undefined) return;
 
-        metrics.addMetric(options.metric_name, MetricUnits.Count, 0);
+        metrics.addMetric(options.metric_name, MetricUnit.Count, 0);
         if (request.error instanceof SessionValidationError && options.metric_name === SESSION_CREATED_METRIC) {
             if (request.error.details?.includes("ERR_JWT_EXPIRED")) {
-                metrics.addMetric(JWT_EXPIRED_METRIC, MetricUnits.Count, 1);
+                metrics.addMetric(JWT_EXPIRED_METRIC, MetricUnit.Count, 1);
             } else {
-                metrics.addMetric(JWT_VERIFICATION_FAILED_METRIC, MetricUnits.Count, 1);
+                metrics.addMetric(JWT_VERIFICATION_FAILED_METRIC, MetricUnit.Count, 1);
             }
         }
         metrics.publishStoredMetrics();
