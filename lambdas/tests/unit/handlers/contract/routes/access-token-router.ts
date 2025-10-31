@@ -3,7 +3,7 @@ import express, { NextFunction, Request, Response } from "express";
 import { APIGatewayProxyEvent, Context } from "aws-lambda";
 import { Constants } from "../utils/constants";
 import { logger, metrics } from "../../../../../src/common/utils/power-tool";
-import { injectLambdaContext } from "@aws-lambda-powertools/logger";
+import { injectLambdaContext } from "@aws-lambda-powertools/logger/middleware";
 import initialiseClientConfigMiddleware from "../../../../../src/middlewares/config/initialise-client-config-middleware";
 import initialiseConfigMiddleware from "../../../../../src/middlewares/config/initialise-config-middleware";
 import errorMiddleware from "../../../../../src/middlewares/error/error-middleware";

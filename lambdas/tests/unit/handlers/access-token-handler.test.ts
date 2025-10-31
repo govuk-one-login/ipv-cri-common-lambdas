@@ -1,13 +1,13 @@
 import middy from "@middy/core";
 
-import { Metrics, MetricUnits } from "@aws-lambda-powertools/metrics";
+import { Metrics, MetricUnit } from "@aws-lambda-powertools/metrics";
 import { APIGatewayProxyEvent, Context } from "aws-lambda";
 import { AccessTokenLambda } from "../../../src/handlers/access-token-handler";
 import { SessionService } from "../../../src/services/session-service";
 import validateEventPayloadMiddleware from "../../../src/middlewares/access-token/validate-event-payload-middleware";
 import { AccessTokenRequestValidator } from "../../../src/services/token-request-validator";
 import { Logger } from "@aws-lambda-powertools/logger";
-import { injectLambdaContext } from "@aws-lambda-powertools/logger/lib/middleware/middy";
+import { injectLambdaContext } from "@aws-lambda-powertools/logger/middleware";
 import { DynamoDBDocument, QueryCommandInput } from "@aws-sdk/lib-dynamodb";
 import { ConfigService } from "../../../src/common/config/config-service";
 import { JwtVerificationConfig } from "../../../src/types/jwt-verification-config";
@@ -35,10 +35,10 @@ jest.mock("@aws-sdk/lib-dynamodb", () => {
         UpdateCommand: jest.fn(),
     };
 });
-jest.mock("@aws-lambda-powertools/logger/lib/middleware/middy", () => {
+jest.mock("@aws-lambda-powertools/logger/middleware", () => {
     return {
         __esModule: true,
-        ...jest.requireActual("@aws-lambda-powertools/logger/lib/middleware/middy"),
+        ...jest.requireActual("@aws-lambda-powertools/logger/middleware"),
         default: jest.fn(() => ({
             before: jest.fn(),
         })),
@@ -168,7 +168,7 @@ describe("access-token-handler.ts", () => {
                 );
 
                 expect(response.statusCode).toBe(200);
-                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnits.Count, 1);
+                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnit.Count, 1);
             });
 
             it("should return http 200 if the authorizationCodeExpiryDate is within date", async () => {
@@ -203,7 +203,7 @@ describe("access-token-handler.ts", () => {
                 );
 
                 expect(response.statusCode).toBe(200);
-                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnits.Count, 1);
+                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnit.Count, 1);
             });
         });
 
@@ -241,7 +241,7 @@ describe("access-token-handler.ts", () => {
                     "Access Token Lambda error occurred: Invalid request: missing body",
                     Error("Invalid request: missing body"),
                 );
-                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnits.Count, 0);
+                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnit.Count, 0);
             });
 
             it("should fail when request payload is not valid", async () => {
@@ -257,7 +257,7 @@ describe("access-token-handler.ts", () => {
                     "Access Token Lambda error occurred: Invalid request: Missing redirectUri parameter",
                     Error("Invalid request: Missing redirectUri parameter"),
                 );
-                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnits.Count, 0);
+                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnit.Count, 0);
             });
 
             it("should fail when session is not found", async () => {
@@ -286,7 +286,7 @@ describe("access-token-handler.ts", () => {
                     "Access Token Lambda error occurred: 1026: Access token expired",
                     Error("Access token expired"),
                 );
-                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnits.Count, 0);
+                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnit.Count, 0);
             });
 
             it("should fail when authorization code is not found", async () => {
@@ -321,7 +321,7 @@ describe("access-token-handler.ts", () => {
                     "Access Token Lambda error occurred: 1026: Access token expired",
                     Error("Access token expired"),
                 );
-                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnits.Count, 0);
+                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnit.Count, 0);
             });
 
             it("should fail when redirect URIs do not match", async () => {
@@ -356,7 +356,7 @@ describe("access-token-handler.ts", () => {
                 const body = JSON.parse(output.body);
                 expect(output.statusCode).toBe(400);
                 expect(body.message).toContain(`redirect uri ${badUrl} does not match`);
-                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnits.Count, 0);
+                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnit.Count, 0);
             });
 
             it("should error when jwt verify fails", async () => {
@@ -399,8 +399,8 @@ describe("access-token-handler.ts", () => {
                     "Access Token Lambda error occurred: JWT signature verification failed",
                     Error("JWT signature verification failed"),
                 );
-                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnits.Count, 0);
-                expect(metricsSpy).toHaveBeenCalledWith("jwt_verification_failed", MetricUnits.Count, 1);
+                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnit.Count, 0);
+                expect(metricsSpy).toHaveBeenCalledWith("jwt_verification_failed", MetricUnit.Count, 1);
             });
 
             it("should return http 403 when the session item is invalid", async () => {
@@ -431,7 +431,7 @@ describe("access-token-handler.ts", () => {
 
                 expect(response.statusCode).toBe(403);
                 expect(response.body).toContain("Access token expired");
-                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnits.Count, 0);
+                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnit.Count, 0);
             });
 
             it("should return http 403 if the authorizationCodeExpiryDate has expired", async () => {
@@ -478,7 +478,7 @@ describe("access-token-handler.ts", () => {
 
                 expect(output.statusCode).toBe(403);
                 expect(output.body).toContain("Authorization code expired");
-                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnits.Count, 0);
+                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnit.Count, 0);
             });
 
             it("should return http 403 if the session has expired", async () => {
@@ -521,7 +521,7 @@ describe("access-token-handler.ts", () => {
 
                 expect(output.statusCode).toBe(403);
                 expect(output.body).toContain("Session expired");
-                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnits.Count, 0);
+                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnit.Count, 0);
             });
 
             it("should return http 403 when there is more than 1 session item", async () => {
@@ -555,7 +555,7 @@ describe("access-token-handler.ts", () => {
 
                 expect(output.statusCode).toBe(403);
                 expect(output.body).toContain("Access token expired");
-                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnits.Count, 0);
+                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnit.Count, 0);
             });
 
             it("should fail when dynamoDb is not available", async () => {
@@ -578,7 +578,7 @@ describe("access-token-handler.ts", () => {
                     "Access Token Lambda error occurred: Server error",
                     new ServerError(),
                 );
-                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnits.Count, 0);
+                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnit.Count, 0);
             });
         });
     });

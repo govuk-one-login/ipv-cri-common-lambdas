@@ -3,7 +3,7 @@ import { CipherGCMTypes, createDecipheriv, KeyObject } from "crypto";
 import { DecryptCommand, EncryptionAlgorithmSpec, KMSClient } from "@aws-sdk/client-kms";
 import { JweDecrypterError } from "../../common/utils/errors";
 import { logger, metrics } from "../../common/utils/power-tool";
-import { MetricUnits } from "@aws-lambda-powertools/metrics";
+import { MetricUnit } from "@aws-lambda-powertools/metrics";
 
 const DecryptionKeyAliases = [
     "session_decryption_key_active_alias",
@@ -93,7 +93,7 @@ export class JweDecrypter {
             }
         }
 
-        metrics.addMetric(ALL_ALIASES_UNAVAILABLE, MetricUnits.Count, 1);
+        metrics.addMetric(ALL_ALIASES_UNAVAILABLE, MetricUnit.Count, 1);
 
         if (process.env.ENV_VAR_FEATURE_FLAG_KEY_ROTATION_LEGACY_KEY_FALLBACK === "true") {
             logger.warn("Failed to decrypt with all available key aliases, falling back to legacy key.");

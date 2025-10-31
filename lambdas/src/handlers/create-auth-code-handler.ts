@@ -1,7 +1,7 @@
 import { DynamoDBDocument, UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { randomUUID } from "crypto";
-import { LambdaInterface } from "@aws-lambda-powertools/commons";
+import { LambdaInterface } from "@aws-lambda-powertools/commons/types";
 import { AwsClientType, createClient } from "../common/aws-client-factory";
 import { ConfigService } from "../common/config/config-service";
 import { getSessionId } from "../common/utils/request-utils";

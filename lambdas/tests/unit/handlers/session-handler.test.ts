@@ -1,7 +1,7 @@
 import middy from "@middy/core";
 
-import { injectLambdaContext, Logger } from "@aws-lambda-powertools/logger";
-import { Metrics, MetricUnits } from "@aws-lambda-powertools/metrics";
+import { Logger } from "@aws-lambda-powertools/logger";
+import { Metrics, MetricUnit } from "@aws-lambda-powertools/metrics";
 import { APIGatewayProxyEvent, APIGatewayProxyEventHeaders, Context } from "aws-lambda";
 import { ClientConfigKey, CommonConfigKey, ConfigKey } from "../../../src/types/config-keys";
 import { ConfigService } from "../../../src/common/config/config-service";
@@ -25,12 +25,14 @@ import validateJwtMiddleware from "../../../src/middlewares/jwt/validate-jwt-mid
 import setGovUkSigningJourneyIdMiddleware from "../../../src/middlewares/session/set-gov-uk-signing-journey-id-middleware";
 import initialiseClientConfigMiddleware from "../../../src/middlewares/config/initialise-client-config-middleware";
 import setRequestedVerificationScoreMiddleware from "../../../src/middlewares/session/set-requested-verification-score-middleware";
+import { injectLambdaContext } from "@aws-lambda-powertools/logger/middleware";
 
 jest.mock("@aws-sdk/lib-dynamodb");
 jest.mock("@aws-sdk/client-ssm");
 jest.mock("@aws-sdk/client-sqs");
 jest.mock("@aws-sdk/client-kms");
 jest.mock("@aws-lambda-powertools/metrics");
+jest.mock("@aws-lambda-powertools/logger");
 jest.mock("../../../src/common/config/config-service");
 jest.mock("../../../src/services/session-request-validator");
 const SESSION_CREATED_METRIC = "session_created";
@@ -224,7 +226,7 @@ describe("SessionLambda", () => {
             "Session Lambda error occurred: 1019: Session Validation Exception - Invalid request: JWT validation/verification failed: failure",
             expect.any(SessionValidationError),
         );
-        expect(metricSpy).toHaveBeenCalledWith("jwt_verification_failed", MetricUnits.Count, 1);
+        expect(metricSpy).toHaveBeenCalledWith("jwt_verification_failed", MetricUnit.Count, 1);
     });
 
     it("should initialise the client config if unavailable", async () => {
@@ -270,8 +272,8 @@ describe("SessionLambda", () => {
         const result = await lambdaHandler(mockEvent, {} as Context);
         expect(result.statusCode).toBe(400);
         expect(result.body).toContain("1019: Session Validation Exception");
-        expect(metricSpy).toHaveBeenCalledWith("jwt_verification_failed", MetricUnits.Count, 1);
-        expect(metricSpy).not.toHaveBeenCalledWith("jwt_expired", MetricUnits.Count, 1);
+        expect(metricSpy).toHaveBeenCalledWith("jwt_verification_failed", MetricUnit.Count, 1);
+        expect(metricSpy).not.toHaveBeenCalledWith("jwt_expired", MetricUnit.Count, 1);
     });
 
     it("should error on JWT validation fail and send expired metirc", async () => {
@@ -286,8 +288,8 @@ describe("SessionLambda", () => {
         const result = await lambdaHandler(mockEvent, {} as Context);
         expect(result.statusCode).toBe(400);
         expect(result.body).toContain("1019: Session Validation Exception");
-        expect(metricSpy).toHaveBeenCalledWith("jwt_expired", MetricUnits.Count, 1);
-        expect(metricSpy).not.toHaveBeenCalledWith("jwt_verification_failed", MetricUnits.Count, 1);
+        expect(metricSpy).toHaveBeenCalledWith("jwt_expired", MetricUnit.Count, 1);
+        expect(metricSpy).not.toHaveBeenCalledWith("jwt_verification_failed", MetricUnit.Count, 1);
     });
 
     it("should save the session details", async () => {
@@ -407,7 +409,7 @@ describe("SessionLambda", () => {
         const metricSpy = jest.spyOn(metrics.prototype, "addMetric");
         await lambdaHandler(mockEvent, {} as Context);
         expect(dimensionSpy).toHaveBeenCalledWith("issuer", "test-client-id");
-        expect(metricSpy).toHaveBeenCalledWith("session_created", MetricUnits.Count, 1);
+        expect(metricSpy).toHaveBeenCalledWith("session_created", MetricUnit.Count, 1);
     });
 
     it("should successfully start the session", async () => {
