@@ -9,7 +9,31 @@ updates:
       - dependabot
     commit-message:
       prefix: BAU
-  - package-ecosystem: "gradle" 
-    directory: "/" 
+  - package-ecosystem: "gradle"
+    directory: "/"
     schedule:
       interval: "weekly"
+  - package-ecosystem: "npm"
+    directories:
+      - "/"
+      - "/lambdas"
+      - "/test-resources"
+      - "/test-resources/audit-events-test-harness/lambdas"
+      - "/test-resources/headless-core-stub/lambdas/*"
+    schedule:
+      interval: daily
+      time: "02:52"
+    target-branch: main
+    labels:
+      - dependabot
+    commit-message:
+      prefix: BAU
+    groups:
+      aws:
+        patterns:
+          - "@aws-*"
+      eslint:
+        patterns:
+          - "eslint"
+          - "eslint-*"
+          - "@typescript-eslint/*"
