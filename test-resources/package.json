@@ -16,12 +16,12 @@
         "unit:logs": "jest"
     },
     "dependencies": {
-        "@aws-sdk/client-cloudformation": "3.910.0",
+        "@aws-sdk/client-cloudformation": "3.936.0",
         "@aws-lambda-powertools/commons": "2.28.1",
         "@aws-lambda-powertools/logger": "2.28.1",
         "@aws-lambda-powertools/parameters": "2.28.1",
-        "@aws-sdk/client-kms": "3.910.0",
-        "@aws-sdk/client-ssm": "3.910.0",
+        "@aws-sdk/client-kms": "3.936.0",
+        "@aws-sdk/client-ssm": "3.936.0",
         "@govuk-one-login/data-vocab": "1.9.3",
         "@govuk-one-login/data-vocab-schemas": "1.9.3",
         "@middy/core": "4.2.8",
@@ -34,10 +34,10 @@
         "jose": "5.10.0"
     },
     "devDependencies": {
-        "@aws-sdk/credential-providers": "3.910.0",
+        "@aws-sdk/credential-providers": "3.936.0",
         "aws-sigv4-fetch": "4.4.1",
-        "@aws-sdk/client-dynamodb": "3.910.0",
-        "@aws-sdk/types": "3.910.0",
+        "@aws-sdk/client-dynamodb": "3.936.0",
+        "@aws-sdk/types": "3.936.0",
         "@types/aws-lambda": "^8.10.145",
         "@types/jest": "^29.5.13",
         "@typescript-eslint/eslint-plugin": "^6.11.0",
