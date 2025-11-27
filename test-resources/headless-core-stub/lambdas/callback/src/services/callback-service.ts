@@ -1,10 +1,12 @@
 import { APIGatewayProxyResult } from "aws-lambda";
 import { Logger } from "@aws-lambda-powertools/logger";
+import { APIGatewayClient, GetApiKeyCommand } from "@aws-sdk/client-api-gateway";
 
 export class CallBackService {
     constructor(
         private readonly logger: Logger,
-        readonly apiKey: string = process.env.API_KEY || "",
+        readonly apiKeyId: string = process.env.API_KEY || "",
+        readonly client = new APIGatewayClient(),
     ) {}
 
     public async invokeTokenEndpoint(tokenEndpoint: string, body: string): Promise<APIGatewayProxyResult> {
@@ -13,7 +15,7 @@ export class CallBackService {
             method: "POST",
             headers: {
                 "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
-                "x-api-key": this.apiKey,
+                "x-api-key": await this.fetchApiKeyValue(),
             },
             body: body,
         });
@@ -42,7 +44,7 @@ export class CallBackService {
             method: "POST",
             headers: {
                 Authorization: `Bearer ${accessToken}`,
-                "x-api-key": this.apiKey,
+                "x-api-key": await this.fetchApiKeyValue(),
             },
         });
         const status = credentialResponse.status;
@@ -60,5 +62,15 @@ export class CallBackService {
 
         this.logger.info({ message: "Successfully called /credential/issue endpoint" });
         return { statusCode: status, body: responseBody };
+    }
+
+    public async fetchApiKeyValue() {
+        const result = await this.client.send(
+            new GetApiKeyCommand({
+                apiKey: this.apiKeyId,
+                includeValue: true,
+            }),
+        );
+        return result.value!;
     }
 }
