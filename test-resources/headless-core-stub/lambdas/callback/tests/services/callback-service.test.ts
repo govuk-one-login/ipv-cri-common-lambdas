@@ -1,6 +1,5 @@
 import { CallBackService } from "../../src/services/callback-service";
 import { Logger } from "@aws-lambda-powertools/logger";
-import * as CloudFormation from "../../../../utils/src/stack-outputs";
 
 global.fetch = jest.fn();
 const mockFetch = fetch as jest.MockedFunction<typeof fetch>;
@@ -18,8 +17,6 @@ describe("CallBack Service", () => {
         mockLoggerError = jest.fn();
         mockLoggerInfo = jest.fn();
         mockLoggerWarn = jest.fn();
-
-        spyStackOutputs = jest.spyOn(CloudFormation, "stackOutputs").mockResolvedValue({ ApiKey1: "test-api-key" });
 
         callbackService = new CallBackService({
             error: mockLoggerError,
