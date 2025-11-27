@@ -4,6 +4,8 @@ import { Logger } from "@aws-lambda-powertools/logger";
 global.fetch = jest.fn();
 const mockFetch = fetch as jest.MockedFunction<typeof fetch>;
 
+jest.spyOn(CallBackService.prototype, "fetchApiKeyValue").mockReturnValue(Promise.resolve("test-api-key"));
+
 describe("CallBack Service", () => {
     let mockLoggerError: jest.Mock;
     let mockLoggerInfo: jest.Mock;
