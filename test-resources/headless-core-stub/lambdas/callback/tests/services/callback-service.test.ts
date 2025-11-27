@@ -12,13 +12,16 @@ describe("CallBack Service", () => {
     let mockLoggerWarn: jest.Mock;
 
     let callbackService: CallBackService;
+    const API_KEY = process.env.API_KEY || "test-api-key";
 
     beforeEach(() => {
         mockLoggerError = jest.fn();
         mockLoggerInfo = jest.fn();
         mockLoggerWarn = jest.fn();
 
-        spyStackOutputs = jest.spyOn(CloudFormation, "stackOutputs").mockResolvedValue({ ApiKey1: "test-api-key" });
+        spyStackOutputs = jest
+            .spyOn(CloudFormation, "stackOutputs")
+            .mockResolvedValue({ ApiKey1: `${process.env.API_KEY}` });
 
         callbackService = new CallBackService({
             error: mockLoggerError,
@@ -51,7 +54,7 @@ describe("CallBack Service", () => {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
-                    "x-api-key": "test-api-key",
+                    "x-api-key": API_KEY,
                 },
                 body: requestBody,
             });
@@ -73,7 +76,7 @@ describe("CallBack Service", () => {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
-                    "x-api-key": "test-api-key",
+                    "x-api-key": API_KEY,
                 },
                 body: requestBody,
             });
@@ -136,7 +139,7 @@ describe("CallBack Service", () => {
                 method: "POST",
                 headers: {
                     Authorization: "Bearer test-access-token",
-                    "x-api-key": "test-api-key",
+                    "x-api-key": API_KEY,
                 },
             });
             expect(response).toEqual({

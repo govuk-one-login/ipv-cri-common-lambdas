@@ -1,7 +1,8 @@
 import { APIGatewayProxyResult } from "aws-lambda";
 import { Logger } from "@aws-lambda-powertools/logger";
-import { stackOutputs } from "../../../../utils/src/stack-outputs";
-import config from "../../../../utils/src/services/config";
+
+const API_KEY = process.env.API_KEY || "";
+
 export class CallBackService {
     constructor(private readonly logger: Logger) {}
 
@@ -11,7 +12,7 @@ export class CallBackService {
             method: "POST",
             headers: {
                 "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
-                "x-api-key": await this.getApiKey(),
+                "x-api-key": API_KEY,
             },
             body: body,
         });
@@ -40,7 +41,7 @@ export class CallBackService {
             method: "POST",
             headers: {
                 Authorization: `Bearer ${accessToken}`,
-                "x-api-key": await this.getApiKey(),
+                "x-api-key": API_KEY,
             },
         });
         const status = credentialResponse.status;
@@ -58,13 +59,5 @@ export class CallBackService {
 
         this.logger.info({ message: "Successfully called /credential/issue endpoint" });
         return { statusCode: status, body: responseBody };
-    }
-    private async getApiKey() {
-        this.logger.info("Retrieving API key from stack outputs");
-        const { ApiKey1: apiKey } = await stackOutputs(config.coreInfrastructureStackName);
-        if (!apiKey) {
-            throw new Error(`API key not found in ${config.coreInfrastructureStackName}`);
-        }
-        return apiKey;
     }
 }

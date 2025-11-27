@@ -242,6 +242,8 @@ Resources:
         !If [EnforceCodeSigning, !Ref CodeSigningConfigArn, !Ref AWS::NoValue]
       Environment:
         Variables:
+          API_KEY:
+            Fn::ImportValue: !Sub "${CoreInfraStackName}-ApiKey1"
           CRI_IDENTIFIER: !Sub "${CriIdentifier}"
           TEST_RESOURCES_STACK_NAME: !Sub ${AWS::StackName}
           CORE_INFRASTRUCTURE: !Sub "${CoreInfraStackName}"
