@@ -1,10 +1,11 @@
 import { APIGatewayProxyResult } from "aws-lambda";
 import { Logger } from "@aws-lambda-powertools/logger";
 
-const API_KEY = process.env.API_KEY || "";
-
 export class CallBackService {
-    constructor(private readonly logger: Logger) {}
+    constructor(
+        private readonly logger: Logger,
+        readonly apiKey: string = process.env.API_KEY || "",
+    ) {}
 
     public async invokeTokenEndpoint(tokenEndpoint: string, body: string): Promise<APIGatewayProxyResult> {
         this.logger.info("Invoking token endpoint");
@@ -12,7 +13,7 @@ export class CallBackService {
             method: "POST",
             headers: {
                 "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
-                "x-api-key": API_KEY,
+                "x-api-key": this.apiKey,
             },
             body: body,
         });
@@ -41,7 +42,7 @@ export class CallBackService {
             method: "POST",
             headers: {
                 Authorization: `Bearer ${accessToken}`,
-                "x-api-key": API_KEY,
+                "x-api-key": this.apiKey,
             },
         });
         const status = credentialResponse.status;
