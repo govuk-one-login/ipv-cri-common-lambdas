@@ -1,13 +1,9 @@
 import { APIGatewayProxyResult } from "aws-lambda";
 import { Logger } from "@aws-lambda-powertools/logger";
-import { APIGatewayClient, GetApiKeyCommand } from "@aws-sdk/client-api-gateway";
+import { getParametersValues } from "../../../../utils/src/parameter/get-parameters";
 
 export class CallBackService {
-    constructor(
-        private readonly logger: Logger,
-        readonly apiKeyId: string = process.env.API_KEY || "",
-        readonly client = new APIGatewayClient(),
-    ) {}
+    constructor(private readonly logger: Logger) {}
 
     public async invokeTokenEndpoint(tokenEndpoint: string, body: string): Promise<APIGatewayProxyResult> {
         this.logger.info("Invoking token endpoint");
@@ -65,12 +61,10 @@ export class CallBackService {
     }
 
     public async fetchApiKeyValue() {
-        const result = await this.client.send(
-            new GetApiKeyCommand({
-                apiKey: this.apiKeyId,
-                includeValue: true,
-            }),
-        );
-        return result.value!;
+        const params = await getParametersValues(["/test-resources/apiKey"]);
+        if (params.apiKey) {
+            return params.apiKey;
+        }
+        return "";
     }
 }
