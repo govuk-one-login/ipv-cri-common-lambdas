@@ -266,6 +266,7 @@ Resources:
               Action:
                 - apigateway:GET
               Resource:
+                - !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}::/apikeys
                 - !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}::/apikeys/*
 
   CallbackFunctionLogGroup:
