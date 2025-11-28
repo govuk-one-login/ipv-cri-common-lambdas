@@ -262,6 +262,12 @@ Resources:
             - Effect: Allow
               Action: cloudformation:DescribeStacks
               Resource: !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/core-infrastructure/*
+            - Effect: Allow
+              Action:
+                - apigateway:GET
+              Resource:
+                - !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}::/apikeys
+                - !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}::/apikeys/*
 
   CallbackFunctionLogGroup:
     Type: AWS::Logs::LogGroup
