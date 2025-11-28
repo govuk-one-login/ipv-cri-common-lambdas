@@ -24,7 +24,6 @@
         "@aws-sdk/client-ssm": "3.910.0",
         "@govuk-one-login/data-vocab": "1.9.3",
         "@govuk-one-login/data-vocab-schemas": "1.9.3",
-        "@aws-sdk/client-api-gateway": "3.940.0",
         "@middy/core": "4.2.8",
         "ajv": "8.17.1",
         "ajv-formats": "3.0.1",

@@ -259,6 +259,7 @@ Resources:
               Resource:
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${CommonStackName}/clients/*/jwtAuthentication/*"
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/test-resources/ipv-core-stub-aws-headless/privateSigningKey"
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/test-resources/apiKey"
             - Effect: Allow
               Action: cloudformation:DescribeStacks
               Resource: !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/core-infrastructure/*
