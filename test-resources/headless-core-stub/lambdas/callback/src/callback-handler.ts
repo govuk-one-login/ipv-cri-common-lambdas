@@ -31,8 +31,10 @@ export class CallbackLambdaHandler implements LambdaInterface {
             const redirectUri = statePayload.redirectUri || ssmParameters.redirectUri;
 
             const audienceApi = formatAudience(audience, logger);
-            const tokenEndpoint = new URL("token", audienceApi).href;
+            const tokenEndpoint = statePayload.tokenEndpoint || new URL("token", audienceApi).href;
+            const credentialEndpoint = statePayload.credentialEndpoint || new URL("credential/issue", audienceApi).href;
 
+            logger.info({ message: "Using endpoints", tokenEndpoint, credentialEndpoint });
             logger.info({ message: "Generating private JWT parameters" });
             const privateJwtParams = await generatePrivateJwtParams(
                 clientId,
@@ -44,7 +46,6 @@ export class CallbackLambdaHandler implements LambdaInterface {
             const tokenResponse = await callback.invokeTokenEndpoint(tokenEndpoint, privateJwtParams);
 
             const { access_token } = JSON.parse(tokenResponse.body);
-            const credentialEndpoint = new URL("credential/issue", audienceApi).href;
             const { statusCode, body } = await callback.invokeCredentialEndpoint(credentialEndpoint, access_token);
 
             return { statusCode: statusCode, headers: { "Content-Type": "text/plain" }, body };
@@ -54,22 +55,23 @@ export class CallbackLambdaHandler implements LambdaInterface {
     }
 
     private extractFromState(state: string) {
-        let audience;
-        let redirectUri;
+        if (!state) return {};
 
-        if (state) {
-            try {
-                const statePayload = JSON.parse(base64Decode(state));
-                logger.info({ message: "State payload decoded", ...statePayload });
+        try {
+            const decoded = base64Decode(state);
+            const { aud, redirect_uri, token_endpoint, credential_endpoint } = JSON.parse(decoded);
 
-                audience = statePayload.aud;
-                redirectUri = statePayload.redirect_uri;
-            } catch (error) {
-                throw new HeadlessCoreStubError("State param is not a valid JSON bas64 encoded string", 400);
-            }
+            logger.info({ message: "State payload decoded", aud, redirect_uri, token_endpoint, credential_endpoint });
+
+            return {
+                audience: aud,
+                redirectUri: redirect_uri,
+                tokenEndpoint: token_endpoint,
+                credentialEndpoint: credential_endpoint,
+            };
+        } catch {
+            throw new HeadlessCoreStubError("State param is not a valid JSON bas64 encoded string", 400);
         }
-
-        return { audience, redirectUri };
     }
 
     private async fetchSSMParameters(clientId: string) {
