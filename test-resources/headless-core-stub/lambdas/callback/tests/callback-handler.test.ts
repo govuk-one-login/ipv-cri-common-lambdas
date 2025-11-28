@@ -7,7 +7,6 @@ import { DEFAULT_CLIENT_ID } from "../../../utils/src/constants";
 
 jest.mock("../src/services/callback-service");
 jest.mock("../../../utils/src/services/client-configuration");
-jest.mock("@aws-sdk/client-api-gateway");
 
 jest.spyOn(CallBackService.prototype, "fetchApiKeyValue").mockReturnValue(Promise.resolve("test-api-key"));
 
