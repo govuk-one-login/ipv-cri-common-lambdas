@@ -360,11 +360,12 @@ Resources:
         AttributeName: expiryDate
         Enabled: true
 
-  APIGateway:
-    Type: AWS::ApiGateway::RestApi
+  TestHarnessAPIGateway:
+    Type: AWS::Serverless::Api
     Properties:
       Description: APIGW for the test harness
-      Body:
+      AlwaysDeploy: true
+      DefinitionBody:
         openapi: 3.0.1
         paths:
           /never-created:
@@ -374,10 +375,8 @@ Resources:
           Parameters:
             Location: public-api.yaml
       Tags:
-        - Key: FMSRegionalPolicy
-          Value: false
-        - Key: CustomPolicy
-          Value: true
+        FMSRegionalPolicy: false
+        CustomPolicy: true
       Policy:
         Version: '2012-10-17'
         Statement:
@@ -394,19 +393,7 @@ Resources:
             Principal: "*"
             Action: "execute-api:Invoke"
             Resource: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:*/${Environment}/*/*"
-
-  ApiGatewayDeployment:
-    Type: AWS::ApiGateway::Deployment
-    Properties:
-      RestApiId: !Ref APIGateway
-
-  ApiGatewayStage:
-    Type: AWS::ApiGateway::Stage
-    Properties:
       StageName: !Ref Environment
-      DeploymentId: !Ref ApiGatewayDeployment
-      RestApiId:
-        Ref: APIGateway
       MethodSettings:
         - LoggingLevel: INFO
           ResourcePath: "/*"
@@ -429,11 +416,6 @@ Resources:
             protocol: $context.protocol
             responseLatency: $context.responseLatency
             responseLength: $context.responseLength
-      Tags:
-        - Key: FMSRegionalPolicy
-          Value: false
-        - Key: CustomPolicy
-          Value: true
 
   ApiAccessLogGroup:
     Type: AWS::Logs::LogGroup
@@ -493,11 +475,11 @@ Resources:
     Type: AWS::ApiGateway::BasePathMapping
     Properties:
       DomainName: !Ref TestHarnessCustomDomain
-      RestApiId: !Ref APIGateway
+      RestApiId: !Ref TestHarnessAPIGateway
 
       # workaround for sam bug - see https://github.com/aws/serverless-application-model/issues/192#issuecomment-520893111
       # noinspection YamlUnresolvedReferences
-      Stage: !Ref ApiGatewayStage
+      Stage: !Ref TestHarnessAPIGateway.Stage
 
   AuditEventsTableRole:
     Type: AWS::IAM::Role
@@ -532,7 +514,7 @@ Outputs:
       - !Sub
         - https://${URL}/
         - URL: !Ref TestHarnessCustomDomain
-      - !Sub https://${APIGateway}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/
+      - !Sub https://${TestHarnessAPIGateway}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/
 
   CommonStackName:
     Description: Common stack name used by the test resources
