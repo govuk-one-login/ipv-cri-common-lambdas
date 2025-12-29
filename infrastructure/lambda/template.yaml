@@ -1,9 +1,17 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Transform:
   - AWS::Serverless-2016-10-31
-  - AWS::LanguageExtensions
 Description: "Digital Identity IPV CRI common API"
 Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: bc-test-commonlambdas-2025-12
+    Description: Testing Serverless Application Repository (OJ-3523)
+    Author: govuk-one-login
+    SpdxLicenseId: MIT
+    LicenseUrl: ../../LICENSE
+    HomePageUrl: https://github.com/govuk-one-login/ipv-cri-common-lambdas
+    SemanticVersion: 0.0.1
+    SourceCodeUrl: https://github.com/govuk-one-login/ipv-cri-common-lambdas
   cfn-lint:
     config:
       ignore_checks:
