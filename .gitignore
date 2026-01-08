@@ -61,3 +61,5 @@ session/bin/
 *venv/
 
 .npmrc
+
+packaged.yaml
