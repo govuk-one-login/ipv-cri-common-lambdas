@@ -135,11 +135,8 @@ Globals:
           - SecretArn: !FindInMap [EnvironmentConfiguration, !Ref Environment, dynatraceSecretArn]
         DT_OPEN_TELEMETRY_ENABLE_INTEGRATION: "true"
 
-# Mappings included from external file via Rain CLI
 Mappings: !Rain::Include mappings/all-mappings.yaml
 
-# Resources section - using inline definitions
-# For a cleaner structure, you can split resources using rain merge
 Resources: !Rain::Include resources/all-resources.yaml
 
 Outputs:
