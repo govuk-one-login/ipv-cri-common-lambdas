@@ -1,0 +1,156 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform:
+  - AWS::Serverless-2016-10-31
+  - AWS::LanguageExtensions
+Description: "Digital Identity IPV CRI common API - Rain CLI Simple Template"
+
+Metadata:
+  cfn-lint:
+    config:
+      ignore_checks:
+        - W8003
+        - W1028
+        - E3031
+        - E3033
+        - E1020
+
+Parameters:
+  CodeSigningConfigArn:
+    Type: String
+    Default: "none"
+    Description: The ARN of the Code Signing Config to use, provided by the deployment pipeline
+  Environment:
+    Description: "The environment type"
+    Type: "String"
+    AllowedValues:
+      - "dev"
+      - "build"
+      - "staging"
+      - "integration"
+      - "production"
+    ConstraintDescription: must be dev, build, staging, integration or production
+  PermissionsBoundary:
+    Description: "The ARN of the permissions boundary to apply when creating IAM roles"
+    Type: String
+    Default: "none"
+  AuditEventNamePrefix:
+    Description: "The audit event name prefix"
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: "/common-cri-parameters/AuditEventNamePrefix"
+  CriIdentifier:
+    Description: "The unique credential issuer identifier"
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: "/common-cri-parameters/CriIdentifier"
+  TxmaStackName:
+    Description: "The stack containing the TXMA infrastructure"
+    Type: String
+    Default: txma-infrastructure
+  LambdaDeploymentPreference:
+    Description: "Specifies the configuration to enable gradual Lambda deployments"
+    Type: String
+    Default: AllAtOnce
+  ForceLambdaUpdate:
+    Type: String
+    Default: "initial"
+    Description: "For dev only - used to force Java Lambda version updates"
+
+Conditions:
+  UseCodeSigningConfigArn: !Not [!Equals [!Ref CodeSigningConfigArn, "none"]]
+  AddJavaProvisionedConcurrency: !Not
+    - !Equals
+      - !FindInMap [JavaProvisionedConcurrencyMapping, !Ref CriIdentifier, !Ref Environment]
+      - 0
+  AddTSProvisionedConcurrency: !Not
+    - !Equals
+      - !FindInMap [TSProvisionedConcurrencyMapping, !Ref CriIdentifier, !Ref Environment]
+      - 0
+  IsStubEnvironment: !Or
+    - !Equals [!Ref Environment, dev]
+    - !Equals [!Ref Environment, build]
+    - !Equals [!Ref Environment, staging]
+    - !Equals [!Ref Environment, integration]
+  IsIpvCore3rdPartyStubEnvironment: !Equals [!Ref Environment, staging]
+  IsProdLikeEnvironment: !Or
+    - !Equals [!Ref Environment, staging]
+    - !Equals [!Ref Environment, integration]
+    - !Equals [!Ref Environment, production]
+  IsProdEnvironment: !Equals [!Ref Environment, production]
+  IsDevEnvironment: !Equals [!Ref Environment, dev]
+  IsDevPlatformDeploy: !Equals
+    - !FindInMap [CriVpcMapping, !Ref CriIdentifier, !Ref Environment]
+    - "di-devplatform-deploy"
+  UsePermissionsBoundary: !Not [!Equals [!Ref PermissionsBoundary, "none"]]
+  IsCSLSDisabled: !Condition IsProdLikeEnvironment
+  UseNewCSLSDestinationArn: !Or
+    - !Equals [!Ref CriIdentifier, "di-ipv-cri-kbv-hmrc-api"]
+    - !Equals [!Ref CriIdentifier, "di-ipv-cri-check-hmrc-api"]
+  UseCanaryDeploymentAlarms: !Not [!Equals [!Ref LambdaDeploymentPreference, AllAtOnce]]
+  UseCustomerManagedKey: !Equals
+    - !FindInMap [CustomerManagedKey, !Ref "CriIdentifier", useCMK]
+    - true
+
+Globals:
+  Function:
+    VpcConfig:
+      SecurityGroupIds: !If
+        - IsDevPlatformDeploy
+        - - !ImportValue cri-vpc-AWSServicesEndpointSecurityGroupId
+        - - !ImportValue cri-vpc-LambdaSecurityGroup
+    PermissionsBoundary: !If
+      - UsePermissionsBoundary
+      - !Ref PermissionsBoundary
+      - !Ref AWS::NoValue
+    CodeSigningConfigArn: !If
+      - UseCodeSigningConfigArn
+      - !Ref CodeSigningConfigArn
+      - !Ref AWS::NoValue
+    Timeout: 30
+    Tracing: Active
+    MemorySize: !FindInMap [MemorySizeMapping, Environment, !Ref "Environment"]
+    Architectures:
+      - arm64
+    Environment:
+      Variables:
+        JAVA_TOOL_OPTIONS: "-XX:+TieredCompilation -XX:TieredStopAtLevel=1"
+        AWS_STACK_NAME: !Sub "${AWS::StackName}"
+        POWERTOOLS_LOG_LEVEL: INFO
+        POWERTOOLS_METRICS_NAMESPACE: !Ref CriIdentifier
+        SQS_AUDIT_EVENT_PREFIX: !Ref AuditEventNamePrefix
+        FORCE_LAMBDA_UPDATE: !If [IsDevEnvironment, !Ref ForceLambdaUpdate, !Ref AWS::NoValue]
+        AWS_LAMBDA_EXEC_WRAPPER: /opt/dynatrace
+        DT_CONNECTION_AUTH_TOKEN: !Sub
+          - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_CONNECTION_AUTH_TOKEN}}"
+          - SecretArn: !FindInMap [EnvironmentConfiguration, !Ref Environment, dynatraceSecretArn]
+        DT_CONNECTION_BASE_URL: !Sub
+          - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_CONNECTION_BASE_URL}}"
+          - SecretArn: !FindInMap [EnvironmentConfiguration, !Ref Environment, dynatraceSecretArn]
+        DT_CLUSTER_ID: !Sub
+          - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_CLUSTER_ID}}"
+          - SecretArn: !FindInMap [EnvironmentConfiguration, !Ref Environment, dynatraceSecretArn]
+        DT_LOG_COLLECTION_AUTH_TOKEN: !Sub
+          - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_LOG_COLLECTION_AUTH_TOKEN}}"
+          - SecretArn: !FindInMap [EnvironmentConfiguration, !Ref Environment, dynatraceSecretArn]
+        DT_TENANT: !Sub
+          - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_TENANT}}"
+          - SecretArn: !FindInMap [EnvironmentConfiguration, !Ref Environment, dynatraceSecretArn]
+        DT_OPEN_TELEMETRY_ENABLE_INTEGRATION: "true"
+
+# Mappings included from external file via Rain CLI
+Mappings: !Rain::Include mappings/all-mappings.yaml
+
+# Resources section - using inline definitions
+# For a cleaner structure, you can split resources using rain merge
+Resources: !Rain::Include resources/all-resources.yaml
+
+Outputs:
+  SessionTableName:
+    Description: Name of the Session DynamoDB table
+    Value: !Ref SessionTable
+    Export:
+      Name: !Sub "${AWS::StackName}-SessionTableName"
+
+  PersonIdentityTableName:
+    Description: Name of the PersonIdentity DynamoDB table
+    Value: !Ref PersonIdentityTable
+    Export:
+      Name: !Sub "${AWS::StackName}-PersonIdentityTableName"
