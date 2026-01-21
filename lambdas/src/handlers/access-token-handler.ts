@@ -6,7 +6,7 @@ import { JwtVerifierFactory } from "../common/security/jwt-verifier";
 import { ClientConfigKey, CommonConfigKey } from "../types/config-keys";
 import { BearerAccessTokenFactory } from "../services/bearer-access-token-factory";
 import { errorPayload, InvalidRequestError } from "../common/utils/errors";
-import { SessionItem } from "../types/session-item";
+import { SessionItem } from "@govuk-one-login/cri-types";
 import accessTokenValidatorMiddleware from "../middlewares/access-token/validate-event-payload-middleware";
 import initialiseConfigMiddleware from "../middlewares/config/initialise-config-middleware";
 import { AwsClientType, createClient } from "../common/aws-client-factory";

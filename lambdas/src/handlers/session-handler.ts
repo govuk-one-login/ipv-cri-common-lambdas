@@ -8,8 +8,7 @@ import { JweDecrypter } from "../services/security/jwe-decrypter";
 import { PersonIdentityService } from "../services/person-identity-service";
 import { PersonIdentity } from "../types/person-identity";
 import { SessionRequestValidatorFactory } from "../services/session-request-validator";
-import { AuditService } from "../common/services/audit-service";
-import { AuditEventType } from "../types/audit-event";
+import { buildAndSendAuditEvent } from "@govuk-one-login/cri-audit";
 import { SessionRequestSummary } from "../types/session-request-summary";
 import { JWTPayload } from "jose";
 import { AwsClientType, createClient } from "../common/aws-client-factory";
@@ -29,11 +28,12 @@ import setRequestedVerificationScoreMiddleware from "../middlewares/session/set-
 import { SSMProvider } from "@aws-lambda-powertools/parameters/ssm";
 import { initOpenTelemetry } from "../common/utils/otel-setup";
 import { logger } from "@govuk-one-login/cri-logger";
+import { SessionItem } from "@govuk-one-login/cri-types";
+import { CriAuditConfig } from "../types/cri-audit-config";
 
 initOpenTelemetry();
 
 const dynamoDbClient = createClient(AwsClientType.DYNAMO);
-const sqsClient = createClient(AwsClientType.SQS);
 const kmsClient = createClient(AwsClientType.KMS);
 const criIdentifier = process.env.CRI_IDENTIFIER || "";
 const SESSION_CREATED_METRIC = "session_created";
@@ -42,7 +42,7 @@ export class SessionLambda implements LambdaInterface {
     constructor(
         private readonly sessionService: SessionService,
         private readonly personIdentityService: PersonIdentityService,
-        private readonly auditService: AuditService,
+        private readonly auditConfig: CriAuditConfig,
     ) {}
 
     @_tracer.captureLambdaHandler({ captureResponse: false })
@@ -55,31 +55,42 @@ export class SessionLambda implements LambdaInterface {
             const clientIpAddress = getClientIpAddress(event);
             const encodedDeviceInformation = getEncodedDeviceInformation(event);
             const sessionRequestSummary = this.createSessionRequestSummary(jwtPayload, clientIpAddress);
-            const sessionId: string = await this.sessionService.saveSession(sessionRequestSummary);
+            const sessionItem: SessionItem = await this.sessionService.saveSession(sessionRequestSummary);
             logger.info("Session created");
 
             if (jwtPayload.shared_claims) {
                 await this.personIdentityService.savePersonIdentity(
                     jwtPayload.shared_claims as PersonIdentity,
-                    sessionId,
+                    sessionItem.sessionId,
                 );
                 logger.info("Personal identity created");
             }
 
-            await this.sendAuditEvent(
-                sessionId,
-                sessionRequestSummary,
-                clientIpAddress,
-                encodedDeviceInformation,
-                jwtPayload["evidence_requested"] as EvidenceRequest,
+            await buildAndSendAuditEvent(
+                this.auditConfig.queueUrl,
+                `${this.auditConfig.auditEventNamePrefix}_START`,
+                this.auditConfig.issuer,
+                sessionItem,
+                {
+                    ...(encodedDeviceInformation && {
+                        restricted: {
+                            personIdentity: {
+                                device_information: {
+                                    encoded: encodedDeviceInformation,
+                                },
+                            },
+                        },
+                    }),
+                },
             );
+
             metrics.addDimension("issuer", sessionRequestSummary.clientId);
             metrics.addMetric(SESSION_CREATED_METRIC, MetricUnit.Count, 1);
 
             return {
                 statusCode: 201,
                 body: JSON.stringify({
-                    session_id: sessionId,
+                    session_id: sessionItem.sessionId,
                     state: jwtPayload.state,
                     redirect_uri: jwtPayload.redirect_uri,
                 }),
@@ -103,37 +114,6 @@ export class SessionLambda implements LambdaInterface {
             context: jwtPayload["context"] as string,
         };
     }
-
-    private async sendAuditEvent(
-        sessionId: string,
-        sessionRequest: SessionRequestSummary,
-        clientIpAddress?: string,
-        encodedDeviceInformation?: string,
-        evidenceRequested?: EvidenceRequest,
-    ) {
-        await this.auditService.sendAuditEvent(AuditEventType.START, {
-            clientIpAddress: clientIpAddress,
-            sessionItem: {
-                sessionId,
-                subject: sessionRequest.subject,
-                persistentSessionId: sessionRequest.persistentSessionId,
-                clientSessionId: sessionRequest.clientSessionId,
-            },
-            ...(encodedDeviceInformation && {
-                personIdentity: {
-                    device_information: {
-                        encoded: encodedDeviceInformation,
-                    },
-                },
-            }),
-
-            ...(evidenceRequested?.verificationScore && {
-                evidence_requested: {
-                    verificationScore: evidenceRequested.verificationScore,
-                },
-            }),
-        });
-    }
 }
 const ssmClient = createClient(AwsClientType.SSM);
 const configService = new ConfigService(new SSMProvider({ awsSdkV3Client: ssmClient }));
@@ -142,7 +122,7 @@ const jwtValidatorFactory = new SessionRequestValidatorFactory(logger);
 const handlerClass = new SessionLambda(
     new SessionService(dynamoDbClient, configService),
     new PersonIdentityService(dynamoDbClient, configService),
-    new AuditService(() => configService.getAuditConfig(), sqsClient),
+    configService.getAuditConfig(),
 );
 export const lambdaHandler = middy(handlerClass.handler.bind(handlerClass))
     .use(

@@ -4,7 +4,7 @@ import { JwtVerifierFactory } from "../../../../../src/common/security/jwt-verif
 import { AccessTokenLambda } from "../../../../../src/handlers/access-token-handler";
 import { SessionService } from "../../../../../src/services/session-service";
 import { AccessTokenRequestValidator } from "../../../../../src/services/token-request-validator";
-import { SessionItem } from "../../../../../src/types/session-item";
+import { SessionItem, UnixMillisecondsTimestamp, UnixSecondsTimestamp } from "@govuk-one-login/cri-types";
 import { MockSSMProvider } from "../mocks/mock-ssm-provider";
 import { DynamoDBDocument } from "@aws-sdk/lib-dynamodb";
 import { BearerAccessTokenFactory } from "../../../../../src/services/bearer-access-token-factory";
@@ -28,9 +28,13 @@ export const CreateAccessTokenLambda = (redirectUri: string, componentId: string
         redirectUri,
         accessToken: "accesstoken",
         authorizationCode: "dummyAuthCode",
-        expiryDate: msToSeconds(Date.now()) + twoDaysOffset,
-        authorizationCodeExpiryDate: msToSeconds(Date.now()) + twoDaysOffset,
-        accessTokenExpiryDate: msToSeconds(Date.now()) + twoDaysOffset,
+        expiryDate: (msToSeconds(Date.now()) + twoDaysOffset) as UnixSecondsTimestamp,
+        authorizationCodeExpiryDate: (msToSeconds(Date.now()) + twoDaysOffset) as UnixSecondsTimestamp,
+        accessTokenExpiryDate: (msToSeconds(Date.now()) + twoDaysOffset) as UnixSecondsTimestamp,
+        attemptCount: 0,
+        createdDate: 1 as UnixMillisecondsTimestamp,
+        state: "state",
+        subject: "subject",
     };
 
     const configService = new ConfigService(

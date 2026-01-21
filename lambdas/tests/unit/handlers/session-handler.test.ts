@@ -5,8 +5,6 @@ import { Metrics, MetricUnit } from "@aws-lambda-powertools/metrics";
 import { APIGatewayProxyEvent, APIGatewayProxyEventHeaders, Context } from "aws-lambda";
 import { ClientConfigKey, CommonConfigKey, ConfigKey } from "../../../src/types/config-keys";
 import { ConfigService } from "../../../src/common/config/config-service";
-import { AuditService } from "../../../src/common/services/audit-service";
-import { AuditEventType } from "../../../src/types/audit-event";
 import { PersonIdentity } from "../../../src/types/person-identity";
 import { SessionLambda } from "../../../src/handlers/session-handler";
 import { PersonIdentityService } from "../../../src/services/person-identity-service";
@@ -26,6 +24,9 @@ import setGovUkSigningJourneyIdMiddleware from "../../../src/middlewares/session
 import initialiseClientConfigMiddleware from "../../../src/middlewares/config/initialise-client-config-middleware";
 import setRequestedVerificationScoreMiddleware from "../../../src/middlewares/session/set-requested-verification-score-middleware";
 import { injectLambdaContext } from "@aws-lambda-powertools/logger/middleware";
+import { buildAndSendAuditEvent } from "@govuk-one-login/cri-audit";
+import { CriAuditConfig } from "../../../src/types/cri-audit-config";
+import { SessionItem, UnixMillisecondsTimestamp, UnixSecondsTimestamp } from "@govuk-one-login/cri-types";
 
 jest.mock("@aws-sdk/lib-dynamodb");
 jest.mock("@aws-sdk/client-ssm");
@@ -35,6 +36,8 @@ jest.mock("@aws-lambda-powertools/metrics");
 jest.mock("@aws-lambda-powertools/logger");
 jest.mock("../../../src/common/config/config-service");
 jest.mock("../../../src/services/session-request-validator");
+jest.mock("@govuk-one-login/cri-audit");
+
 const SESSION_CREATED_METRIC = "session_created";
 
 describe("SessionLambda", () => {
@@ -45,11 +48,31 @@ describe("SessionLambda", () => {
     let metrics: jest.MockedObjectDeep<typeof Metrics>;
     let personIdentityService: jest.MockedObjectDeep<typeof PersonIdentityService>;
     let jweDecrypter: jest.MockedObjectDeep<typeof JweDecrypter>;
-    let auditService: jest.MockedObjectDeep<typeof AuditService>;
     let configService: jest.MockedObjectDeep<typeof ConfigService>;
     let sessionService: jest.MockedObjectDeep<typeof SessionService>;
     let sessionRequestValidator: jest.MockedObjectDeep<typeof SessionRequestValidator>;
     let sessionRequestValidatorFactory: jest.MockedObjectDeep<typeof SessionRequestValidatorFactory>;
+
+    const mockAuditConfig: CriAuditConfig = {
+        queueUrl: "cool-queuez.com",
+        issuer: "https://check-hmrc-time.account.gov.uk",
+        auditEventNamePrefix: "IPV_CRI",
+    };
+    const START_AUDIT_EVENT = `${mockAuditConfig.auditEventNamePrefix}_START`;
+
+    const mockSessionItem = {
+        sessionId: "test-session-id",
+        subject: "test-sub",
+        persistentSessionId: "test-persistent-session-id",
+        clientSessionId: "test-journey-id",
+        clientIpAddress: "test-client-ip-address",
+        clientId: "test-client-id",
+        attemptCount: 0,
+        createdDate: 1 as UnixMillisecondsTimestamp,
+        expiryDate: 2 as UnixSecondsTimestamp,
+        redirectUri: "test-redirect-uri",
+        state: "test-state",
+    };
 
     const mockPerson: PersonIdentity = {
         name: [
@@ -119,7 +142,6 @@ describe("SessionLambda", () => {
         metrics = jest.mocked(Metrics);
         personIdentityService = jest.mocked(PersonIdentityService);
         jweDecrypter = jest.mocked(JweDecrypter);
-        auditService = jest.mocked(AuditService);
         configService = jest.mocked(ConfigService);
         sessionService = jest.mocked(SessionService);
         sessionRequestValidator = jest.mocked(SessionRequestValidator);
@@ -128,11 +150,7 @@ describe("SessionLambda", () => {
         errorSpy = jest.spyOn(logger.prototype, "error").mockImplementation();
         jest.spyOn(logger.prototype, "info").mockImplementation();
 
-        sessionLambda = new SessionLambda(
-            sessionService.prototype,
-            personIdentityService.prototype,
-            auditService.prototype,
-        );
+        sessionLambda = new SessionLambda(sessionService.prototype, personIdentityService.prototype, mockAuditConfig);
 
         lambdaHandler = middy(sessionLambda.handler.bind(sessionLambda))
             .use(
@@ -179,11 +197,11 @@ describe("SessionLambda", () => {
 
         jest.spyOn(jweDecrypter.prototype, "decryptJwe").mockResolvedValue(Buffer.from("test-data"));
         jest.spyOn(personIdentityService.prototype, "savePersonIdentity").mockImplementation();
-        jest.spyOn(auditService.prototype, "sendAuditEvent").mockImplementation();
         jest.spyOn(configService.prototype, "init").mockImplementation(() => new Promise<void>((res) => res()));
         jest.spyOn(configService.prototype, "getClientConfig").mockReturnValue(mockMap);
+        jest.spyOn(configService.prototype, "getAuditConfig").mockReturnValue(mockAuditConfig);
         jest.spyOn(sessionService.prototype, "saveSession").mockReturnValue(
-            new Promise<string>((res) => res("test-session-id")),
+            new Promise<SessionItem>((res) => res(mockSessionItem)),
         );
         jest.spyOn(sessionRequestValidator.prototype, "validateJwt").mockReturnValue(
             new Promise<JWTPayload>((res) =>
@@ -336,22 +354,18 @@ describe("SessionLambda", () => {
     });
 
     it("should send the audit event", async () => {
-        const spy = jest.spyOn(auditService.prototype, "sendAuditEvent");
         await lambdaHandler(mockEvent, {} as Context);
 
-        expect(spy).toHaveBeenCalledWith(AuditEventType.START, {
-            clientIpAddress: "test-client-ip-address",
-            sessionItem: {
-                sessionId: "test-session-id",
-                subject: "test-sub",
-                persistentSessionId: "test-persistent-session-id",
-                clientSessionId: "test-journey-id",
-            },
-        });
+        expect(buildAndSendAuditEvent).toHaveBeenCalledWith(
+            mockAuditConfig.queueUrl,
+            START_AUDIT_EVENT,
+            mockAuditConfig.issuer,
+            mockSessionItem,
+            {},
+        );
     });
 
     it("should send the audit event", async () => {
-        const spy = jest.spyOn(auditService.prototype, "sendAuditEvent");
         await lambdaHandler(mockEvent, {} as Context);
         jest.spyOn(sessionRequestValidator.prototype, "validateJwt").mockReturnValue(
             new Promise<JWTPayload>((res) =>
@@ -370,38 +384,36 @@ describe("SessionLambda", () => {
                 } as JWTPayload),
             ),
         );
-        expect(spy).toHaveBeenCalledWith(AuditEventType.START, {
-            clientIpAddress: "test-client-ip-address",
-            sessionItem: {
-                sessionId: "test-session-id",
-                subject: "test-sub",
-                persistentSessionId: "test-persistent-session-id",
-                clientSessionId: "test-journey-id",
-            },
-        });
+        expect(buildAndSendAuditEvent).toHaveBeenCalledWith(
+            mockAuditConfig.queueUrl,
+            START_AUDIT_EVENT,
+            mockAuditConfig.issuer,
+            mockSessionItem,
+            {},
+        );
     });
 
     it("should send the audit event with device_information if it exists", async () => {
-        const spy = jest.spyOn(auditService.prototype, "sendAuditEvent");
         await lambdaHandler(
             { ...mockEvent, headers: { ...mockEvent.headers, "txma-audit-encoded": "encodedHeader" } },
             {} as Context,
         );
 
-        expect(spy).toHaveBeenCalledWith(AuditEventType.START, {
-            clientIpAddress: "test-client-ip-address",
-            sessionItem: {
-                sessionId: "test-session-id",
-                subject: "test-sub",
-                persistentSessionId: "test-persistent-session-id",
-                clientSessionId: "test-journey-id",
-            },
-            personIdentity: {
-                device_information: {
-                    encoded: "encodedHeader",
+        expect(buildAndSendAuditEvent).toHaveBeenCalledWith(
+            mockAuditConfig.queueUrl,
+            START_AUDIT_EVENT,
+            mockAuditConfig.issuer,
+            mockSessionItem,
+            {
+                restricted: {
+                    personIdentity: {
+                        device_information: {
+                            encoded: "encodedHeader",
+                        },
+                    },
                 },
             },
-        });
+        );
     });
 
     it("should successfully register the metrics", async () => {
@@ -504,58 +516,7 @@ describe("SessionLambda", () => {
                 ),
             );
         });
-        it("should send the audit event with context scope identity_check and verificationScore when verificationScore present in evidence_requested", async () => {
-            const spy = jest.spyOn(auditService.prototype, "sendAuditEvent");
-            process.env.CRI_IDENTIFIER = "di-ipv-cri-check-hmrc-api";
 
-            await lambdaHandler(mockEvent, {} as Context);
-
-            expect(spy).toHaveBeenCalledWith(AuditEventType.START, {
-                clientIpAddress: "test-client-ip-address",
-                sessionItem: {
-                    sessionId: "test-session-id",
-                    subject: "test-sub",
-                    persistentSessionId: "test-persistent-session-id",
-                    clientSessionId: "test-journey-id",
-                },
-                evidence_requested: {
-                    verificationScore: 2,
-                },
-            });
-        });
-        it("should send the audit event with only the context scope identity_check when evidence_requested has no verificationScore", async () => {
-            jest.spyOn(sessionRequestValidator.prototype, "validateJwt").mockReturnValue(
-                new Promise<JWTPayload>((res) =>
-                    res({
-                        client_id: "test-client-id",
-                        govuk_signin_journey_id: "test-journey-id",
-                        persistent_session_id: "test-persistent-session-id",
-                        redirect_uri: "test-redirect-uri",
-                        state: "test-state",
-                        sub: "test-sub",
-                        shared_claims: mockPersonWithSocialSecurityRecord,
-                        evidence_requested: {
-                            scoringPolicy: "gpg45",
-                            strengthScore: 2,
-                        },
-                    } as JWTPayload),
-                ),
-            );
-            const spy = jest.spyOn(auditService.prototype, "sendAuditEvent");
-            process.env.CRI_IDENTIFIER = "di-ipv-cri-check-hmrc-api";
-
-            await lambdaHandler(mockEvent, {} as Context);
-
-            expect(spy).toHaveBeenCalledWith(AuditEventType.START, {
-                clientIpAddress: "test-client-ip-address",
-                sessionItem: {
-                    sessionId: "test-session-id",
-                    subject: "test-sub",
-                    persistentSessionId: "test-persistent-session-id",
-                    clientSessionId: "test-journey-id",
-                },
-            });
-        });
         it("should save to the session with socialSecurityRecord included", async () => {
             const saveSpy = jest.spyOn(personIdentityService.prototype, "savePersonIdentity");
 
@@ -633,7 +594,6 @@ describe("SessionLambda", () => {
                 ),
             );
             const spySaveSession = jest.spyOn(sessionService.prototype, "saveSession");
-            const spyAuditEvent = jest.spyOn(auditService.prototype, "sendAuditEvent");
 
             await lambdaHandler(mockEvent, {} as Context);
 
@@ -653,18 +613,13 @@ describe("SessionLambda", () => {
             };
             expect(spySaveSession).toHaveBeenCalledWith(expectedSessionRequestSummary);
 
-            expect(spyAuditEvent).toHaveBeenCalledWith(AuditEventType.START, {
-                clientIpAddress: "test-client-ip-address",
-                sessionItem: {
-                    sessionId: "test-session-id",
-                    subject: "test-sub",
-                    persistentSessionId: "test-persistent-session-id",
-                    clientSessionId: "test-journey-id",
-                },
-                evidence_requested: {
-                    verificationScore: 2,
-                },
-            });
+            expect(buildAndSendAuditEvent).toHaveBeenCalledWith(
+                mockAuditConfig.queueUrl,
+                START_AUDIT_EVENT,
+                mockAuditConfig.issuer,
+                mockSessionItem,
+                {},
+            );
         });
     });
 
@@ -788,5 +743,18 @@ describe("SessionLambda", () => {
                 "test-session-id",
             );
         });
+    });
+
+    it("should return a 500 error from the handlers catch block", async () => {
+        const metricSpy = jest.spyOn(metrics.prototype, "addMetric");
+        const spy = jest.spyOn(sessionService.prototype, "saveSession");
+        spy.mockRejectedValue(new Error("Error"));
+
+        const result = await lambdaHandler(mockEvent, {} as Context);
+
+        expect(result.statusCode).toBe(500);
+        expect(result.body).toBe('{"message":"Server Error"}');
+
+        expect(metricSpy).toHaveBeenCalledWith("session_created", MetricUnit.Count, 0);
     });
 });
