@@ -150,7 +150,7 @@ describe("SessionLambda", () => {
         errorSpy = jest.spyOn(logger.prototype, "error").mockImplementation();
         jest.spyOn(logger.prototype, "info").mockImplementation();
 
-        sessionLambda = new SessionLambda(sessionService.prototype, personIdentityService.prototype, mockAuditConfig);
+        sessionLambda = new SessionLambda(sessionService.prototype, personIdentityService.prototype);
 
         lambdaHandler = middy(sessionLambda.handler.bind(sessionLambda))
             .use(

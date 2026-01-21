@@ -39,16 +39,18 @@ const criIdentifier = process.env.CRI_IDENTIFIER || "";
 const SESSION_CREATED_METRIC = "session_created";
 
 export class SessionLambda implements LambdaInterface {
+    private auditConfig: CriAuditConfig | undefined;
     constructor(
         private readonly sessionService: SessionService,
         private readonly personIdentityService: PersonIdentityService,
-        private readonly auditConfig: CriAuditConfig,
     ) {}
 
     @_tracer.captureLambdaHandler({ captureResponse: false })
     @metrics.logMetrics({ throwOnEmptyMetrics: false, captureColdStartMetric: true })
     public async handler(event: APIGatewayProxyEvent, _context: unknown): Promise<APIGatewayProxyResult> {
         try {
+            this.auditConfig ??= configService.getAuditConfig();
+
             const jwtPayload = event.body as unknown as JWTPayload;
 
             logger.info("Session lambda triggered");
@@ -122,7 +124,6 @@ const jwtValidatorFactory = new SessionRequestValidatorFactory(logger);
 const handlerClass = new SessionLambda(
     new SessionService(dynamoDbClient, configService),
     new PersonIdentityService(dynamoDbClient, configService),
-    configService.getAuditConfig(),
 );
 export const lambdaHandler = middy(handlerClass.handler.bind(handlerClass))
     .use(
