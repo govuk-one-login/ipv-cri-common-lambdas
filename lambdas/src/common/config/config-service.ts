@@ -2,7 +2,7 @@ import { SSMClient, Parameter } from "@aws-sdk/client-ssm";
 import { CriAuditConfig } from "../../types/cri-audit-config";
 import { ClientConfigKey, CommonConfigKey, EnvVarConfigKeys } from "../../types/config-keys";
 import { SSMProvider } from "@aws-lambda-powertools/parameters/ssm";
-import { logger } from "../utils/power-tool";
+import { logger } from "@govuk-one-login/cri-logger";
 
 const AWS_STACK_NAME_PREFIX = process.env.AWS_STACK_NAME || "";
 const AUTHORIZATION_CODE_TTL = parseNumber(process.env.AUTHORIZATION_CODE_TTL) || 600;

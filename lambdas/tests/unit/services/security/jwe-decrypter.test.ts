@@ -1,19 +1,23 @@
 import { createDecipheriv } from "crypto";
 import { KMSClient } from "@aws-sdk/client-kms";
 import { JweDecrypter } from "../../../../src/services/security/jwe-decrypter";
-import { logger, metrics } from "../../../../src/common/utils/power-tool";
+import { metrics } from "../../../../src/common/utils/power-tool";
+import { logger } from "@govuk-one-login/cri-logger";
 
 jest.mock("../../../../src/common/utils/power-tool", () => ({
-    logger: {
-        info: jest.fn(),
-        warn: jest.fn(),
-        error: jest.fn(),
-    },
     metrics: {
         addMetric: jest.fn(),
     },
     tracer: {
         captureLambdaHandler: (handler: unknown) => handler,
+    },
+}));
+
+jest.mock("@govuk-one-login/cri-logger", () => ({
+    logger: {
+        info: jest.fn(),
+        warn: jest.fn(),
+        error: jest.fn(),
     },
 }));
 

@@ -1,7 +1,6 @@
 import { SSMProvider } from "@aws-lambda-powertools/parameters/ssm";
 import { ConfigService } from "../../../../../src/common/config/config-service";
 import { JwtVerifierFactory } from "../../../../../src/common/security/jwt-verifier";
-import { logger } from "../../../../../src/common/utils/power-tool";
 import { AccessTokenLambda } from "../../../../../src/handlers/access-token-handler";
 import { SessionService } from "../../../../../src/services/session-service";
 import { AccessTokenRequestValidator } from "../../../../../src/services/token-request-validator";
@@ -11,6 +10,7 @@ import { DynamoDBDocument } from "@aws-sdk/lib-dynamodb";
 import { BearerAccessTokenFactory } from "../../../../../src/services/bearer-access-token-factory";
 import { MockDynamoDBDocument } from "../mocks/mock-dynamo-db-document";
 import { ClientConfigKey, CommonConfigKey } from "../../../../../src/types/config-keys";
+import { logger } from "@govuk-one-login/cri-logger";
 
 const parameterPathPrefix = process.env.AWS_STACK_NAME || "";
 const { JWT_AUDIENCE, JWT_PUBLIC_SIGNING_KEY, JWT_REDIRECT_URI, JWT_SIGNING_ALGORITHM, JWKS_ENDPOINT } =

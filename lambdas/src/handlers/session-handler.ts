@@ -15,7 +15,7 @@ import { JWTPayload } from "jose";
 import { AwsClientType, createClient } from "../common/aws-client-factory";
 import { getClientIpAddress, getEncodedDeviceInformation } from "../common/utils/request-utils";
 import { errorPayload } from "../common/utils/errors";
-import { logger, metrics, tracer as _tracer } from "../common/utils/power-tool";
+import { metrics, tracer as _tracer } from "../common/utils/power-tool";
 import errorMiddleware from "../middlewares/error/error-middleware";
 import { injectLambdaContext } from "@aws-lambda-powertools/logger/middleware";
 import initialiseConfigMiddleware from "../middlewares/config/initialise-config-middleware";
@@ -28,6 +28,7 @@ import { EvidenceRequest } from "../services/evidence_request";
 import setRequestedVerificationScoreMiddleware from "../middlewares/session/set-requested-verification-score-middleware";
 import { SSMProvider } from "@aws-lambda-powertools/parameters/ssm";
 import { initOpenTelemetry } from "../common/utils/otel-setup";
+import { logger } from "@govuk-one-login/cri-logger";
 
 initOpenTelemetry();
 

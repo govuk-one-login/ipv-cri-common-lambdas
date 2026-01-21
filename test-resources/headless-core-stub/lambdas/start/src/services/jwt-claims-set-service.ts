@@ -5,10 +5,10 @@ import addFormats from "ajv-formats";
 import { v4 as uuidv4 } from "uuid";
 import { ClaimsSetOverrides } from "../types/claims-set-overrides";
 import { JWTClaimsSet } from "../types/jwt-claims-set";
-import { logger } from "../start-handler";
 import { base64Encode } from "../../../../utils/src/base64";
 import { HeadlessCoreStubError } from "../../../../utils/src/errors/headless-core-stub-error";
 import { DEFAULT_CLIENT_ID } from "../../../../utils/src/constants";
+import { logger } from "@govuk-one-login/cri-logger";
 
 export const parseJwtClaimsSetOverrides = (body: string | null): ClaimsSetOverrides => {
     logger.info("Calling parseJwtClaimsSetOverrides", `${body}`);
