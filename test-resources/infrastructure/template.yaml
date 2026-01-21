@@ -31,7 +31,7 @@ Parameters:
     Default: "cri-vpc"
     Description: The name of the VPC stack deployed.
   CommonStackName:
-    Description: "The name of the stack containing the common CRI lambdas/infra"
+    Description: "The name of the OAuth Common stack"
     Type: String
     Default: common-cri-api
 

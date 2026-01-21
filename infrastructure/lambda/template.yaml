@@ -62,12 +62,20 @@ Conditions:
           - "none"
   AddJavaProvisionedConcurrency: !Not
     - !Equals
-      - !FindInMap [JavaProvisionedConcurrencyMapping, !Ref CriIdentifier, !Ref Environment]
-      -  0
+      - !FindInMap [
+          JavaProvisionedConcurrencyMapping,
+          !Ref CriIdentifier,
+          !Ref Environment,
+        ]
+      - 0
   AddTSProvisionedConcurrency: !Not
     - !Equals
-      - !FindInMap [TSProvisionedConcurrencyMapping, !Ref CriIdentifier, !Ref Environment]
-      -  0
+      - !FindInMap [
+          TSProvisionedConcurrencyMapping,
+          !Ref CriIdentifier,
+          !Ref Environment,
+        ]
+      - 0
   IsStubEnvironment: !Or
     - !Equals [!Ref Environment, dev]
     - !Equals [!Ref Environment, build]
@@ -98,7 +106,8 @@ Conditions:
   UseNewCSLSDestinationArn: !Or
     - !Equals [!Ref CriIdentifier, "di-ipv-cri-kbv-hmrc-api"]
     - !Equals [!Ref CriIdentifier, "di-ipv-cri-check-hmrc-api"]
-  UseCanaryDeploymentAlarms: !Not [ !Equals [ !Ref LambdaDeploymentPreference, AllAtOnce ]]
+  UseCanaryDeploymentAlarms:
+    !Not [!Equals [!Ref LambdaDeploymentPreference, AllAtOnce]]
   UseCustomerManagedKey: !Equals
     - !FindInMap [CustomerManagedKey, !Ref "CriIdentifier", useCMK]
     - true
@@ -130,7 +139,8 @@ Globals:
         POWERTOOLS_LOG_LEVEL: INFO
         POWERTOOLS_METRICS_NAMESPACE: !Ref CriIdentifier
         SQS_AUDIT_EVENT_PREFIX: !Ref AuditEventNamePrefix
-        FORCE_LAMBDA_UPDATE: !If [IsDevEnvironment, !Ref ForceLambdaUpdate, !Ref AWS::NoValue]
+        FORCE_LAMBDA_UPDATE:
+          !If [IsDevEnvironment, !Ref ForceLambdaUpdate, !Ref AWS::NoValue]
         AWS_LAMBDA_EXEC_WRAPPER: /opt/dynatrace
         DT_CONNECTION_AUTH_TOKEN: !Sub
           - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_CONNECTION_AUTH_TOKEN}}"
@@ -174,9 +184,7 @@ Globals:
               ]
         DT_OPEN_TELEMETRY_ENABLE_INTEGRATION: "true"
 
-
 Mappings:
-
   CustomerManagedKey:
     di-ipv-cri-address-api:
       useCMK: true
@@ -310,7 +318,7 @@ Mappings:
       integration: 7200 # 2 hours
       production: 7200 # 2 hours
 
-# Use key rotation aliases in session decryption
+  # Use key rotation aliases in session decryption
   KeyRotationMapping:
     di-ipv-cri-address-api:
       dev: "true"
@@ -813,9 +821,7 @@ Mappings:
       privateapigwname: "fraud-cri-api-v1-PrivateFraudApi"
       publicapigwname: "fraud-cri-api-v1-PublicFraudApi"
 
-
 Resources:
-
   #########################
   # Common OAuth Lambdas  #
   #########################
@@ -829,7 +835,10 @@ Resources:
         Role: !GetAtt CodeDeployServiceRole.Arn
         Alarms: !If
           - UseCanaryDeploymentAlarms
-          - [!Ref SessionFunctionLambdaErrors, !Ref SessionFunctionCanary5xxErrors]
+          - [
+              !Ref SessionFunctionLambdaErrors,
+              !Ref SessionFunctionCanary5xxErrors,
+            ]
           - [!Ref AWS::NoValue]
       CodeUri: ../../session
       Handler: uk.gov.di.ipv.cri.common.api.handler.SessionHandler::handleRequest
@@ -849,21 +858,42 @@ Resources:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-session"
           SQS_AUDIT_EVENT_QUEUE_URL:
             Fn::ImportValue: !Sub ${TxmaStackName}-AuditEventQueueUrl
-          ENV_VAR_FEATURE_FLAG_KEY_ROTATION: !FindInMap [ KeyRotationMapping, !Ref CriIdentifier, !Ref Environment ]
-          ENV_VAR_FEATURE_CONSUME_PUBLIC_JWK: !FindInMap [ CorePublicSigningJwksEnabled, !Ref CriIdentifier, !Ref Environment ]
-          ENV_VAR_FEATURE_FLAG_KEY_ROTATION_LEGACY_KEY_FALLBACK: !FindInMap [ KeyRotationLegacyFallBackMapping, !Ref CriIdentifier, !Ref Environment ]
+          ENV_VAR_FEATURE_FLAG_KEY_ROTATION:
+            !FindInMap [
+              KeyRotationMapping,
+              !Ref CriIdentifier,
+              !Ref Environment,
+            ]
+          ENV_VAR_FEATURE_CONSUME_PUBLIC_JWK:
+            !FindInMap [
+              CorePublicSigningJwksEnabled,
+              !Ref CriIdentifier,
+              !Ref Environment,
+            ]
+          ENV_VAR_FEATURE_FLAG_KEY_ROTATION_LEGACY_KEY_FALLBACK:
+            !FindInMap [
+              KeyRotationLegacyFallBackMapping,
+              !Ref CriIdentifier,
+              !Ref Environment,
+            ]
           SESSION_TABLE: !Ref SessionTable
           PERSON_IDENTITY_TABLE: !Ref PersonIdentityTable
-          VERIFIABLE_CREDENTIAL_ISSUER: !FindInMap [
-            VerifiableCredentialIssuerMapping,
-            !Ref CriIdentifier,
-            !Ref Environment,
-          ]
+          VERIFIABLE_CREDENTIAL_ISSUER:
+            !FindInMap [
+              VerifiableCredentialIssuerMapping,
+              !Ref CriIdentifier,
+              !Ref Environment,
+            ]
           AUTH_REQUEST_KMS_ENCRYPTION_KEY_ID: !ImportValue core-infrastructure-CriDecryptionKey1Id
       AutoPublishAlias: live
       AutoPublishAliasAllProperties: true
       SnapStart:
-        ApplyOn: !FindInMap [JavaSnapStartMapping, !Ref CriIdentifier, !Ref Environment]
+        ApplyOn:
+          !FindInMap [
+            JavaSnapStartMapping,
+            !Ref CriIdentifier,
+            !Ref Environment,
+          ]
       Policies:
         - AWSLambdaBasicExecutionRole
         - AWSXrayWriteOnlyAccess
@@ -906,10 +936,14 @@ Resources:
                 - "kms:GenerateDataKey"
               Resource:
                 Fn::ImportValue: !Sub ${TxmaStackName}-AuditEventQueueEncryptionKeyArn
-      ProvisionedConcurrencyConfig:
-        !If
+      ProvisionedConcurrencyConfig: !If
         - AddJavaProvisionedConcurrency
-        - ProvisionedConcurrentExecutions: !FindInMap [JavaProvisionedConcurrencyMapping, !Ref CriIdentifier, !Ref Environment]
+        - ProvisionedConcurrentExecutions:
+            !FindInMap [
+              JavaProvisionedConcurrencyMapping,
+              !Ref CriIdentifier,
+              !Ref Environment,
+            ]
         - !Ref AWS::NoValue
 
   SessionFunctionLogGroup:
@@ -936,9 +970,9 @@ Resources:
       AlarmName: !Sub "${AWS::StackName}-SessionFunctionLambdaErrors"
       AlarmDescription: !Sub "Trigger an alarm when lambda errors occurs"
       ActionsEnabled: true
-      AlarmActions: 
+      AlarmActions:
         - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
-      OKActions: 
+      OKActions:
         - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
       InsufficientDataActions: []
       MetricName: Errors
@@ -960,9 +994,9 @@ Resources:
     Condition: UseCanaryDeploymentAlarms
     Properties:
       ActionsEnabled: true
-      AlarmActions: 
+      AlarmActions:
         - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
-      OKActions:  
+      OKActions:
         - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
       AlarmName: !Sub "${AWS::StackName}-SessionFunctionCanary5xxErrors"
       AlarmDescription: !Sub "SessionFunction Lambda returning 5xx response."
@@ -972,7 +1006,12 @@ Resources:
         - Name: Method
           Value: POST
         - Name: ApiName
-          Value: !FindInMap [CanaryDeploymentapigatewayidMapping, !Ref CriIdentifier, privateapigwname]
+          Value:
+            !FindInMap [
+              CanaryDeploymentapigatewayidMapping,
+              !Ref CriIdentifier,
+              privateapigwname,
+            ]
         - Name: Stage
           Value: !Ref Environment
         - Name: Resource
@@ -994,7 +1033,10 @@ Resources:
         Role: !GetAtt CodeDeployServiceRole.Arn
         Alarms: !If
           - UseCanaryDeploymentAlarms
-          - [!Ref SessionFunctionTSLambdaErrors, !Ref SessionFunctionCanary5xxErrors]
+          - [
+              !Ref SessionFunctionTSLambdaErrors,
+              !Ref SessionFunctionCanary5xxErrors,
+            ]
           - [!Ref AWS::NoValue]
       CodeUri: ../../lambdas
       Handler: session-handler.lambdaHandler
@@ -1015,15 +1057,26 @@ Resources:
           SQS_AUDIT_EVENT_QUEUE_URL:
             Fn::ImportValue: !Sub ${TxmaStackName}-AuditEventQueueUrl
           CRI_IDENTIFIER: !Sub "${CriIdentifier}"
-          ENV_VAR_FEATURE_FLAG_KEY_ROTATION: !FindInMap [ KeyRotationMapping, !Ref CriIdentifier, !Ref Environment ]
-          ENV_VAR_FEATURE_FLAG_KEY_ROTATION_LEGACY_KEY_FALLBACK: !FindInMap [ KeyRotationLegacyFallBackMapping, !Ref CriIdentifier, !Ref Environment ]
+          ENV_VAR_FEATURE_FLAG_KEY_ROTATION:
+            !FindInMap [
+              KeyRotationMapping,
+              !Ref CriIdentifier,
+              !Ref Environment,
+            ]
+          ENV_VAR_FEATURE_FLAG_KEY_ROTATION_LEGACY_KEY_FALLBACK:
+            !FindInMap [
+              KeyRotationLegacyFallBackMapping,
+              !Ref CriIdentifier,
+              !Ref Environment,
+            ]
           SESSION_TABLE: !Ref SessionTable
           PERSON_IDENTITY_TABLE: !Ref PersonIdentityTable
-          VC_ISSUER: !FindInMap [
-            VerifiableCredentialIssuerMapping,
-            !Ref CriIdentifier,
-            !Ref Environment,
-          ]
+          VC_ISSUER:
+            !FindInMap [
+              VerifiableCredentialIssuerMapping,
+              !Ref CriIdentifier,
+              !Ref Environment,
+            ]
       AutoPublishAlias: live
       AutoPublishAliasAllProperties: true
       Policies:
@@ -1059,10 +1112,14 @@ Resources:
                 - "kms:GenerateDataKey"
               Resource:
                 Fn::ImportValue: !Sub ${TxmaStackName}-AuditEventQueueEncryptionKeyArn
-      ProvisionedConcurrencyConfig:
-        !If
+      ProvisionedConcurrencyConfig: !If
         - AddTSProvisionedConcurrency
-        - ProvisionedConcurrentExecutions: !FindInMap [TSProvisionedConcurrencyMapping, !Ref CriIdentifier, !Ref Environment]
+        - ProvisionedConcurrentExecutions:
+            !FindInMap [
+              TSProvisionedConcurrencyMapping,
+              !Ref CriIdentifier,
+              !Ref Environment,
+            ]
         - !Ref AWS::NoValue
     Metadata: # Manage esbuild properties
       BuildMethod: esbuild
@@ -1099,9 +1156,9 @@ Resources:
       AlarmName: !Sub "${AWS::StackName}-SessionFunctionTSLambdaErrors"
       AlarmDescription: !Sub "Trigger an alarm when lambda errors occurs"
       ActionsEnabled: true
-      AlarmActions: 
+      AlarmActions:
         - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
-      OKActions: 
+      OKActions:
         - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
       InsufficientDataActions: []
       MetricName: Errors
@@ -1127,7 +1184,10 @@ Resources:
         Role: !GetAtt CodeDeployServiceRole.Arn
         Alarms: !If
           - UseCanaryDeploymentAlarms
-          - [!Ref AuthorizationFunctionLambdaErrors, !Ref AuthorizationFunctionCanary5xxErrors]
+          - [
+              !Ref AuthorizationFunctionLambdaErrors,
+              !Ref AuthorizationFunctionCanary5xxErrors,
+            ]
           - [!Ref AWS::NoValue]
       CodeUri: ../../authorization
       Handler: uk.gov.di.ipv.cri.common.api.handler.AuthorizationHandler::handleRequest
@@ -1149,7 +1209,12 @@ Resources:
       AutoPublishAlias: live
       AutoPublishAliasAllProperties: true
       SnapStart:
-        ApplyOn: !FindInMap [JavaSnapStartMapping, !Ref CriIdentifier, !Ref Environment]
+        ApplyOn:
+          !FindInMap [
+            JavaSnapStartMapping,
+            !Ref CriIdentifier,
+            !Ref Environment,
+          ]
       Policies:
         - AWSLambdaBasicExecutionRole
         - AWSXrayWriteOnlyAccess
@@ -1165,10 +1230,14 @@ Resources:
                 - ssm:GetParametersByPath
               Resource:
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/clients/*"
-      ProvisionedConcurrencyConfig:
-        !If
+      ProvisionedConcurrencyConfig: !If
         - AddJavaProvisionedConcurrency
-        - ProvisionedConcurrentExecutions: !FindInMap [JavaProvisionedConcurrencyMapping, !Ref CriIdentifier, !Ref Environment]
+        - ProvisionedConcurrentExecutions:
+            !FindInMap [
+              JavaProvisionedConcurrencyMapping,
+              !Ref CriIdentifier,
+              !Ref Environment,
+            ]
         - !Ref AWS::NoValue
 
   AuthorizationFunctionLogGroup:
@@ -1184,9 +1253,9 @@ Resources:
       AlarmName: !Sub "${AWS::StackName}-AuthorizationFunctionLambdaErrors"
       AlarmDescription: !Sub "Trigger an alarm when lambda errors occurs"
       ActionsEnabled: true
-      AlarmActions: 
+      AlarmActions:
         - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
-      OKActions: 
+      OKActions:
         - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
       InsufficientDataActions: []
       MetricName: Errors
@@ -1208,9 +1277,9 @@ Resources:
     Condition: UseCanaryDeploymentAlarms
     Properties:
       ActionsEnabled: true
-      AlarmActions: 
+      AlarmActions:
         - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
-      OKActions: 
+      OKActions:
         - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
       AlarmName: !Sub "${AWS::StackName}-AuthorizationFunctionCanary5xxErrors"
       AlarmDescription: !Sub "AuthorizationFunction Lambda returning 5xx response."
@@ -1220,7 +1289,12 @@ Resources:
         - Name: Method
           Value: GET
         - Name: ApiName
-          Value: !FindInMap [CanaryDeploymentapigatewayidMapping, !Ref CriIdentifier, privateapigwname]
+          Value:
+            !FindInMap [
+              CanaryDeploymentapigatewayidMapping,
+              !Ref CriIdentifier,
+              privateapigwname,
+            ]
         - Name: Stage
           Value: !Ref Environment
         - Name: Resource
@@ -1242,7 +1316,10 @@ Resources:
         Role: !GetAtt CodeDeployServiceRole.Arn
         Alarms: !If
           - UseCanaryDeploymentAlarms
-          - [!Ref AuthorizationFunctionTSLambdaErrors, !Ref AuthorizationFunctionCanary5xxErrors]
+          - [
+              !Ref AuthorizationFunctionTSLambdaErrors,
+              !Ref AuthorizationFunctionCanary5xxErrors,
+            ]
           - [!Ref AWS::NoValue]
       CodeUri: ../../lambdas
       Handler: authorization-handler.lambdaHandler
@@ -1274,10 +1351,14 @@ Resources:
             KeyId: !Ref DynamoTablesEncryptionKey
         - SSMParameterReadPolicy:
             ParameterName: !Sub "${AWS::StackName}/clients/*"
-      ProvisionedConcurrencyConfig:
-        !If
+      ProvisionedConcurrencyConfig: !If
         - AddTSProvisionedConcurrency
-        - ProvisionedConcurrentExecutions: !FindInMap [TSProvisionedConcurrencyMapping, !Ref CriIdentifier, !Ref Environment]
+        - ProvisionedConcurrentExecutions:
+            !FindInMap [
+              TSProvisionedConcurrencyMapping,
+              !Ref CriIdentifier,
+              !Ref Environment,
+            ]
         - !Ref AWS::NoValue
     Metadata: # Manage esbuild properties
       BuildMethod: esbuild
@@ -1325,9 +1406,9 @@ Resources:
       AlarmName: !Sub "${AWS::StackName}-AuthorizationFunctionTSLambdaErrors"
       AlarmDescription: !Sub "Trigger an alarm when lambda errors occurs"
       ActionsEnabled: true
-      AlarmActions: 
+      AlarmActions:
         - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
-      OKActions: 
+      OKActions:
         - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
       InsufficientDataActions: []
       MetricName: Errors
@@ -1353,7 +1434,10 @@ Resources:
         Role: !GetAtt CodeDeployServiceRole.Arn
         Alarms: !If
           - UseCanaryDeploymentAlarms
-          - [!Ref AccessTokenFunctionLambdaErrors, !Ref AccessTokenFunctionCanary5xxErrors]
+          - [
+              !Ref AccessTokenFunctionLambdaErrors,
+              !Ref AccessTokenFunctionCanary5xxErrors,
+            ]
           - [!Ref AWS::NoValue]
       CodeUri: ../../accesstoken
       Handler: uk.gov.di.ipv.cri.common.api.handler.AccessTokenHandler::handleRequest
@@ -1371,12 +1455,22 @@ Resources:
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-access-token"
-          ENV_VAR_FEATURE_CONSUME_PUBLIC_JWK: !FindInMap [ CorePublicSigningJwksEnabled, !Ref CriIdentifier, !Ref Environment ]
+          ENV_VAR_FEATURE_CONSUME_PUBLIC_JWK:
+            !FindInMap [
+              CorePublicSigningJwksEnabled,
+              !Ref CriIdentifier,
+              !Ref Environment,
+            ]
           SESSION_TABLE: !Ref SessionTable
       AutoPublishAlias: live
       AutoPublishAliasAllProperties: true
       SnapStart:
-        ApplyOn: !FindInMap [JavaSnapStartMapping, !Ref CriIdentifier, !Ref Environment]
+        ApplyOn:
+          !FindInMap [
+            JavaSnapStartMapping,
+            !Ref CriIdentifier,
+            !Ref Environment,
+          ]
       Policies:
         - DynamoDBReadPolicy:
             TableName:
@@ -1398,10 +1492,14 @@ Resources:
                 - ssm:GetParametersByPath
               Resource:
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/clients/*"
-      ProvisionedConcurrencyConfig:
-        !If
+      ProvisionedConcurrencyConfig: !If
         - AddJavaProvisionedConcurrency
-        - ProvisionedConcurrentExecutions: !FindInMap [JavaProvisionedConcurrencyMapping, !Ref CriIdentifier, !Ref Environment]
+        - ProvisionedConcurrentExecutions:
+            !FindInMap [
+              JavaProvisionedConcurrencyMapping,
+              !Ref CriIdentifier,
+              !Ref Environment,
+            ]
         - !Ref AWS::NoValue
 
   AccessTokenFunctionLambdaErrors:
@@ -1411,9 +1509,9 @@ Resources:
       AlarmName: !Sub "${AWS::StackName}-AccessTokenFunctionLambdaErrors"
       AlarmDescription: !Sub "Trigger an alarm when lambda errors occurs"
       ActionsEnabled: true
-      AlarmActions: 
+      AlarmActions:
         - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
-      OKActions: 
+      OKActions:
         - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
       InsufficientDataActions: []
       MetricName: Errors
@@ -1435,9 +1533,9 @@ Resources:
     Condition: UseCanaryDeploymentAlarms
     Properties:
       ActionsEnabled: true
-      AlarmActions: 
+      AlarmActions:
         - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
-      OKActions: 
+      OKActions:
         - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
       AlarmName: !Sub "${AWS::StackName}-AccessTokenFunctionCanary5xxErrors"
       AlarmDescription: !Sub "AccessTokenFunction Lambda returning 5xx response."
@@ -1447,7 +1545,12 @@ Resources:
         - Name: Method
           Value: POST
         - Name: ApiName
-          Value: !FindInMap [CanaryDeploymentapigatewayidMapping, !Ref CriIdentifier, publicapigwname]
+          Value:
+            !FindInMap [
+              CanaryDeploymentapigatewayidMapping,
+              !Ref CriIdentifier,
+              publicapigwname,
+            ]
         - Name: Stage
           Value: !Ref Environment
         - Name: Resource
@@ -1469,7 +1572,10 @@ Resources:
         Role: !GetAtt CodeDeployServiceRole.Arn
         Alarms: !If
           - UseCanaryDeploymentAlarms
-          - [!Ref AccessTokenFunctionTSLambdaErrors, !Ref AccessTokenFunctionCanary5xxErrors]
+          - [
+              !Ref AccessTokenFunctionTSLambdaErrors,
+              !Ref AccessTokenFunctionCanary5xxErrors,
+            ]
           - [!Ref AWS::NoValue]
       Handler: access-token-handler.lambdaHandler
       CodeUri: ../../lambdas
@@ -1508,10 +1614,14 @@ Resources:
               Resource:
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/SessionTtl"
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/clients/*"
-      ProvisionedConcurrencyConfig:
-        !If
+      ProvisionedConcurrencyConfig: !If
         - AddTSProvisionedConcurrency
-        - ProvisionedConcurrentExecutions: !FindInMap [TSProvisionedConcurrencyMapping, !Ref CriIdentifier, !Ref Environment]
+        - ProvisionedConcurrentExecutions:
+            !FindInMap [
+              TSProvisionedConcurrencyMapping,
+              !Ref CriIdentifier,
+              !Ref Environment,
+            ]
         - !Ref AWS::NoValue
     Metadata: # Manage esbuild properties
       BuildMethod: esbuild
@@ -1557,7 +1667,7 @@ Resources:
       DestinationArn: !If
         - UseNewCSLSDestinationArn
         - "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2"
-        - "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython" 
+        - "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython"
       FilterPattern: ""
       LogGroupName: !Ref AccessTokenFunctionLogGroup
 
@@ -1568,7 +1678,7 @@ Resources:
       DestinationArn: !If
         - UseNewCSLSDestinationArn
         - "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2"
-        - "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython" 
+        - "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython"
       FilterPattern: ""
       LogGroupName: !Ref AccessTokenTSFunctionLogGroup
 
@@ -1579,9 +1689,9 @@ Resources:
       AlarmName: !Sub "${AWS::StackName}-AccessTokenFunctionTSLambdaErrors"
       AlarmDescription: !Sub "Trigger an alarm when lambda errors occurs"
       ActionsEnabled: true
-      AlarmActions: 
+      AlarmActions:
         - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
-      OKActions: 
+      OKActions:
         - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
       InsufficientDataActions: []
       MetricName: Errors
@@ -1690,8 +1800,7 @@ Resources:
         Enabled: true
       SSESpecification: !If
         - UseCustomerManagedKey
-        -
-          KMSMasterKeyId: !Ref DynamoTablesEncryptionKey
+        - KMSMasterKeyId: !Ref DynamoTablesEncryptionKey
           SSEEnabled: true
           SSEType: KMS
         - !Ref "AWS::NoValue"
@@ -1714,8 +1823,7 @@ Resources:
         Enabled: true
       SSESpecification: !If
         - UseCustomerManagedKey
-        -
-          KMSMasterKeyId: !Ref DynamoTablesEncryptionKey
+        - KMSMasterKeyId: !Ref DynamoTablesEncryptionKey
           SSEEnabled: true
           SSEType: KMS
         - !Ref "AWS::NoValue"
@@ -2077,8 +2185,7 @@ Resources:
     Properties:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod/jwtAuthentication/jwksEndpoint"
       Type: String
-      Value:
-        !FindInMap [StubJwksEndpoint, !Ref CriIdentifier, !Ref Environment]
+      Value: !FindInMap [StubJwksEndpoint, !Ref CriIdentifier, !Ref Environment]
 
   IPVCoreStubAWSBuildJwksEndpointParameter:
     Condition: IsStubEnvironment
@@ -2086,8 +2193,7 @@ Resources:
     Properties:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build/jwtAuthentication/jwksEndpoint"
       Type: String
-      Value:
-        !FindInMap [StubJwksEndpoint, !Ref CriIdentifier, !Ref Environment]
+      Value: !FindInMap [StubJwksEndpoint, !Ref CriIdentifier, !Ref Environment]
 
   IPVCoreStubJwksEndpointParameter:
     Condition: IsStubEnvironment
@@ -2095,8 +2201,7 @@ Resources:
     Properties:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub/jwtAuthentication/jwksEndpoint"
       Type: String
-      Value:
-        !FindInMap [StubJwksEndpoint, !Ref CriIdentifier, !Ref Environment]
+      Value: !FindInMap [StubJwksEndpoint, !Ref CriIdentifier, !Ref Environment]
 
   IPVCoreStubPreProdAWSBuildJwksEndpointParameter:
     Condition: IsStubEnvironment
@@ -2104,8 +2209,7 @@ Resources:
     Properties:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod-aws-build/jwtAuthentication/jwksEndpoint"
       Type: String
-      Value:
-        !FindInMap [StubJwksEndpoint, !Ref CriIdentifier, !Ref Environment]
+      Value: !FindInMap [StubJwksEndpoint, !Ref CriIdentifier, !Ref Environment]
 
   IPVCoreStubPreProdJwksEndpointParameter:
     Condition: IsStubEnvironment
@@ -2113,8 +2217,7 @@ Resources:
     Properties:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod/jwtAuthentication/jwksEndpoint"
       Type: String
-      Value:
-        !FindInMap [StubJwksEndpoint, !Ref CriIdentifier, !Ref Environment]
+      Value: !FindInMap [StubJwksEndpoint, !Ref CriIdentifier, !Ref Environment]
 
   IPVCoreStubAWSHeadlessJwksEndpointParameter:
     Condition: IsStubEnvironment
@@ -2122,8 +2225,7 @@ Resources:
     Properties:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-headless/jwtAuthentication/jwksEndpoint"
       Type: String
-      Value:
-        !FindInMap [StubJwksEndpoint, !Ref CriIdentifier, !Ref Environment]
+      Value: !FindInMap [StubJwksEndpoint, !Ref CriIdentifier, !Ref Environment]
 
   IPVCoreStubAWSProdThirdPartyJwksEndpointParameter:
     Condition: IsStubEnvironment
@@ -2131,8 +2233,7 @@ Resources:
     Properties:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod_3rdparty/jwtAuthentication/jwksEndpoint"
       Type: String
-      Value:
-        !FindInMap [StubJwksEndpoint, !Ref CriIdentifier, !Ref Environment]
+      Value: !FindInMap [StubJwksEndpoint, !Ref CriIdentifier, !Ref Environment]
 
   IPVCoreStubAWSBuildThirdPartyJwksEndpointParameter:
     Condition: IsStubEnvironment
@@ -2140,8 +2241,7 @@ Resources:
     Properties:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build_3rdparty/jwtAuthentication/jwksEndpoint"
       Type: String
-      Value:
-        !FindInMap [StubJwksEndpoint, !Ref CriIdentifier, !Ref Environment]
+      Value: !FindInMap [StubJwksEndpoint, !Ref CriIdentifier, !Ref Environment]
 
   IPVCoreThirdPartyStubsJwksEndpointParameter:
     Condition: IsStubEnvironment
@@ -2149,16 +2249,14 @@ Resources:
     Properties:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core-3rd-party-stubs/jwtAuthentication/jwksEndpoint"
       Type: String
-      Value:
-        !FindInMap [CoreJwksEndpoint, Environment, !Ref Environment]
+      Value: !FindInMap [CoreJwksEndpoint, Environment, !Ref Environment]
 
   IPVCoreJwksEndpointParameter:
     Type: AWS::SSM::Parameter
     Properties:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core/jwtAuthentication/jwksEndpoint"
       Type: String
-      Value:
-        !FindInMap [CoreJwksEndpoint, Environment, !Ref Environment]
+      Value: !FindInMap [CoreJwksEndpoint, Environment, !Ref Environment]
 
   AuthRequestKmsEncryptionKeyIdParameter:
     Type: AWS::SSM::Parameter
@@ -2366,7 +2464,7 @@ Resources:
           "responseLatency":"$context.responseLatency",
           "responseLength":"$context.responseLength"
           }
-      Name: !Sub "common-lambdas-${AWS::StackName}"
+      Name: !Sub "oauth-common-${AWS::StackName}"
       StageName: !Ref Environment
       DefinitionBody:
         openapi: "3.0.1" # workaround to get `sam validate` to work
@@ -2410,7 +2508,11 @@ Resources:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core-3rd-party-stubs/jwtAuthentication/publicSigningJwkBase64"
       Type: String
       Value:
-        !FindInMap [IPVCore1PublicSigningJwkBase64Mapping, Environment,!Ref "Environment"]
+        !FindInMap [
+          IPVCore1PublicSigningJwkBase64Mapping,
+          Environment,
+          !Ref "Environment",
+        ]
 
   IPVCore3rdPartyStubsIssuerParameter:
     Condition: IsIpvCore3rdPartyStubEnvironment
@@ -2427,7 +2529,11 @@ Resources:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core-3rd-party-stubs/jwtAuthentication/redirectUri"
       Type: String
       Value:
-        !FindInMap [IPVCore1RedirectURIMapping, !Ref CriIdentifier, !Ref Environment ]
+        !FindInMap [
+          IPVCore1RedirectURIMapping,
+          !Ref CriIdentifier,
+          !Ref Environment,
+        ]
 
   IPVCore3rdPartyStubsAuthenticationAlgParameter:
     Condition: IsIpvCore3rdPartyStubEnvironment
@@ -2464,12 +2570,12 @@ Resources:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-headless/jwtAuthentication/issuer"
       Type: String
       Value: !Join
-        - ''
-        - - 'https://test-resources.'
+        - ""
+        - - "https://test-resources."
           - !Select
             - 1
             - !Split
-              - 'https://'
+              - "https://"
               - !FindInMap
                 - VerifiableCredentialIssuerMapping
                 - !Ref CriIdentifier
@@ -2482,17 +2588,17 @@ Resources:
       Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-headless/jwtAuthentication/redirectUri"
       Type: String
       Value: !Join
-        - ''
-        - - 'https://test-resources.'
+        - ""
+        - - "https://test-resources."
           - !Select
             - 1
             - !Split
-              - 'https://'
+              - "https://"
               - !FindInMap
                 - VerifiableCredentialIssuerMapping
                 - !Ref CriIdentifier
                 - !Ref Environment
-          - '/callback'
+          - "/callback"
 
   IPVCoreStubAwsHeadlessAuthenticationAlgParameter:
     Condition: IsStubEnvironment
@@ -2604,10 +2710,15 @@ Resources:
                 - codedeploy.amazonaws.com
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSCodeDeployRoleForLambda
-      PermissionsBoundary: !If [ UsePermissionsBoundary, !Ref PermissionsBoundary, !Ref AWS::NoValue ]
+      PermissionsBoundary:
+        !If [
+          UsePermissionsBoundary,
+          !Ref PermissionsBoundary,
+          !Ref AWS::NoValue,
+        ]
 
 Outputs:
   PreMergeDevOnlyApiId:
     Condition: IsDevEnvironment
-    Description: API GatewayID of the dev-only common lambdas API
+    Description: ID of the dev-only OAuth Common API
     Value: !Ref PreMergeDevOnlyApi

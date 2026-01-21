@@ -1,4 +1,4 @@
-# Credential Issuer Common Lambdas Release Notes
+# Credential Issuer OAuth Common Release Notes
 
 ## 20/02/2025
 

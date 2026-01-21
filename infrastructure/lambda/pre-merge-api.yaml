@@ -1,6 +1,6 @@
 openapi: "3.0.1"
 info:
-  title: "pre-merge dev only common lambdas API gateway"
+  title: "pre-merge dev only OAuth Common API gateway"
   version: "1.0"
 
 paths:
@@ -104,7 +104,7 @@ paths:
   /session-ts:
     post:
       parameters:
-        - $ref: '#/components/parameters/AuditHeader'
+        - $ref: "#/components/parameters/AuditHeader"
       requestBody:
         content:
           application/json:
@@ -145,7 +145,7 @@ paths:
   /session:
     post:
       parameters:
-        - $ref: '#/components/parameters/AuditHeader'
+        - $ref: "#/components/parameters/AuditHeader"
       requestBody:
         content:
           application/json:
