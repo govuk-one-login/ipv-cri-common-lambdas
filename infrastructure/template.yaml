@@ -7,9 +7,7 @@ Metadata:
   cfn-lint:
     config:
       ignore_checks:
-        - W8003
         - W1028
-        - E3031
         - E3033
         - E1020
 
@@ -60,10 +58,10 @@ Conditions:
       - Fn::Equals:
           - !Ref CodeSigningConfigArn
           - "none"
-  AddTSProvisionedConcurrency: !Not
+  AddProvisionedConcurrency: !Not
     - !Equals
       - !FindInMap [
-          TSProvisionedConcurrencyMapping,
+          ProvisionedConcurrencyMapping,
           !Ref CriIdentifier,
           !Ref Environment,
         ]
@@ -356,8 +354,8 @@ Mappings:
       integration: "true"
       production: "true"
 
-  # TS functions Only 0 = off
-  TSProvisionedConcurrencyMapping:
+  # 0 = off
+  ProvisionedConcurrencyMapping:
     di-ipv-cri-address-api:
       dev: 0
       build: 0
@@ -656,23 +654,16 @@ Mappings:
       production: "https://review-hc.account.gov.uk"
 
 Resources:
-  #########################
-  # Common OAuth Lambdas  #
-  #########################
-
-  SessionFunctionTS:
+  SessionFn:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub "${AWS::StackName}-SessionFunctionTS"
+      FunctionName: !Sub "${AWS::StackName}-SessionFn"
       DeploymentPreference:
         Type: !Ref LambdaDeploymentPreference
         Role: !GetAtt CodeDeployServiceRole.Arn
         Alarms: !If
           - UseCanaryDeploymentAlarms
-          - [
-              !Ref SessionFunctionTSLambdaErrors,
-              !Ref SessionFunctionCanary5xxErrors,
-            ]
+          - [!Ref SessionFnLambdaErrors, !Ref SessionFnCanary5xxErrors]
           - [!Ref AWS::NoValue]
       CodeUri: ../../lambdas
       Handler: session-handler.lambdaHandler
@@ -749,10 +740,10 @@ Resources:
               Resource:
                 Fn::ImportValue: !Sub ${TxmaStackName}-AuditEventQueueEncryptionKeyArn
       ProvisionedConcurrencyConfig: !If
-        - AddTSProvisionedConcurrency
+        - AddProvisionedConcurrency
         - ProvisionedConcurrentExecutions:
             !FindInMap [
-              TSProvisionedConcurrencyMapping,
+              ProvisionedConcurrencyMapping,
               !Ref CriIdentifier,
               !Ref Environment,
             ]
@@ -768,13 +759,13 @@ Resources:
         External:
           - "@aws-sdk/*"
 
-  SessionFunctionTSLogGroup:
+  SessionFnLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub "/aws/lambda/${SessionFunctionTS}"
+      LogGroupName: !Sub "/aws/lambda/${SessionFn}"
       RetentionInDays: 30
 
-  SessionFunctionLogGroupSubscriptionFilterCSLSTS:
+  SessionFnLogGroupSubscriptionFilterCSLS:
     Type: AWS::Logs::SubscriptionFilter
     Condition: IsCSLSDisabled
     Properties:
@@ -783,13 +774,13 @@ Resources:
         - "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2"
         - "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython"
       FilterPattern: ""
-      LogGroupName: !Ref SessionFunctionTSLogGroup
+      LogGroupName: !Ref SessionFnLogGroup
 
-  SessionFunctionTSLambdaErrors:
+  SessionFnLambdaErrors:
     Type: AWS::CloudWatch::Alarm
     Condition: UseCanaryDeploymentAlarms
     Properties:
-      AlarmName: !Sub "${AWS::StackName}-SessionFunctionTSLambdaErrors"
+      AlarmName: !Sub "${AWS::StackName}-SessionFunctionLambdaErrors"
       AlarmDescription: !Sub "Trigger an alarm when lambda errors occurs"
       ActionsEnabled: true
       AlarmActions:
@@ -802,27 +793,27 @@ Resources:
       Statistic: Sum
       Dimensions:
         - Name: Resource
-          Value: !Sub "${AWS::StackName}-SessionTSFunction:live"
+          Value: !Sub "${AWS::StackName}-SessionFn:live"
         - Name: ExecutedVersion
-          Value: !Sub SessionFunctionTS.Version.Version
+          Value: !Sub SessionFn.Version.Version
       Period: 60
       EvaluationPeriods: 1
       Threshold: 1
       ComparisonOperator: GreaterThanThreshold
       TreatMissingData: notBreaching
 
-  AuthorizationFunctionTS:
+  AuthorizationFn:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub "${AWS::StackName}-AuthorizationFunctionTS"
+      FunctionName: !Sub "${AWS::StackName}-AuthorizationFn"
       DeploymentPreference:
         Type: !Ref LambdaDeploymentPreference
         Role: !GetAtt CodeDeployServiceRole.Arn
         Alarms: !If
           - UseCanaryDeploymentAlarms
           - [
-              !Ref AuthorizationFunctionTSLambdaErrors,
-              !Ref AuthorizationFunctionCanary5xxErrors,
+              !Ref AuthorizationFnLambdaErrors,
+              !Ref AuthorizationFnCanary5xxErrors,
             ]
           - [!Ref AWS::NoValue]
       CodeUri: ../../lambdas
@@ -856,10 +847,10 @@ Resources:
         - SSMParameterReadPolicy:
             ParameterName: !Sub "${AWS::StackName}/clients/*"
       ProvisionedConcurrencyConfig: !If
-        - AddTSProvisionedConcurrency
+        - AddProvisionedConcurrency
         - ProvisionedConcurrentExecutions:
             !FindInMap [
-              TSProvisionedConcurrencyMapping,
+              ProvisionedConcurrencyMapping,
               !Ref CriIdentifier,
               !Ref Environment,
             ]
@@ -875,13 +866,13 @@ Resources:
         External:
           - "@aws-sdk/*"
 
-  AuthorizationFunctionTSLogGroup:
+  AuthorizationFnLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub "/aws/lambda/${AuthorizationFunctionTS}"
+      LogGroupName: !Sub "/aws/lambda/${AuthorizationFn}"
       RetentionInDays: 30
 
-  AuthorizationFunctionLogGroupSubscriptionFilterCSLSTS:
+  AuthorizationFnLogGroupSubscriptionFilterCSLS:
     Type: AWS::Logs::SubscriptionFilter
     Condition: IsCSLSDisabled
     Properties:
@@ -890,13 +881,13 @@ Resources:
         - "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2"
         - "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython"
       FilterPattern: ""
-      LogGroupName: !Ref AuthorizationFunctionTSLogGroup
+      LogGroupName: !Ref AuthorizationFnLogGroup
 
-  AuthorizationFunctionTSLambdaErrors:
+  AuthorizationFnLambdaErrors:
     Type: AWS::CloudWatch::Alarm
     Condition: UseCanaryDeploymentAlarms
     Properties:
-      AlarmName: !Sub "${AWS::StackName}-AuthorizationFunctionTSLambdaErrors"
+      AlarmName: !Sub "${AWS::StackName}-AuthorizationFunctionLambdaErrors"
       AlarmDescription: !Sub "Trigger an alarm when lambda errors occurs"
       ActionsEnabled: true
       AlarmActions:
@@ -909,28 +900,25 @@ Resources:
       Statistic: Sum
       Dimensions:
         - Name: Resource
-          Value: !Sub "${AWS::StackName}-AuthorizationFunctionTS:live"
+          Value: !Sub "${AWS::StackName}-AuthorizationFn:live"
         - Name: ExecutedVersion
-          Value: !Sub AuthorizationFunctionTS.Version.Version
+          Value: !Sub AuthorizationFn.Version.Version
       Period: 60
       EvaluationPeriods: 1
       Threshold: 1
       ComparisonOperator: GreaterThanThreshold
       TreatMissingData: notBreaching
 
-  AccessTokenFunctionTS:
+  AccessTokenFn:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub "${AWS::StackName}-AccessTokenFunctionTS"
+      FunctionName: !Sub "${AWS::StackName}-AccessTokenFn"
       DeploymentPreference:
         Type: !Ref LambdaDeploymentPreference
         Role: !GetAtt CodeDeployServiceRole.Arn
         Alarms: !If
           - UseCanaryDeploymentAlarms
-          - [
-              !Ref AccessTokenFunctionTSLambdaErrors,
-              !Ref AccessTokenFunctionCanary5xxErrors,
-            ]
+          - [!Ref AccessTokenFnLambdaErrors, !Ref AccessTokenFnCanary5xxErrors]
           - [!Ref AWS::NoValue]
       Handler: access-token-handler.lambdaHandler
       CodeUri: ../../lambdas
@@ -970,10 +958,10 @@ Resources:
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/SessionTtl"
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/clients/*"
       ProvisionedConcurrencyConfig: !If
-        - AddTSProvisionedConcurrency
+        - AddProvisionedConcurrency
         - ProvisionedConcurrentExecutions:
             !FindInMap [
-              TSProvisionedConcurrencyMapping,
+              ProvisionedConcurrencyMapping,
               !Ref CriIdentifier,
               !Ref Environment,
             ]
@@ -989,27 +977,27 @@ Resources:
         External:
           - "@aws-sdk/*"
 
-  AccessTokenTSFunctionLogGroup:
+  AccessTokenFnLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub "/aws/lambda/${AccessTokenFunctionTS}"
+      LogGroupName: !Sub "/aws/lambda/${AccessTokenFn}"
       RetentionInDays: 30
 
-  AccessTokenTSPermission:
+  AccessTokenPermission:
     Type: AWS::Lambda::Permission
     Properties:
       Action: lambda:InvokeFunction
-      FunctionName: !GetAtt AccessTokenFunctionTS.Arn
+      FunctionName: !GetAtt AccessTokenFn.Arn
       Principal: apigateway.amazonaws.com
 
-  AccessTokenTSAliasPermission:
+  AccessTokenAliasPermission:
     Type: AWS::Lambda::Permission
     Properties:
       Action: lambda:InvokeFunction
-      FunctionName: !Ref AccessTokenFunctionTS.Alias
+      FunctionName: !Ref AccessTokenFn.Alias
       Principal: apigateway.amazonaws.com
 
-  AccessTokenFunctionLogGroupSubscriptionFilterCSLSTS:
+  AccessTokenFnLogGroupSubscriptionFilterCSLS:
     Type: AWS::Logs::SubscriptionFilter
     Condition: IsCSLSDisabled
     Properties:
@@ -1018,13 +1006,13 @@ Resources:
         - "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2"
         - "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython"
       FilterPattern: ""
-      LogGroupName: !Ref AccessTokenTSFunctionLogGroup
+      LogGroupName: !Ref AccessTokenFnLogGroup
 
-  AccessTokenFunctionTSLambdaErrors:
+  AccessTokenFnLambdaErrors:
     Type: AWS::CloudWatch::Alarm
     Condition: UseCanaryDeploymentAlarms
     Properties:
-      AlarmName: !Sub "${AWS::StackName}-AccessTokenFunctionTSLambdaErrors"
+      AlarmName: !Sub "${AWS::StackName}-AccessTokenFunctionLambdaErrors"
       AlarmDescription: !Sub "Trigger an alarm when lambda errors occurs"
       ActionsEnabled: true
       AlarmActions:
@@ -1037,9 +1025,9 @@ Resources:
       Statistic: Sum
       Dimensions:
         - Name: Resource
-          Value: !Sub "${AWS::StackName}-AccessTokenFunctionTS:live"
+          Value: !Sub "${AWS::StackName}-AccessTokenFn:live"
         - Name: ExecutedVersion
-          Value: !Sub AccessTokenFunctionTS.Version.Version
+          Value: !Sub AccessTokenFn.Version.Version
       Period: 60
       EvaluationPeriods: 1
       Threshold: 1
@@ -1625,32 +1613,32 @@ Resources:
       Value: !ImportValue core-infrastructure-CriVcSigningKey1Id
       Description: Verifiable Credential Key Id
 
-  SessionFunctionTSPermission:
+  SessionFnPermission:
     Type: AWS::Lambda::Permission
     Properties:
       Action: lambda:InvokeFunction
-      FunctionName: !GetAtt SessionFunctionTS.Arn
+      FunctionName: !GetAtt SessionFn.Arn
       Principal: apigateway.amazonaws.com
 
-  SessionFunctionTSAliasPermission:
+  SessionFnAliasPermission:
     Type: AWS::Lambda::Permission
     Properties:
       Action: lambda:InvokeFunction
-      FunctionName: !Ref SessionFunctionTS.Alias
+      FunctionName: !Ref SessionFn.Alias
       Principal: apigateway.amazonaws.com
 
-  AuthorizationFunctionTSPermission:
+  AuthorizationFnPermission:
     Type: AWS::Lambda::Permission
     Properties:
       Action: lambda:InvokeFunction
-      FunctionName: !GetAtt AuthorizationFunctionTS.Arn
+      FunctionName: !GetAtt AuthorizationFn.Arn
       Principal: apigateway.amazonaws.com
 
-  AuthorizationFunctionTSAliasPermission:
+  AuthorizationFnAliasPermission:
     Type: AWS::Lambda::Permission
     Properties:
       Action: lambda:InvokeFunction
-      FunctionName: !Ref AuthorizationFunctionTS.Alias
+      FunctionName: !Ref AuthorizationFn.Alias
       Principal: apigateway.amazonaws.com
 
   LoggingKmsKey:
@@ -1680,11 +1668,11 @@ Resources:
               ArnLike:
                 "kms:EncryptionContext:aws:logs:arn": !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*"
 
-  CreateAuthCodeFunction:
+  CreateAuthCodeFn:
     Type: AWS::Serverless::Function
     Condition: IsDevEnvironment
     Properties:
-      FunctionName: !Sub "${AWS::StackName}-CreateAuthCodeFunction"
+      FunctionName: !Sub "${AWS::StackName}-CreateAuthCodeFn"
       CodeUri: ../../lambdas
       Handler: create-auth-code-handler.lambdaHandler
       Runtime: nodejs22.x
@@ -1726,12 +1714,12 @@ Resources:
         External:
           - "@aws-sdk/*"
 
-  CreateAuthCodeFunctionPermission:
+  CreateAuthCodeFnPermission:
     Type: AWS::Lambda::Permission
     Condition: IsDevEnvironment
     Properties:
       Action: lambda:InvokeFunction
-      FunctionName: !GetAtt CreateAuthCodeFunction.Arn
+      FunctionName: !GetAtt CreateAuthCodeFn.Arn
       Principal: apigateway.amazonaws.com
 
   PreMergeDevOnlyApi:
