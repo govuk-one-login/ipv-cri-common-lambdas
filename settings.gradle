@@ -1,3 +1,2 @@
 rootProject.name = "di-ipv-cri-oauth-common"
-include "session", "accesstoken", "authorization"
 include 'integration-tests'

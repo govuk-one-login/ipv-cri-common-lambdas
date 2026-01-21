@@ -50,7 +50,7 @@ jobs:
         uses: govuk-one-login/github-actions/sam/build-application@87ae1213145261e3837cc38d5b9317422acd95c2
         id: build
         with:
-          template: infrastructure/lambda/template.yaml
+          template: infrastructure/template.yaml
           cache-name: common-lambdas-${{ steps.vars.outputs.sha_short }}
           pull-repository: false
 
