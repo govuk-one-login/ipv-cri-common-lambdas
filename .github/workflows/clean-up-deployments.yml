@@ -1,5 +1,4 @@
 name: Clean up deployments
-run-name: Delete stale deployments
 
 on:
   workflow_dispatch:
