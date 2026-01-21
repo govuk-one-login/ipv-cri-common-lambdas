@@ -1,4 +1,4 @@
-# di-ipv-cri-common-lambdas: DI IPV Credential Issuer Common Lambdas
+# di-ipv-cri-oauth-common: DI IPV Credential Issuer Common OAuth Stack
 
 This repository is the home for common CRI Lambdas supporting Cloud Formation infrastructure which is shared or sensitive. If you are making changes to this repo please update [RELEASE_NOTES](./RELEASE_NOTES.md) so that teams can check for changes before re-deploying.
 

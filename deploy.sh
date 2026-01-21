@@ -8,7 +8,7 @@ cri_identifier="${3:-}"
 
 if ! [[ "$stack_name" ]]; then
   [[ $(aws sts get-caller-identity --query Arn --output text) =~ \/([^\/\.]+)\. ]] && user="${BASH_REMATCH[1]}" || exit
-  stack_name="$user-common-lambdas"
+  stack_name="$user-oauth-common"
   echo "» Using stack name '$stack_name'"
 fi
 
@@ -25,7 +25,7 @@ sam deploy --stack-name "$stack_name" \
   --region "${AWS_REGION:-eu-west-2}" \
   --capabilities CAPABILITY_IAM \
   --tags \
-  cri:component=ipv-cri-common-lambdas \
+  cri:component=ipv-cri-oauth-common \
   cri:deployment-source=manual \
   cri:stack-type=dev \
   --parameter-overrides \
