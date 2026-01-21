@@ -1,4 +1,4 @@
-name: Preview
+name: Deploy preview stack
 
 on:
   workflow_dispatch:
@@ -24,22 +24,10 @@ jobs:
     runs-on: ubuntu-latest
     permissions: {}
     outputs:
-      sha_short: ${{ steps.vars.outputs.sha_short }}    
+      sha_short: ${{ steps.vars.outputs.sha_short }}
     steps:
       - name: Pull repository
         uses: actions/checkout@v4
-
-      - name: Set up Gradle
-        uses: gradle/gradle-build-action@v2
-        with:
-          gradle-version: 7.5.1
-
-      - name: Set up JDK
-        uses: actions/setup-java@v4
-        with:
-          java-version: 17
-          distribution: zulu
-          cache: gradle
 
       - name: Get short-sha
         id: vars

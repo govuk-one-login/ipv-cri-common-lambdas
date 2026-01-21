@@ -1,11 +1,7 @@
 name: Clean up deployments
-run-name: Delete stale deployments
 
 on:
   workflow_dispatch:
-  schedule:
-    # Every weekday at 10am
-    - cron: "0 10 * * 1-5"
 
 permissions:
   id-token: write

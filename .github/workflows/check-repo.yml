@@ -1,0 +1,166 @@
+name: Check repo
+
+on:
+  workflow_dispatch:
+  pull_request:
+  schedule:
+    # Every Monday at 9am
+    - cron: "0 9 * * 1"
+
+permissions: {}
+
+jobs:
+  pre-commit:
+    name: pre-commit
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Pull repository
+        uses: actions/checkout@v4
+
+      - name: Install Node
+        uses: actions/setup-node@v4
+        with:
+          cache: npm
+          cache-dependency-path: ./package-lock.json
+
+      - name: Run pre-commit
+        uses: govuk-one-login/github-actions/code-quality/run-pre-commit@0c5c351ec34f813b37ecb5c3413e49ccab534c58
+        with:
+          all-files: true
+          pull-repository: false
+          install-dependencies: true
+
+  codeql:
+    name: CodeQL
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+    steps:
+      - name: Run CodeQL scan
+        uses: govuk-one-login/github-actions/code-quality/codeql@52a9e8e35980e6bcaf24d88180a61501e6f2605b
+        with:
+          languages: javascript-typescript
+
+  run-unit-tests:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    outputs:
+      coverage-artifact-id: ${{ steps.upload-coverage.outputs.artifact-id }}
+    defaults:
+      run:
+        working-directory: lambdas
+    steps:
+      - name: Pull repository
+        uses: actions/checkout@v4
+
+      - name: Install Node
+        uses: actions/setup-node@v3
+        with:
+          cache: npm
+          cache-dependency-path: lambdas/package.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm run test:coverage -- --config jest.config.ci.ts
+
+      - name: Archive coverage results
+        id: upload-coverage
+        uses: actions/upload-artifact@v4
+        with:
+          path: lambdas/coverage/lcov.info
+          retention-days: 3
+
+  sonarcloud:
+    name: SonarCloud
+    needs: run-unit-tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run SonarCloud scan
+        uses: govuk-one-login/github-actions/code-quality/sonarcloud@5480cced560e896dea12c47ea33e548a4d093e65
+        with:
+          sonar-token: ${{ secrets.SONAR_TOKEN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          projectBaseDir: lambdas
+          coverage-location: lambdas/coverage
+          coverage-artifact: ${{ needs.run-unit-tests.outputs.coverage-artifact-id }}
+          coverage-run-id: ${{ github.event_name != 'pull_request' && github.run_id || null }}
+
+  run-contract-tests:
+    name: Contract Tests
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    environment: development
+    strategy:
+      fail-fast: false
+      matrix:
+        cri-provider:
+          [
+            "PassportTokenProvider",
+            "DrivingLicenceTokenProvider",
+            "FraudTokenProvider",
+            "AddressCriTokenProvider",
+          ]
+    defaults:
+      run:
+        working-directory: lambdas
+    steps:
+      - name: Pull repository
+        uses: actions/checkout@v4
+
+      - name: Install Node
+        uses: actions/setup-node@v4
+        with:
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm run test:contract:ci
+        env:
+          CRI_UNDER_TEST: ${{ matrix.cri-provider }}
+          PACT_BROKER_HOST: ${{ secrets.PACT_BROKER_HOST }}
+          PACT_BROKER_USERNAME: ${{ secrets.PACT_BROKER_USERNAME }}
+          PACT_BROKER_PASSWORD: ${{ secrets.PACT_BROKER_PASSWORD }}
+          SESSION_TABLE: some-session-table
+          PERSON_IDENTITY_TABLE: some-personidentity-table
+          VC_ISSUER: some-vc-issuer
+
+  deploy:
+    name: Deploy preview stack
+    if: ${{ github.event_name == 'pull_request' }}
+    uses: ./.github/workflows/deploy-branch.yml
+    permissions:
+      id-token: write
+      contents: read
+
+  integration-tests:
+    name: Integration tests
+    if: ${{ github.event_name == 'pull_request' }}
+    needs: deploy
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    environment: di-ipv-cri-dev
+    steps:
+      - name: Pull repository
+        uses: actions/checkout@v3
+
+      - name: Set up Gradle
+        uses: gradle/gradle-build-action@v2
+        with:
+          gradle-version: 7.5.1
+
+      - name: Run tests
+        env:
+          ENVIRONMENT: dev
+          AWS_REGION: ${{ needs.deploy.outputs.aws-region }}
+          STACK_NAME: ${{ needs.deploy.outputs.stack-name }}
+          API_GATEWAY_ID_PRIVATE: ${{ fromJson(needs.deploy.outputs.stack-outputs).PreMergeDevOnlyApiId }}
+          IPV_CORE_STUB_BASIC_AUTH_PASSWORD: ${{ secrets.IPV_CORE_STUB_BASIC_AUTH_PASSWORD }}
+          IPV_CORE_STUB_BASIC_AUTH_USER: ${{ secrets.IPV_CORE_STUB_BASIC_AUTH_USER }}
+          IPV_CORE_STUB_URL: https://cri.core.build.stubs.account.gov.uk
+          DEFAULT_CLIENT_ID: ipv-core-stub-aws-build
+        run: cd integration-tests && ./gradlew cucumber
