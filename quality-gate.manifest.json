@@ -112,7 +112,7 @@
           "provider": "GitHub"
         }
       ],
-      "service-tag": "ipv-cri-common-lambdas"
+      "service-tag": "ipv-cri-oauth-common"
     }
   ]
 }

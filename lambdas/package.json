@@ -1,5 +1,5 @@
 {
-    "name": "di-ipv-common-lambdas",
+    "name": "di-ipv-oauth-common-lambdas",
     "scripts": {
         "lint": "eslint .",
         "lint:fix": "eslint . --fix",
