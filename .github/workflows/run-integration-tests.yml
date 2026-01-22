@@ -3,13 +3,13 @@ name: Integration tests
 on:
   workflow_call:
     inputs:
-      aws-region: {required: false, type: string}
-      stack-name: {required: true, type: string}
-      stack-outputs: {required: true, type: string}
+      aws-region: { required: false, type: string }
+      stack-name: { required: true, type: string }
+      stack-outputs: { required: true, type: string }
     secrets:
-      api-gateway-api-key: {required: true}
-      ipv-core-stub-basic-auth-pwd: {required: true}
-      ipv-core-stub-basic-auth-user: {required: true}
+      api-gateway-api-key: { required: true }
+      ipv-core-stub-basic-auth-pwd: { required: true }
+      ipv-core-stub-basic-auth-user: { required: true }
 
 concurrency:
   group: integration-tests-${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
@@ -42,4 +42,4 @@ jobs:
           IPV_CORE_STUB_BASIC_AUTH_USER: ${{ secrets.ipv-core-stub-basic-auth-user }}
           IPV_CORE_STUB_URL: https://cri.core.build.stubs.account.gov.uk
           DEFAULT_CLIENT_ID: ipv-core-stub-aws-build
-        run: ./gradlew integration-tests:cucumber
+        run: cd integration-tests && ./gradlew cucumber
