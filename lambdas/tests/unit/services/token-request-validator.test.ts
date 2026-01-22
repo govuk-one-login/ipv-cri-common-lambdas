@@ -1,6 +1,6 @@
 import { AccessTokenRequestValidator } from "../../../src/services/token-request-validator";
 import { JwtVerifierFactory } from "../../../src/common/security/jwt-verifier";
-import { SessionItem } from "../../../src/types/session-item";
+import { SessionItem, UnixSecondsTimestamp } from "@govuk-one-login/cri-types";
 import { InvalidPayloadError } from "../../../src/common/utils/errors";
 
 describe("token-request-validator.ts", () => {
@@ -72,14 +72,12 @@ describe("token-request-validator.ts", () => {
     });
 
     describe("validateTokenRequestToRecord", () => {
-        let sessionItem: SessionItem;
-
         it("should throw exception when there is no sessionItem", async () => {
             const authCode = "1234";
             const expectedRedirectUri = "http://abc123.com";
             const val = accessTokenRequestValidator.validateTokenRequestToRecord(
                 authCode,
-                sessionItem,
+                undefined as unknown as SessionItem,
                 expectedRedirectUri,
             ) as InvalidPayloadError;
             expect(val.message).toEqual("Invalid sessionItem");
@@ -93,10 +91,10 @@ describe("token-request-validator.ts", () => {
                 clientId: "1",
                 clientSessionId: "1",
                 authorizationCode: "test",
-                authorizationCodeExpiryDate: 0,
+                authorizationCodeExpiryDate: 0 as UnixSecondsTimestamp,
                 redirectUri: "http://abc123.com",
                 accessToken: "test",
-                accessTokenExpiryDate: 0,
+                accessTokenExpiryDate: 0 as UnixSecondsTimestamp,
             };
             expect(() =>
                 accessTokenRequestValidator.validateTokenRequestToRecord(
@@ -115,10 +113,10 @@ describe("token-request-validator.ts", () => {
                 clientId: "1",
                 clientSessionId: "1",
                 authorizationCode: authCode,
-                authorizationCodeExpiryDate: 0,
+                authorizationCodeExpiryDate: 0 as UnixSecondsTimestamp,
                 redirectUri: expectedRedirectUri,
                 accessToken: "test",
-                accessTokenExpiryDate: 0,
+                accessTokenExpiryDate: 0 as UnixSecondsTimestamp,
             };
             expect(() =>
                 accessTokenRequestValidator.validateTokenRequestToRecord(
@@ -138,10 +136,10 @@ describe("token-request-validator.ts", () => {
                 clientId: "1",
                 clientSessionId: "1",
                 authorizationCode: authCode,
-                authorizationCodeExpiryDate: 0,
+                authorizationCodeExpiryDate: 0 as UnixSecondsTimestamp,
                 redirectUri: badRedirectUri,
                 accessToken: "test",
-                accessTokenExpiryDate: 0,
+                accessTokenExpiryDate: 0 as UnixSecondsTimestamp,
             };
             expect(() =>
                 accessTokenRequestValidator.validateTokenRequestToRecord(

@@ -8,17 +8,18 @@ import { AuthorizationRequestValidator } from "../services/auth-request-validato
 import { AwsClientType, createClient } from "../common/aws-client-factory";
 import { ClientConfigKey, CommonConfigKey } from "../types/config-keys";
 import { AccessDeniedError, errorPayload } from "../common/utils/errors";
-import { logger, metrics, tracer as _tracer } from "../common/utils/power-tool";
+import { metrics, tracer as _tracer } from "../common/utils/power-tool";
 import errorMiddleware from "../middlewares/error/error-middleware";
 import initialiseConfigMiddleware from "../middlewares/config/initialise-config-middleware";
 import getSessionByIdMiddleware from "../middlewares/session/get-session-by-id-middleware";
-import { SessionItem } from "../types/session-item";
+import { SessionItem } from "@govuk-one-login/cri-types";
 import { injectLambdaContext } from "@aws-lambda-powertools/logger/middleware";
 import setGovUkSigningJourneyIdMiddleware from "../middlewares/session/set-gov-uk-signing-journey-id-middleware";
 import initialiseClientConfigMiddleware from "../middlewares/config/initialise-client-config-middleware";
 import setRequestedVerificationScoreMiddleware from "../middlewares/session/set-requested-verification-score-middleware";
 import { SSMProvider } from "@aws-lambda-powertools/parameters/ssm";
 import { initOpenTelemetry } from "../common/utils/otel-setup";
+import { logger } from "@govuk-one-login/cri-logger";
 
 initOpenTelemetry();
 
