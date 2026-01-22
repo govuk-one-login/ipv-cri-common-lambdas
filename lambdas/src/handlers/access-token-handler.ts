@@ -6,14 +6,14 @@ import { JwtVerifierFactory } from "../common/security/jwt-verifier";
 import { ClientConfigKey, CommonConfigKey } from "../types/config-keys";
 import { BearerAccessTokenFactory } from "../services/bearer-access-token-factory";
 import { errorPayload, InvalidRequestError } from "../common/utils/errors";
-import { SessionItem } from "../types/session-item";
+import { SessionItem } from "@govuk-one-login/cri-types";
 import accessTokenValidatorMiddleware from "../middlewares/access-token/validate-event-payload-middleware";
 import initialiseConfigMiddleware from "../middlewares/config/initialise-config-middleware";
 import { AwsClientType, createClient } from "../common/aws-client-factory";
 import setGovUkSigningJourneyIdMiddleware from "../middlewares/session/set-gov-uk-signing-journey-id-middleware";
 import { LambdaInterface } from "@aws-lambda-powertools/commons/types";
 import getSessionByAuthCodeMiddleware from "../middlewares/session/get-session-by-auth-code-middleware";
-import { logger, metrics, tracer as _tracer } from "../common/utils/power-tool";
+import { metrics, tracer as _tracer } from "../common/utils/power-tool";
 import { MetricUnit } from "@aws-lambda-powertools/metrics";
 import { injectLambdaContext } from "@aws-lambda-powertools/logger/middleware";
 import { RequestPayload } from "../types/request_payload";
@@ -24,6 +24,7 @@ import initialiseClientConfigMiddleware from "../middlewares/config/initialise-c
 import setRequestedVerificationScoreMiddleware from "../middlewares/session/set-requested-verification-score-middleware";
 import { SSMProvider } from "@aws-lambda-powertools/parameters/ssm";
 import { initOpenTelemetry } from "../common/utils/otel-setup";
+import { logger } from "@govuk-one-login/cri-logger";
 
 initOpenTelemetry();
 

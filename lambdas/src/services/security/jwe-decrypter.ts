@@ -2,8 +2,9 @@ import { base64url } from "jose";
 import { CipherGCMTypes, createDecipheriv, KeyObject } from "crypto";
 import { DecryptCommand, EncryptionAlgorithmSpec, KMSClient } from "@aws-sdk/client-kms";
 import { JweDecrypterError } from "../../common/utils/errors";
-import { logger, metrics } from "../../common/utils/power-tool";
+import { metrics } from "../../common/utils/power-tool";
 import { MetricUnit } from "@aws-lambda-powertools/metrics";
+import { logger } from "@govuk-one-login/cri-logger";
 
 const DecryptionKeyAliases = [
     "session_decryption_key_active_alias",

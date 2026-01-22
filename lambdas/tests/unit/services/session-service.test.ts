@@ -2,7 +2,7 @@ import { SessionService } from "../../../src/services/session-service";
 import { ConfigService } from "../../../src/common/config/config-service";
 import { DynamoDBDocument, GetCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import { InvalidAccessTokenError, SessionNotFoundError } from "../../../src/common/utils/errors";
-import { SessionItem } from "../../../src/types/session-item";
+import { SessionItem, UnixSecondsTimestamp } from "@govuk-one-login/cri-types";
 import { SSMProvider } from "@aws-lambda-powertools/parameters/ssm";
 
 const UUID_REGEX = new RegExp(/^[0-9A-F]{8}-[0-9A-F]{4}-[4][0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}$/i);
@@ -83,12 +83,12 @@ describe("session-service", () => {
             const tableName = "sessionTable";
             const sessionItem: Partial<SessionItem> = {
                 sessionId: "123abc",
-                authorizationCodeExpiryDate: 1,
+                authorizationCodeExpiryDate: 1 as UnixSecondsTimestamp,
                 clientId: "",
                 clientSessionId: "",
                 redirectUri: "",
                 accessToken: "",
-                accessTokenExpiryDate: 0,
+                accessTokenExpiryDate: 0 as UnixSecondsTimestamp,
             };
             jest.spyOn(mockConfigService.prototype, "getConfigEntry").mockReturnValue(tableName);
             expect.assertions(2);
@@ -218,7 +218,7 @@ describe("session-service", () => {
                 }),
             );
 
-            expect(output).toEqual(expect.stringMatching(UUID_REGEX));
+            expect(output.sessionId).toEqual(expect.stringMatching(UUID_REGEX));
         });
 
         it("should save the session data with context to dynamo db", async () => {
@@ -264,7 +264,52 @@ describe("session-service", () => {
                 }),
             );
 
-            expect(output).toEqual(expect.stringMatching(UUID_REGEX));
+            expect(output.sessionId).toEqual(expect.stringMatching(UUID_REGEX));
+        });
+
+        it("should save the session data without clientIpAddress", async () => {
+            const mockSessionRequestSummary = {
+                clientId: "test-jwt-client-id",
+                clientIpAddress: null,
+                clientSessionId: "test-journey-id",
+                persistentSessionId: "test-persistent-session-id",
+                redirectUri: "test-redirect-uri",
+                state: "test-state",
+                subject: "test-sub",
+                context: "test-context",
+            };
+
+            jest.spyOn(global.Date, "now").mockReturnValueOnce(1675382400000);
+            jest.spyOn(configService, "getSessionExpirationEpoch").mockReturnValue(1675382500000);
+            jest.spyOn(configService, "getConfigEntry").mockReturnValue("session-table-name");
+            const output = await sessionService.saveSession(mockSessionRequestSummary);
+            expect(mockDynamoDbClient.prototype.send).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    input: expect.objectContaining({
+                        TableName: "session-table-name",
+                    }),
+                }),
+            );
+            expect(mockDynamoDbClient.prototype.send).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    input: expect.objectContaining({
+                        Item: expect.objectContaining({
+                            attemptCount: 0,
+                            clientId: "test-jwt-client-id",
+                            clientSessionId: "test-journey-id",
+                            createdDate: 1675382400000,
+                            expiryDate: 1675382500000,
+                            persistentSessionId: "test-persistent-session-id",
+                            redirectUri: "test-redirect-uri",
+                            state: "test-state",
+                            subject: "test-sub",
+                            context: "test-context",
+                        }),
+                    }),
+                }),
+            );
+
+            expect(output.sessionId).toEqual(expect.stringMatching(UUID_REGEX));
         });
     });
 });

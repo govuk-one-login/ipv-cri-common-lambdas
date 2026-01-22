@@ -1,4 +1,4 @@
-import { SessionItem } from "../types/session-item";
+import { SessionItem } from "@govuk-one-login/cri-types";
 import { InvalidAccessTokenError, InvalidPayloadError, InvalidRequestError } from "../common/utils/errors";
 import { RequestPayload } from "../types/request_payload";
 import { JwtVerifier, JwtVerifierFactory } from "../common/security/jwt-verifier";

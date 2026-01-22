@@ -1,5 +1,4 @@
 import { DynamoDBDocument, GetCommand, PutCommand, QueryCommandInput, UpdateCommand } from "@aws-sdk/lib-dynamodb";
-import { SessionItem } from "../types/session-item";
 import { BearerAccessToken } from "../types/bearer-access-token";
 import { ConfigService } from "../common/config/config-service";
 import { randomUUID } from "crypto";
@@ -11,6 +10,7 @@ import {
 } from "../common/utils/errors";
 import { SessionRequestSummary } from "../types/session-request-summary";
 import { CommonConfigKey } from "../types/config-keys";
+import { SessionItem, UnixMillisecondsTimestamp, UnixSecondsTimestamp } from "@govuk-one-login/cri-types";
 
 export class SessionService {
     constructor(
@@ -94,28 +94,29 @@ export class SessionService {
         await this.dynamoDbClient.send(updateSessionCommand);
     }
 
-    public async saveSession(sessionRequest: SessionRequestSummary): Promise<string> {
+    public async saveSession(sessionRequest: SessionRequestSummary): Promise<SessionItem> {
         const sessionExpirationEpoch = this.configService.getSessionExpirationEpoch();
+        const sessionItem: SessionItem = {
+            sessionId: randomUUID(),
+            createdDate: Date.now() as UnixMillisecondsTimestamp,
+            expiryDate: sessionExpirationEpoch as UnixSecondsTimestamp,
+            state: sessionRequest.state,
+            clientId: sessionRequest.clientId,
+            redirectUri: sessionRequest.redirectUri,
+            subject: sessionRequest.subject,
+            persistentSessionId: sessionRequest.persistentSessionId,
+            clientSessionId: sessionRequest.clientSessionId,
+            clientIpAddress: sessionRequest.clientIpAddress ?? undefined,
+            attemptCount: 0,
+            evidenceRequest: sessionRequest.evidenceRequested,
+            context: sessionRequest.context,
+        };
         const putSessionCommand = new PutCommand({
             TableName: this.configService.getConfigEntry(CommonConfigKey.SESSION_TABLE_NAME),
-            Item: {
-                sessionId: randomUUID(),
-                createdDate: Date.now(),
-                expiryDate: sessionExpirationEpoch,
-                state: sessionRequest.state,
-                clientId: sessionRequest.clientId,
-                redirectUri: sessionRequest.redirectUri,
-                subject: sessionRequest.subject,
-                persistentSessionId: sessionRequest.persistentSessionId,
-                clientSessionId: sessionRequest.clientSessionId,
-                clientIpAddress: sessionRequest.clientIpAddress,
-                attemptCount: 0,
-                evidenceRequest: sessionRequest.evidenceRequested,
-                context: sessionRequest.context,
-            },
+            Item: sessionItem,
         });
         await this.dynamoDbClient.send(putSessionCommand);
-        return putSessionCommand?.input?.Item?.sessionId;
+        return sessionItem;
     }
 
     private getSessionTableName(): string {

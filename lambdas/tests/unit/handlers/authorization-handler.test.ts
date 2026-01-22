@@ -6,7 +6,7 @@ import { AuthorizationLambda } from "../../../src/handlers/authorization-handler
 import { ConfigService } from "../../../src/common/config/config-service";
 import { SessionService } from "../../../src/services/session-service";
 import { AuthorizationRequestValidator } from "../../../src/services/auth-request-validator";
-import { SessionItem } from "../../../src/types/session-item";
+import { SessionItem, UnixSecondsTimestamp } from "@govuk-one-login/cri-types";
 import {
     APIGatewayProxyEvent,
     APIGatewayProxyEventHeaders,
@@ -106,12 +106,12 @@ describe("authorization-handler.ts", () => {
 
             const sessionItem: Partial<SessionItem> = {
                 sessionId: "abc",
-                authorizationCodeExpiryDate: 1,
+                authorizationCodeExpiryDate: 1 as UnixSecondsTimestamp,
                 clientId: "1",
                 clientSessionId: "1",
                 redirectUri: "http://123.com",
                 accessToken: "",
-                accessTokenExpiryDate: 0,
+                accessTokenExpiryDate: 0 as UnixSecondsTimestamp,
                 authorizationCode: "abc",
             };
             jest.spyOn(sessionService, "getSession").mockReturnValue(Promise.resolve(sessionItem as SessionItem));
@@ -176,11 +176,11 @@ describe("authorization-handler.ts", () => {
             let loggerSpyError: jest.SpyInstance;
             const sessionItem: Partial<SessionItem> = {
                 sessionId: "abc",
-                authorizationCodeExpiryDate: 1,
+                authorizationCodeExpiryDate: 1 as UnixSecondsTimestamp,
                 clientId: "1",
                 clientSessionId: "1",
                 redirectUri: "http://123.com",
-                accessTokenExpiryDate: 0,
+                accessTokenExpiryDate: 0 as UnixSecondsTimestamp,
                 authorizationCode: undefined,
             };
             beforeEach(() => {
