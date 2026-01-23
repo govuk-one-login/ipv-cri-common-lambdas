@@ -653,6 +653,29 @@ Mappings:
       integration: "https://review-hc.integration.account.gov.uk"
       production: "https://review-hc.account.gov.uk"
 
+  CanaryDeploymentapigatewayidMapping:
+    di-ipv-cri-check-hmrc-api:
+      privateapigwname: "check-hmrc-cri-api-private"
+      publicapigwname: "check-hmrc-cri-api-public"
+    di-ipv-cri-address-api:
+      privateapigwname: "address-cri-api-v1-PrivateAddressApi"
+      publicapigwname: "address-cri-api-v1-PublicAddressApi"
+    di-ipv-cri-kbv-api:
+      privateapigwname: "kbv-cri-private-kbv-cri-api-v1"
+      publicapigwname: "kbv-cri-kbv-cri-api-v1"
+    di-ipv-cri-kbv-hmrc-api:
+      privateapigwname: "kbv-hmrc-cri-api-PrivateApiGatewayId-placehonder"
+      publicapigwname: "kbv-hmrc-cri-api-PublicApiGatewayId-placehonder"
+    di-ipv-cri-passport-api:
+      privateapigwname: "ipv-cri-passport-api-PrivateUKPassportApi"
+      publicapigwname: "ipv-cri-passport-api-PublicUKPassportApi"
+    di-ipv-cri-dl-api:
+      privateapigwname: "dl-cri-api-v1-PrivateDLApi"
+      publicapigwname: "dl-cri-api-v1-PublicDLApi"
+    di-ipv-cri-fraud-api:
+      privateapigwname: "fraud-cri-api-v1-PrivateFraudApi"
+      publicapigwname: "fraud-cri-api-v1-PublicFraudApi"
+
 Resources:
   SessionFn:
     Type: AWS::Serverless::Function
@@ -665,7 +688,7 @@ Resources:
           - UseCanaryDeploymentAlarms
           - [!Ref SessionFnLambdaErrors, !Ref SessionFnCanary5xxErrors]
           - [!Ref AWS::NoValue]
-      CodeUri: ../../lambdas
+      CodeUri: ../lambdas
       Handler: session-handler.lambdaHandler
       Runtime: nodejs22.x
       Layers:
@@ -802,6 +825,41 @@ Resources:
       ComparisonOperator: GreaterThanThreshold
       TreatMissingData: notBreaching
 
+  SessionFnCanary5xxErrors:
+    Type: AWS::CloudWatch::Alarm
+    Condition: UseCanaryDeploymentAlarms
+    Properties:
+      ActionsEnabled: true
+      AlarmActions:
+        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
+      OKActions:
+        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
+      AlarmName: !Sub "${AWS::StackName}-SessionFunctionCanary5xxErrors"
+      AlarmDescription: !Sub "SessionFunction Lambda returning 5xx response."
+      Namespace: AWS/ApiGateway
+      MetricName: 5XXError
+      Dimensions:
+        - Name: Method
+          Value: POST
+        - Name: ApiName
+          Value:
+            !FindInMap [
+              CanaryDeploymentapigatewayidMapping,
+              !Ref CriIdentifier,
+              privateapigwname,
+            ]
+        - Name: Stage
+          Value: !Ref Environment
+        - Name: Resource
+          Value: /session
+      Statistic: Sum
+      Unit: Count
+      Period: 60
+      EvaluationPeriods: 1
+      Threshold: 2
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+
   AuthorizationFn:
     Type: AWS::Serverless::Function
     Properties:
@@ -816,7 +874,7 @@ Resources:
               !Ref AuthorizationFnCanary5xxErrors,
             ]
           - [!Ref AWS::NoValue]
-      CodeUri: ../../lambdas
+      CodeUri: ../lambdas
       Handler: authorization-handler.lambdaHandler
       Runtime: nodejs22.x
       Layers:
@@ -909,6 +967,41 @@ Resources:
       ComparisonOperator: GreaterThanThreshold
       TreatMissingData: notBreaching
 
+  AuthorizationFnCanary5xxErrors:
+    Type: AWS::CloudWatch::Alarm
+    Condition: UseCanaryDeploymentAlarms
+    Properties:
+      ActionsEnabled: true
+      AlarmActions:
+        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
+      OKActions:
+        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
+      AlarmName: !Sub "${AWS::StackName}-AuthorizationFunctionCanary5xxErrors"
+      AlarmDescription: !Sub "AuthorizationFunction Lambda returning 5xx response."
+      Namespace: AWS/ApiGateway
+      MetricName: 5XXError
+      Dimensions:
+        - Name: Method
+          Value: GET
+        - Name: ApiName
+          Value:
+            !FindInMap [
+              CanaryDeploymentapigatewayidMapping,
+              !Ref CriIdentifier,
+              privateapigwname,
+            ]
+        - Name: Stage
+          Value: !Ref Environment
+        - Name: Resource
+          Value: /authorization
+      Statistic: Sum
+      Unit: Count
+      Period: 60
+      EvaluationPeriods: 1
+      Threshold: 2
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+
   AccessTokenFn:
     Type: AWS::Serverless::Function
     Properties:
@@ -921,7 +1014,7 @@ Resources:
           - [!Ref AccessTokenFnLambdaErrors, !Ref AccessTokenFnCanary5xxErrors]
           - [!Ref AWS::NoValue]
       Handler: access-token-handler.lambdaHandler
-      CodeUri: ../../lambdas
+      CodeUri: ../lambdas
       Runtime: nodejs22.x
       Layers:
         - arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_313_2_20250404-043044_with_collector_nodejs:1
@@ -1032,6 +1125,41 @@ Resources:
       EvaluationPeriods: 1
       Threshold: 1
       ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+
+  AccessTokenFnCanary5xxErrors:
+    Type: AWS::CloudWatch::Alarm
+    Condition: UseCanaryDeploymentAlarms
+    Properties:
+      ActionsEnabled: true
+      AlarmActions:
+        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
+      OKActions:
+        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
+      AlarmName: !Sub "${AWS::StackName}-AccessTokenFunctionCanary5xxErrors"
+      AlarmDescription: !Sub "AccessTokenFunction Lambda returning 5xx response."
+      Namespace: AWS/ApiGateway
+      MetricName: 5XXError
+      Dimensions:
+        - Name: Method
+          Value: POST
+        - Name: ApiName
+          Value:
+            !FindInMap [
+              CanaryDeploymentapigatewayidMapping,
+              !Ref CriIdentifier,
+              publicapigwname,
+            ]
+        - Name: Stage
+          Value: !Ref Environment
+        - Name: Resource
+          Value: /token
+      Statistic: Sum
+      Unit: Count
+      Period: 60
+      EvaluationPeriods: 1
+      Threshold: 2
+      ComparisonOperator: GreaterThanOrEqualToThreshold
       TreatMissingData: notBreaching
 
   DynamoTablesEncryptionKey:
@@ -1673,7 +1801,7 @@ Resources:
     Condition: IsDevEnvironment
     Properties:
       FunctionName: !Sub "${AWS::StackName}-CreateAuthCodeFn"
-      CodeUri: ../../lambdas
+      CodeUri: ../lambdas
       Handler: create-auth-code-handler.lambdaHandler
       Runtime: nodejs22.x
       Layers:
