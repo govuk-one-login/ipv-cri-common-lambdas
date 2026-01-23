@@ -16,12 +16,12 @@
         "unit:logs": "jest"
     },
     "dependencies": {
-        "@aws-lambda-powertools/commons": "2.28.1",
-        "@aws-lambda-powertools/logger": "2.28.1",
-        "@aws-lambda-powertools/parameters": "2.28.1",
-        "@aws-sdk/client-cloudformation": "3.910.0",
-        "@aws-sdk/client-kms": "3.910.0",
-        "@aws-sdk/client-ssm": "3.910.0",
+        "@aws-lambda-powertools/commons": "2.30.2",
+        "@aws-lambda-powertools/logger": "2.30.2",
+        "@aws-lambda-powertools/parameters": "2.30.2",
+        "@aws-sdk/client-cloudformation": "3.974.0",
+        "@aws-sdk/client-kms": "3.974.0",
+        "@aws-sdk/client-ssm": "3.974.0",
         "@govuk-one-login/data-vocab": "1.9.3",
         "@govuk-one-login/data-vocab-schemas": "1.9.3",
         "@middy/core": "4.2.8",
@@ -35,9 +35,9 @@
         "uuid": "9.0.1"
     },
     "devDependencies": {
-        "@aws-sdk/client-dynamodb": "3.910.0",
-        "@aws-sdk/credential-providers": "3.910.0",
-        "@aws-sdk/types": "3.910.0",
+        "@aws-sdk/client-dynamodb": "3.974.0",
+        "@aws-sdk/credential-providers": "3.974.0",
+        "@aws-sdk/types": "3.973.0",
         "@types/aws-lambda": "^8.10.145",
         "@types/jest": "^29.5.13",
         "@types/uuid": "^9.0.0",
