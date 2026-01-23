@@ -1,26 +1,30 @@
 version: 2
 updates:
   - package-ecosystem: "github-actions"
-    directory: "/"
+    target-branch: main
     schedule:
       interval: "weekly"
-    target-branch: main
+    directory: "/"
     labels:
       - dependabot
     commit-message:
       prefix: BAU
   - package-ecosystem: "gradle"
-    directory: "/"
+    target-branch: main
     schedule:
       interval: "weekly"
+    directory: "/integration-tests"
+    labels:
+      - dependabot
+    commit-message:
+      prefix: BAU
   - package-ecosystem: "npm"
-    directories:
-      - "/"
-      - "/lambdas"
+    target-branch: main
     schedule:
       interval: daily
       time: "02:52"
-    target-branch: main
+    directories:
+      - "/"
     labels:
       - dependabot
     commit-message:
