@@ -61,4 +61,4 @@ task cucumber() {
 	}
 }
 
-gradle.startParameter.excludedTaskNames.add(':integration-tests:test')
+gradle.startParameter.excludedTaskNames.add(':test')

@@ -12,10 +12,10 @@ if ! [[ "$stack_name" ]]; then
   echo "» Using stack name '$stack_name'"
 fi
 
-sam validate -t infrastructure/lambda/template.yaml
-sam validate -t infrastructure/lambda/template.yaml --lint
+sam validate -t infrastructure/template.yaml
+sam validate -t infrastructure/template.yaml --lint
 
-sam build -t infrastructure/lambda/template.yaml --cached --parallel
+sam build -t infrastructure/template.yaml --cached --parallel
 
 sam deploy --stack-name "$stack_name" \
   --no-fail-on-empty-changeset \

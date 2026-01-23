@@ -17,9 +17,6 @@ updates:
     directories:
       - "/"
       - "/lambdas"
-      - "/test-resources"
-      - "/test-resources/audit-events-test-harness/lambdas"
-      - "/test-resources/headless-core-stub/lambdas/*"
     schedule:
       interval: daily
       time: "02:52"
