@@ -139,7 +139,7 @@ jobs:
   #     id-token: write
   #     contents: read
 
-  # integration-tests:
+  # run-integration-tests:
   #   name: Integration tests
   #   if: ${{ github.event_name == 'pull_request' }}
   #   needs: deploy
