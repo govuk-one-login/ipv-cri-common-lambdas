@@ -116,7 +116,6 @@ export class SessionRequestValidatorFactory {
             new JwtVerifier(
                 {
                     jwtSigningAlgorithm: criClientConfig.get(ClientConfigKey.JWT_SIGNING_ALGORITHM) as string,
-                    publicSigningJwk: criClientConfig.get(ClientConfigKey.JWT_PUBLIC_SIGNING_KEY) as string,
                     jwksEndpoint: criClientConfig.get(ClientConfigKey.JWKS_ENDPOINT) as string,
                 },
                 this.logger,
