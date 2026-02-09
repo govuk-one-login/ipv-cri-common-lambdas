@@ -78,5 +78,14 @@ jobs:
             cri:application=Orange
             cri:deployment-source=github-actions
           parameters: |
+            AuditEventNamePrefix=IPV_COMMON_CRI
+            CriIdentifier=di-ipv-cri-check-hmrc-api
+            CriAudience=https://review-hc.dev.account.gov.uk
+            CriVcIssuer=https://review-hc.dev.account.gov.uk
+            CriPrivateApiGwName=check-hmrc-cri-api-private
+            CriPublicApiGwName=check-hmrc-cri-api-private
             Environment=dev
-            ForceLambdaUpdate=${{ steps.set_timestamp.outputs.timestamp }}
+            IPVCoreRedirectURI=https://identity.staging.account.gov.uk/credential-issuer/callback?id=nino
+            IPVCoreStubJwksEndpoint=https://test-resources.review-hc.dev.account.gov.uk/.well-known/jwks.json
+            KeyRotationFallback=true
+            LambdaVpcConfiguration=di-devplatform-deploy
