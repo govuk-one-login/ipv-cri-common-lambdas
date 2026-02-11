@@ -35,6 +35,16 @@
           "provider": "GitHub"
         },
         {
+          "check-types": ["integration", "regression", "new feature"],
+          "config": {
+            "file": ".github/workflows/check-repo.yml",
+            "name": "Run tests",
+            "path": "jobs.run-integration-tests"
+          },
+          "phase": "pre-merge",
+          "provider": "GitHub"
+        },
+        {
           "check-types": [
             "code style and linting",
             "unit test coverage",

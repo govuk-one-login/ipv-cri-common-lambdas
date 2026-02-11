@@ -1,6 +1,6 @@
 Feature: Authorization API
 
-  Scenario Outline: a valid authorization code is returned with Session Lambda in '<SessionLambdaImplementation>' and Auth Lambda is in '<AuthLambdaImplementation>'
+  Scenario: a valid authorization code is returned with Session Lambda and Auth Lambda
     Given authorization JAR for test user 681
     And the Session lambda is called
     When user sends a request to session API
@@ -11,7 +11,7 @@ Feature: Authorization API
     Then expect a status code of 200 in the response
     And a valid authorization code is returned in the response
 
-  Scenario Outline: no authorization code is returned when client id does not match with Session Lambda in '<SessionLambdaImplementation>' and Auth Lambda is in '<AuthLambdaImplementation>'
+  Scenario: no authorization code is returned when client id does not match with Session Lambda and Auth Lambda
     Given authorization JAR for test user 681
     And the Session lambda is called
     When user sends a request to session API
@@ -22,7 +22,7 @@ Feature: Authorization API
     Then expect a status code of 400 in the response
     And a "Session Validation Exception" error with code 1019 is sent in the response
 
-  Scenario Outline: no authorization code is returned when redirect uri does not match with with Session Lambda in '<SessionLambdaImplementation>' and Auth Lambda is in '<AuthLambdaImplementation>'
+  Scenario: no authorization code is returned when redirect uri does not match with with Session Lambda in '<SessionLambdaImplementation>' and Auth Lambda is in '<AuthLambdaImplementation>'
     Given authorization JAR for test user 681
     And the Session lambda is called
     When user sends a request to session API
@@ -34,7 +34,7 @@ Feature: Authorization API
     And a "Session Validation Exception" error with code 1019 is sent in the response
 
   @access_denied
-  Scenario Outline: access-denied is returned on /authorization endpoint
+  Scenario: access-denied is returned on /authorization endpoint
     Given authorization JAR for test user 681
     And the Session lambda is called
     When user sends a request to session API
