@@ -1,6 +1,6 @@
 Feature: Access Token API
 
-  Scenario Outline: access token is returned with Session Lambda in '<SessionLambdaImplementation>' , Access Token Lambda in '<AccessTokenLambdaImplementation>' and Auth Lambda is in '<AuthLambdaImplementation>'
+  Scenario: access token is returned with Session Lambda, Access Token Lambda and Auth Lambda
     Given authorization JAR for test user 681
     And the Session lambda is called
     When user sends a request to session API
@@ -15,7 +15,7 @@ Feature: Access Token API
     Then expect a status code of 200 in the response
     And a valid access token is returned in the response
 
-  Scenario Outline: no access token is returned when request has invalid authorization code with Session Lambda in '<SessionLambdaImplementation>' , Access Token Lambda in '<AccessTokenLambdaImplementation>' and Auth Lambda is in '<AuthLambdaImplementation>'
+  Scenario: no access token is returned when request has invalid authorization code with Session Lambda, Access Token Lambda and Auth Lambda
     Given authorization JAR for test user 681
     And the Session lambda is called
     When user sends a request to session API
