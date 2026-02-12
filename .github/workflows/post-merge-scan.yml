@@ -1,0 +1,36 @@
+name: Check repo
+
+on:
+  push:
+    branches:
+      - main
+  schedule:
+    # Every Monday at 9am
+    - cron: "0 9 * * 1"
+
+concurrency:
+  group: check-repo-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  codeql:
+    name: CodeQL
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+    steps:
+      - name: Run CodeQL scan
+        uses: govuk-one-login/github-actions/code-quality/codeql@96c9e1a9adc67b587ba9ad8794ea41bb3998e184
+        with:
+          languages: javascript-typescript
+
+  unit-tests:
+    uses: ./.github/workflows/run-unit-tests.yml
+
+  sonarcloud:
+    needs: unit-tests
+    uses: ./.github/workflows/run-sonarcloud.yml
+    secrets:
+      sonar-token: ${{ secrets.SONAR_TOKEN }}
+    with:
+      coverage-run-id: ${{ github.run_id }}

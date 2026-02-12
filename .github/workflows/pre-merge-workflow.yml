@@ -1,0 +1,53 @@
+name: Pre-merge checks
+
+on:
+  pull_request:
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: pre-merge-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  pre-commit:
+    uses: ./.github/workflows/run-pre-commit.yml
+
+  unit-tests:
+    uses: ./.github/workflows/run-unit-tests.yml
+
+  sonarcloud:
+    needs: unit-tests
+    uses: ./.github/workflows/run-sonarcloud.yml
+    secrets:
+      sonar-token: ${{ secrets.SONAR_TOKEN }}
+
+  contract-tests:
+    uses: ./.github/workflows/run-contract-tests.yml
+    secrets:
+      pact-broker-username: ${{ secrets.PACT_BROKER_USERNAME }}
+      pact-broker-password: ${{ secrets.PACT_BROKER_PASSWORD }}
+      pact-broker-source-secret: ${{ secrets.PACT_BROKER_SOURCE_SECRET }}
+
+  deploy:
+    uses: ./.github/workflows/deploy-branch.yml
+    permissions:
+      id-token: write
+      contents: read
+
+  integration-tests:
+    needs: deploy
+    uses: ./.github/workflows/run-integration-test.yml
+    permissions:
+      id-token: write
+      contents: read
+    with:
+      aws-region: ${{ needs.deploy.outputs.aws-region }}
+      stack-name: ${{ needs.deploy.outputs.stack-name }}
+      stack-outputs: ${{ needs.deploy.outputs.stack-outputs }}
+    secrets:
+      api-gateway-api-key: ${{ secrets.APIGW_API_KEY }}
+      ipv-core-stub-basic-auth-user: ${{ secrets.IPV_CORE_STUB_BASIC_AUTH_USER }}
+      ipv-core-stub-basic-auth-pwd: ${{ secrets.IPV_CORE_STUB_BASIC_AUTH_PASSWORD }}
