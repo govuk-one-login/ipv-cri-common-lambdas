@@ -1,20 +1,19 @@
-name: Delete deployment
+name: Post merge
 
 on:
-  workflow_dispatch:
+  pull_request:
+    types:
+      - closed
 
 permissions:
   id-token: write
   contents: read
 
-concurrency: deploy-development-${{ github.head_ref || github.ref_name }}
-
 jobs:
-  delete-stack:
-    name: Delete stack
+  delete-preview-stack:
+    name: Delete preview stack
     runs-on: ubuntu-latest
-    environment: development
-
+    environment: integration-tests
     steps:
       - name: Get stack name
         uses: govuk-one-login/github-actions/beautify-branch-name@ca188729ecb0c92e5fe5ae7c024f9894815da3a1
@@ -22,7 +21,7 @@ jobs:
         with:
           usage: Stack name
           prefix: preview-common-lambdas
-          length-limit: 128
+          length-limit: 37
           verbose: false
 
       - name: Delete stack
