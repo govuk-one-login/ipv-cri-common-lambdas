@@ -24,6 +24,11 @@ jobs:
     secrets:
       sonar-token: ${{ secrets.SONAR_TOKEN }}
 
+  codeql:
+    uses: ./.github/workflows/run-codeql.yml
+    permissions:
+      security-events: write
+
   contract-tests:
     uses: ./.github/workflows/run-contract-tests.yml
     secrets:

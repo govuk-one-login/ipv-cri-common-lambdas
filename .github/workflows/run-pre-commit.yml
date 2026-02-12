@@ -8,18 +8,9 @@ jobs:
     name: pre-commit
     runs-on: ubuntu-latest
     steps:
-      - name: Pull repository
-        uses: actions/checkout@v4
-
-      - name: Install Node
-        uses: actions/setup-node@v4
-        with:
-          cache: npm
-          cache-dependency-path: ./package-lock.json
-
       - name: Run pre-commit
         uses: govuk-one-login/github-actions/code-quality/run-pre-commit@96c9e1a9adc67b587ba9ad8794ea41bb3998e184
         with:
           all-files: true
-          pull-repository: false
+          pull-repository: true
           install-dependencies: true
