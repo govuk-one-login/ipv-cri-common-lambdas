@@ -29,7 +29,14 @@ sam deploy --stack-name "$stack_name" \
   cri:deployment-source=manual \
   cri:stack-type=dev \
   --parameter-overrides \
+  AuditEventNamePrefix=IPV_COMMON_CRI \
+  CriIdentifier=di-ipv-cri-check-hmrc-api \
+  CriAudience=https://review-hc.dev.account.gov.uk \
+  CriVcIssuer=https://review-hc.dev.account.gov.uk \
+  CriPrivateApiGwName=check-hmrc-cri-api-private \
+  CriPublicApiGwName=check-hmrc-cri-api-private \
   Environment=dev \
-  ${audit_event_name_prefix:+AuditEventNamePrefix=$audit_event_name_prefix} \
-  ${cri_identifier:+CriIdentifier=$cri_identifier} \
-  ForceLambdaUpdate="$(date +%s)"
+  IPVCoreRedirectURI=https://identity.staging.account.gov.uk/credential-issuer/callback?id=nino \
+  IPVCoreStubJwksEndpoint=https://test-resources.review-hc.dev.account.gov.uk/.well-known/jwks.json \
+  KeyRotationFallback=true \
+  LambdaVpcConfiguration=di-devplatform-deploy

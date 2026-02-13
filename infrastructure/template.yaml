@@ -1,7 +1,6 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Transform:
-  - AWS::Serverless-2016-10-31
-Description: "Digital Identity IPV CRI common API"
+Transform: AWS::Serverless-2016-10-31
+Description: Digital Identity IPV CRI common API
 Metadata:
   AWS::ServerlessRepo::Application:
     Name: di-ipv-cri-oauth-common
@@ -12,103 +11,176 @@ Metadata:
     HomePageUrl: https://github.com/govuk-one-login/ipv-cri-oauth-common
     SemanticVersion: 0.0.0
     SourceCodeUrl: https://github.com/govuk-one-login/ipv-cri-oauth-common
-  cfn-lint:
-    config:
-      ignore_checks:
-        - W1028
-        - E3033
-        - E1020
 
 Parameters:
-  CodeSigningConfigArn:
-    Type: String
-    Default: "none"
-    Description: >
-      The ARN of the Code Signing Config to use, provided by the deployment pipeline
-  Environment:
-    Description: "The environment type"
-    Type: "String"
-    AllowedValues:
-      - "dev"
-      - "build"
-      - "staging"
-      - "integration"
-      - "production"
-    ConstraintDescription: must be dev, build, staging, integration or production
-  PermissionsBoundary:
-    Description: "The ARN of the permissions boundary to apply when creating IAM roles"
-    Type: String
-    Default: "none"
   AuditEventNamePrefix:
-    Description: "The audit event name prefix"
-    Type: AWS::SSM::Parameter::Value<String>
-    Default: "/common-cri-parameters/AuditEventNamePrefix"
+    Type: String
+    Description: >
+      The audit event name prefix
+      Example: IPV_HMRC_RECORD_CHECK_CRI
+  AuditTxmaStackName:
+    Type: String
+    Description: The stack containing the TXMA infrastructure
+    Default: "txma-infrastructure"
+
+  CSLSDestinationArn:
+    Type: String
+    Description: ARN of the CSLSEGRESS destination
+    Default: "none"
+
   CriIdentifier:
-    Description: "The unique credential issuer identifier"
-    Type: AWS::SSM::Parameter::Value<String>
-    Default: "/common-cri-parameters/CriIdentifier"
-  TxmaStackName:
-    Description: "The stack containing the TXMA infrastructure"
     Type: String
-    Default: txma-infrastructure
+    Description: >
+      The unique credential issuer identifier
+      Example: di-ipv-cri-check-hmrc-api
+  CriAudience:
+    Type: String
+    Description: >
+      Audience for the CRI
+      Example: https://review-hc.dev.account.gov.uk
+  CriVcIssuer:
+    Type: String
+    Description: >
+      Issuer for the CRI
+      Example: https://review-hc.dev.account.gov.uk
+  CriPrivateApiGwName:
+    Type: String
+    Description: >
+      The private API GW name, for Canary alarms
+      Example: check-hmrc-cri-api-private
+  CriPublicApiGwName:
+    Type: String
+    Description: >
+      The public API GW name, for Canary alarms
+      Example: check-hmrc-cri-api-public
+
+  DbSessionTTL:
+    Type: Number
+    Description: TTL for the Session Table, default 2 hours
+    Default: 7200
+  DbCustomerManagedKey:
+    Type: String
+    Description: Use a CustomerManagedKey for the DynamoDB Tables
+    Default: "true"
+    AllowedValues:
+      - "true"
+      - "false"
+
+  Environment:
+    Type: String
+    Description: The deployed environment
+    AllowedValues: 
+      - dev
+      - build
+      - staging
+      - integration
+      - production
+
+  IPVCoreRedirectURI:
+    Type: String
+    Description: >
+      Redirect URL to IPV CORE
+      Example: https://identity.staging.account.gov.uk/credential-issuer/callback?id=nino
+  IPVCoreStubJwksEndpoint:
+    Type: String
+    Description: >
+      Stubbed JWKS endpoint for non-prod environments
+      Example: https://test-resources.review-hc.dev.account.gov.uk/.well-known/jwks.json
+    Default: "" 
+
+  KeyRotation:
+    Type: String
+    Description: Feature flag for ENV_VAR_FEATURE_FLAG_KEY_ROTATION
+    Default: "true"
+    AllowedValues:
+      - "true"
+      - "false"
+  KeyRotationFallback:
+    Type: String
+    Description: Feature flag for ENV_VAR_FEATURE_FLAG_KEY_ROTATION_LEGACY_KEY_FALLBACK
+    Default: "false"
+    AllowedValues:
+      - "true"
+      - "false"
+
+  LambdaCodeSigningConfigArn:
+    Type: String
+    Description: The ARN of the Code Signing Config to use, provided by the deployment pipeline
+    Default: "none"
   LambdaDeploymentPreference:
-    Description: "Specifies the configuration to enable gradual Lambda deployments. This value is picked up from the LambdaCanaryDeployment on the pipeline "
     Type: String
-    Default: AllAtOnce
-  ForceLambdaUpdate:
+    Description: Specifies the configuration to enable gradual Lambda deployments. This value is picked up from the LambdaCanaryDeployment on the pipeline.
+    Default: "AllAtOnce"
+  LambdaProvisionedConcurrentExecutions:
+    Type: Number
+    Description: Provisioned concurrency for the Lambdas (0 = disabled)
+    Default: 0
+  LambdaVpcConfiguration: 
     Type: String
-    Default: "initial"
-    Description: "For dev only - used to force Java Lambda version updates for locally deployed and pre-merge stacks"
+    Description: >
+      Deploy type, so the correct VPC configuration is used.
+      Example: di-devplatform-deploy or di-ipv-cri-pipeline-deployment
+
+  PermissionsBoundaryArn:
+    Type: String
+    Description: The ARN of the permissions boundary to apply when creating IAM roles
+    Default: "none"
+
+Mappings:
+  EnvConfig:
+    dev:
+      CoreJwksEndpoint: "https://api.identity.staging.account.gov.uk/.well-known/jwks.json"
+      DynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
+      MemorySize: 2048
+    build:
+      CoreJwksEndpoint: "https://api.identity.staging.account.gov.uk/.well-known/jwks.json"
+      DynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
+      MemorySize: 3072
+    staging:
+      CoreJwksEndpoint: "https://api.identity.staging.account.gov.uk/.well-known/jwks.json"
+      DynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
+      MemorySize: 2048
+      IPVCoreIssuer: "https://identity.staging.account.gov.uk"
+    integration:
+      CoreJwksEndpoint: "https://api.identity.integration.account.gov.uk/.well-known/jwks.json"
+      DynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
+      MemorySize: 2048
+      IPVCoreIssuer: "https://identity.integration.account.gov.uk"
+    production:
+      CoreJwksEndpoint: "https://api.identity.account.gov.uk/.well-known/jwks.json"
+      DynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceProductionVariables"
+      MemorySize: 3072
+      IPVCoreIssuer: "https://identity.account.gov.uk"
 
 Conditions:
-  UseCodeSigningConfigArn:
-    Fn::Not:
-      - Fn::Equals:
-          - !Ref CodeSigningConfigArn
-          - "none"
-  AddProvisionedConcurrency: !Not
-    - !Equals
-      - !FindInMap [
-          ProvisionedConcurrencyMapping,
-          !Ref CriIdentifier,
-          !Ref Environment,
-        ]
-      - 0
-  IsStubEnvironment: !Or
-    - !Equals [!Ref Environment, dev]
-    - !Equals [!Ref Environment, build]
-    - !Equals [!Ref Environment, staging]
-    - !Equals [!Ref Environment, integration]
-  IsIpvCore3rdPartyStubEnvironment: !Equals
-    - !Ref Environment
-    - staging
-  IsProdLikeEnvironment: !Or
-    - !Equals [!Ref Environment, staging]
-    - !Equals [!Ref Environment, integration]
-    - !Equals [!Ref Environment, production]
-  IsProdEnvironment: !Equals
-    - !Ref Environment
-    - production
-  IsDevEnvironment: !Equals
-    - !Ref Environment
-    - dev
-  IsDevPlatformDeploy: !Equals
-    - !FindInMap [CriVpcMapping, !Ref CriIdentifier, !Ref Environment]
-    - "di-devplatform-deploy"
-  UsePermissionsBoundary:
-    Fn::Not:
-      - Fn::Equals:
-          - !Ref PermissionsBoundary
-          - "none"
-  IsCSLSDisabled: !Condition IsProdLikeEnvironment
-  UseNewCSLSDestinationArn: !Or
-    - !Equals [!Ref CriIdentifier, "di-ipv-cri-kbv-hmrc-api"]
-    - !Equals [!Ref CriIdentifier, "di-ipv-cri-check-hmrc-api"]
-  UseCanaryDeploymentAlarms:
-    !Not [!Equals [!Ref LambdaDeploymentPreference, AllAtOnce]]
-  UseCustomerManagedKey: !Equals
-    - !FindInMap [CustomerManagedKey, !Ref "CriIdentifier", useCMK]
-    - true
+  IsDev: !Equals [ !Ref Environment, "dev" ]
+  IsIntegration: !Equals [ !Ref Environment, "integration" ]
+  IsStaging: !Equals [ !Ref Environment, "staging" ]
+  IsProd: !Equals [ !Ref Environment, "production" ]
+  IsNotProd: !Not [ !Condition IsProd ]
+  IsStagingIntegrationOrProd: !Or
+    - !Condition IsIntegration
+    - !Condition IsStaging
+    - !Condition IsProd
+
+  IsStubJwksPresent: !Not [!Equals [!Ref IPVCoreStubJwksEndpoint, ""]]
+
+  IsNotProdAndIsStubJwksPresent: !And
+    - !Condition IsNotProd
+    - !Condition IsStubJwksPresent
+
+  IsCodeSigningEnabled: !Not
+    - !Equals [!Ref LambdaCodeSigningConfigArn, "none"]
+  IsPermissionsBoundaryEnabled: !Not
+    - !Equals [ !Ref PermissionsBoundaryArn, "none" ]
+  IsProvisionedConcurrencyEnabled: !Not
+    - !Equals [ !Ref LambdaProvisionedConcurrentExecutions, 0 ]
+  IsDevPlatformDeploy: !Equals [ !Ref LambdaVpcConfiguration, "di-devplatform-deploy" ]
+  IsCSLSEnabled: !Not
+    - !Equals [ !Ref CSLSDestinationArn, "none" ]
+  IsCanaryDeployment: !Not 
+    - !Equals [!Ref LambdaDeploymentPreference, "AllAtOnce"]
+  IsCustomerManagedKeyEnabled: !Equals [ !Ref DbCustomerManagedKey, "true" ]
 
 Globals:
   Function:
@@ -118,16 +190,16 @@ Globals:
         - [!ImportValue cri-vpc-AWSServicesEndpointSecurityGroupId]
         - [!ImportValue cri-vpc-LambdaSecurityGroup]
     PermissionsBoundary: !If
-      - UsePermissionsBoundary
-      - !Ref PermissionsBoundary
+      - IsPermissionsBoundaryEnabled
+      - !Ref PermissionsBoundaryArn
       - !Ref AWS::NoValue
     CodeSigningConfigArn: !If
-      - UseCodeSigningConfigArn
-      - !Ref CodeSigningConfigArn
+      - IsCodeSigningEnabled
+      - !Ref LambdaCodeSigningConfigArn
       - !Ref AWS::NoValue
     Timeout: 30 # seconds
     Tracing: Active
-    MemorySize: !FindInMap [MemorySizeMapping, Environment, !Ref "Environment"]
+    MemorySize: !FindInMap [EnvConfig, !Ref "Environment", MemorySize]
     Architectures:
       - arm64
     Environment:
@@ -137,552 +209,48 @@ Globals:
         POWERTOOLS_LOG_LEVEL: INFO
         POWERTOOLS_METRICS_NAMESPACE: !Ref CriIdentifier
         SQS_AUDIT_EVENT_PREFIX: !Ref AuditEventNamePrefix
-        FORCE_LAMBDA_UPDATE:
-          !If [IsDevEnvironment, !Ref ForceLambdaUpdate, !Ref AWS::NoValue]
         AWS_LAMBDA_EXEC_WRAPPER: /opt/dynatrace
         DT_CONNECTION_AUTH_TOKEN: !Sub
           - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_CONNECTION_AUTH_TOKEN}}"
           - SecretArn:
               !FindInMap [
-                EnvironmentConfiguration,
+                EnvConfig,
                 !Ref Environment,
-                dynatraceSecretArn,
+                DynatraceSecretArn,
               ]
         DT_CONNECTION_BASE_URL: !Sub
           - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_CONNECTION_BASE_URL}}"
           - SecretArn:
               !FindInMap [
-                EnvironmentConfiguration,
+                EnvConfig,
                 !Ref Environment,
-                dynatraceSecretArn,
+                DynatraceSecretArn,
               ]
         DT_CLUSTER_ID: !Sub
           - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_CLUSTER_ID}}"
           - SecretArn:
               !FindInMap [
-                EnvironmentConfiguration,
+                EnvConfig,
                 !Ref Environment,
-                dynatraceSecretArn,
+                DynatraceSecretArn,
               ]
         DT_LOG_COLLECTION_AUTH_TOKEN: !Sub
           - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_LOG_COLLECTION_AUTH_TOKEN}}"
           - SecretArn:
               !FindInMap [
-                EnvironmentConfiguration,
+                EnvConfig,
                 !Ref Environment,
-                dynatraceSecretArn,
+                DynatraceSecretArn,
               ]
         DT_TENANT: !Sub
           - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_TENANT}}"
           - SecretArn:
               !FindInMap [
-                EnvironmentConfiguration,
+                EnvConfig,
                 !Ref Environment,
-                dynatraceSecretArn,
+                DynatraceSecretArn,
               ]
         DT_OPEN_TELEMETRY_ENABLE_INTEGRATION: "true"
-
-Mappings:
-  CustomerManagedKey:
-    di-ipv-cri-address-api:
-      useCMK: true
-    di-ipv-cri-check-hmrc-api:
-      useCMK: true
-    di-ipv-cri-kbv-api:
-      useCMK: true
-    di-ipv-cri-fraud-api:
-      useCMK: false
-    di-ipv-cri-dl-api:
-      useCMK: false
-    di-ipv-cri-passport-api:
-      useCMK: false
-    di-ipv-cri-kbv-hmrc-api:
-      useCMK: false
-
-  CoreJwksEndpoint:
-    Environment:
-      dev: https://api.identity.staging.account.gov.uk/.well-known/jwks.json
-      build: https://api.identity.staging.account.gov.uk/.well-known/jwks.json
-      staging: https://api.identity.staging.account.gov.uk/.well-known/jwks.json
-      integration: https://api.identity.integration.account.gov.uk/.well-known/jwks.json
-      production: https://api.identity.account.gov.uk/.well-known/jwks.json
-
-  StubJwksEndpoint:
-    di-ipv-cri-address-api:
-      dev: https://test-resources.review-a.dev.account.gov.uk/.well-known/jwks.json
-      build: https://test-resources.review-a.build.account.gov.uk/.well-known/jwks.json
-      staging: https://test-resources.review-a.staging.account.gov.uk/.well-known/jwks.json
-      integration: https://test-resources.review-a.integration.account.gov.uk/.well-known/jwks.json
-    di-ipv-cri-fraud-api:
-      dev: https://cri.core.stubs.account.gov.uk/.well-known/jwks.json
-      build: https://cri.core.stubs.account.gov.uk/.well-known/jwks.json
-      staging: https://cri.core.stubs.account.gov.uk/.well-known/jwks.json
-      integration: https://cri.core.stubs.account.gov.uk/.well-known/jwks.json
-    di-ipv-cri-kbv-api:
-      dev: https://test-resources.review-k.dev.account.gov.uk/.well-known/jwks.json
-      build: https://test-resources.review-k.build.account.gov.uk/.well-known/jwks.json
-      staging: https://test-resources.review-k.staging.account.gov.uk/.well-known/jwks.json
-      integration: https://test-resources.review-k.integration.account.gov.uk/.well-known/jwks.json
-    di-ipv-cri-dl-api:
-      dev: https://cri.core.stubs.account.gov.uk/.well-known/jwks.json
-      build: https://cri.core.stubs.account.gov.uk/.well-known/jwks.json
-      staging: https://cri.core.stubs.account.gov.uk/.well-known/jwks.json
-      integration: https://cri.core.stubs.account.gov.uk/.well-known/jwks.json
-    di-ipv-cri-passport-api:
-      dev: https://cri.core.stubs.account.gov.uk/.well-known/jwks.json
-      build: https://cri.core.stubs.account.gov.uk/.well-known/jwks.json
-      staging: https://cri.core.stubs.account.gov.uk/.well-known/jwks.json
-      integration: https://cri.core.stubs.account.gov.uk/.well-known/jwks.json
-    di-ipv-cri-kbv-hmrc-api:
-      dev: https://cri.core.stubs.account.gov.uk/.well-known/jwks.json
-      build: https://cri.core.stubs.account.gov.uk/.well-known/jwks.json
-      staging: https://cri.core.stubs.account.gov.uk/.well-known/jwks.json
-      integration: https://cri.core.stubs.account.gov.uk/.well-known/jwks.json
-    di-ipv-cri-check-hmrc-api:
-      dev: https://test-resources.review-hc.dev.account.gov.uk/.well-known/jwks.json
-      build: https://test-resources.review-hc.build.account.gov.uk/.well-known/jwks.json
-      staging: https://test-resources.review-hc.staging.account.gov.uk/.well-known/jwks.json
-      integration: https://test-resources.review-hc.integration.account.gov.uk/.well-known/jwks.json
-
-  EnvironmentConfiguration:
-    dev:
-      dynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
-    build:
-      dynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
-    staging:
-      dynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
-    integration:
-      dynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
-    production:
-      dynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceProductionVariables
-
-  MemorySizeMapping:
-    Environment:
-      dev: 2048
-      build: 3072
-      staging: 2048
-      integration: 2048
-      production: 3072
-
-  SessionTtlMapping:
-    Environment:
-      dev: 7200 # 2 hours
-      build: 7200 # 2 hours
-      staging: 7200 # 2 hours
-      integration: 7200 # 2 hours
-      production: 7200 # 2 hours
-
-  # Use key rotation aliases in session decryption
-  KeyRotationMapping:
-    di-ipv-cri-address-api:
-      dev: "true"
-      build: "true"
-      staging: "true"
-      integration: "true"
-      production: "true"
-    di-ipv-cri-fraud-api:
-      dev: "true"
-      build: "true"
-      staging: "true"
-      integration: "true"
-      production: "true"
-    di-ipv-cri-kbv-api:
-      dev: "true"
-      build: "true"
-      staging: "true"
-      integration: "true"
-      production: "true"
-    di-ipv-cri-dl-api:
-      dev: "true"
-      build: "true"
-      staging: "true"
-      integration: "true"
-      production: "true"
-    di-ipv-cri-passport-api:
-      dev: "true"
-      build: "true"
-      staging: "true"
-      integration: "true"
-      production: "true"
-    di-ipv-cri-kbv-hmrc-api:
-      dev: "false"
-      build: "false"
-      staging: "false"
-      integration: "false"
-      production: "false"
-    di-ipv-cri-check-hmrc-api:
-      dev: "true"
-      build: "true"
-      staging: "true"
-      integration: "true"
-      production: "true"
-
-  # Enable fall back with key rotation aliases in session decryption
-  KeyRotationLegacyFallBackMapping:
-    di-ipv-cri-address-api:
-      dev: "false"
-      build: "false"
-      staging: "true"
-      integration: "true"
-      production: "true"
-    di-ipv-cri-fraud-api:
-      dev: "false"
-      build: "false"
-      staging: "false"
-      integration: "false"
-      production: "false"
-    di-ipv-cri-kbv-api:
-      dev: "true"
-      build: "true"
-      staging: "true"
-      integration: "true"
-      production: "true"
-    di-ipv-cri-dl-api:
-      dev: "false"
-      build: "false"
-      staging: "false"
-      integration: "false"
-      production: "false"
-    di-ipv-cri-passport-api:
-      dev: "false"
-      build: "false"
-      staging: "false"
-      integration: "false"
-      production: "false"
-    di-ipv-cri-kbv-hmrc-api:
-      dev: "false"
-      build: "false"
-      staging: "false"
-      integration: "false"
-      production: "false"
-    di-ipv-cri-check-hmrc-api:
-      dev: "true"
-      build: "true"
-      staging: "true"
-      integration: "true"
-      production: "true"
-
-  # 0 = off
-  ProvisionedConcurrencyMapping:
-    di-ipv-cri-address-api:
-      dev: 0
-      build: 0
-      staging: 0
-      integration: 0
-      production: 0
-    di-ipv-cri-fraud-api:
-      dev: 0
-      build: 0
-      staging: 0
-      integration: 0
-      production: 0
-    di-ipv-cri-kbv-api:
-      dev: 0
-      build: 0
-      staging: 0
-      integration: 0
-      production: 0
-    di-ipv-cri-dl-api:
-      dev: 0
-      build: 0
-      staging: 0
-      integration: 0
-      production: 0
-    di-ipv-cri-passport-api:
-      dev: 0
-      build: 0
-      staging: 0
-      integration: 0
-      production: 0
-    di-ipv-cri-kbv-hmrc-api:
-      dev: 0
-      build: 0
-      staging: 0
-      integration: 0
-      production: 0
-    di-ipv-cri-check-hmrc-api:
-      dev: 0
-      build: 1
-      staging: 0
-      integration: 0
-      production: 1
-
-  CriVpcMapping:
-    di-ipv-cri-address-api:
-      dev: "di-ipv-cri-pipeline-deployment"
-      build: "di-ipv-cri-pipeline-deployment"
-      staging: "di-ipv-cri-pipeline-deployment"
-      integration: "di-ipv-cri-pipeline-deployment"
-      production: "di-ipv-cri-pipeline-deployment"
-    di-ipv-cri-fraud-api:
-      dev: "di-ipv-cri-pipeline-deployment"
-      build: "di-ipv-cri-pipeline-deployment"
-      staging: "di-ipv-cri-pipeline-deployment"
-      integration: "di-ipv-cri-pipeline-deployment"
-      production: "di-ipv-cri-pipeline-deployment"
-    di-ipv-cri-kbv-api:
-      dev: "di-ipv-cri-pipeline-deployment"
-      build: "di-ipv-cri-pipeline-deployment"
-      staging: "di-ipv-cri-pipeline-deployment"
-      integration: "di-ipv-cri-pipeline-deployment"
-      production: "di-ipv-cri-pipeline-deployment"
-    di-ipv-cri-dl-api:
-      dev: "di-ipv-cri-pipeline-deployment"
-      build: "di-ipv-cri-pipeline-deployment"
-      staging: "di-ipv-cri-pipeline-deployment"
-      integration: "di-ipv-cri-pipeline-deployment"
-      production: "di-ipv-cri-pipeline-deployment"
-    di-ipv-cri-passport-api:
-      dev: "di-devplatform-deploy"
-      build: "di-devplatform-deploy"
-      staging: "di-devplatform-deploy"
-      integration: "di-devplatform-deploy"
-      production: "di-devplatform-deploy"
-    di-ipv-cri-kbv-hmrc-api:
-      dev: "di-devplatform-deploy"
-      build: "di-devplatform-deploy"
-      staging: "di-devplatform-deploy"
-      integration: "di-devplatform-deploy"
-      production: "di-devplatform-deploy"
-    di-ipv-cri-check-hmrc-api:
-      dev: "di-devplatform-deploy"
-      build: "di-devplatform-deploy"
-      staging: "di-devplatform-deploy"
-      integration: "di-devplatform-deploy"
-      production: "di-devplatform-deploy"
-
-  CriAudienceMapping:
-    di-ipv-cri-address-api:
-      dev: "https://review-a.dev.account.gov.uk"
-      build: "https://review-a.build.account.gov.uk"
-      staging: "https://review-a.staging.account.gov.uk"
-      integration: "https://review-a.integration.account.gov.uk"
-      production: "https://review-a.account.gov.uk"
-    di-ipv-cri-fraud-api:
-      dev: "https://review-f.dev.account.gov.uk"
-      build: "https://review-f.build.account.gov.uk"
-      staging: "https://review-f.staging.account.gov.uk"
-      integration: "https://review-f.integration.account.gov.uk"
-      production: "https://review-f.account.gov.uk"
-    di-ipv-cri-kbv-api:
-      dev: "https://review-k.dev.account.gov.uk"
-      build: "https://review-k.build.account.gov.uk"
-      staging: "https://review-k.staging.account.gov.uk"
-      integration: "https://review-k.integration.account.gov.uk"
-      production: "https://review-k.account.gov.uk"
-    di-ipv-cri-dl-api:
-      dev: "https://review-d.dev.account.gov.uk"
-      build: "https://review-d.build.account.gov.uk"
-      staging: "https://review-d.staging.account.gov.uk"
-      integration: "https://review-d.integration.account.gov.uk"
-      production: "https://review-d.account.gov.uk"
-    di-ipv-cri-passport-api:
-      dev: "https://review-p.dev.account.gov.uk"
-      build: "https://review-p.build.account.gov.uk"
-      staging: "https://review-p.staging.account.gov.uk"
-      integration: "https://review-p.integration.account.gov.uk"
-      production: "https://review-p.account.gov.uk"
-    di-ipv-cri-kbv-hmrc-api:
-      dev: "https://review-hk.dev.account.gov.uk"
-      build: "https://review-hk.build.account.gov.uk"
-      staging: "https://review-hk.staging.account.gov.uk"
-      integration: "https://review-hk.integration.account.gov.uk"
-      production: "https://review-hk.account.gov.uk"
-    di-ipv-cri-check-hmrc-api:
-      dev: "https://review-hc.dev.account.gov.uk"
-      build: "https://review-hc.build.account.gov.uk"
-      staging: "https://review-hc.staging.account.gov.uk"
-      integration: "https://review-hc.integration.account.gov.uk"
-      production: "https://review-hc.account.gov.uk"
-
-  IPVCoreStubAwsBuildIssuerMapping:
-    Environment:
-      dev: "https://cri.core.build.stubs.account.gov.uk"
-      build: "https://cri.core.build.stubs.account.gov.uk"
-      staging: "https://cri.core.build.stubs.account.gov.uk"
-      integration: "https://cri.core.build.stubs.account.gov.uk"
-
-  IPVCoreStubAwsProdIssuerMapping:
-    Environment:
-      dev: "https://cri.core.stubs.account.gov.uk"
-      build: "https://cri.core.stubs.account.gov.uk"
-      staging: "https://cri.core.stubs.account.gov.uk"
-      integration: "https://cri.core.stubs.account.gov.uk"
-
-  IPVCoreStubIssuerMapping:
-    Environment:
-      dev: "https://di-ipv-core-stub.london.cloudapps.digital"
-      build: "https://di-ipv-core-stub.london.cloudapps.digital"
-      staging: "https://di-ipv-core-stub.london.cloudapps.digital"
-      integration: "https://di-ipv-core-stub.london.cloudapps.digital"
-
-  IPVCoreStubPreProdAwsBuildIssuerMapping:
-    Environment:
-      production: "https://cri-preprod.core.build.stubs.account.gov.uk"
-
-  IPVCoreStubPreProdIssuerMapping:
-    Environment:
-      production: "https://cri-preprod.core.stubs.account.gov.uk"
-
-  IPVCore1IssuerMapping:
-    Environment:
-      staging: "https://identity.staging.account.gov.uk"
-      integration: "https://identity.integration.account.gov.uk"
-      production: "https://identity.account.gov.uk"
-
-  IPVCoreStubAwsBuildPublicSigningJwkBase64Mapping:
-    Environment:
-      dev: "ewogICAgImt0eSI6ICJFQyIsCiAgICAidXNlIjogInNpZyIsCiAgICAiY3J2IjogIlAtMjU2IiwKICAgICJraWQiOiAiaXB2LWNvcmUtc3R1Yi0yLWZyb20tbWtqd2sub3JnIiwKICAgICJ4IjogImszOXVLYWNTdWtRQnJNWnJIRFRCVVpzbGl2cFhLRE5aVGc2aW5DSHdyTGMiLAogICAgInkiOiAiOEY4TG5RN3dHOWh4c1Q0YXgwQXR5N2lNR0l5aVlfWUdwM19xSVp6S28xQSIsCiAgICAiYWxnIjogIkVTMjU2Igp9"
-      build: "ewogICAgImt0eSI6ICJFQyIsCiAgICAidXNlIjogInNpZyIsCiAgICAiY3J2IjogIlAtMjU2IiwKICAgICJraWQiOiAiaXB2LWNvcmUtc3R1Yi0yLWZyb20tbWtqd2sub3JnIiwKICAgICJ4IjogImszOXVLYWNTdWtRQnJNWnJIRFRCVVpzbGl2cFhLRE5aVGc2aW5DSHdyTGMiLAogICAgInkiOiAiOEY4TG5RN3dHOWh4c1Q0YXgwQXR5N2lNR0l5aVlfWUdwM19xSVp6S28xQSIsCiAgICAiYWxnIjogIkVTMjU2Igp9"
-      staging: "ewogICAgImt0eSI6ICJFQyIsCiAgICAidXNlIjogInNpZyIsCiAgICAiY3J2IjogIlAtMjU2IiwKICAgICJraWQiOiAiaXB2LWNvcmUtc3R1Yi0yLWZyb20tbWtqd2sub3JnIiwKICAgICJ4IjogImszOXVLYWNTdWtRQnJNWnJIRFRCVVpzbGl2cFhLRE5aVGc2aW5DSHdyTGMiLAogICAgInkiOiAiOEY4TG5RN3dHOWh4c1Q0YXgwQXR5N2lNR0l5aVlfWUdwM19xSVp6S28xQSIsCiAgICAiYWxnIjogIkVTMjU2Igp9"
-      integration: "ewogICAgImt0eSI6ICJFQyIsCiAgICAidXNlIjogInNpZyIsCiAgICAiY3J2IjogIlAtMjU2IiwKICAgICJraWQiOiAiaXB2LWNvcmUtc3R1Yi0yLWZyb20tbWtqd2sub3JnIiwKICAgICJ4IjogImszOXVLYWNTdWtRQnJNWnJIRFRCVVpzbGl2cFhLRE5aVGc2aW5DSHdyTGMiLAogICAgInkiOiAiOEY4TG5RN3dHOWh4c1Q0YXgwQXR5N2lNR0l5aVlfWUdwM19xSVp6S28xQSIsCiAgICAiYWxnIjogIkVTMjU2Igp9"
-
-  IPVCoreStubPublicSigningJwkBase64Mapping:
-    Environment:
-      dev: "ewogICAgImt0eSI6ICJFQyIsCiAgICAidXNlIjogInNpZyIsCiAgICAiY3J2IjogIlAtMjU2IiwKICAgICJraWQiOiAiaXB2LWNvcmUtc3R1Yi0yLWZyb20tbWtqd2sub3JnIiwKICAgICJ4IjogImszOXVLYWNTdWtRQnJNWnJIRFRCVVpzbGl2cFhLRE5aVGc2aW5DSHdyTGMiLAogICAgInkiOiAiOEY4TG5RN3dHOWh4c1Q0YXgwQXR5N2lNR0l5aVlfWUdwM19xSVp6S28xQSIsCiAgICAiYWxnIjogIkVTMjU2Igp9"
-      build: "ewogICAgImt0eSI6ICJFQyIsCiAgICAidXNlIjogInNpZyIsCiAgICAiY3J2IjogIlAtMjU2IiwKICAgICJraWQiOiAiaXB2LWNvcmUtc3R1Yi0yLWZyb20tbWtqd2sub3JnIiwKICAgICJ4IjogImszOXVLYWNTdWtRQnJNWnJIRFRCVVpzbGl2cFhLRE5aVGc2aW5DSHdyTGMiLAogICAgInkiOiAiOEY4TG5RN3dHOWh4c1Q0YXgwQXR5N2lNR0l5aVlfWUdwM19xSVp6S28xQSIsCiAgICAiYWxnIjogIkVTMjU2Igp9"
-      staging: "ewogICAgImt0eSI6ICJFQyIsCiAgICAidXNlIjogInNpZyIsCiAgICAiY3J2IjogIlAtMjU2IiwKICAgICJraWQiOiAiaXB2LWNvcmUtc3R1Yi0yLWZyb20tbWtqd2sub3JnIiwKICAgICJ4IjogImszOXVLYWNTdWtRQnJNWnJIRFRCVVpzbGl2cFhLRE5aVGc2aW5DSHdyTGMiLAogICAgInkiOiAiOEY4TG5RN3dHOWh4c1Q0YXgwQXR5N2lNR0l5aVlfWUdwM19xSVp6S28xQSIsCiAgICAiYWxnIjogIkVTMjU2Igp9"
-      integration: "ewogICAgImt0eSI6ICJFQyIsCiAgICAidXNlIjogInNpZyIsCiAgICAiY3J2IjogIlAtMjU2IiwKICAgICJraWQiOiAiaXB2LWNvcmUtc3R1Yi0yLWZyb20tbWtqd2sub3JnIiwKICAgICJ4IjogImszOXVLYWNTdWtRQnJNWnJIRFRCVVpzbGl2cFhLRE5aVGc2aW5DSHdyTGMiLAogICAgInkiOiAiOEY4TG5RN3dHOWh4c1Q0YXgwQXR5N2lNR0l5aVlfWUdwM19xSVp6S28xQSIsCiAgICAiYWxnIjogIkVTMjU2Igp9"
-
-  IPVCoreStubPreProdAwsBuildPublicSigningJwkBase64Mapping:
-    Environment:
-      production: "ewogICAgImt0eSI6ICJFQyIsCiAgICAidXNlIjogInNpZyIsCiAgICAiY3J2IjogIlAtMjU2IiwKICAgICJraWQiOiAiaXB2LWNvcmUtc3R1Yi0yLWZyb20tbWtqd2sub3JnIiwKICAgICJ4IjogImszOXVLYWNTdWtRQnJNWnJIRFRCVVpzbGl2cFhLRE5aVGc2aW5DSHdyTGMiLAogICAgInkiOiAiOEY4TG5RN3dHOWh4c1Q0YXgwQXR5N2lNR0l5aVlfWUdwM19xSVp6S28xQSIsCiAgICAiYWxnIjogIkVTMjU2Igp9"
-
-  IPVCoreStubPreProdPublicSigningJwkBase64Mapping:
-    Environment:
-      production: "ewogICAgImt0eSI6ICJFQyIsCiAgICAidXNlIjogInNpZyIsCiAgICAiY3J2IjogIlAtMjU2IiwKICAgICJraWQiOiAiaXB2LWNvcmUtc3R1Yi0yLWZyb20tbWtqd2sub3JnIiwKICAgICJ4IjogImszOXVLYWNTdWtRQnJNWnJIRFRCVVpzbGl2cFhLRE5aVGc2aW5DSHdyTGMiLAogICAgInkiOiAiOEY4TG5RN3dHOWh4c1Q0YXgwQXR5N2lNR0l5aVlfWUdwM19xSVp6S28xQSIsCiAgICAiYWxnIjogIkVTMjU2Igp9"
-
-  IPVCore1PublicSigningJwkBase64Mapping:
-    Environment:
-      staging: "eyJrdHkiOiJFQyIsImNydiI6IlAtMjU2IiwieCI6ImtlMVRNRnFNb0Z5eHg1eXpOdFFRbGw0dk9yeHZUdFBKQ0huUzRqOHpoMlUiLCJ5IjoicURLX0g4QXpKS2FIbU1zaHg5TGp2LTB0ek5rV2EtSkVHUzJtZHRKUjFPQSJ9"
-      integration: "eyJrdHkiOiJFQyIsImNydiI6IlAtMjU2IiwieCI6IkJUUWdWQjU0RE9JcDU0eGRVSVg0SGtUX3pCdjZHdVdMV1RUTkdxMk15dEkiLCJ5IjoiTFFRamx5ZEtOMUhXZFJQcFBpalJObEJrbi1qaDgzZzBBUmIyNms2WVh1byJ9"
-      production: "eyJrdHkiOiJFQyIsImNydiI6IlAtMjU2IiwieCI6IlVQdlU1TlBtRUxyV2lXU01WZkREN0c4dTNFSllyeXFQSVo0Nlc5TUFsUmMiLCJ5Ijoicjc3RjItS1BocHZUSUdFV2d0NVNtYXZTdkJVSENxV1V4RDZSR19GSkhWayJ9"
-
-  IPVCoreStubAwsProdRedirectURIMapping:
-    Environment:
-      dev: "https://cri.core.stubs.account.gov.uk/callback"
-      build: "https://cri.core.stubs.account.gov.uk/callback"
-      staging: "https://cri.core.stubs.account.gov.uk/callback"
-      integration: "https://cri.core.stubs.account.gov.uk/callback"
-
-  IPVCoreStubAwsBuildRedirectURIMapping:
-    Environment:
-      dev: "https://cri.core.build.stubs.account.gov.uk/callback"
-      build: "https://cri.core.build.stubs.account.gov.uk/callback"
-      staging: "https://cri.core.build.stubs.account.gov.uk/callback"
-      integration: "https://cri.core.build.stubs.account.gov.uk/callback"
-
-  IPVCoreStubRedirectURIMapping:
-    Environment:
-      dev: "https://di-ipv-core-stub.london.cloudapps.digital/callback"
-      build: "https://di-ipv-core-stub.london.cloudapps.digital/callback"
-      staging: "https://di-ipv-core-stub.london.cloudapps.digital/callback"
-      integration: "https://di-ipv-core-stub.london.cloudapps.digital/callback"
-
-  IPVCoreStubPreProdAwsBuildRedirectURIMapping:
-    Environment:
-      production: "https://cri-preprod.core.build.stubs.account.gov.uk/callback"
-
-  IPVCoreStubPreProdRedirectURIMapping:
-    Environment:
-      production: "https://cri-preprod.core.stubs.account.gov.uk/callback"
-
-  IPVCore1RedirectURIMapping:
-    di-ipv-cri-address-api:
-      staging: "https://identity.staging.account.gov.uk/credential-issuer/callback?id=address"
-      integration: "https://identity.integration.account.gov.uk/credential-issuer/callback?id=address"
-      production: "https://identity.account.gov.uk/credential-issuer/callback?id=address"
-    di-ipv-cri-fraud-api:
-      staging: "https://identity.staging.account.gov.uk/credential-issuer/callback?id=fraud"
-      integration: "https://identity.integration.account.gov.uk/credential-issuer/callback?id=fraud"
-      production: "https://identity.account.gov.uk/credential-issuer/callback?id=fraud"
-    di-ipv-cri-kbv-api:
-      staging: "https://identity.staging.account.gov.uk/credential-issuer/callback?id=kbv"
-      integration: "https://identity.integration.account.gov.uk/credential-issuer/callback?id=kbv"
-      production: "https://identity.account.gov.uk/credential-issuer/callback?id=kbv"
-    di-ipv-cri-dl-api:
-      staging: "https://identity.staging.account.gov.uk/credential-issuer/callback?id=drivingLicence"
-      integration: "https://identity.integration.account.gov.uk/credential-issuer/callback?id=drivingLicence"
-      production: "https://identity.account.gov.uk/credential-issuer/callback?id=drivingLicence"
-    di-ipv-cri-passport-api:
-      staging: "https://identity.staging.account.gov.uk/credential-issuer/callback?id=ukPassport"
-      integration: "https://identity.integration.account.gov.uk/credential-issuer/callback?id=ukPassport"
-      production: "https://identity.account.gov.uk/credential-issuer/callback?id=ukPassport"
-    di-ipv-cri-check-hmrc-api:
-      staging: "https://identity.staging.account.gov.uk/credential-issuer/callback?id=nino"
-      integration: "https://identity.integration.account.gov.uk/credential-issuer/callback?id=nino"
-      production: "https://identity.account.gov.uk/credential-issuer/callback?id=nino"
-    di-ipv-cri-kbv-hmrc-api:
-      staging: "https://identity.staging.account.gov.uk/credential-issuer/callback?id=hmrcKbv"
-      integration: "https://identity.integration.account.gov.uk/credential-issuer/callback?id=hmrcKbv"
-      production: "https://identity.account.gov.uk/credential-issuer/callback?id=hmrcKbv"
-
-  VerifiableCredentialIssuerMapping:
-    di-ipv-cri-address-api:
-      dev: "https://review-a.dev.account.gov.uk"
-      build: "https://review-a.build.account.gov.uk"
-      staging: "https://review-a.staging.account.gov.uk"
-      integration: "https://review-a.integration.account.gov.uk"
-      production: "https://review-a.account.gov.uk"
-    di-ipv-cri-fraud-api:
-      dev: "https://review-f.dev.account.gov.uk"
-      build: "https://review-f.build.account.gov.uk"
-      staging: "https://review-f.staging.account.gov.uk"
-      integration: "https://review-f.integration.account.gov.uk"
-      production: "https://review-f.account.gov.uk"
-    di-ipv-cri-kbv-api:
-      dev: "https://review-k.dev.account.gov.uk"
-      build: "https://review-k.build.account.gov.uk"
-      staging: "https://review-k.staging.account.gov.uk"
-      integration: "https://review-k.integration.account.gov.uk"
-      production: "https://review-k.account.gov.uk"
-    di-ipv-cri-dl-api:
-      dev: "https://review-d.dev.account.gov.uk"
-      build: "https://review-d.build.account.gov.uk"
-      staging: "https://review-d.staging.account.gov.uk"
-      integration: "https://review-d.integration.account.gov.uk"
-      production: "https://review-d.account.gov.uk"
-    di-ipv-cri-passport-api:
-      dev: "https://review-p.dev.account.gov.uk"
-      build: "https://review-p.build.account.gov.uk"
-      staging: "https://review-p.staging.account.gov.uk"
-      integration: "https://review-p.integration.account.gov.uk"
-      production: "https://review-p.account.gov.uk"
-    di-ipv-cri-kbv-hmrc-api:
-      dev: "https://review-hk.dev.account.gov.uk"
-      build: "https://review-hk.build.account.gov.uk"
-      staging: "https://review-hk.staging.account.gov.uk"
-      integration: "https://review-hk.integration.account.gov.uk"
-      production: "https://review-hk.account.gov.uk"
-    di-ipv-cri-check-hmrc-api:
-      dev: "https://review-hc.dev.account.gov.uk"
-      build: "https://review-hc.build.account.gov.uk"
-      staging: "https://review-hc.staging.account.gov.uk"
-      integration: "https://review-hc.integration.account.gov.uk"
-      production: "https://review-hc.account.gov.uk"
-
-  CanaryDeploymentapigatewayidMapping:
-    di-ipv-cri-check-hmrc-api:
-      privateapigwname: "check-hmrc-cri-api-private"
-      publicapigwname: "check-hmrc-cri-api-public"
-    di-ipv-cri-address-api:
-      privateapigwname: "address-cri-api-v1-PrivateAddressApi"
-      publicapigwname: "address-cri-api-v1-PublicAddressApi"
-    di-ipv-cri-kbv-api:
-      privateapigwname: "kbv-cri-private-kbv-cri-api-v1"
-      publicapigwname: "kbv-cri-kbv-cri-api-v1"
-    di-ipv-cri-kbv-hmrc-api:
-      privateapigwname: "kbv-hmrc-cri-api-PrivateApiGatewayId-placehonder"
-      publicapigwname: "kbv-hmrc-cri-api-PublicApiGatewayId-placehonder"
-    di-ipv-cri-passport-api:
-      privateapigwname: "ipv-cri-passport-api-PrivateUKPassportApi"
-      publicapigwname: "ipv-cri-passport-api-PublicUKPassportApi"
-    di-ipv-cri-dl-api:
-      privateapigwname: "dl-cri-api-v1-PrivateDLApi"
-      publicapigwname: "dl-cri-api-v1-PublicDLApi"
-    di-ipv-cri-fraud-api:
-      privateapigwname: "fraud-cri-api-v1-PrivateFraudApi"
-      publicapigwname: "fraud-cri-api-v1-PublicFraudApi"
 
 Resources:
   SessionFn:
@@ -693,7 +261,7 @@ Resources:
         Type: !Ref LambdaDeploymentPreference
         Role: !GetAtt CodeDeployServiceRole.Arn
         Alarms: !If
-          - UseCanaryDeploymentAlarms
+          - IsCanaryDeployment
           - [!Ref SessionFnLambdaErrors, !Ref SessionFnCanary5xxErrors]
           - [!Ref AWS::NoValue]
       CodeUri: ../lambdas
@@ -713,28 +281,13 @@ Resources:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-sessionTS"
           SQS_AUDIT_EVENT_QUEUE_URL:
-            Fn::ImportValue: !Sub ${TxmaStackName}-AuditEventQueueUrl
+            Fn::ImportValue: !Sub ${AuditTxmaStackName}-AuditEventQueueUrl
           CRI_IDENTIFIER: !Sub "${CriIdentifier}"
-          ENV_VAR_FEATURE_FLAG_KEY_ROTATION:
-            !FindInMap [
-              KeyRotationMapping,
-              !Ref CriIdentifier,
-              !Ref Environment,
-            ]
-          ENV_VAR_FEATURE_FLAG_KEY_ROTATION_LEGACY_KEY_FALLBACK:
-            !FindInMap [
-              KeyRotationLegacyFallBackMapping,
-              !Ref CriIdentifier,
-              !Ref Environment,
-            ]
+          ENV_VAR_FEATURE_FLAG_KEY_ROTATION: !Ref KeyRotation 
+          ENV_VAR_FEATURE_FLAG_KEY_ROTATION_LEGACY_KEY_FALLBACK: !Ref KeyRotationFallback
           SESSION_TABLE: !Ref SessionTable
           PERSON_IDENTITY_TABLE: !Ref PersonIdentityTable
-          VC_ISSUER:
-            !FindInMap [
-              VerifiableCredentialIssuerMapping,
-              !Ref CriIdentifier,
-              !Ref Environment,
-            ]
+          VC_ISSUER: !Ref CriVcIssuer
       AutoPublishAlias: live
       AutoPublishAliasAllProperties: true
       Policies:
@@ -746,7 +299,7 @@ Resources:
             TableName: !Ref PersonIdentityTable
         - SQSSendMessagePolicy:
             QueueName:
-              Fn::ImportValue: !Sub ${TxmaStackName}-AuditEventQueueName
+              Fn::ImportValue: !Sub ${AuditTxmaStackName}-AuditEventQueueName
         - KMSDecryptPolicy:
             KeyId: !ImportValue core-infrastructure-CriDecryptionKey1Id
         - KMSDecryptPolicy:
@@ -769,15 +322,10 @@ Resources:
                 - "kms:Decrypt"
                 - "kms:GenerateDataKey"
               Resource:
-                Fn::ImportValue: !Sub ${TxmaStackName}-AuditEventQueueEncryptionKeyArn
+                Fn::ImportValue: !Sub ${AuditTxmaStackName}-AuditEventQueueEncryptionKeyArn
       ProvisionedConcurrencyConfig: !If
-        - AddProvisionedConcurrency
-        - ProvisionedConcurrentExecutions:
-            !FindInMap [
-              ProvisionedConcurrencyMapping,
-              !Ref CriIdentifier,
-              !Ref Environment,
-            ]
+        - IsProvisionedConcurrencyEnabled
+        - ProvisionedConcurrentExecutions: !Ref LambdaProvisionedConcurrentExecutions
         - !Ref AWS::NoValue
     Metadata: # Manage esbuild properties
       BuildMethod: esbuild
@@ -798,18 +346,29 @@ Resources:
 
   SessionFnLogGroupSubscriptionFilterCSLS:
     Type: AWS::Logs::SubscriptionFilter
-    Condition: IsCSLSDisabled
+    Condition: IsCSLSEnabled
     Properties:
-      DestinationArn: !If
-        - UseNewCSLSDestinationArn
-        - "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2"
-        - "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython"
+      DestinationArn: !Ref CSLSDestinationArn
       FilterPattern: ""
       LogGroupName: !Ref SessionFnLogGroup
 
+  SessionFnPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt SessionFn.Arn
+      Principal: apigateway.amazonaws.com
+
+  SessionFnAliasPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref SessionFn.Alias
+      Principal: apigateway.amazonaws.com
+
   SessionFnLambdaErrors:
     Type: AWS::CloudWatch::Alarm
-    Condition: UseCanaryDeploymentAlarms
+    Condition: IsCanaryDeployment
     Properties:
       AlarmName: !Sub "${AWS::StackName}-SessionFunctionLambdaErrors"
       AlarmDescription: !Sub "Trigger an alarm when lambda errors occurs"
@@ -835,7 +394,7 @@ Resources:
 
   SessionFnCanary5xxErrors:
     Type: AWS::CloudWatch::Alarm
-    Condition: UseCanaryDeploymentAlarms
+    Condition: IsCanaryDeployment
     Properties:
       ActionsEnabled: true
       AlarmActions:
@@ -850,12 +409,7 @@ Resources:
         - Name: Method
           Value: POST
         - Name: ApiName
-          Value:
-            !FindInMap [
-              CanaryDeploymentapigatewayidMapping,
-              !Ref CriIdentifier,
-              privateapigwname,
-            ]
+          Value: !Ref CriPrivateApiGwName
         - Name: Stage
           Value: !Ref Environment
         - Name: Resource
@@ -876,7 +430,7 @@ Resources:
         Type: !Ref LambdaDeploymentPreference
         Role: !GetAtt CodeDeployServiceRole.Arn
         Alarms: !If
-          - UseCanaryDeploymentAlarms
+          - IsCanaryDeployment
           - [
               !Ref AuthorizationFnLambdaErrors,
               !Ref AuthorizationFnCanary5xxErrors,
@@ -913,13 +467,8 @@ Resources:
         - SSMParameterReadPolicy:
             ParameterName: !Sub "${AWS::StackName}/clients/*"
       ProvisionedConcurrencyConfig: !If
-        - AddProvisionedConcurrency
-        - ProvisionedConcurrentExecutions:
-            !FindInMap [
-              ProvisionedConcurrencyMapping,
-              !Ref CriIdentifier,
-              !Ref Environment,
-            ]
+        - IsProvisionedConcurrencyEnabled
+        - ProvisionedConcurrentExecutions: !Ref LambdaProvisionedConcurrentExecutions
         - !Ref AWS::NoValue
     Metadata: # Manage esbuild properties
       BuildMethod: esbuild
@@ -940,18 +489,29 @@ Resources:
 
   AuthorizationFnLogGroupSubscriptionFilterCSLS:
     Type: AWS::Logs::SubscriptionFilter
-    Condition: IsCSLSDisabled
+    Condition: IsCSLSEnabled
     Properties:
-      DestinationArn: !If
-        - UseNewCSLSDestinationArn
-        - "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2"
-        - "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython"
+      DestinationArn: !Ref CSLSDestinationArn
       FilterPattern: ""
       LogGroupName: !Ref AuthorizationFnLogGroup
 
+  AuthorizationFnPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt AuthorizationFn.Arn
+      Principal: apigateway.amazonaws.com
+
+  AuthorizationFnAliasPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref AuthorizationFn.Alias
+      Principal: apigateway.amazonaws.com
+
   AuthorizationFnLambdaErrors:
     Type: AWS::CloudWatch::Alarm
-    Condition: UseCanaryDeploymentAlarms
+    Condition: IsCanaryDeployment
     Properties:
       AlarmName: !Sub "${AWS::StackName}-AuthorizationFunctionLambdaErrors"
       AlarmDescription: !Sub "Trigger an alarm when lambda errors occurs"
@@ -977,7 +537,7 @@ Resources:
 
   AuthorizationFnCanary5xxErrors:
     Type: AWS::CloudWatch::Alarm
-    Condition: UseCanaryDeploymentAlarms
+    Condition: IsCanaryDeployment
     Properties:
       ActionsEnabled: true
       AlarmActions:
@@ -992,12 +552,7 @@ Resources:
         - Name: Method
           Value: GET
         - Name: ApiName
-          Value:
-            !FindInMap [
-              CanaryDeploymentapigatewayidMapping,
-              !Ref CriIdentifier,
-              privateapigwname,
-            ]
+          Value: !Ref CriPrivateApiGwName
         - Name: Stage
           Value: !Ref Environment
         - Name: Resource
@@ -1018,7 +573,7 @@ Resources:
         Type: !Ref LambdaDeploymentPreference
         Role: !GetAtt CodeDeployServiceRole.Arn
         Alarms: !If
-          - UseCanaryDeploymentAlarms
+          - IsCanaryDeployment
           - [!Ref AccessTokenFnLambdaErrors, !Ref AccessTokenFnCanary5xxErrors]
           - [!Ref AWS::NoValue]
       Handler: access-token-handler.lambdaHandler
@@ -1059,13 +614,8 @@ Resources:
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/SessionTtl"
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/clients/*"
       ProvisionedConcurrencyConfig: !If
-        - AddProvisionedConcurrency
-        - ProvisionedConcurrentExecutions:
-            !FindInMap [
-              ProvisionedConcurrencyMapping,
-              !Ref CriIdentifier,
-              !Ref Environment,
-            ]
+        - IsProvisionedConcurrencyEnabled
+        - ProvisionedConcurrentExecutions: !Ref LambdaProvisionedConcurrentExecutions
         - !Ref AWS::NoValue
     Metadata: # Manage esbuild properties
       BuildMethod: esbuild
@@ -1084,6 +634,14 @@ Resources:
       LogGroupName: !Sub "/aws/lambda/${AccessTokenFn}"
       RetentionInDays: 30
 
+  AccessTokenFnLogGroupSubscriptionFilterCSLS:
+    Type: AWS::Logs::SubscriptionFilter
+    Condition: IsCSLSEnabled
+    Properties:
+      DestinationArn: !Ref CSLSDestinationArn
+      FilterPattern: ""
+      LogGroupName: !Ref AccessTokenFnLogGroup
+
   AccessTokenPermission:
     Type: AWS::Lambda::Permission
     Properties:
@@ -1098,20 +656,9 @@ Resources:
       FunctionName: !Ref AccessTokenFn.Alias
       Principal: apigateway.amazonaws.com
 
-  AccessTokenFnLogGroupSubscriptionFilterCSLS:
-    Type: AWS::Logs::SubscriptionFilter
-    Condition: IsCSLSDisabled
-    Properties:
-      DestinationArn: !If
-        - UseNewCSLSDestinationArn
-        - "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2"
-        - "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython"
-      FilterPattern: ""
-      LogGroupName: !Ref AccessTokenFnLogGroup
-
   AccessTokenFnLambdaErrors:
     Type: AWS::CloudWatch::Alarm
-    Condition: UseCanaryDeploymentAlarms
+    Condition: IsCanaryDeployment
     Properties:
       AlarmName: !Sub "${AWS::StackName}-AccessTokenFunctionLambdaErrors"
       AlarmDescription: !Sub "Trigger an alarm when lambda errors occurs"
@@ -1137,7 +684,7 @@ Resources:
 
   AccessTokenFnCanary5xxErrors:
     Type: AWS::CloudWatch::Alarm
-    Condition: UseCanaryDeploymentAlarms
+    Condition: IsCanaryDeployment
     Properties:
       ActionsEnabled: true
       AlarmActions:
@@ -1152,12 +699,7 @@ Resources:
         - Name: Method
           Value: POST
         - Name: ApiName
-          Value:
-            !FindInMap [
-              CanaryDeploymentapigatewayidMapping,
-              !Ref CriIdentifier,
-              publicapigwname,
-            ]
+          Value: !Ref CriPublicApiGwName
         - Name: Stage
           Value: !Ref Environment
         - Name: Resource
@@ -1169,6 +711,60 @@ Resources:
       Threshold: 2
       ComparisonOperator: GreaterThanOrEqualToThreshold
       TreatMissingData: notBreaching
+
+  CreateAuthCodeFn:
+    Type: AWS::Serverless::Function
+    Condition: IsDev
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-CreateAuthCodeFn"
+      CodeUri: ../lambdas
+      Handler: create-auth-code-handler.lambdaHandler
+      Runtime: nodejs22.x
+      Layers:
+        - arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_313_2_20250404-043044_with_collector_nodejs:1
+      VpcConfig:
+        SubnetIds: !If
+          - IsDevPlatformDeploy
+          - [
+              !ImportValue cri-vpc-PrivateSubnetIdA,
+              !ImportValue cri-vpc-PrivateSubnetIdB,
+            ]
+          - !Split [",", !ImportValue cri-vpc-PrivateSubnets]
+      Environment:
+        Variables:
+          POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-create-auth-code"
+          SESSION_TABLE: !Ref SessionTable
+      Policies:
+        - DynamoDBWritePolicy:
+            TableName:
+              Ref: SessionTable
+        - KMSDecryptPolicy:
+            KeyId: !Ref DynamoTablesEncryptionKey
+        - Statement:
+            - Effect: Allow
+              Action:
+                - ssm:GetParameters
+              Resource:
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/SessionTableName"
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/clients/*"
+    Metadata: # Manage esbuild properties
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: "node18"
+        Sourcemap: true # Enabling source maps will create the required NODE_OPTIONS environment variables on your lambda function during sam build
+        EntryPoints:
+          - src/handlers/create-auth-code-handler.ts
+        External:
+          - "@aws-sdk/*"
+
+  CreateAuthCodeFnPermission:
+    Type: AWS::Lambda::Permission
+    Condition: IsDev
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt CreateAuthCodeFn.Arn
+      Principal: apigateway.amazonaws.com
 
   DynamoTablesEncryptionKey:
     Type: AWS::KMS::Key
@@ -1200,14 +796,6 @@ Resources:
                 "kms:ViaService":
                   - "dynamodb.amazonaws.com"
                   - !Sub "lambda.${AWS::Region}.amazonaws.com"
-
-  DynamoDBCustomerManagedKeyIDParameter:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/DynamoDBCustomerManagedKeyID"
-      Type: String
-      Value: !Ref DynamoTablesEncryptionKey
-      Description: DynamoDB customer managed key ID to be consumed by CRI stacks
 
   SessionTable:
     Type: "AWS::DynamoDB::Table"
@@ -1261,7 +849,7 @@ Resources:
         AttributeName: expiryDate
         Enabled: true
       SSESpecification: !If
-        - UseCustomerManagedKey
+        - IsCustomerManagedKeyEnabled
         - KMSMasterKeyId: !Ref DynamoTablesEncryptionKey
           SSEEnabled: true
           SSEType: KMS
@@ -1284,498 +872,11 @@ Resources:
         AttributeName: expiryDate
         Enabled: true
       SSESpecification: !If
-        - UseCustomerManagedKey
+        - IsCustomerManagedKeyEnabled
         - KMSMasterKeyId: !Ref DynamoTablesEncryptionKey
           SSEEnabled: true
           SSEType: KMS
         - !Ref "AWS::NoValue"
-
-  ParameterSessionTableName:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/SessionTableName"
-      Value: !Sub session-${AWS::StackName}
-      Type: String
-      Description: session dynamodb table name
-
-  ParameterPersonIdentityTableName:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/PersonIdentityTableName"
-      Value: !Sub person-identity-${AWS::StackName}
-      Type: String
-      Description: person identity dynamodb table name
-
-  SessionTtlParameter:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/SessionTtl"
-      Type: String
-      Value: !FindInMap [SessionTtlMapping, Environment, !Ref "Environment"]
-      Description: default time to live for a session item (seconds)
-
-  IPVCoreStubAwsProdAuthenticationAlgParameter:
-    Condition: IsStubEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod/jwtAuthentication/authenticationAlg"
-      Type: String
-      Value: ES256
-
-  IPVCoreStubAwsBuildAuthenticationAlgParameter:
-    Condition: IsStubEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build/jwtAuthentication/authenticationAlg"
-      Type: String
-      Value: ES256
-
-  IPVCoreStubAuthenticationAlgParameter:
-    Condition: IsStubEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub/jwtAuthentication/authenticationAlg"
-      Type: String
-      Value: ES256
-
-  IPVCoreStubPreProdAwsBuildAuthenticationAlgParameter:
-    Condition: IsProdLikeEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod-aws-build/jwtAuthentication/authenticationAlg"
-      Type: String
-      Value: ES256
-
-  IPVCoreStubPreProdAuthenticationAlgParameter:
-    Condition: IsProdLikeEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod/jwtAuthentication/authenticationAlg"
-      Type: String
-      Value: ES256
-
-  IPVCore1AuthenticationAlgParameter:
-    Condition: IsProdLikeEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core/jwtAuthentication/authenticationAlg"
-      Type: String
-      Value: ES256
-
-  IPVCoreStubAwsProdAudienceParameter:
-    Condition: IsStubEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod/jwtAuthentication/audience"
-      Type: String
-      Value:
-        !FindInMap [CriAudienceMapping, !Ref CriIdentifier, !Ref Environment]
-
-  IPVCoreStubAwsBuildAudienceParameter:
-    Condition: IsStubEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build/jwtAuthentication/audience"
-      Type: String
-      Value:
-        !FindInMap [CriAudienceMapping, !Ref CriIdentifier, !Ref Environment]
-
-  IPVCoreStubAudienceParameter:
-    Condition: IsStubEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub/jwtAuthentication/audience"
-      Type: String
-      Value:
-        !FindInMap [CriAudienceMapping, !Ref CriIdentifier, !Ref Environment]
-
-  IPVCoreStubPreProdAwsBuildAudienceParameter:
-    Condition: IsProdEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod-aws-build/jwtAuthentication/audience"
-      Type: String
-      Value:
-        !FindInMap [CriAudienceMapping, !Ref CriIdentifier, !Ref Environment]
-
-  IPVCoreStubPreProdAudienceParameter:
-    Condition: IsProdEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod/jwtAuthentication/audience"
-      Type: String
-      Value:
-        !FindInMap [CriAudienceMapping, !Ref CriIdentifier, !Ref Environment]
-
-  IPVCore1AudienceParameter:
-    Condition: IsProdLikeEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core/jwtAuthentication/audience"
-      Type: String
-      Value:
-        !FindInMap [CriAudienceMapping, !Ref CriIdentifier, !Ref Environment]
-
-  IPVCoreStubAwsProdIssuerParameter:
-    Condition: IsStubEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod/jwtAuthentication/issuer"
-      Type: String
-      Value:
-        !FindInMap [
-          IPVCoreStubAwsProdIssuerMapping,
-          Environment,
-          !Ref "Environment",
-        ]
-
-  IPVCoreStubAwsBuildIssuerParameter:
-    Condition: IsStubEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build/jwtAuthentication/issuer"
-      Type: String
-      Value:
-        !FindInMap [
-          IPVCoreStubAwsBuildIssuerMapping,
-          Environment,
-          !Ref "Environment",
-        ]
-
-  IPVCoreStubIssuerParameter:
-    Condition: IsStubEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub/jwtAuthentication/issuer"
-      Type: String
-      Value:
-        !FindInMap [IPVCoreStubIssuerMapping, Environment, !Ref "Environment"]
-
-  IPVCoreStubPreProdAwsBuildIssuerParameter:
-    Condition: IsProdEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod-aws-build/jwtAuthentication/issuer"
-      Type: String
-      Value:
-        !FindInMap [
-          IPVCoreStubPreProdAwsBuildIssuerMapping,
-          Environment,
-          !Ref "Environment",
-        ]
-
-  IPVCoreStubPreProdIssuerParameter:
-    Condition: IsProdEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod/jwtAuthentication/issuer"
-      Type: String
-      Value:
-        !FindInMap [
-          IPVCoreStubPreProdIssuerMapping,
-          Environment,
-          !Ref "Environment",
-        ]
-
-  IPVCore1IssuerParameter:
-    Condition: IsProdLikeEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core/jwtAuthentication/issuer"
-      Type: String
-      Value: !FindInMap [IPVCore1IssuerMapping, Environment, !Ref "Environment"]
-
-  IPVCoreStubAwsProdPublicSigningJwkBase64Parameter:
-    Condition: IsStubEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod/jwtAuthentication/publicSigningJwkBase64"
-      Type: String
-      Value:
-        !FindInMap [
-          IPVCoreStubAwsBuildPublicSigningJwkBase64Mapping,
-          Environment,
-          !Ref "Environment",
-        ]
-
-  IPVCoreStubAwsBuildPublicSigningJwkBase64Parameter:
-    Condition: IsStubEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build/jwtAuthentication/publicSigningJwkBase64"
-      Type: String
-      Value:
-        !FindInMap [
-          IPVCoreStubAwsBuildPublicSigningJwkBase64Mapping,
-          Environment,
-          !Ref "Environment",
-        ]
-
-  IPVCoreStubPublicSigningJwkBase64Parameter:
-    Condition: IsStubEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub/jwtAuthentication/publicSigningJwkBase64"
-      Type: String
-      Value:
-        !FindInMap [
-          IPVCoreStubPublicSigningJwkBase64Mapping,
-          Environment,
-          !Ref "Environment",
-        ]
-
-  IPVCoreStubPreProdAwsBuildPublicSigningJwkBase64Parameter:
-    Condition: IsProdEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod-aws-build/jwtAuthentication/publicSigningJwkBase64"
-      Type: String
-      Value:
-        !FindInMap [
-          IPVCoreStubPreProdAwsBuildPublicSigningJwkBase64Mapping,
-          Environment,
-          !Ref "Environment",
-        ]
-
-  IPVCoreStubPreProdPublicSigningJwkBase64Parameter:
-    Condition: IsProdEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod/jwtAuthentication/publicSigningJwkBase64"
-      Type: String
-      Value:
-        !FindInMap [
-          IPVCoreStubPreProdPublicSigningJwkBase64Mapping,
-          Environment,
-          !Ref "Environment",
-        ]
-
-  IPVCore1PublicSigningJwkBase64Parameter:
-    Condition: IsProdLikeEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core/jwtAuthentication/publicSigningJwkBase64"
-      Type: String
-      Value:
-        !FindInMap [
-          IPVCore1PublicSigningJwkBase64Mapping,
-          Environment,
-          !Ref "Environment",
-        ]
-
-  IPVCoreStubAwsProdRedirectURIParameter:
-    Condition: IsStubEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod/jwtAuthentication/redirectUri"
-      Type: String
-      Value:
-        !FindInMap [
-          IPVCoreStubAwsProdRedirectURIMapping,
-          Environment,
-          !Ref "Environment",
-        ]
-
-  IPVCoreStubAwsBuildRedirectURIParameter:
-    Condition: IsStubEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build/jwtAuthentication/redirectUri"
-      Type: String
-      Value:
-        !FindInMap [
-          IPVCoreStubAwsBuildRedirectURIMapping,
-          Environment,
-          !Ref "Environment",
-        ]
-
-  IPVCoreStubRedirectURIParameter:
-    Condition: IsStubEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub/jwtAuthentication/redirectUri"
-      Type: String
-      Value:
-        !FindInMap [
-          IPVCoreStubRedirectURIMapping,
-          Environment,
-          !Ref "Environment",
-        ]
-
-  IPVCoreStubPreProdAwsBuildRedirectURIParameter:
-    Condition: IsProdEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod-aws-build/jwtAuthentication/redirectUri"
-      Type: String
-      Value:
-        !FindInMap [
-          IPVCoreStubPreProdAwsBuildRedirectURIMapping,
-          Environment,
-          !Ref "Environment",
-        ]
-
-  IPVCoreStubPreProdRedirectURIParameter:
-    Condition: IsProdEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod/jwtAuthentication/redirectUri"
-      Type: String
-      Value:
-        !FindInMap [
-          IPVCoreStubPreProdRedirectURIMapping,
-          Environment,
-          !Ref "Environment",
-        ]
-
-  IPVCore1RedirectURIParameter:
-    Condition: IsProdLikeEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core/jwtAuthentication/redirectUri"
-      Type: String
-      Value:
-        !FindInMap [
-          IPVCore1RedirectURIMapping,
-          !Ref CriIdentifier,
-          !Ref Environment,
-        ]
-
-  IPVCoreStubAWSProdJwksEndpointParameter:
-    Condition: IsStubEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod/jwtAuthentication/jwksEndpoint"
-      Type: String
-      Value: !FindInMap [StubJwksEndpoint, !Ref CriIdentifier, !Ref Environment]
-
-  IPVCoreStubAWSBuildJwksEndpointParameter:
-    Condition: IsStubEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build/jwtAuthentication/jwksEndpoint"
-      Type: String
-      Value: !FindInMap [StubJwksEndpoint, !Ref CriIdentifier, !Ref Environment]
-
-  IPVCoreStubJwksEndpointParameter:
-    Condition: IsStubEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub/jwtAuthentication/jwksEndpoint"
-      Type: String
-      Value: !FindInMap [StubJwksEndpoint, !Ref CriIdentifier, !Ref Environment]
-
-  IPVCoreStubPreProdAWSBuildJwksEndpointParameter:
-    Condition: IsStubEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod-aws-build/jwtAuthentication/jwksEndpoint"
-      Type: String
-      Value: !FindInMap [StubJwksEndpoint, !Ref CriIdentifier, !Ref Environment]
-
-  IPVCoreStubPreProdJwksEndpointParameter:
-    Condition: IsStubEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod/jwtAuthentication/jwksEndpoint"
-      Type: String
-      Value: !FindInMap [StubJwksEndpoint, !Ref CriIdentifier, !Ref Environment]
-
-  IPVCoreStubAWSHeadlessJwksEndpointParameter:
-    Condition: IsStubEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-headless/jwtAuthentication/jwksEndpoint"
-      Type: String
-      Value: !FindInMap [StubJwksEndpoint, !Ref CriIdentifier, !Ref Environment]
-
-  IPVCoreStubAWSProdThirdPartyJwksEndpointParameter:
-    Condition: IsStubEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod_3rdparty/jwtAuthentication/jwksEndpoint"
-      Type: String
-      Value: !FindInMap [StubJwksEndpoint, !Ref CriIdentifier, !Ref Environment]
-
-  IPVCoreStubAWSBuildThirdPartyJwksEndpointParameter:
-    Condition: IsStubEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build_3rdparty/jwtAuthentication/jwksEndpoint"
-      Type: String
-      Value: !FindInMap [StubJwksEndpoint, !Ref CriIdentifier, !Ref Environment]
-
-  IPVCoreThirdPartyStubsJwksEndpointParameter:
-    Condition: IsStubEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-3rd-party-stubs/jwtAuthentication/jwksEndpoint"
-      Type: String
-      Value: !FindInMap [CoreJwksEndpoint, Environment, !Ref Environment]
-
-  IPVCoreJwksEndpointParameter:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core/jwtAuthentication/jwksEndpoint"
-      Type: String
-      Value: !FindInMap [CoreJwksEndpoint, Environment, !Ref Environment]
-
-  AuthRequestKmsEncryptionKeyIdParameter:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/AuthRequestKmsEncryptionKeyId"
-      Type: String
-      Value: !ImportValue core-infrastructure-CriDecryptionKey1Id
-      Description: The (KMS) encryption key identifier for decrypting authorisation requests
-
-  VerifiableCredentialIssuerParameter:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/verifiable-credential/issuer"
-      Type: String
-      Value:
-        !FindInMap [
-          VerifiableCredentialIssuerMapping,
-          !Ref CriIdentifier,
-          !Ref Environment,
-        ]
-      Description: Issuer of the Verifiable Credential
-
-  VerifiableCredentialKmsSigningKeyParameter:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/verifiableCredentialKmsSigningKeyId"
-      Type: String
-      Value: !ImportValue core-infrastructure-CriVcSigningKey1Id
-      Description: Verifiable Credential Key Id
-
-  SessionFnPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      Action: lambda:InvokeFunction
-      FunctionName: !GetAtt SessionFn.Arn
-      Principal: apigateway.amazonaws.com
-
-  SessionFnAliasPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      Action: lambda:InvokeFunction
-      FunctionName: !Ref SessionFn.Alias
-      Principal: apigateway.amazonaws.com
-
-  AuthorizationFnPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      Action: lambda:InvokeFunction
-      FunctionName: !GetAtt AuthorizationFn.Arn
-      Principal: apigateway.amazonaws.com
-
-  AuthorizationFnAliasPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      Action: lambda:InvokeFunction
-      FunctionName: !Ref AuthorizationFn.Alias
-      Principal: apigateway.amazonaws.com
 
   LoggingKmsKey:
     Type: AWS::KMS::Key
@@ -1804,267 +905,6 @@ Resources:
               ArnLike:
                 "kms:EncryptionContext:aws:logs:arn": !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*"
 
-  CreateAuthCodeFn:
-    Type: AWS::Serverless::Function
-    Condition: IsDevEnvironment
-    Properties:
-      FunctionName: !Sub "${AWS::StackName}-CreateAuthCodeFn"
-      CodeUri: ../lambdas
-      Handler: create-auth-code-handler.lambdaHandler
-      Runtime: nodejs22.x
-      Layers:
-        - arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_313_2_20250404-043044_with_collector_nodejs:1
-      VpcConfig:
-        SubnetIds: !If
-          - IsDevPlatformDeploy
-          - [
-              !ImportValue cri-vpc-PrivateSubnetIdA,
-              !ImportValue cri-vpc-PrivateSubnetIdB,
-            ]
-          - !Split [",", !ImportValue cri-vpc-PrivateSubnets]
-      Environment:
-        Variables:
-          POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-create-auth-code"
-          SESSION_TABLE: !Ref SessionTable
-      Policies:
-        - DynamoDBWritePolicy:
-            TableName:
-              Ref: SessionTable
-        - KMSDecryptPolicy:
-            KeyId: !Ref DynamoTablesEncryptionKey
-        - Statement:
-            - Effect: Allow
-              Action:
-                - ssm:GetParameters
-              Resource:
-                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/SessionTableName"
-                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/clients/*"
-    Metadata: # Manage esbuild properties
-      BuildMethod: esbuild
-      BuildProperties:
-        Minify: true
-        Target: "node18"
-        Sourcemap: true # Enabling source maps will create the required NODE_OPTIONS environment variables on your lambda function during sam build
-        EntryPoints:
-          - src/handlers/create-auth-code-handler.ts
-        External:
-          - "@aws-sdk/*"
-
-  CreateAuthCodeFnPermission:
-    Type: AWS::Lambda::Permission
-    Condition: IsDevEnvironment
-    Properties:
-      Action: lambda:InvokeFunction
-      FunctionName: !GetAtt CreateAuthCodeFn.Arn
-      Principal: apigateway.amazonaws.com
-
-  ##################################################################################################
-  # ipv-core-3rd-party-stubs clientId configuration (real ipv-core + real cri's + 3rd-party-stubs Only Staging)
-  #################################################################################################
-  IPVCore3rdPartyStubsAudienceParameter:
-    Condition: IsIpvCore3rdPartyStubEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-3rd-party-stubs/jwtAuthentication/audience"
-      Type: String
-      Value:
-        !FindInMap [CriAudienceMapping, !Ref CriIdentifier, !Ref Environment]
-
-  IPVCore3rdPartyStubsPublicSigningJwkBase64Parameter:
-    Condition: IsIpvCore3rdPartyStubEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-3rd-party-stubs/jwtAuthentication/publicSigningJwkBase64"
-      Type: String
-      Value:
-        !FindInMap [
-          IPVCore1PublicSigningJwkBase64Mapping,
-          Environment,
-          !Ref "Environment",
-        ]
-
-  IPVCore3rdPartyStubsIssuerParameter:
-    Condition: IsIpvCore3rdPartyStubEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-3rd-party-stubs/jwtAuthentication/issuer"
-      Type: String
-      Value: !FindInMap [IPVCore1IssuerMapping, Environment, !Ref "Environment"]
-
-  IPVCore3rdPartyStubsRedirectURIParameter:
-    Condition: IsIpvCore3rdPartyStubEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-3rd-party-stubs/jwtAuthentication/redirectUri"
-      Type: String
-      Value:
-        !FindInMap [
-          IPVCore1RedirectURIMapping,
-          !Ref CriIdentifier,
-          !Ref Environment,
-        ]
-
-  IPVCore3rdPartyStubsAuthenticationAlgParameter:
-    Condition: IsIpvCore3rdPartyStubEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-3rd-party-stubs/jwtAuthentication/authenticationAlg"
-      Type: String
-      Value: ES256
-
-  ##################################################################################################
-  # ipv-core-stub-aws-headless clientId configuration
-  #################################################################################################
-  IPVCoreStubAwsHeadlessAudienceParameter:
-    Condition: IsStubEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-headless/jwtAuthentication/audience"
-      Type: String
-      Value:
-        !FindInMap [CriAudienceMapping, !Ref CriIdentifier, !Ref Environment]
-
-  IPVCoreStubAwsHeadlessPublicSigningJwkBase64Parameter:
-    Condition: IsStubEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-headless/jwtAuthentication/publicSigningJwkBase64"
-      Type: String
-      Value: "ewogICAgImt0eSI6ICJFQyIsCiAgICAidXNlIjogInNpZyIsCiAgICAiY3J2IjogIlAtMjU2IiwKICAgICJraWQiOiAiaXB2LWNvcmUtc3R1Yi0yLWZyb20tbWtqd2sub3JnIiwKICAgICJ4IjogImszOXVLYWNTdWtRQnJNWnJIRFRCVVpzbGl2cFhLRE5aVGc2aW5DSHdyTGMiLAogICAgInkiOiAiOEY4TG5RN3dHOWh4c1Q0YXgwQXR5N2lNR0l5aVlfWUdwM19xSVp6S28xQSIsCiAgICAiYWxnIjogIkVTMjU2Igp9"
-
-  IPVCoreStubAwsHeadlessIssuerParameter:
-    Condition: IsStubEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-headless/jwtAuthentication/issuer"
-      Type: String
-      Value: !Join
-        - ""
-        - - "https://test-resources."
-          - !Select
-            - 1
-            - !Split
-              - "https://"
-              - !FindInMap
-                - VerifiableCredentialIssuerMapping
-                - !Ref CriIdentifier
-                - !Ref Environment
-
-  IPVCoreStubAwsHeadlessRedirectURIParameter:
-    Condition: IsStubEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-headless/jwtAuthentication/redirectUri"
-      Type: String
-      Value: !Join
-        - ""
-        - - "https://test-resources."
-          - !Select
-            - 1
-            - !Split
-              - "https://"
-              - !FindInMap
-                - VerifiableCredentialIssuerMapping
-                - !Ref CriIdentifier
-                - !Ref Environment
-          - "/callback"
-
-  IPVCoreStubAwsHeadlessAuthenticationAlgParameter:
-    Condition: IsStubEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-headless/jwtAuthentication/authenticationAlg"
-      Type: String
-      Value: ES256
-
-  ##################################################################################################
-  # ipv-core-stub-aws-prod_3rdparty clientId configuration
-  #################################################################################################
-  IPVCoreStubAwsProd3rdPartyAudienceParameter:
-    Condition: IsStubEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod_3rdparty/jwtAuthentication/audience"
-      Type: String
-      Value:
-        !FindInMap [CriAudienceMapping, !Ref CriIdentifier, !Ref Environment]
-
-  IPVCoreStubAwsProd3rdPartyPublicSigningJwkBase64Parameter:
-    Condition: IsStubEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod_3rdparty/jwtAuthentication/publicSigningJwkBase64"
-      Type: String
-      Value: "ewogICAgImt0eSI6ICJFQyIsCiAgICAidXNlIjogInNpZyIsCiAgICAiY3J2IjogIlAtMjU2IiwKICAgICJraWQiOiAiaXB2LWNvcmUtc3R1Yi0yLWZyb20tbWtqd2sub3JnIiwKICAgICJ4IjogImszOXVLYWNTdWtRQnJNWnJIRFRCVVpzbGl2cFhLRE5aVGc2aW5DSHdyTGMiLAogICAgInkiOiAiOEY4TG5RN3dHOWh4c1Q0YXgwQXR5N2lNR0l5aVlfWUdwM19xSVp6S28xQSIsCiAgICAiYWxnIjogIkVTMjU2Igp9"
-
-  IPVCoreStubAwsProd3rdPartyIssuerParameter:
-    Condition: IsStubEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod_3rdparty/jwtAuthentication/issuer"
-      Type: String
-      Value: "https://cri-3rdparty.core.stubs.account.gov.uk"
-
-  IPVCoreStubAwsProd3rdPartyRedirectURIParameter:
-    Condition: IsStubEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod_3rdparty/jwtAuthentication/redirectUri"
-      Type: String
-      Value: "https://cri-3rdparty.core.stubs.account.gov.uk/callback"
-
-  IPVCoreStubAwsProd3rdPartyAuthenticationAlgParameter:
-    Condition: IsStubEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod_3rdparty/jwtAuthentication/authenticationAlg"
-      Type: String
-      Value: ES256
-
-  ##################################################################################################
-  # ipv-core-stub-aws-build_3rdparty clientId configuration
-  #################################################################################################
-  IPVCoreStubAwsBuild3rdPartyAudienceParameter:
-    Condition: IsStubEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build_3rdparty/jwtAuthentication/audience"
-      Type: String
-      Value:
-        !FindInMap [CriAudienceMapping, !Ref CriIdentifier, !Ref Environment]
-
-  IPVCoreStubAwsBuild3rdPartyPublicSigningJwkBase64Parameter:
-    Condition: IsStubEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build_3rdparty/jwtAuthentication/publicSigningJwkBase64"
-      Type: String
-      Value: "ewogICAgImt0eSI6ICJFQyIsCiAgICAidXNlIjogInNpZyIsCiAgICAiY3J2IjogIlAtMjU2IiwKICAgICJraWQiOiAiaXB2LWNvcmUtc3R1Yi0yLWZyb20tbWtqd2sub3JnIiwKICAgICJ4IjogImszOXVLYWNTdWtRQnJNWnJIRFRCVVpzbGl2cFhLRE5aVGc2aW5DSHdyTGMiLAogICAgInkiOiAiOEY4TG5RN3dHOWh4c1Q0YXgwQXR5N2lNR0l5aVlfWUdwM19xSVp6S28xQSIsCiAgICAiYWxnIjogIkVTMjU2Igp9"
-
-  IPVCoreStubAwsBuild3rdPartyIssuerParameter:
-    Condition: IsStubEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build_3rdparty/jwtAuthentication/issuer"
-      Type: String
-      Value: "https://cri-3rdparty.core.build.stubs.account.gov.uk"
-
-  IPVCoreStubAwsBuild3rdPartyRedirectURIParameter:
-    Condition: IsStubEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build_3rdparty/jwtAuthentication/redirectUri"
-      Type: String
-      Value: "https://cri-3rdparty.core.build.stubs.account.gov.uk/callback"
-
-  IPVCoreStubAwsBuild3rdPartyAuthenticationAlgParameter:
-    Condition: IsStubEnvironment
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build_3rdparty/jwtAuthentication/authenticationAlg"
-      Type: String
-      Value: ES256
-
   CodeDeployServiceRole:
     Type: AWS::IAM::Role
     Properties:
@@ -2081,14 +921,475 @@ Resources:
         - arn:aws:iam::aws:policy/service-role/AWSCodeDeployRoleForLambda
       PermissionsBoundary:
         !If [
-          UsePermissionsBoundary,
-          !Ref PermissionsBoundary,
+          IsPermissionsBoundaryEnabled,
+          !Ref PermissionsBoundaryArn,
           !Ref AWS::NoValue,
         ]
 
+  SessionTTLParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/SessionTtl"
+      Type: String
+      Value: !Ref DbSessionTTL
+      Description: default time to live for a session item (seconds)
+
+  SessionTableNameParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/SessionTableName"
+      Value: !Sub session-${AWS::StackName}
+      Type: String
+      Description: session dynamodb table name
+
+  AuthRequestKmsEncryptionKeyIdParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/AuthRequestKmsEncryptionKeyId"
+      Type: String
+      Value: !ImportValue core-infrastructure-CriDecryptionKey1Id
+      Description: The (KMS) encryption key identifier for decrypting authorisation requests
+
+  VerifiableCredentialIssuerParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/verifiable-credential/issuer"
+      Type: String
+      Value: !Ref CriVcIssuer
+      Description: Issuer of the Verifiable Credential
+
+  VerifiableCredentialKmsSigningKeyParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/verifiableCredentialKmsSigningKeyId"
+      Type: String
+      Value: !ImportValue core-infrastructure-CriVcSigningKey1Id
+      Description: Verifiable Credential Key Id
+
+  # ===========================
+  # region - clients ssm params
+  # ===========================
+  IPVCoreStubAwsProdAuthenticationAlgParameter:
+    Condition: IsNotProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod/jwtAuthentication/authenticationAlg"
+      Type: String
+      Value: ES256
+
+  IPVCoreStubAwsBuildAuthenticationAlgParameter:
+    Condition: IsNotProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build/jwtAuthentication/authenticationAlg"
+      Type: String
+      Value: ES256
+
+  IPVCoreStubAuthenticationAlgParameter:
+    Condition: IsNotProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub/jwtAuthentication/authenticationAlg"
+      Type: String
+      Value: ES256
+
+  IPVCoreStubPreProdAwsBuildAuthenticationAlgParameter:
+    Condition: IsStagingIntegrationOrProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod-aws-build/jwtAuthentication/authenticationAlg"
+      Type: String
+      Value: ES256
+
+  IPVCoreStubPreProdAuthenticationAlgParameter:
+    Condition: IsStagingIntegrationOrProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod/jwtAuthentication/authenticationAlg"
+      Type: String
+      Value: ES256
+
+  IPVCoreAuthenticationAlgParameter:
+    Condition: IsStagingIntegrationOrProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core/jwtAuthentication/authenticationAlg"
+      Type: String
+      Value: ES256
+
+  IPVCoreStubAwsProdAudienceParameter:
+    Condition: IsNotProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod/jwtAuthentication/audience"
+      Type: String
+      Value: !Ref CriAudience
+
+  IPVCoreStubAwsBuildAudienceParameter:
+    Condition: IsNotProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build/jwtAuthentication/audience"
+      Type: String
+      Value: !Ref CriAudience
+
+  IPVCoreStubAudienceParameter:
+    Condition: IsNotProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub/jwtAuthentication/audience"
+      Type: String
+      Value: !Ref CriAudience
+
+  IPVCoreStubPreProdAwsBuildAudienceParameter:
+    Condition: IsProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod-aws-build/jwtAuthentication/audience"
+      Type: String
+      Value: !Ref CriAudience
+
+  IPVCoreStubPreProdAudienceParameter:
+    Condition: IsProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod/jwtAuthentication/audience"
+      Type: String
+      Value: !Ref CriAudience
+
+  IPVCoreAudienceParameter:
+    Condition: IsStagingIntegrationOrProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core/jwtAuthentication/audience"
+      Type: String
+      Value: !Ref CriAudience
+
+  IPVCoreStubAwsProdIssuerParameter:
+    Condition: IsNotProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod/jwtAuthentication/issuer"
+      Type: String
+      Value: "https://cri.core.stubs.account.gov.uk"
+
+  IPVCoreStubAwsBuildIssuerParameter:
+    Condition: IsNotProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build/jwtAuthentication/issuer"
+      Type: String
+      Value: "https://cri.core.build.stubs.account.gov.uk"
+
+  IPVCoreStubIssuerParameter:
+    Condition: IsNotProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub/jwtAuthentication/issuer"
+      Type: String
+      Value: "https://di-ipv-core-stub.london.cloudapps.digital"
+
+  IPVCoreStubPreProdAwsBuildIssuerParameter:
+    Condition: IsProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod-aws-build/jwtAuthentication/issuer"
+      Type: String
+      Value: "https://cri-preprod.core.build.stubs.account.gov.uk"
+
+  IPVCoreStubPreProdIssuerParameter:
+    Condition: IsProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod/jwtAuthentication/issuer"
+      Type: String
+      Value: "https://cri-preprod.core.stubs.account.gov.uk"
+
+  IPVCoreIssuerParameter:
+    Condition: IsStagingIntegrationOrProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core/jwtAuthentication/issuer"
+      Type: String
+      Value: !FindInMap [EnvConfig, !Ref "Environment", IPVCoreIssuer]
+
+  IPVCoreStubAwsProdRedirectURIParameter:
+    Condition: IsNotProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod/jwtAuthentication/redirectUri"
+      Type: String
+      Value: "https://cri.core.stubs.account.gov.uk/callback"
+
+  IPVCoreStubAwsBuildRedirectURIParameter:
+    Condition: IsNotProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build/jwtAuthentication/redirectUri"
+      Type: String
+      Value: "https://cri.core.build.stubs.account.gov.uk/callback"
+
+  IPVCoreStubRedirectURIParameter:
+    Condition: IsNotProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub/jwtAuthentication/redirectUri"
+      Type: String
+      Value: "https://di-ipv-core-stub.london.cloudapps.digital/callback"
+
+  IPVCoreStubPreProdAwsBuildRedirectURIParameter:
+    Condition: IsProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod-aws-build/jwtAuthentication/redirectUri"
+      Type: String
+      Value: "https://cri-preprod.core.build.stubs.account.gov.uk/callback"
+
+  IPVCoreStubPreProdRedirectURIParameter:
+    Condition: IsProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod/jwtAuthentication/redirectUri"
+      Type: String
+      Value: "https://cri-preprod.core.stubs.account.gov.uk/callback"
+
+  IPVCoreRedirectURIParameter:
+    Condition: IsStagingIntegrationOrProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core/jwtAuthentication/redirectUri"
+      Type: String
+      Value: !Ref IPVCoreRedirectURI
+
+  IPVCoreStubAWSProdJwksEndpointParameter:
+    Condition: IsNotProdAndIsStubJwksPresent
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod/jwtAuthentication/jwksEndpoint"
+      Type: String
+      Value: !Ref IPVCoreStubJwksEndpoint
+
+  IPVCoreStubAWSBuildJwksEndpointParameter:
+    Condition: IsNotProdAndIsStubJwksPresent
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build/jwtAuthentication/jwksEndpoint"
+      Type: String
+      Value: !Ref IPVCoreStubJwksEndpoint
+
+  IPVCoreIPVCoreStubJwksEndpointParameter:
+    Condition: IsNotProdAndIsStubJwksPresent
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub/jwtAuthentication/jwksEndpoint"
+      Type: String
+      Value: !Ref IPVCoreStubJwksEndpoint
+
+  IPVCoreStubPreProdAWSBuildJwksEndpointParameter:
+    Condition: IsNotProdAndIsStubJwksPresent
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod-aws-build/jwtAuthentication/jwksEndpoint"
+      Type: String
+      Value: !Ref IPVCoreStubJwksEndpoint
+
+  IPVCoreStubPreProdJwksEndpointParameter:
+    Condition: IsNotProdAndIsStubJwksPresent
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod/jwtAuthentication/jwksEndpoint"
+      Type: String
+      Value: !Ref IPVCoreStubJwksEndpoint
+
+  IPVCoreStubAWSHeadlessJwksEndpointParameter:
+    Condition: IsNotProdAndIsStubJwksPresent
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-headless/jwtAuthentication/jwksEndpoint"
+      Type: String
+      Value: !Ref IPVCoreStubJwksEndpoint
+
+  IPVCoreStubAWSProdThirdPartyJwksEndpointParameter:
+    Condition: IsNotProdAndIsStubJwksPresent
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod_3rdparty/jwtAuthentication/jwksEndpoint"
+      Type: String
+      Value: !Ref IPVCoreStubJwksEndpoint
+
+  IPVCoreStubAWSBuildThirdPartyJwksEndpointParameter:
+    Condition: IsNotProdAndIsStubJwksPresent
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build_3rdparty/jwtAuthentication/jwksEndpoint"
+      Type: String
+      Value: !Ref IPVCoreStubJwksEndpoint
+
+  IPVCoreThirdPartyStubsJwksEndpointParameter:
+    Condition: IsNotProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-3rd-party-stubs/jwtAuthentication/jwksEndpoint"
+      Type: String
+      Value: !FindInMap [EnvConfig, !Ref Environment, CoreJwksEndpoint]
+
+  IPVCoreJwksEndpointParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core/jwtAuthentication/jwksEndpoint"
+      Type: String
+      Value: !FindInMap [EnvConfig, !Ref Environment, CoreJwksEndpoint]
+
+  IPVCore3rdPartyStubsAudienceParameter:
+    Condition: IsStaging
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-3rd-party-stubs/jwtAuthentication/audience"
+      Type: String
+      Value: !Ref CriAudience
+
+  IPVCore3rdPartyStubsIssuerParameter:
+    Condition: IsStaging
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-3rd-party-stubs/jwtAuthentication/issuer"
+      Type: String
+      Value: !FindInMap [EnvConfig, !Ref "Environment", IPVCoreIssuer]
+
+  IPVCore3rdPartyStubsRedirectURIParameter:
+    Condition: IsStaging
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-3rd-party-stubs/jwtAuthentication/redirectUri"
+      Type: String
+      Value: !Ref IPVCoreRedirectURI
+
+  IPVCore3rdPartyStubsAuthenticationAlgParameter:
+    Condition: IsStaging
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-3rd-party-stubs/jwtAuthentication/authenticationAlg"
+      Type: String
+      Value: ES256
+
+  IPVCoreStubAwsHeadlessAudienceParameter:
+    Condition: IsNotProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-headless/jwtAuthentication/audience"
+      Type: String
+      Value: !Ref CriAudience
+
+  IPVCoreStubAwsHeadlessIssuerParameter:
+    Condition: IsNotProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-headless/jwtAuthentication/issuer"
+      Type: String
+      Value: !Join
+        - ""
+        - - "https://test-resources."
+          - !Select
+            - 1
+            - !Split
+              - "https://"
+              - !Ref CriVcIssuer
+
+  IPVCoreStubAwsHeadlessRedirectURIParameter:
+    Condition: IsNotProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-headless/jwtAuthentication/redirectUri"
+      Type: String
+      Value: !Join
+        - ""
+        - - "https://test-resources."
+          - !Select
+            - 1
+            - !Split
+              - "https://"
+              - !Ref CriVcIssuer
+          - "/callback"
+
+  IPVCoreStubAwsHeadlessAuthenticationAlgParameter:
+    Condition: IsNotProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-headless/jwtAuthentication/authenticationAlg"
+      Type: String
+      Value: ES256
+
+  IPVCoreStubAwsProd3rdPartyAudienceParameter:
+    Condition: IsNotProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod_3rdparty/jwtAuthentication/audience"
+      Type: String
+      Value: !Ref CriAudience
+
+  IPVCoreStubAwsProd3rdPartyIssuerParameter:
+    Condition: IsNotProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod_3rdparty/jwtAuthentication/issuer"
+      Type: String
+      Value: "https://cri-3rdparty.core.stubs.account.gov.uk"
+
+  IPVCoreStubAwsProd3rdPartyRedirectURIParameter:
+    Condition: IsNotProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod_3rdparty/jwtAuthentication/redirectUri"
+      Type: String
+      Value: "https://cri-3rdparty.core.stubs.account.gov.uk/callback"
+
+  IPVCoreStubAwsProd3rdPartyAuthenticationAlgParameter:
+    Condition: IsNotProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod_3rdparty/jwtAuthentication/authenticationAlg"
+      Type: String
+      Value: ES256
+
+  IPVCoreStubAwsBuild3rdPartyAudienceParameter:
+    Condition: IsNotProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build_3rdparty/jwtAuthentication/audience"
+      Type: String
+      Value: !Ref CriAudience
+
+  IPVCoreStubAwsBuild3rdPartyIssuerParameter:
+    Condition: IsNotProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build_3rdparty/jwtAuthentication/issuer"
+      Type: String
+      Value: "https://cri-3rdparty.core.build.stubs.account.gov.uk"
+
+  IPVCoreStubAwsBuild3rdPartyRedirectURIParameter:
+    Condition: IsNotProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build_3rdparty/jwtAuthentication/redirectUri"
+      Type: String
+      Value: "https://cri-3rdparty.core.build.stubs.account.gov.uk/callback"
+
+  IPVCoreStubAwsBuild3rdPartyAuthenticationAlgParameter:
+    Condition: IsNotProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build_3rdparty/jwtAuthentication/authenticationAlg"
+      Type: String
+      Value: ES256
+
+  # ==============================
+  # endregion - clients ssm params
+  # ==============================
+
   PreMergeDevOnlyApi:
     Type: AWS::Serverless::Api
-    Condition: IsDevEnvironment
+    Condition: IsDev
     Properties:
       Description: CRI API Gateway for pre-merge testing in dev only
       MethodSettings:
@@ -2385,13 +1686,38 @@ Resources:
 
   PreMergeDevOnlyApiAccessLogGroup:
     Type: AWS::Logs::LogGroup
-    Condition: IsDevEnvironment
+    Condition: IsDev
     Properties:
       LogGroupName: !Sub /aws/apigateway/${AWS::StackName}-${PreMergeDevOnlyApi}-private-AccessLogs
       RetentionInDays: 30
 
 Outputs:
+  DbCustomerManagedKeyID:
+    Condition: IsCustomerManagedKeyEnabled
+    Description: The ID of the CMK used to encrypt DynamoDB tables at rest
+    Value: !Ref DynamoTablesEncryptionKey
+  DbSessionTTL:
+    Description: Time to live for a session item (seconds)
+    Value: !Ref DbSessionTTL
+  DbSessionTableName:
+    Description: The name of the session table in DynamoDB
+    Value: !Ref SessionTable
+  DbPersonIdentityTableName:
+    Description: The name of the person identity table in DynamoDB
+    Value: !Ref PersonIdentityTable
+  LambdaSessionFunctionName:
+    Description: The name of the session function
+    Value: !Ref SessionFn
+  LambdaAuthorizationFunctionName:
+    Description: The name of the authorisation function
+    Value: !Ref AuthorizationFn
+  LambdaAccessTokenFunctionName:
+    Description: The name of the access token function
+    Value: !Ref AccessTokenFn
   PreMergeDevOnlyApiId:
-    Condition: IsDevEnvironment
+    Condition: IsDev
     Description: ID of the dev-only OAuth Common API
     Value: !Ref PreMergeDevOnlyApi
+  VCSigningKeyID:
+    Description: The ID of the KMS key used to sign VCs
+    Value: !GetAtt VerifiableCredentialKmsSigningKeyParameter.Value
