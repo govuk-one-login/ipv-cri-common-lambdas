@@ -240,7 +240,7 @@ describe("session-request-validator.ts", () => {
             await expect(sessionRequestValidator.validateJwt(Buffer.from("test-jwt"), client_id)).rejects.toThrow(
                 expect.objectContaining({
                     message: "Session Validation Exception",
-                    details: "Invalid request: scoringPolicy in evidence_requested does not equal gpg45",
+                    details: 'Invalid request: scoringPolicy - Invalid input: expected "gpg45"',
                 }),
             );
         });
