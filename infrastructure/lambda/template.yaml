@@ -53,6 +53,14 @@ Parameters:
     Type: String
     Default: "initial"
     Description: "For dev only - used to force Java Lambda version updates for locally deployed and pre-merge stacks"
+  TargetSessionTableName:
+    Type: String
+    Default: "none"
+    Description: "The name of the target session table for DynamoDB stream replication"
+  TargetPersonIdentityTableName:
+    Type: String
+    Default: "none"
+    Description: "The name of the target person identity table for DynamoDB stream replication"
 
 Conditions:
   UseCodeSigningConfigArn:
@@ -86,6 +94,21 @@ Conditions:
   IsDevEnvironment: !Equals
     - !Ref Environment
     - dev
+  EnableDynamoDbStreamReplication:
+    Fn::Not:
+      - Fn::Or:
+          - Fn::Equals:
+              - !Ref TargetSessionTableName
+              - "none"
+          - Fn::Equals:
+              - !Ref TargetPersonIdentityTableName
+              - "none"
+  EnableDynamoDbStreamCSLS: !And
+    - !Condition EnableDynamoDbStreamReplication
+    - !Condition IsCSLSDisabled
+  EnableDynamoDbStreamCanaryAlarms: !And
+    - !Condition EnableDynamoDbStreamReplication
+    - !Condition UseCanaryDeploymentAlarms
   IsDevPlatformDeploy: !Equals
     - !FindInMap [CriVpcMapping, !Ref CriIdentifier, !Ref Environment]
     - "di-devplatform-deploy"
@@ -1598,6 +1621,130 @@ Resources:
       ComparisonOperator: GreaterThanThreshold
       TreatMissingData: notBreaching
 
+  DynamoDbStreamFunction:
+    Type: AWS::Serverless::Function
+    Condition: EnableDynamoDbStreamReplication
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-DynamoDbStreamFunction"
+      DeploymentPreference:
+        Type: !Ref LambdaDeploymentPreference
+        Role: !GetAtt CodeDeployServiceRole.Arn
+        Alarms: !If
+          - EnableDynamoDbStreamCanaryAlarms
+          - [!Ref DynamoDbStreamFunctionLambdaErrors]
+          - [!Ref AWS::NoValue]
+      CodeUri: ../../lambdas
+      Handler: dynamodb-stream-handler.lambdaHandler
+      Runtime: nodejs22.x
+      Layers:
+        - arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_313_2_20250404-043044_with_collector_nodejs:1
+      VpcConfig:
+        SubnetIds: !If
+          - IsDevPlatformDeploy
+          - [
+              !ImportValue cri-vpc-PrivateSubnetIdA,
+              !ImportValue cri-vpc-PrivateSubnetIdB,
+            ]
+          - !Split [",", !ImportValue cri-vpc-PrivateSubnets]
+      Environment:
+        Variables:
+          POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-dynamodb-stream"
+          SOURCE_SESSION_TABLE_NAME: !Ref SessionTable
+          SOURCE_PERSON_IDENTITY_TABLE_NAME: !Ref PersonIdentityTable
+          TARGET_SESSION_TABLE_NAME: !Ref TargetSessionTableName
+          TARGET_PERSON_IDENTITY_TABLE_NAME: !Ref TargetPersonIdentityTableName
+      AutoPublishAlias: live
+      AutoPublishAliasAllProperties: true
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - AWSXrayWriteOnlyAccess
+        - DynamoDBWritePolicy:
+            TableName: !Ref TargetSessionTableName
+        - DynamoDBWritePolicy:
+            TableName: !Ref TargetPersonIdentityTableName
+        - KMSDecryptPolicy:
+            KeyId: !Ref DynamoTablesEncryptionKey
+      Events:
+        SessionTableStream:
+          Type: DynamoDB
+          Properties:
+            Stream: !GetAtt SessionTable.StreamArn
+            StartingPosition: TRIM_HORIZON
+            BatchSize: 100
+            BisectBatchOnFunctionError: true
+            MaximumRetryAttempts: 3
+            FunctionResponseTypes:
+              - ReportBatchItemFailures
+        PersonIdentityTableStream:
+          Type: DynamoDB
+          Properties:
+            Stream: !GetAtt PersonIdentityTable.StreamArn
+            StartingPosition: TRIM_HORIZON
+            BatchSize: 100
+            BisectBatchOnFunctionError: true
+            MaximumRetryAttempts: 3
+            FunctionResponseTypes:
+              - ReportBatchItemFailures
+      ProvisionedConcurrencyConfig:
+        !If
+        - AddTSProvisionedConcurrency
+        - ProvisionedConcurrentExecutions: !FindInMap [TSProvisionedConcurrencyMapping, !Ref CriIdentifier, !Ref Environment]
+        - !Ref AWS::NoValue
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: "node18"
+        Sourcemap: true
+        EntryPoints:
+          - src/handlers/dynamodb-stream-handler.ts
+        External:
+          - "@aws-sdk/*"
+
+  DynamoDbStreamFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Condition: EnableDynamoDbStreamReplication
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${DynamoDbStreamFunction}"
+      RetentionInDays: 30
+
+  DynamoDbStreamFunctionLogGroupSubscriptionFilterCSLS:
+    Type: AWS::Logs::SubscriptionFilter
+    Condition: EnableDynamoDbStreamCSLS
+    Properties:
+      DestinationArn: !If
+        - UseNewCSLSDestinationArn
+        - "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2"
+        - "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython"
+      FilterPattern: ""
+      LogGroupName: !Ref DynamoDbStreamFunctionLogGroup
+
+  DynamoDbStreamFunctionLambdaErrors:
+    Type: AWS::CloudWatch::Alarm
+    Condition: EnableDynamoDbStreamCanaryAlarms
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-DynamoDbStreamFunctionLambdaErrors"
+      AlarmDescription: !Sub "Trigger an alarm when lambda errors occurs"
+      ActionsEnabled: true
+      AlarmActions:
+        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
+      OKActions:
+        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
+      InsufficientDataActions: []
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Dimensions:
+        - Name: Resource
+          Value: !Sub "${AWS::StackName}-DynamoDbStreamFunction:live"
+        - Name: ExecutedVersion
+          Value: !Sub DynamoDbStreamFunction.Version.Version
+      Period: 60
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+
   DynamoTablesEncryptionKey:
     Type: AWS::KMS::Key
     Properties:
@@ -1688,6 +1835,8 @@ Resources:
       TimeToLiveSpecification:
         AttributeName: expiryDate
         Enabled: true
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
       SSESpecification: !If
         - UseCustomerManagedKey
         -
@@ -1712,6 +1861,8 @@ Resources:
       TimeToLiveSpecification:
         AttributeName: expiryDate
         Enabled: true
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
       SSESpecification: !If
         - UseCustomerManagedKey
         -
