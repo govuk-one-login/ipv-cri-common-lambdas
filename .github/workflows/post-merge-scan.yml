@@ -1,0 +1,31 @@
+name: Check repo
+
+on:
+  push:
+    branches:
+      - main
+  schedule:
+    # Every Monday at 9am
+    - cron: "0 9 * * 1"
+
+concurrency:
+  group: check-repo-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  codeql:
+    name: CodeQL
+    permissions:
+      security-events: write
+    uses: ./.github/workflows/run-codeql.yml
+
+  unit-tests:
+    uses: ./.github/workflows/run-unit-tests.yml
+
+  sonarcloud:
+    needs: unit-tests
+    uses: ./.github/workflows/run-sonarcloud.yml
+    secrets:
+      sonar-token: ${{ secrets.SONAR_TOKEN }}
+    with:
+      coverage-run-id: ${{ github.run_id }}

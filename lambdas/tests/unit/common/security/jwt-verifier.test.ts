@@ -58,7 +58,6 @@ describe("jwt-verifier", () => {
         publicKey = new Uint8Array([3, 101, 120, 26, 14, 184, 5, 99, 172, 149]);
 
         jwtVerifierConfig = {
-            publicSigningJwk: "publicSigningJwk",
             jwtSigningAlgorithm: "ES256",
             jwksEndpoint: "http://localhost",
         };
@@ -604,11 +603,7 @@ describe("jwt-verifier", () => {
         });
 
         it("should create a session request validator", () => {
-            const output = jwtVerifierFactory.create(
-                "test-signing-algo",
-                "test-public-signing-key",
-                "http://localhost",
-            );
+            const output = jwtVerifierFactory.create("test-signing-algo", "http://localhost");
             expect(output).toBeInstanceOf(JwtVerifier);
         });
     });

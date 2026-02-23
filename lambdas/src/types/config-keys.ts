@@ -15,7 +15,6 @@ export const EnvVarConfigKeys: CommonConfigKey[] = [
 export enum ClientConfigKey {
     JWT_ISSUER = "issuer",
     JWT_AUDIENCE = "audience",
-    JWT_PUBLIC_SIGNING_KEY = "publicSigningJwkBase64",
     JWT_REDIRECT_URI = "redirectUri",
     JWT_SIGNING_ALGORITHM = "authenticationAlg",
     JWKS_ENDPOINT = "jwksEndpoint",

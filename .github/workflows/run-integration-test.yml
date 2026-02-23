@@ -1,0 +1,68 @@
+name: Run integration tests
+
+on:
+  workflow_call:
+    inputs:
+      aws-region:
+        description: The AWS region of the deployed stack
+        required: true
+        type: string
+      stack-name:
+        description: The deployed stack name
+        required: true
+        type: string
+      stack-outputs:
+        description: The deployed stack outputs
+        required: true
+        type: string
+    secrets:
+      api-gateway-api-key:
+        required: false
+      ipv-core-stub-basic-auth-user:
+        required: true
+      ipv-core-stub-basic-auth-pwd:
+        required: true
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  run-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: integration-tests
+    concurrency:
+      group: check-repo-${{ github.head_ref || github.ref_name }}
+      cancel-in-progress: true
+    steps:
+    - name: Pull repository
+      uses: actions/checkout@v6.0.0
+      with:
+        fetch-depth: 0
+        filter: tree:0
+
+    - name: Set up Gradle
+      uses: gradle/gradle-build-action@v2
+      with:
+        gradle-version: 7.5.1
+
+    - name: Assume AWS Role
+      uses: aws-actions/configure-aws-credentials@61815dcd50bd041e203e49132bacad1fd04d2708 # v5.1.1
+      with:
+        role-to-assume: ${{ vars.DEPLOYMENT_ROLE_ARN }}
+        aws-region: eu-west-2
+
+    - name: Run integration tests
+      env:
+        ENVIRONMENT: dev
+        AWS_REGION: ${{ inputs.aws-region }}
+        STACK_NAME: ${{ inputs.stack-name }}
+        API_GATEWAY_ID_PRIVATE: ${{ fromJson(inputs.stack-outputs).PreMergeDevOnlyApiId }}
+        IPV_CORE_STUB_BASIC_AUTH_PASSWORD: ${{ secrets.ipv-core-stub-basic-auth-pwd }}
+        IPV_CORE_STUB_BASIC_AUTH_USER: ${{ secrets.ipv-core-stub-basic-auth-user }}
+        IPV_CORE_STUB_URL: https://cri.core.build.stubs.account.gov.uk
+        DEFAULT_CLIENT_ID: ipv-core-stub-aws-build
+      working-directory: integration-tests
+      run: ./gradlew cucumber

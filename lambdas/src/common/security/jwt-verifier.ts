@@ -130,11 +130,10 @@ export class JwtVerifier {
 
 export class JwtVerifierFactory {
     public constructor(private readonly logger: Logger) {}
-    public create(jwtSigningAlgo: string, jwtPublicSigningKey: string, jwksEndpoint: string): JwtVerifier {
+    public create(jwtSigningAlgo: string, jwksEndpoint: string): JwtVerifier {
         return new JwtVerifier(
             {
                 jwtSigningAlgorithm: jwtSigningAlgo,
-                publicSigningJwk: jwtPublicSigningKey,
                 jwksEndpoint,
             },
             this.logger,
