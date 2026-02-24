@@ -1,4 +1,4 @@
-import { EvidenceRequest } from "../services/evidence_request";
+import { EvidenceRequest } from "../schemas/evidence-request.schema";
 
 export interface SessionRequestSummary {
     clientId: string;

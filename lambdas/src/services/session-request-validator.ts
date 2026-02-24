@@ -4,8 +4,8 @@ import { SessionRequestValidationConfig } from "../types/session-request-validat
 import { ClientConfigKey, ConfigKey } from "../types/config-keys";
 import { Logger } from "@aws-lambda-powertools/logger";
 import { SessionValidationError } from "../common/utils/errors";
-import { EvidenceRequest } from "./evidence_request";
 import { CRIEvidenceProperties } from "./cri_evidence_properties";
+import { EvidenceRequestSchema, EvidenceRequest } from "../schemas/evidence-request.schema";
 
 export class SessionRequestValidator {
     constructor(
@@ -15,30 +15,16 @@ export class SessionRequestValidator {
     ) {}
     async validateJwt(jwt: Buffer, requestBodyClientId: string): Promise<JWTPayload> {
         const expectedRedirectUri = this.validationConfig.expectedJwtRedirectUri;
-        const configuredStrengthScore = this.criEvidenceProperties?.strengthScore;
 
         const payload = await this.verifyJwtSignature(jwt);
 
-        const evidenceRequested = payload["evidence_requested"] as EvidenceRequest;
         const state = payload["state"] as string;
 
-        if (evidenceRequested && evidenceRequested.scoringPolicy !== "gpg45") {
-            throw new SessionValidationError(
-                "Session Validation Exception",
-                "Invalid request: scoringPolicy in evidence_requested does not equal gpg45",
-            );
+        if (payload["evidence_requested"] !== undefined) {
+            this.validateEvidenceRequested(payload["evidence_requested"]);
         }
-        if (!this.isValidStrengthScore(configuredStrengthScore, evidenceRequested)) {
-            throw new SessionValidationError(
-                "Session Validation Exception",
-                `Invalid request: strengthScore in evidence_requested does not equal ${configuredStrengthScore}`,
-            );
-        } else if (!this.isValidVerificationScore(evidenceRequested)) {
-            throw new SessionValidationError(
-                "Session Validation Exception",
-                `Invalid request: verificationScore in evidence_requested is not configured in CRI - ${this?.criEvidenceProperties?.verificationScore}`,
-            );
-        } else if (payload.client_id !== requestBodyClientId) {
+
+        if (payload.client_id !== requestBodyClientId) {
             throw new SessionValidationError(
                 "Session Validation Exception",
                 `Invalid request: JWT validation/verification failed: Mismatched client_id in request body (${requestBodyClientId}) & jwt (${payload.client_id})`,
@@ -59,22 +45,43 @@ export class SessionRequestValidator {
 
         return payload;
     }
-    private isValidStrengthScore(configuredStrengthScore: number | undefined, evidenceRequested: EvidenceRequest) {
-        return (
-            !configuredStrengthScore ||
-            !evidenceRequested?.strengthScore ||
-            evidenceRequested.strengthScore === configuredStrengthScore
-        );
+
+    private validateEvidenceRequested(evidenceRequestedRaw: unknown): void {
+        const result = EvidenceRequestSchema.safeParse(evidenceRequestedRaw);
+        if (result.success) {
+            this.validateCRICapabilities(result.data);
+        } else {
+            const firstIssue = result.error.issues[0];
+            throw new SessionValidationError(
+                "Session Validation Exception",
+                `Invalid request: ${firstIssue.path.join(".")} - ${firstIssue.message}`,
+            );
+        }
     }
 
-    private isValidVerificationScore(evidenceRequested: EvidenceRequest) {
-        return (
-            !evidenceRequested?.verificationScore ||
-            !this.criEvidenceProperties?.verificationScore ||
-            this.criEvidenceProperties.verificationScore
-                .map((i) => Number(i))
-                .includes(evidenceRequested?.verificationScore)
-        );
+    private validateCRICapabilities(evidenceRequested: EvidenceRequest): void {
+        if (
+            evidenceRequested.strengthScore !== undefined &&
+            this.criEvidenceProperties?.strengthScore &&
+            evidenceRequested.strengthScore !== this.criEvidenceProperties.strengthScore
+        ) {
+            throw new SessionValidationError(
+                "Session Validation Exception",
+                `Invalid request: strengthScore ${evidenceRequested.strengthScore} is not supported by this CRI. Max score: ${this.criEvidenceProperties.strengthScore}`,
+            );
+        }
+
+        if (evidenceRequested.verificationScore !== undefined && this.criEvidenceProperties?.verificationScore) {
+            const allowedScores = this.criEvidenceProperties.verificationScore.map(Number);
+            if (!allowedScores.includes(evidenceRequested.verificationScore)) {
+                throw new SessionValidationError(
+                    "Session Validation Exception",
+                    `Invalid request: verificationScore ${
+                        evidenceRequested.verificationScore
+                    } is not supported by this CRI. Allowed scores: ${allowedScores.join(", ")}`,
+                );
+            }
+        }
     }
 
     private async verifyJwtSignature(jwt: Buffer): Promise<JWTPayload> {

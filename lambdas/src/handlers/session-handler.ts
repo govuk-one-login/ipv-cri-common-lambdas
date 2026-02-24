@@ -23,7 +23,7 @@ import initialiseClientConfigMiddleware from "../middlewares/config/initialise-c
 import validateJwtMiddleware from "../middlewares/jwt/validate-jwt-middleware";
 import setGovUkSigningJourneyIdMiddleware from "../middlewares/session/set-gov-uk-signing-journey-id-middleware";
 import { ConfigService } from "../common/config/config-service";
-import { EvidenceRequest } from "../services/evidence_request";
+import { EvidenceRequest } from "../schemas/evidence-request.schema";
 import setRequestedVerificationScoreMiddleware from "../middlewares/session/set-requested-verification-score-middleware";
 import { SSMProvider } from "@aws-lambda-powertools/parameters/ssm";
 import { initOpenTelemetry } from "../common/utils/otel-setup";
