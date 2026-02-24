@@ -2,11 +2,12 @@
   "$schema": "https://raw.githubusercontent.com/govuk-one-login/quality-gates/refs/tags/v0.1.0/schemas/schema.json",
   "services": [
     {
+      "service-tag": "ipv-cri-oauth-common",
       "quality-gates": [
         {
           "check-types": ["code style and linting", "secret scanning"],
           "config": {
-            "file": ".github/workflows/code-quality.yml",
+            "file": ".github/workflows/check-repo.yml",
             "name": "pre-commit",
             "path": "jobs.run-pre-commit"
           },
@@ -14,31 +15,11 @@
           "provider": "GitHub"
         },
         {
-          "check-types": ["code style and linting"],
-          "config": {
-            "file": ".github/workflows/code-quality.yml",
-            "name": "Linting",
-            "path": "jobs.linting"
-          },
-          "phase": "pre-merge",
-          "provider": "GitHub"
-        },
-        {
           "check-types": ["unit"],
           "config": {
-            "file": ".github/workflows/check-pr.yml",
-            "name": "Unit tests",
-            "path": "jobs.unit-tests-java"
-          },
-          "phase": "pre-merge",
-          "provider": "GitHub"
-        },
-        {
-          "check-types": ["unit"],
-          "config": {
-            "file": ".github/workflows/check-pr.yml",
+            "file": ".github/workflows/check-repo.yml",
             "name": "Run tests",
-            "path": "jobs.unit-tests-ts"
+            "path": "jobs.run-unit-tests"
           },
           "phase": "pre-merge",
           "provider": "GitHub"
@@ -46,19 +27,9 @@
         {
           "check-types": ["contract"],
           "config": {
-            "file": ".github/workflows/check-pr.yml",
+            "file": ".github/workflows/check-repo.yml",
             "name": "Pact tests",
-            "path": "jobs.pact-tests-java"
-          },
-          "phase": "pre-merge",
-          "provider": "GitHub"
-        },
-        {
-          "check-types": ["contract"],
-          "config": {
-            "file": ".github/workflows/check-pr.yml",
-            "name": "Pact tests",
-            "path": "jobs.pact-tests-ts"
+            "path": "jobs.run-contract-tests"
           },
           "phase": "pre-merge",
           "provider": "GitHub"
@@ -66,9 +37,9 @@
         {
           "check-types": ["integration", "regression", "new feature"],
           "config": {
-            "file": ".github/workflows/check-pr.yml",
-            "name": "Run tests",
-            "path": "jobs.apigw-tests"
+            "file": ".github/workflows/pre-merge-workflow.yml",
+            "name": "Integration Tests",
+            "path": "jobs.integration-tests"
           },
           "phase": "pre-merge",
           "provider": "GitHub"
@@ -80,23 +51,9 @@
             "vulnerability detection"
           ],
           "config": {
-            "file": ".github/workflows/scan-repo.yml",
-            "name": "SonarCloud / Java",
-            "path": "jobs.sonarcloud-java"
-          },
-          "phase": "pre-merge",
-          "provider": "GitHub"
-        },
-        {
-          "check-types": [
-            "code style and linting",
-            "unit test coverage",
-            "vulnerability detection"
-          ],
-          "config": {
-            "file": ".github/workflows/scan-repo.yml",
-            "name": "SonarCloud / TypeScript",
-            "path": "jobs.sonarcloud-ts"
+            "file": ".github/workflows/check-repo.yml",
+            "name": "SonarCloud",
+            "path": "jobs.sonarcloud"
           },
           "phase": "pre-merge",
           "provider": "GitHub"
@@ -104,15 +61,14 @@
         {
           "check-types": ["vulnerability detection"],
           "config": {
-            "file": ".github/workflows/scan-repo.yml",
+            "file": ".github/workflows/check-repo.yml",
             "name": "CodeQL",
             "path": "jobs.codeql"
           },
           "phase": "pre-merge",
           "provider": "GitHub"
         }
-      ],
-      "service-tag": "ipv-cri-common-lambdas"
+      ]
     }
   ]
 }

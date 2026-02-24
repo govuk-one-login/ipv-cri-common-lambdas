@@ -47,19 +47,19 @@ public class APISteps {
         sessionRequestBody = IpvCoreStubUtil.sendCreateSessionRequest(userIdentityJson);
     }
 
-    @Given("Session lambda implementation is in {string}")
-    public void setSessionEndpoint(String endPoint) {
-        devSessionUri = ENVIRONMENT + "/session" + (endPoint.equals("TS") ? "-ts" : "");
+    @Given("the Session lambda is called")
+    public void setSessionEndpoint() {
+        devSessionUri = ENVIRONMENT + "/session";
     }
 
-    @Given("Authorisation lambda implementation is in {string}")
-    public void setAuthorizationEndpoint(String endPoint) {
-        devAuthorizationUri = ENVIRONMENT + "/authorization" + (endPoint.equals("TS") ? "-ts" : "");
+    @Given("the Authorisation lambda is called")
+    public void setAuthorizationEndpoint() {
+        devAuthorizationUri = ENVIRONMENT + "/authorization";
     }
 
-    @Given("AccessToken lambda implementation is in {string}")
-    public void setAccessTokenEndpoint(String endPoint) {
-        devAccessTokenUri = ENVIRONMENT + "/token" + (endPoint.equals("TS") ? "-ts" : "");
+    @Given("the AccessToken lambda is called")
+    public void setAccessTokenEndpoint() {
+        devAccessTokenUri = ENVIRONMENT + "/token";
     }
 
     @When("user sends a request to session API")

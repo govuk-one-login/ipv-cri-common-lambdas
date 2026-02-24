@@ -1,0 +1,38 @@
+name: Run unit tests
+
+on:
+  workflow_call:
+
+jobs:
+  run-unit-tests:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: lambdas
+    steps:
+      - name: Pull repository
+        uses: actions/checkout@v4
+
+      - name: Install Node
+        uses: actions/setup-node@v3
+        with:
+          cache: npm
+          cache-dependency-path: lambdas/package.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm run test:coverage -- --config jest.config.ci.ts
+
+      - name: Fix lcov.info paths
+        run: sed -i "s|src/|lambdas/src/|" coverage/lcov.info
+
+      - name: Archive coverage results
+        id: upload-coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: lambdas/coverage/lcov.info
+          retention-days: 3

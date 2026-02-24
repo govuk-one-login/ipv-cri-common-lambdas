@@ -1,0 +1,47 @@
+name: Run contract tests
+
+on:
+  workflow_call:
+    secrets:
+      pact-broker-username:
+        required: true
+      pact-broker-password:
+        required: true
+      pact-broker-source-secret:
+        required: true
+
+jobs:
+  run-contract-tests:
+    name: Contract Tests
+    runs-on: ubuntu-latest
+    environment: contract-tests
+    strategy:
+      fail-fast: false
+      matrix:
+        cri-provider: ["ExperianKbvCriTokenProvider", "NinoCriTokenProvider"]
+    defaults:
+      run:
+        working-directory: lambdas
+    steps:
+      - name: Pull repository
+        uses: actions/checkout@v4
+
+      - name: Install Node
+        uses: actions/setup-node@v4
+        with:
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm run test:contract:ci
+        env:
+          CRI_UNDER_TEST: ${{ matrix.cri-provider }}
+          SESSION_TABLE: some-session-table
+          PERSON_IDENTITY_TABLE: some-personidentity-table
+          VC_ISSUER: some-vc-issuer
+          PACT_BROKER_HOST: ${{ vars.PACT_BROKER_HOST }}
+          PACT_BROKER_USERNAME: ${{ secrets.pact-broker-username }}
+          PACT_BROKER_PASSWORD: ${{ secrets.pact-broker-password }}
+          PACT_BROKER_SOURCE_SECRET: ${{ secrets.pact-broker-source-secret }}

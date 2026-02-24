@@ -179,7 +179,6 @@ describe("SessionLambda", () => {
                     client_config_keys: [
                         ClientConfigKey.JWT_AUDIENCE,
                         ClientConfigKey.JWT_ISSUER,
-                        ClientConfigKey.JWT_PUBLIC_SIGNING_KEY,
                         ClientConfigKey.JWT_REDIRECT_URI,
                         ClientConfigKey.JWT_SIGNING_ALGORITHM,
                         ClientConfigKey.JWKS_ENDPOINT,
@@ -255,7 +254,6 @@ describe("SessionLambda", () => {
         expect(configService.prototype.initClientConfig).toHaveBeenCalledWith("test-client-id", [
             ClientConfigKey.JWT_AUDIENCE,
             ClientConfigKey.JWT_ISSUER,
-            ClientConfigKey.JWT_PUBLIC_SIGNING_KEY,
             ClientConfigKey.JWT_REDIRECT_URI,
             ClientConfigKey.JWT_SIGNING_ALGORITHM,
             ClientConfigKey.JWKS_ENDPOINT,
@@ -478,7 +476,6 @@ describe("SessionLambda", () => {
                         client_config_keys: [
                             ClientConfigKey.JWT_AUDIENCE,
                             ClientConfigKey.JWT_ISSUER,
-                            ClientConfigKey.JWT_PUBLIC_SIGNING_KEY,
                             ClientConfigKey.JWT_REDIRECT_URI,
                             ClientConfigKey.JWT_SIGNING_ALGORITHM,
                             ClientConfigKey.JWKS_ENDPOINT,
@@ -655,7 +652,6 @@ describe("SessionLambda", () => {
                         client_config_keys: [
                             ClientConfigKey.JWT_AUDIENCE,
                             ClientConfigKey.JWT_ISSUER,
-                            ClientConfigKey.JWT_PUBLIC_SIGNING_KEY,
                             ClientConfigKey.JWT_REDIRECT_URI,
                             ClientConfigKey.JWKS_ENDPOINT,
                             ClientConfigKey.JWT_SIGNING_ALGORITHM,

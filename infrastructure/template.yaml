@@ -1,0 +1,1723 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: Digital Identity IPV CRI common API
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: di-ipv-cri-oauth-common
+    Description: Shared OAuth stack for GOV.UK One Login's Credential Issuers
+    Author: govuk-one-login
+    SpdxLicenseId: MIT
+    LicenseUrl: ../LICENSE
+    HomePageUrl: https://github.com/govuk-one-login/ipv-cri-oauth-common
+    SemanticVersion: 0.0.0
+    SourceCodeUrl: https://github.com/govuk-one-login/ipv-cri-oauth-common
+
+Parameters:
+  AuditEventNamePrefix:
+    Type: String
+    Description: >
+      The audit event name prefix
+      Example: IPV_HMRC_RECORD_CHECK_CRI
+  AuditTxmaStackName:
+    Type: String
+    Description: The stack containing the TXMA infrastructure
+    Default: "txma-infrastructure"
+
+  CSLSDestinationArn:
+    Type: String
+    Description: ARN of the CSLSEGRESS destination
+    Default: "none"
+
+  CriIdentifier:
+    Type: String
+    Description: >
+      The unique credential issuer identifier
+      Example: di-ipv-cri-check-hmrc-api
+  CriAudience:
+    Type: String
+    Description: >
+      Audience for the CRI
+      Example: https://review-hc.dev.account.gov.uk
+  CriVcIssuer:
+    Type: String
+    Description: >
+      Issuer for the CRI
+      Example: https://review-hc.dev.account.gov.uk
+  CriPrivateApiGwName:
+    Type: String
+    Description: >
+      The private API GW name, for Canary alarms
+      Example: check-hmrc-cri-api-private
+  CriPublicApiGwName:
+    Type: String
+    Description: >
+      The public API GW name, for Canary alarms
+      Example: check-hmrc-cri-api-public
+
+  DbSessionTTL:
+    Type: Number
+    Description: TTL for the Session Table, default 2 hours
+    Default: 7200
+  DbCustomerManagedKey:
+    Type: String
+    Description: Use a CustomerManagedKey for the DynamoDB Tables
+    Default: "true"
+    AllowedValues:
+      - "true"
+      - "false"
+
+  Environment:
+    Type: String
+    Description: The deployed environment
+    AllowedValues: 
+      - dev
+      - build
+      - staging
+      - integration
+      - production
+
+  IPVCoreRedirectURI:
+    Type: String
+    Description: >
+      Redirect URL to IPV CORE
+      Example: https://identity.staging.account.gov.uk/credential-issuer/callback?id=nino
+  IPVCoreStubJwksEndpoint:
+    Type: String
+    Description: >
+      Stubbed JWKS endpoint for non-prod environments
+      Example: https://test-resources.review-hc.dev.account.gov.uk/.well-known/jwks.json
+    Default: "" 
+
+  KeyRotation:
+    Type: String
+    Description: Feature flag for ENV_VAR_FEATURE_FLAG_KEY_ROTATION
+    Default: "true"
+    AllowedValues:
+      - "true"
+      - "false"
+  KeyRotationFallback:
+    Type: String
+    Description: Feature flag for ENV_VAR_FEATURE_FLAG_KEY_ROTATION_LEGACY_KEY_FALLBACK
+    Default: "false"
+    AllowedValues:
+      - "true"
+      - "false"
+
+  LambdaCodeSigningConfigArn:
+    Type: String
+    Description: The ARN of the Code Signing Config to use, provided by the deployment pipeline
+    Default: "none"
+  LambdaDeploymentPreference:
+    Type: String
+    Description: Specifies the configuration to enable gradual Lambda deployments. This value is picked up from the LambdaCanaryDeployment on the pipeline.
+    Default: "AllAtOnce"
+  LambdaProvisionedConcurrentExecutions:
+    Type: Number
+    Description: Provisioned concurrency for the Lambdas (0 = disabled)
+    Default: 0
+  LambdaVpcConfiguration: 
+    Type: String
+    Description: >
+      Deploy type, so the correct VPC configuration is used.
+      Example: di-devplatform-deploy or di-ipv-cri-pipeline-deployment
+
+  PermissionsBoundaryArn:
+    Type: String
+    Description: The ARN of the permissions boundary to apply when creating IAM roles
+    Default: "none"
+
+Mappings:
+  EnvConfig:
+    dev:
+      CoreJwksEndpoint: "https://api.identity.staging.account.gov.uk/.well-known/jwks.json"
+      DynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
+      MemorySize: 2048
+    build:
+      CoreJwksEndpoint: "https://api.identity.staging.account.gov.uk/.well-known/jwks.json"
+      DynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
+      MemorySize: 3072
+    staging:
+      CoreJwksEndpoint: "https://api.identity.staging.account.gov.uk/.well-known/jwks.json"
+      DynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
+      MemorySize: 2048
+      IPVCoreIssuer: "https://identity.staging.account.gov.uk"
+    integration:
+      CoreJwksEndpoint: "https://api.identity.integration.account.gov.uk/.well-known/jwks.json"
+      DynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
+      MemorySize: 2048
+      IPVCoreIssuer: "https://identity.integration.account.gov.uk"
+    production:
+      CoreJwksEndpoint: "https://api.identity.account.gov.uk/.well-known/jwks.json"
+      DynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceProductionVariables"
+      MemorySize: 3072
+      IPVCoreIssuer: "https://identity.account.gov.uk"
+
+Conditions:
+  IsDev: !Equals [ !Ref Environment, "dev" ]
+  IsIntegration: !Equals [ !Ref Environment, "integration" ]
+  IsStaging: !Equals [ !Ref Environment, "staging" ]
+  IsProd: !Equals [ !Ref Environment, "production" ]
+  IsNotProd: !Not [ !Condition IsProd ]
+  IsStagingIntegrationOrProd: !Or
+    - !Condition IsIntegration
+    - !Condition IsStaging
+    - !Condition IsProd
+
+  IsStubJwksPresent: !Not [!Equals [!Ref IPVCoreStubJwksEndpoint, ""]]
+
+  IsNotProdAndIsStubJwksPresent: !And
+    - !Condition IsNotProd
+    - !Condition IsStubJwksPresent
+
+  IsCodeSigningEnabled: !Not
+    - !Equals [!Ref LambdaCodeSigningConfigArn, "none"]
+  IsPermissionsBoundaryEnabled: !Not
+    - !Equals [ !Ref PermissionsBoundaryArn, "none" ]
+  IsProvisionedConcurrencyEnabled: !Not
+    - !Equals [ !Ref LambdaProvisionedConcurrentExecutions, 0 ]
+  IsDevPlatformDeploy: !Equals [ !Ref LambdaVpcConfiguration, "di-devplatform-deploy" ]
+  IsCSLSEnabled: !Not
+    - !Equals [ !Ref CSLSDestinationArn, "none" ]
+  IsCanaryDeployment: !Not 
+    - !Equals [!Ref LambdaDeploymentPreference, "AllAtOnce"]
+  IsCustomerManagedKeyEnabled: !Equals [ !Ref DbCustomerManagedKey, "true" ]
+
+Globals:
+  Function:
+    VpcConfig:
+      SecurityGroupIds: !If
+        - IsDevPlatformDeploy
+        - [!ImportValue cri-vpc-AWSServicesEndpointSecurityGroupId]
+        - [!ImportValue cri-vpc-LambdaSecurityGroup]
+    PermissionsBoundary: !If
+      - IsPermissionsBoundaryEnabled
+      - !Ref PermissionsBoundaryArn
+      - !Ref AWS::NoValue
+    CodeSigningConfigArn: !If
+      - IsCodeSigningEnabled
+      - !Ref LambdaCodeSigningConfigArn
+      - !Ref AWS::NoValue
+    Timeout: 30 # seconds
+    Tracing: Active
+    MemorySize: !FindInMap [EnvConfig, !Ref "Environment", MemorySize]
+    Architectures:
+      - arm64
+    Environment:
+      Variables:
+        JAVA_TOOL_OPTIONS: -XX:+TieredCompilation -XX:TieredStopAtLevel=1
+        AWS_STACK_NAME: !Sub ${AWS::StackName}
+        POWERTOOLS_LOG_LEVEL: INFO
+        POWERTOOLS_METRICS_NAMESPACE: !Ref CriIdentifier
+        SQS_AUDIT_EVENT_PREFIX: !Ref AuditEventNamePrefix
+        AWS_LAMBDA_EXEC_WRAPPER: /opt/dynatrace
+        DT_CONNECTION_AUTH_TOKEN: !Sub
+          - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_CONNECTION_AUTH_TOKEN}}"
+          - SecretArn:
+              !FindInMap [
+                EnvConfig,
+                !Ref Environment,
+                DynatraceSecretArn,
+              ]
+        DT_CONNECTION_BASE_URL: !Sub
+          - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_CONNECTION_BASE_URL}}"
+          - SecretArn:
+              !FindInMap [
+                EnvConfig,
+                !Ref Environment,
+                DynatraceSecretArn,
+              ]
+        DT_CLUSTER_ID: !Sub
+          - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_CLUSTER_ID}}"
+          - SecretArn:
+              !FindInMap [
+                EnvConfig,
+                !Ref Environment,
+                DynatraceSecretArn,
+              ]
+        DT_LOG_COLLECTION_AUTH_TOKEN: !Sub
+          - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_LOG_COLLECTION_AUTH_TOKEN}}"
+          - SecretArn:
+              !FindInMap [
+                EnvConfig,
+                !Ref Environment,
+                DynatraceSecretArn,
+              ]
+        DT_TENANT: !Sub
+          - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_TENANT}}"
+          - SecretArn:
+              !FindInMap [
+                EnvConfig,
+                !Ref Environment,
+                DynatraceSecretArn,
+              ]
+        DT_OPEN_TELEMETRY_ENABLE_INTEGRATION: "true"
+
+Resources:
+  SessionFn:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-SessionFn"
+      DeploymentPreference:
+        Type: !Ref LambdaDeploymentPreference
+        Role: !GetAtt CodeDeployServiceRole.Arn
+        Alarms: !If
+          - IsCanaryDeployment
+          - [!Ref SessionFnLambdaErrors, !Ref SessionFnCanary5xxErrors]
+          - [!Ref AWS::NoValue]
+      CodeUri: ../lambdas
+      Handler: session-handler.lambdaHandler
+      Runtime: nodejs22.x
+      Layers:
+        - arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_313_2_20250404-043044_with_collector_nodejs:1
+      VpcConfig:
+        SubnetIds: !If
+          - IsDevPlatformDeploy
+          - [
+              !ImportValue cri-vpc-ProtectedSubnetIdA,
+              !ImportValue cri-vpc-ProtectedSubnetIdB,
+            ]
+          - !Split [",", !ImportValue cri-vpc-PrivateSubnets]
+      Environment:
+        Variables:
+          POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-sessionTS"
+          SQS_AUDIT_EVENT_QUEUE_URL:
+            Fn::ImportValue: !Sub ${AuditTxmaStackName}-AuditEventQueueUrl
+          CRI_IDENTIFIER: !Sub "${CriIdentifier}"
+          ENV_VAR_FEATURE_FLAG_KEY_ROTATION: !Ref KeyRotation 
+          ENV_VAR_FEATURE_FLAG_KEY_ROTATION_LEGACY_KEY_FALLBACK: !Ref KeyRotationFallback
+          SESSION_TABLE: !Ref SessionTable
+          PERSON_IDENTITY_TABLE: !Ref PersonIdentityTable
+          VC_ISSUER: !Ref CriVcIssuer
+      AutoPublishAlias: live
+      AutoPublishAliasAllProperties: true
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - AWSXrayWriteOnlyAccess
+        - DynamoDBWritePolicy:
+            TableName: !Ref SessionTable
+        - DynamoDBWritePolicy:
+            TableName: !Ref PersonIdentityTable
+        - SQSSendMessagePolicy:
+            QueueName:
+              Fn::ImportValue: !Sub ${AuditTxmaStackName}-AuditEventQueueName
+        - KMSDecryptPolicy:
+            KeyId: !ImportValue core-infrastructure-CriDecryptionKey1Id
+        - KMSDecryptPolicy:
+            KeyId: !Ref DynamoTablesEncryptionKey
+        - SSMParameterReadPolicy:
+            ParameterName: !Sub "${AWS::StackName}/clients/*"
+        - Statement:
+            - Effect: Allow
+              Action:
+                - ssm:GetParameters
+              Resource:
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/SessionTtl"
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/KBVCriAudience"
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/AuthRequestKmsEncryptionKeyId"
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${CriIdentifier}/evidence-properties"
+        - Statement:
+            - Sid: auditEventQueueKmsEncryptionKeyPermission
+              Effect: Allow
+              Action:
+                - "kms:Decrypt"
+                - "kms:GenerateDataKey"
+              Resource:
+                Fn::ImportValue: !Sub ${AuditTxmaStackName}-AuditEventQueueEncryptionKeyArn
+      ProvisionedConcurrencyConfig: !If
+        - IsProvisionedConcurrencyEnabled
+        - ProvisionedConcurrentExecutions: !Ref LambdaProvisionedConcurrentExecutions
+        - !Ref AWS::NoValue
+    Metadata: # Manage esbuild properties
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: "node18"
+        Sourcemap: true # Enabling source maps will create the required NODE_OPTIONS environment variables on your lambda function during sam build
+        EntryPoints:
+          - src/handlers/session-handler.ts
+        External:
+          - "@aws-sdk/*"
+
+  SessionFnLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${SessionFn}"
+      RetentionInDays: 30
+
+  SessionFnLogGroupSubscriptionFilterCSLS:
+    Type: AWS::Logs::SubscriptionFilter
+    Condition: IsCSLSEnabled
+    Properties:
+      DestinationArn: !Ref CSLSDestinationArn
+      FilterPattern: ""
+      LogGroupName: !Ref SessionFnLogGroup
+
+  SessionFnPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt SessionFn.Arn
+      Principal: apigateway.amazonaws.com
+
+  SessionFnAliasPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref SessionFn.Alias
+      Principal: apigateway.amazonaws.com
+
+  SessionFnLambdaErrors:
+    Type: AWS::CloudWatch::Alarm
+    Condition: IsCanaryDeployment
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-SessionFunctionLambdaErrors"
+      AlarmDescription: !Sub "Trigger an alarm when lambda errors occurs"
+      ActionsEnabled: true
+      AlarmActions:
+        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
+      OKActions:
+        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
+      InsufficientDataActions: []
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Dimensions:
+        - Name: Resource
+          Value: !Sub "${AWS::StackName}-SessionFn:live"
+        - Name: ExecutedVersion
+          Value: !Sub SessionFn.Version.Version
+      Period: 60
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+
+  SessionFnCanary5xxErrors:
+    Type: AWS::CloudWatch::Alarm
+    Condition: IsCanaryDeployment
+    Properties:
+      ActionsEnabled: true
+      AlarmActions:
+        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
+      OKActions:
+        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
+      AlarmName: !Sub "${AWS::StackName}-SessionFunctionCanary5xxErrors"
+      AlarmDescription: !Sub "SessionFunction Lambda returning 5xx response."
+      Namespace: AWS/ApiGateway
+      MetricName: 5XXError
+      Dimensions:
+        - Name: Method
+          Value: POST
+        - Name: ApiName
+          Value: !Ref CriPrivateApiGwName
+        - Name: Stage
+          Value: !Ref Environment
+        - Name: Resource
+          Value: /session
+      Statistic: Sum
+      Unit: Count
+      Period: 60
+      EvaluationPeriods: 1
+      Threshold: 2
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+
+  AuthorizationFn:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-AuthorizationFn"
+      DeploymentPreference:
+        Type: !Ref LambdaDeploymentPreference
+        Role: !GetAtt CodeDeployServiceRole.Arn
+        Alarms: !If
+          - IsCanaryDeployment
+          - [
+              !Ref AuthorizationFnLambdaErrors,
+              !Ref AuthorizationFnCanary5xxErrors,
+            ]
+          - [!Ref AWS::NoValue]
+      CodeUri: ../lambdas
+      Handler: authorization-handler.lambdaHandler
+      Runtime: nodejs22.x
+      Layers:
+        - arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_313_2_20250404-043044_with_collector_nodejs:1
+      VpcConfig:
+        SubnetIds: !If
+          - IsDevPlatformDeploy
+          - [
+              !ImportValue cri-vpc-PrivateSubnetIdA,
+              !ImportValue cri-vpc-PrivateSubnetIdB,
+            ]
+          - !Split [",", !ImportValue cri-vpc-PrivateSubnets]
+      Environment:
+        Variables:
+          POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-authorizationTS"
+          SESSION_TABLE: !Ref SessionTable
+      AutoPublishAlias: live
+      AutoPublishAliasAllProperties: true
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - AWSXrayWriteOnlyAccess
+        - DynamoDBReadPolicy:
+            TableName: !Ref SessionTable
+        - DynamoDBWritePolicy:
+            TableName: !Ref SessionTable
+        - KMSDecryptPolicy:
+            KeyId: !Ref DynamoTablesEncryptionKey
+        - SSMParameterReadPolicy:
+            ParameterName: !Sub "${AWS::StackName}/clients/*"
+      ProvisionedConcurrencyConfig: !If
+        - IsProvisionedConcurrencyEnabled
+        - ProvisionedConcurrentExecutions: !Ref LambdaProvisionedConcurrentExecutions
+        - !Ref AWS::NoValue
+    Metadata: # Manage esbuild properties
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: "node18"
+        Sourcemap: true # Enabling source maps will create the required NODE_OPTIONS environment variables on your lambda function during sam build
+        EntryPoints:
+          - src/handlers/authorization-handler.ts
+        External:
+          - "@aws-sdk/*"
+
+  AuthorizationFnLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AuthorizationFn}"
+      RetentionInDays: 30
+
+  AuthorizationFnLogGroupSubscriptionFilterCSLS:
+    Type: AWS::Logs::SubscriptionFilter
+    Condition: IsCSLSEnabled
+    Properties:
+      DestinationArn: !Ref CSLSDestinationArn
+      FilterPattern: ""
+      LogGroupName: !Ref AuthorizationFnLogGroup
+
+  AuthorizationFnPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt AuthorizationFn.Arn
+      Principal: apigateway.amazonaws.com
+
+  AuthorizationFnAliasPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref AuthorizationFn.Alias
+      Principal: apigateway.amazonaws.com
+
+  AuthorizationFnLambdaErrors:
+    Type: AWS::CloudWatch::Alarm
+    Condition: IsCanaryDeployment
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-AuthorizationFunctionLambdaErrors"
+      AlarmDescription: !Sub "Trigger an alarm when lambda errors occurs"
+      ActionsEnabled: true
+      AlarmActions:
+        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
+      OKActions:
+        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
+      InsufficientDataActions: []
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Dimensions:
+        - Name: Resource
+          Value: !Sub "${AWS::StackName}-AuthorizationFn:live"
+        - Name: ExecutedVersion
+          Value: !Sub AuthorizationFn.Version.Version
+      Period: 60
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+
+  AuthorizationFnCanary5xxErrors:
+    Type: AWS::CloudWatch::Alarm
+    Condition: IsCanaryDeployment
+    Properties:
+      ActionsEnabled: true
+      AlarmActions:
+        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
+      OKActions:
+        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
+      AlarmName: !Sub "${AWS::StackName}-AuthorizationFunctionCanary5xxErrors"
+      AlarmDescription: !Sub "AuthorizationFunction Lambda returning 5xx response."
+      Namespace: AWS/ApiGateway
+      MetricName: 5XXError
+      Dimensions:
+        - Name: Method
+          Value: GET
+        - Name: ApiName
+          Value: !Ref CriPrivateApiGwName
+        - Name: Stage
+          Value: !Ref Environment
+        - Name: Resource
+          Value: /authorization
+      Statistic: Sum
+      Unit: Count
+      Period: 60
+      EvaluationPeriods: 1
+      Threshold: 2
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+
+  AccessTokenFn:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-AccessTokenFn"
+      DeploymentPreference:
+        Type: !Ref LambdaDeploymentPreference
+        Role: !GetAtt CodeDeployServiceRole.Arn
+        Alarms: !If
+          - IsCanaryDeployment
+          - [!Ref AccessTokenFnLambdaErrors, !Ref AccessTokenFnCanary5xxErrors]
+          - [!Ref AWS::NoValue]
+      Handler: access-token-handler.lambdaHandler
+      CodeUri: ../lambdas
+      Runtime: nodejs22.x
+      Layers:
+        - arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_313_2_20250404-043044_with_collector_nodejs:1
+      VpcConfig:
+        SubnetIds: !If
+          - IsDevPlatformDeploy
+          - [
+              !ImportValue cri-vpc-ProtectedSubnetIdA,
+              !ImportValue cri-vpc-ProtectedSubnetIdB,
+            ]
+          - !Split [",", !ImportValue cri-vpc-PrivateSubnets]
+      Environment:
+        Variables:
+          POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-access-token-2"
+          SESSION_TABLE: !Ref SessionTable
+      AutoPublishAlias: live
+      AutoPublishAliasAllProperties: true
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - AWSXrayWriteOnlyAccess
+        - DynamoDBReadPolicy:
+            TableName:
+              Ref: SessionTable
+        - DynamoDBWritePolicy:
+            TableName:
+              Ref: SessionTable
+        - KMSDecryptPolicy:
+            KeyId: !Ref DynamoTablesEncryptionKey
+        - Statement:
+            - Effect: Allow
+              Action:
+                - ssm:GetParameters
+              Resource:
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/SessionTtl"
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/clients/*"
+      ProvisionedConcurrencyConfig: !If
+        - IsProvisionedConcurrencyEnabled
+        - ProvisionedConcurrentExecutions: !Ref LambdaProvisionedConcurrentExecutions
+        - !Ref AWS::NoValue
+    Metadata: # Manage esbuild properties
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: "node18"
+        Sourcemap: true # Enabling source maps will create the required NODE_OPTIONS environment variables on your lambda function during sam build
+        EntryPoints:
+          - src/handlers/access-token-handler.ts
+        External:
+          - "@aws-sdk/*"
+
+  AccessTokenFnLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AccessTokenFn}"
+      RetentionInDays: 30
+
+  AccessTokenFnLogGroupSubscriptionFilterCSLS:
+    Type: AWS::Logs::SubscriptionFilter
+    Condition: IsCSLSEnabled
+    Properties:
+      DestinationArn: !Ref CSLSDestinationArn
+      FilterPattern: ""
+      LogGroupName: !Ref AccessTokenFnLogGroup
+
+  AccessTokenPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt AccessTokenFn.Arn
+      Principal: apigateway.amazonaws.com
+
+  AccessTokenAliasPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref AccessTokenFn.Alias
+      Principal: apigateway.amazonaws.com
+
+  AccessTokenFnLambdaErrors:
+    Type: AWS::CloudWatch::Alarm
+    Condition: IsCanaryDeployment
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-AccessTokenFunctionLambdaErrors"
+      AlarmDescription: !Sub "Trigger an alarm when lambda errors occurs"
+      ActionsEnabled: true
+      AlarmActions:
+        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
+      OKActions:
+        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
+      InsufficientDataActions: []
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Dimensions:
+        - Name: Resource
+          Value: !Sub "${AWS::StackName}-AccessTokenFn:live"
+        - Name: ExecutedVersion
+          Value: !Sub AccessTokenFn.Version.Version
+      Period: 60
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+
+  AccessTokenFnCanary5xxErrors:
+    Type: AWS::CloudWatch::Alarm
+    Condition: IsCanaryDeployment
+    Properties:
+      ActionsEnabled: true
+      AlarmActions:
+        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
+      OKActions:
+        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
+      AlarmName: !Sub "${AWS::StackName}-AccessTokenFunctionCanary5xxErrors"
+      AlarmDescription: !Sub "AccessTokenFunction Lambda returning 5xx response."
+      Namespace: AWS/ApiGateway
+      MetricName: 5XXError
+      Dimensions:
+        - Name: Method
+          Value: POST
+        - Name: ApiName
+          Value: !Ref CriPublicApiGwName
+        - Name: Stage
+          Value: !Ref Environment
+        - Name: Resource
+          Value: /token
+      Statistic: Sum
+      Unit: Count
+      Period: 60
+      EvaluationPeriods: 1
+      Threshold: 2
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+
+  CreateAuthCodeFn:
+    Type: AWS::Serverless::Function
+    Condition: IsDev
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-CreateAuthCodeFn"
+      CodeUri: ../lambdas
+      Handler: create-auth-code-handler.lambdaHandler
+      Runtime: nodejs22.x
+      Layers:
+        - arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_313_2_20250404-043044_with_collector_nodejs:1
+      VpcConfig:
+        SubnetIds: !If
+          - IsDevPlatformDeploy
+          - [
+              !ImportValue cri-vpc-PrivateSubnetIdA,
+              !ImportValue cri-vpc-PrivateSubnetIdB,
+            ]
+          - !Split [",", !ImportValue cri-vpc-PrivateSubnets]
+      Environment:
+        Variables:
+          POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-create-auth-code"
+          SESSION_TABLE: !Ref SessionTable
+      Policies:
+        - DynamoDBWritePolicy:
+            TableName:
+              Ref: SessionTable
+        - KMSDecryptPolicy:
+            KeyId: !Ref DynamoTablesEncryptionKey
+        - Statement:
+            - Effect: Allow
+              Action:
+                - ssm:GetParameters
+              Resource:
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/SessionTableName"
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/clients/*"
+    Metadata: # Manage esbuild properties
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: "node18"
+        Sourcemap: true # Enabling source maps will create the required NODE_OPTIONS environment variables on your lambda function during sam build
+        EntryPoints:
+          - src/handlers/create-auth-code-handler.ts
+        External:
+          - "@aws-sdk/*"
+
+  CreateAuthCodeFnPermission:
+    Type: AWS::Lambda::Permission
+    Condition: IsDev
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt CreateAuthCodeFn.Arn
+      Principal: apigateway.amazonaws.com
+
+  DynamoTablesEncryptionKey:
+    Type: AWS::KMS::Key
+    Properties:
+      EnableKeyRotation: true
+      Description: !Sub ${AWS::StackName} customer-managed key for DynamoDB at-rest encryption
+      KeyPolicy:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
+            Action:
+              - kms:*
+            Resource: "*"
+          - Effect: Allow
+            Principal:
+              Service: "dynamodb.amazonaws.com"
+            Action:
+              - "kms:Encrypt*"
+              - "kms:Decrypt*"
+              - "kms:ReEncrypt*"
+              - "kms:GenerateDataKey*"
+              - "kms:Describe*"
+            Resource: "*"
+            Condition:
+              StringEquals:
+                "kms:CallerAccount": !Sub "${AWS::AccountId}"
+                "kms:ViaService":
+                  - "dynamodb.amazonaws.com"
+                  - !Sub "lambda.${AWS::Region}.amazonaws.com"
+
+  SessionTable:
+    Type: "AWS::DynamoDB::Table"
+    Properties:
+      TableName: !Sub "session-${AWS::StackName}"
+      BillingMode: "PAY_PER_REQUEST"
+      AttributeDefinitions:
+        - AttributeName: "sessionId"
+          AttributeType: "S"
+        - AttributeName: "authorizationCode"
+          AttributeType: "S"
+        - AttributeName: "accessToken"
+          AttributeType: "S"
+      KeySchema:
+        - AttributeName: "sessionId"
+          KeyType: "HASH"
+      GlobalSecondaryIndexes:
+        - IndexName: "authorizationCode-index"
+          KeySchema:
+            - AttributeName: "authorizationCode"
+              KeyType: "HASH"
+          Projection:
+            NonKeyAttributes:
+              - "sessionId"
+              - "redirectUri"
+              - "clientId"
+            ProjectionType: "INCLUDE"
+        - IndexName: "access-token-index"
+          KeySchema:
+            - AttributeName: "accessToken"
+              KeyType: "HASH"
+          Projection:
+            NonKeyAttributes:
+              - "sessionId"
+              - "subject"
+            ProjectionType: "INCLUDE"
+        - IndexName: "access-token-index-with-event-data"
+          KeySchema:
+            - AttributeName: "accessToken"
+              KeyType: "HASH"
+          Projection:
+            NonKeyAttributes:
+              - "sessionId"
+              - "subject"
+              - "persistentSessionId"
+              - "clientSessionId"
+              - "clientIpAddress"
+              - "clientId"
+            ProjectionType: "INCLUDE"
+      TimeToLiveSpecification:
+        AttributeName: expiryDate
+        Enabled: true
+      SSESpecification: !If
+        - IsCustomerManagedKeyEnabled
+        - KMSMasterKeyId: !Ref DynamoTablesEncryptionKey
+          SSEEnabled: true
+          SSEType: KMS
+        - !Ref "AWS::NoValue"
+
+  PersonIdentityTable:
+    Type: "AWS::DynamoDB::Table"
+    Properties:
+      TableName: !Sub "person-identity-${AWS::StackName}"
+      BillingMode: "PAY_PER_REQUEST"
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      AttributeDefinitions:
+        - AttributeName: "sessionId"
+          AttributeType: "S"
+      KeySchema:
+        - AttributeName: "sessionId"
+          KeyType: "HASH"
+      TimeToLiveSpecification:
+        AttributeName: expiryDate
+        Enabled: true
+      SSESpecification: !If
+        - IsCustomerManagedKeyEnabled
+        - KMSMasterKeyId: !Ref DynamoTablesEncryptionKey
+          SSEEnabled: true
+          SSEType: KMS
+        - !Ref "AWS::NoValue"
+
+  LoggingKmsKey:
+    Type: AWS::KMS::Key
+    Properties:
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
+            Action:
+              - kms:*
+            Resource: "*"
+          - Effect: Allow
+            Principal:
+              Service: !Sub "logs.${AWS::Region}.amazonaws.com"
+            Action:
+              - "kms:Encrypt*"
+              - "kms:Decrypt*"
+              - "kms:ReEncrypt*"
+              - "kms:GenerateDataKey*"
+              - "kms:Describe*"
+            Resource: "*"
+            Condition:
+              ArnLike:
+                "kms:EncryptionContext:aws:logs:arn": !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*"
+
+  CodeDeployServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Action:
+              - sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - codedeploy.amazonaws.com
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSCodeDeployRoleForLambda
+      PermissionsBoundary:
+        !If [
+          IsPermissionsBoundaryEnabled,
+          !Ref PermissionsBoundaryArn,
+          !Ref AWS::NoValue,
+        ]
+
+  SessionTTLParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/SessionTtl"
+      Type: String
+      Value: !Ref DbSessionTTL
+      Description: default time to live for a session item (seconds)
+
+  SessionTableNameParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/SessionTableName"
+      Value: !Sub session-${AWS::StackName}
+      Type: String
+      Description: session dynamodb table name
+
+  AuthRequestKmsEncryptionKeyIdParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/AuthRequestKmsEncryptionKeyId"
+      Type: String
+      Value: !ImportValue core-infrastructure-CriDecryptionKey1Id
+      Description: The (KMS) encryption key identifier for decrypting authorisation requests
+
+  VerifiableCredentialIssuerParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/verifiable-credential/issuer"
+      Type: String
+      Value: !Ref CriVcIssuer
+      Description: Issuer of the Verifiable Credential
+
+  VerifiableCredentialKmsSigningKeyParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/verifiableCredentialKmsSigningKeyId"
+      Type: String
+      Value: !ImportValue core-infrastructure-CriVcSigningKey1Id
+      Description: Verifiable Credential Key Id
+
+  # ===========================
+  # region - clients ssm params
+  # ===========================
+  IPVCoreStubAwsProdAuthenticationAlgParameter:
+    Condition: IsNotProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod/jwtAuthentication/authenticationAlg"
+      Type: String
+      Value: ES256
+
+  IPVCoreStubAwsBuildAuthenticationAlgParameter:
+    Condition: IsNotProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build/jwtAuthentication/authenticationAlg"
+      Type: String
+      Value: ES256
+
+  IPVCoreStubAuthenticationAlgParameter:
+    Condition: IsNotProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub/jwtAuthentication/authenticationAlg"
+      Type: String
+      Value: ES256
+
+  IPVCoreStubPreProdAwsBuildAuthenticationAlgParameter:
+    Condition: IsStagingIntegrationOrProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod-aws-build/jwtAuthentication/authenticationAlg"
+      Type: String
+      Value: ES256
+
+  IPVCoreStubPreProdAuthenticationAlgParameter:
+    Condition: IsStagingIntegrationOrProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod/jwtAuthentication/authenticationAlg"
+      Type: String
+      Value: ES256
+
+  IPVCoreAuthenticationAlgParameter:
+    Condition: IsStagingIntegrationOrProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core/jwtAuthentication/authenticationAlg"
+      Type: String
+      Value: ES256
+
+  IPVCoreStubAwsProdAudienceParameter:
+    Condition: IsNotProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod/jwtAuthentication/audience"
+      Type: String
+      Value: !Ref CriAudience
+
+  IPVCoreStubAwsBuildAudienceParameter:
+    Condition: IsNotProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build/jwtAuthentication/audience"
+      Type: String
+      Value: !Ref CriAudience
+
+  IPVCoreStubAudienceParameter:
+    Condition: IsNotProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub/jwtAuthentication/audience"
+      Type: String
+      Value: !Ref CriAudience
+
+  IPVCoreStubPreProdAwsBuildAudienceParameter:
+    Condition: IsProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod-aws-build/jwtAuthentication/audience"
+      Type: String
+      Value: !Ref CriAudience
+
+  IPVCoreStubPreProdAudienceParameter:
+    Condition: IsProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod/jwtAuthentication/audience"
+      Type: String
+      Value: !Ref CriAudience
+
+  IPVCoreAudienceParameter:
+    Condition: IsStagingIntegrationOrProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core/jwtAuthentication/audience"
+      Type: String
+      Value: !Ref CriAudience
+
+  IPVCoreStubAwsProdIssuerParameter:
+    Condition: IsNotProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod/jwtAuthentication/issuer"
+      Type: String
+      Value: "https://cri.core.stubs.account.gov.uk"
+
+  IPVCoreStubAwsBuildIssuerParameter:
+    Condition: IsNotProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build/jwtAuthentication/issuer"
+      Type: String
+      Value: "https://cri.core.build.stubs.account.gov.uk"
+
+  IPVCoreStubIssuerParameter:
+    Condition: IsNotProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub/jwtAuthentication/issuer"
+      Type: String
+      Value: "https://di-ipv-core-stub.london.cloudapps.digital"
+
+  IPVCoreStubPreProdAwsBuildIssuerParameter:
+    Condition: IsProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod-aws-build/jwtAuthentication/issuer"
+      Type: String
+      Value: "https://cri-preprod.core.build.stubs.account.gov.uk"
+
+  IPVCoreStubPreProdIssuerParameter:
+    Condition: IsProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod/jwtAuthentication/issuer"
+      Type: String
+      Value: "https://cri-preprod.core.stubs.account.gov.uk"
+
+  IPVCoreIssuerParameter:
+    Condition: IsStagingIntegrationOrProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core/jwtAuthentication/issuer"
+      Type: String
+      Value: !FindInMap [EnvConfig, !Ref "Environment", IPVCoreIssuer]
+
+  IPVCoreStubAwsProdRedirectURIParameter:
+    Condition: IsNotProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod/jwtAuthentication/redirectUri"
+      Type: String
+      Value: "https://cri.core.stubs.account.gov.uk/callback"
+
+  IPVCoreStubAwsBuildRedirectURIParameter:
+    Condition: IsNotProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build/jwtAuthentication/redirectUri"
+      Type: String
+      Value: "https://cri.core.build.stubs.account.gov.uk/callback"
+
+  IPVCoreStubRedirectURIParameter:
+    Condition: IsNotProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub/jwtAuthentication/redirectUri"
+      Type: String
+      Value: "https://di-ipv-core-stub.london.cloudapps.digital/callback"
+
+  IPVCoreStubPreProdAwsBuildRedirectURIParameter:
+    Condition: IsProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod-aws-build/jwtAuthentication/redirectUri"
+      Type: String
+      Value: "https://cri-preprod.core.build.stubs.account.gov.uk/callback"
+
+  IPVCoreStubPreProdRedirectURIParameter:
+    Condition: IsProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod/jwtAuthentication/redirectUri"
+      Type: String
+      Value: "https://cri-preprod.core.stubs.account.gov.uk/callback"
+
+  IPVCoreRedirectURIParameter:
+    Condition: IsStagingIntegrationOrProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core/jwtAuthentication/redirectUri"
+      Type: String
+      Value: !Ref IPVCoreRedirectURI
+
+  IPVCoreStubAWSProdJwksEndpointParameter:
+    Condition: IsNotProdAndIsStubJwksPresent
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod/jwtAuthentication/jwksEndpoint"
+      Type: String
+      Value: !Ref IPVCoreStubJwksEndpoint
+
+  IPVCoreStubAWSBuildJwksEndpointParameter:
+    Condition: IsNotProdAndIsStubJwksPresent
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build/jwtAuthentication/jwksEndpoint"
+      Type: String
+      Value: !Ref IPVCoreStubJwksEndpoint
+
+  IPVCoreIPVCoreStubJwksEndpointParameter:
+    Condition: IsNotProdAndIsStubJwksPresent
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub/jwtAuthentication/jwksEndpoint"
+      Type: String
+      Value: !Ref IPVCoreStubJwksEndpoint
+
+  IPVCoreStubPreProdAWSBuildJwksEndpointParameter:
+    Condition: IsNotProdAndIsStubJwksPresent
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod-aws-build/jwtAuthentication/jwksEndpoint"
+      Type: String
+      Value: !Ref IPVCoreStubJwksEndpoint
+
+  IPVCoreStubPreProdJwksEndpointParameter:
+    Condition: IsNotProdAndIsStubJwksPresent
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod/jwtAuthentication/jwksEndpoint"
+      Type: String
+      Value: !Ref IPVCoreStubJwksEndpoint
+
+  IPVCoreStubAWSHeadlessJwksEndpointParameter:
+    Condition: IsNotProdAndIsStubJwksPresent
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-headless/jwtAuthentication/jwksEndpoint"
+      Type: String
+      Value: !Ref IPVCoreStubJwksEndpoint
+
+  IPVCoreStubAWSProdThirdPartyJwksEndpointParameter:
+    Condition: IsNotProdAndIsStubJwksPresent
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod_3rdparty/jwtAuthentication/jwksEndpoint"
+      Type: String
+      Value: !Ref IPVCoreStubJwksEndpoint
+
+  IPVCoreStubAWSBuildThirdPartyJwksEndpointParameter:
+    Condition: IsNotProdAndIsStubJwksPresent
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build_3rdparty/jwtAuthentication/jwksEndpoint"
+      Type: String
+      Value: !Ref IPVCoreStubJwksEndpoint
+
+  IPVCoreThirdPartyStubsJwksEndpointParameter:
+    Condition: IsNotProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-3rd-party-stubs/jwtAuthentication/jwksEndpoint"
+      Type: String
+      Value: !FindInMap [EnvConfig, !Ref Environment, CoreJwksEndpoint]
+
+  IPVCoreJwksEndpointParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core/jwtAuthentication/jwksEndpoint"
+      Type: String
+      Value: !FindInMap [EnvConfig, !Ref Environment, CoreJwksEndpoint]
+
+  IPVCore3rdPartyStubsAudienceParameter:
+    Condition: IsStaging
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-3rd-party-stubs/jwtAuthentication/audience"
+      Type: String
+      Value: !Ref CriAudience
+
+  IPVCore3rdPartyStubsIssuerParameter:
+    Condition: IsStaging
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-3rd-party-stubs/jwtAuthentication/issuer"
+      Type: String
+      Value: !FindInMap [EnvConfig, !Ref "Environment", IPVCoreIssuer]
+
+  IPVCore3rdPartyStubsRedirectURIParameter:
+    Condition: IsStaging
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-3rd-party-stubs/jwtAuthentication/redirectUri"
+      Type: String
+      Value: !Ref IPVCoreRedirectURI
+
+  IPVCore3rdPartyStubsAuthenticationAlgParameter:
+    Condition: IsStaging
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-3rd-party-stubs/jwtAuthentication/authenticationAlg"
+      Type: String
+      Value: ES256
+
+  IPVCoreStubAwsHeadlessAudienceParameter:
+    Condition: IsNotProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-headless/jwtAuthentication/audience"
+      Type: String
+      Value: !Ref CriAudience
+
+  IPVCoreStubAwsHeadlessIssuerParameter:
+    Condition: IsNotProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-headless/jwtAuthentication/issuer"
+      Type: String
+      Value: !Join
+        - ""
+        - - "https://test-resources."
+          - !Select
+            - 1
+            - !Split
+              - "https://"
+              - !Ref CriVcIssuer
+
+  IPVCoreStubAwsHeadlessRedirectURIParameter:
+    Condition: IsNotProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-headless/jwtAuthentication/redirectUri"
+      Type: String
+      Value: !Join
+        - ""
+        - - "https://test-resources."
+          - !Select
+            - 1
+            - !Split
+              - "https://"
+              - !Ref CriVcIssuer
+          - "/callback"
+
+  IPVCoreStubAwsHeadlessAuthenticationAlgParameter:
+    Condition: IsNotProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-headless/jwtAuthentication/authenticationAlg"
+      Type: String
+      Value: ES256
+
+  IPVCoreStubAwsProd3rdPartyAudienceParameter:
+    Condition: IsNotProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod_3rdparty/jwtAuthentication/audience"
+      Type: String
+      Value: !Ref CriAudience
+
+  IPVCoreStubAwsProd3rdPartyIssuerParameter:
+    Condition: IsNotProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod_3rdparty/jwtAuthentication/issuer"
+      Type: String
+      Value: "https://cri-3rdparty.core.stubs.account.gov.uk"
+
+  IPVCoreStubAwsProd3rdPartyRedirectURIParameter:
+    Condition: IsNotProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod_3rdparty/jwtAuthentication/redirectUri"
+      Type: String
+      Value: "https://cri-3rdparty.core.stubs.account.gov.uk/callback"
+
+  IPVCoreStubAwsProd3rdPartyAuthenticationAlgParameter:
+    Condition: IsNotProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod_3rdparty/jwtAuthentication/authenticationAlg"
+      Type: String
+      Value: ES256
+
+  IPVCoreStubAwsBuild3rdPartyAudienceParameter:
+    Condition: IsNotProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build_3rdparty/jwtAuthentication/audience"
+      Type: String
+      Value: !Ref CriAudience
+
+  IPVCoreStubAwsBuild3rdPartyIssuerParameter:
+    Condition: IsNotProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build_3rdparty/jwtAuthentication/issuer"
+      Type: String
+      Value: "https://cri-3rdparty.core.build.stubs.account.gov.uk"
+
+  IPVCoreStubAwsBuild3rdPartyRedirectURIParameter:
+    Condition: IsNotProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build_3rdparty/jwtAuthentication/redirectUri"
+      Type: String
+      Value: "https://cri-3rdparty.core.build.stubs.account.gov.uk/callback"
+
+  IPVCoreStubAwsBuild3rdPartyAuthenticationAlgParameter:
+    Condition: IsNotProd
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build_3rdparty/jwtAuthentication/authenticationAlg"
+      Type: String
+      Value: ES256
+
+  # ==============================
+  # endregion - clients ssm params
+  # ==============================
+
+  PreMergeDevOnlyApi:
+    Type: AWS::Serverless::Api
+    Condition: IsDev
+    Properties:
+      Description: CRI API Gateway for pre-merge testing in dev only
+      MethodSettings:
+        - LoggingLevel: INFO
+          ResourcePath: "/*"
+          HttpMethod: "*"
+          ThrottlingRateLimit: 5
+          ThrottlingBurstLimit: 10
+      AccessLogSetting:
+        DestinationArn: !Sub "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${PreMergeDevOnlyApiAccessLogGroup}"
+        Format: >-
+          {
+          "requestId":"$context.requestId",
+          "ip":"$context.identity.sourceIp",
+          "requestTime":"$context.requestTime",
+          "httpMethod":"$context.httpMethod",
+          "path":"$context.path",
+          "routeKey":"$context.routeKey",
+          "status":"$context.status",
+          "protocol":"$context.protocol",
+          "responseLatency":"$context.responseLatency",
+          "responseLength":"$context.responseLength"
+          }
+      Name: !Sub "oauth-common-${AWS::StackName}"
+      StageName: !Ref Environment
+      DefinitionBody:
+        openapi: "3.0.1"
+        info:
+          title: "pre-merge dev only OAuth Common API gateway"
+          version: "1.0"
+
+        paths:
+          /pre-merge-create-auth-code:
+            get:
+              parameters:
+                - $ref: "#/components/parameters/SessionHeader"
+              responses:
+                "200":
+                  description: A successful response with an authorization code
+                  content:
+                    application/json:
+                      schema:
+                        type: object
+                        properties:
+                          authCode:
+                            type: string
+                            description: The authorization code for premerge
+                "400":
+                  description: A bad request error with a message
+                  content:
+                    application/json:
+                      schema:
+                        $ref: "#/components/schemas/Error"
+                "500":
+                  description: An internal server error with a message
+                  content:
+                    application/json:
+                      schema:
+                        $ref: "#/components/schemas/Error"
+              x-amazon-apigateway-request-validator: "Validate both"
+              x-amazon-apigateway-integration:
+                type: "aws_proxy"
+                httpMethod: "POST"
+                uri:
+                  Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${CreateAuthCodeFn.Arn}/invocations
+                passthroughBehavior: "when_no_match"
+
+          /authorization:
+            get:
+              parameters:
+                - $ref: "#/components/parameters/SessionHeader"
+              responses:
+                "200":
+                  description: "200 response"
+                  content:
+                    application/json:
+                      schema:
+                        $ref: "#/components/schemas/AuthorizationResponse"
+                "400":
+                  description: "400 response"
+                  content:
+                    application/json:
+                      schema:
+                        $ref: "#/components/schemas/Error"
+                "500":
+                  description: "500 response"
+                  content:
+                    application/json:
+                      schema:
+                        $ref: "#/components/schemas/Error"
+              x-amazon-apigateway-request-validator: "Validate both"
+              x-amazon-apigateway-integration:
+                type: "aws_proxy"
+                httpMethod: "POST"
+                uri:
+                  Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AuthorizationFn.Arn}/invocations
+                passthroughBehavior: "when_no_match"
+
+          /session:
+            post:
+              parameters:
+                - $ref: "#/components/parameters/AuditHeader"
+              requestBody:
+                content:
+                  application/json:
+                    schema:
+                      $ref: "#/components/schemas/Authorization"
+                required: true
+              responses:
+                "400":
+                  description: "400 response"
+                  content:
+                    application/json:
+                      schema:
+                        $ref: "#/components/schemas/Error"
+                "500":
+                  description: "500 response"
+                  content:
+                    application/json:
+                      schema:
+                        $ref: "#/components/schemas/Error"
+                "201":
+                  description: "201 response"
+                  content:
+                    application/json:
+                      schema:
+                        $ref: "#/components/schemas/Session"
+              x-amazon-apigateway-request-validator: "Validate both"
+              x-amazon-apigateway-integration:
+                httpMethod: "POST"
+                uri:
+                  Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${SessionFn.Arn}/invocations
+                responses:
+                  default:
+                    statusCode: "200"
+                passthroughBehavior: "when_no_match"
+                contentHandling: "CONVERT_TO_TEXT"
+                type: "aws_proxy"
+
+          /token:
+            post:
+              requestBody:
+                content:
+                  application/x-www-form-urlencoded:
+                    schema:
+                      required:
+                        - "grant_type"
+                        - "code"
+                        - "client_assertion_type"
+                        - "client_assertion"
+                        - "redirect_uri"
+                      properties:
+                        grant_type:
+                          type: "string"
+                          pattern: "authorization_code"
+                          example: "authorization_code"
+                        code:
+                          type: "string"
+                          minLength: 1
+                        client_assertion_type:
+                          type: "string"
+                          pattern: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer"
+                          example: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer"
+                        client_assertion:
+                          type: "string"
+                          pattern: "[a-zA-Z0-9_=]+\\.[a-zA-Z0-9_=]+\\.[a-zA-Z0-9_\\-\\+\\/=]+"
+                          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0dCIsImlhdCI6MTUxNjIzOTAyMn0.SbcN-ywpLObhMbbaMCtW1Un8LYhQzHsEth9LvTk4oQQ"
+                        redirect_uri:
+                          type: "string"
+                          format: "uri"
+                          example: "https://di-ipv-core-stub.london.cloudapps.digital/callback"
+              responses:
+                "201":
+                  description: "201 response"
+                  content:
+                    application/json:
+                      schema:
+                        $ref: "#/components/schemas/TokenResponse"
+                "400":
+                  description: "400 response"
+                  content:
+                    application/json:
+                      schema:
+                        $ref: "#/components/schemas/Error"
+                "500":
+                  description: "500 response"
+                  content:
+                    application/json:
+                      schema:
+                        $ref: "#/components/schemas/Error"
+              x-amazon-apigateway-request-validator: "Validate both"
+              x-amazon-apigateway-integration:
+                httpMethod: "POST"
+                uri:
+                  Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AccessTokenFn.Arn}/invocations
+                responses:
+                  default:
+                    statusCode: "200"
+                passthroughBehavior: "when_no_match"
+                contentHandling: "CONVERT_TO_TEXT"
+                type: "aws_proxy"
+
+        components:
+          parameters:
+            SessionHeader:
+              name: session-id
+              in: header
+              description: A UUID generated by the Session API to act as a primary key for the Session in DynamoDB
+              required: true
+              schema:
+                type: string
+            AuditHeader:
+              name: txma-audit-encoded
+              in: header
+              description: An encoded header sent by the FE containing info about request origin
+              required: false
+              schema:
+                type: string
+          schemas:
+            TokenResponse:
+              title: AccessToken
+              required:
+                - "access_token"
+                - "expires_in"
+              type: "object"
+              properties:
+                access_token:
+                  type: string
+                  description: The Access Token for the given token request
+                token_type:
+                  type: string
+                  description: The Token Type issued
+                  example: Bearer
+                expires_in:
+                  type: string
+                  description: The expiry time, in seconds
+                  example: "3600"
+                refresh_token:
+                  type: string
+                  description: The refresh token is optional, not currently applicable
+            Authorization:
+              required:
+                - "client_id"
+                - "request"
+              type: "object"
+              properties:
+                client_id:
+                  type: "string"
+                  minLength: 1
+                  example: "ipv-core-stub"
+                request:
+                  type: "string"
+            AuthorizationResponse:
+              required:
+                - "redirect_uri"
+                - "code"
+                - "state"
+              type: "object"
+              properties:
+                code:
+                  type: "string"
+                  example: "981bb74c-3b5e-462e-ba3a-abf868e5da68"
+                state:
+                  type: "string"
+                  example: "state"
+                  minLength: 1
+                redirect_uri:
+                  type: "string"
+                  format: "uri"
+                  example: "https://di-ipv-core-stub.london.cloudapps.digital/callback"
+            Error:
+              title: "Error Schema"
+              type: "object"
+              properties:
+                message:
+                  type: "string"
+            Session:
+              required:
+                - "session_id"
+              type: "object"
+              properties:
+                session_id:
+                  type: "string"
+        x-amazon-apigateway-request-validators:
+          Validate both:
+            validateRequestBody: true
+            validateRequestParameters: true
+      OpenApiVersion: 3.0.1
+      EndpointConfiguration:
+        Type: REGIONAL
+      Tags:
+        FMSRegionalPolicy: false
+        CustomPolicy: true
+
+  PreMergeDevOnlyApiAccessLogGroup:
+    Type: AWS::Logs::LogGroup
+    Condition: IsDev
+    Properties:
+      LogGroupName: !Sub /aws/apigateway/${AWS::StackName}-${PreMergeDevOnlyApi}-private-AccessLogs
+      RetentionInDays: 30
+
+Outputs:
+  DbCustomerManagedKeyID:
+    Condition: IsCustomerManagedKeyEnabled
+    Description: The ID of the CMK used to encrypt DynamoDB tables at rest
+    Value: !Ref DynamoTablesEncryptionKey
+  DbSessionTTL:
+    Description: Time to live for a session item (seconds)
+    Value: !Ref DbSessionTTL
+  DbSessionTableName:
+    Description: The name of the session table in DynamoDB
+    Value: !Ref SessionTable
+  DbPersonIdentityTableName:
+    Description: The name of the person identity table in DynamoDB
+    Value: !Ref PersonIdentityTable
+  LambdaSessionFunctionName:
+    Description: The name of the session function
+    Value: !Ref SessionFn
+  LambdaAuthorizationFunctionName:
+    Description: The name of the authorisation function
+    Value: !Ref AuthorizationFn
+  LambdaAccessTokenFunctionName:
+    Description: The name of the access token function
+    Value: !Ref AccessTokenFn
+  PreMergeDevOnlyApiId:
+    Condition: IsDev
+    Description: ID of the dev-only OAuth Common API
+    Value: !Ref PreMergeDevOnlyApi
+  VCSigningKeyID:
+    Description: The ID of the KMS key used to sign VCs
+    Value: !GetAtt VerifiableCredentialKmsSigningKeyParameter.Value

@@ -1,7 +1,6 @@
 {
-  "name": "ipv-cri-common-lambdas",
+  "name": "ipv-cri-oauth-common",
   "workspaces": [
-    "lambdas",
-    "test-resources/**"
+    "lambdas"
   ]
 }

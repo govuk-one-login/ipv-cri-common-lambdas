@@ -1,60 +1,55 @@
-# di-ipv-cri-common-lambdas: DI IPV Credential Issuer Common Lambdas
+# di-ipv-cri-oauth-common: DI IPV Credential Issuer Common OAuth Stack
 
-This repository is the home for common CRI Lambdas supporting Cloud Formation infrastructure which is shared or sensitive. If you are making changes to this repo please update [RELEASE_NOTES](./RELEASE_NOTES.md) so that teams can check for changes before re-deploying.
+This repository is the home for a shared stack containing resources that handle the OAuth relationship with IPV Core.
 
-The code in this repository is deployed and promoted through the environments using GitHub actions and the dev platform team implementation.
+## Stack Parameters
 
-The automated deployments are triggered on a push to main after PR approval and GitHub secrets determine deployments.
+> **Note:** All example values are taken from the `ipv-cri-check-hmrc-api` dev environment.
 
-## Required GitHub secrets:
+| Parameter | Required | Default | Description | Example |
+|----------|----------|---------|-------------|---------|
+| AuditEventNamePrefix | Yes | - | The audit event name prefix | `IPV_HMRC_RECORD_CHECK_CRI` |
+| AuditTxmaStackName | No | `txma-infrastructure` | The stack containing the TXMA infrastructure | `txma-infrastructure` |
+| CSLSDestinationArn | No | `none` | ARN of the CSLSEGRESS destination | `arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2` |
+| CriIdentifier | Yes | - | The unique credential issuer identifier | `di-ipv-cri-check-hmrc-api` |
+| CriAudience | Yes | - | Audience for the CRI | `https://review-hc.dev.account.gov.uk` |
+| CriVcIssuer | Yes | - | Issuer for the CRI | `https://review-hc.dev.account.gov.uk` |
+| CriPrivateApiGwName | Yes | - | The private API GW name, for Canary alarms | `check-hmrc-cri-api-private` |
+| CriPublicApiGwName | Yes | - | The public API GW name, for Canary alarms | `check-hmrc-cri-api-public` |
+| DbSessionTTL | No | 7200 | TTL for the Session Table, default 2 hours | 7200 |
+| DbCustomerManagedKey | No | `true` | Use a CustomerManagedKey for the DynamoDB Tables | `false` |
+| Environment | Yes | - | The deployed environment | `dev` |
+| IPVCoreRedirectURI | Yes | - | Redirect URL to IPV CORE | `dev` |
+| IPVCoreStubJwksEndpoint | No | `""` (empty string) | Stubbed JWKS endpoint for non-prod environments | `https://test-resources.review-hc.dev.account.gov.uk/.well-known/jwks.json` |
+| KeyRotation | No | `true` | Feature flag for ENV_VAR_FEATURE_FLAG_KEY_ROTATION | `false` |
+| KeyRotationFallback | No | `false` | Feature flag for ENV_VAR_FEATURE_FLAG_KEY_ROTATION_LEGACY_KEY_FALLBACK | `true` |
+| LambdaCodeSigningConfigArn | No | `none` | The ARN of the Code Signing Config to use, provided by the deployment pipeline | `An AWS ARN` |
+| LambdaDeploymentPreference | No | `AllAtOnce` | Stubbed JWKS endpoint for non-prod environments | `AllAtOnce` |
+| LambdaProvisionedConcurrentExecutions | No | 0 | Stubbed JWKS endpoint for non-prod environments | 1 |
+| LambdaVpcConfiguration | Yes | - | Stubbed JWKS endpoint for non-prod environments | `di-devplatform-deploy` |
+| PermissionsBoundaryArn | No | `none` | The ARN of the permissions boundary to apply when creating IAM roles | `An AWS ARN` |
 
-Common CRI secrets for dev environments:
+## Stack Outputs
 
-| Secret                                             | Description            |
-| -------------------------------------------------- | ---------------------- |
-| ADDRESS_DEV_COMMON_CRI_ARTIFACT_SOURCE_BUCKET_NAME | Upload artifact bucket |
-| ADDRESS_DEV_COMMON_CRI_GH_ACTIONS_ROLE_ARN         | Assumed role IAM ARN   |
-| ADDRESS_DEV_SIGNING_PROFILE_NAME                   | Signing profile name   |
-| FRAUD_DEV_COMMON_CRI_ARTIFACT_SOURCE_BUCKET_NAME   | Upload artifact bucket |
-| FRAUD_DEV_COMMON_CRI_GH_ACTIONS_ROLE_ARN           | Assumed role IAM ARN   |
-| FRAUD_DEV_SIGNING_PROFILE_NAME                     | Signing profile name   |
-| KBV_DEV_COMMON_CRI_ARTIFACT_SOURCE_BUCKET_NAME     | Upload artifact bucket |
-| KBV_DEV_COMMON_CRI_GH_ACTIONS_ROLE_ARN             | Assumed role IAM ARN   |
-| KBV_POC_COMMON_CRI_ARTIFACT_SOURCE_BUCKET_NAME     | Upload artifact bucket |
-| KBV_POC_COMMON_CRI_GH_ACTIONS_ROLE_ARN             | Assumed role IAM ARN   |
-| KBV_POC_SIGNING_PROFILE_NAME                       | Signing profile name   |
+> **Note:** Where possible, stack outputs should be consumed instead of the SSM parameters.  
+> The SSM parameters are deprecated and will be removed in a future version (exc. clients SSM parameters, these are not being moved into outputs)
 
-Common CRI secrets for Build environments:
-
-| Secret                                               | Description            |
-| ---------------------------------------------------- | ---------------------- |
-| ADDRESS_BUILD_COMMON_CRI_ARTIFACT_SOURCE_BUCKET_NAME | Upload artifact bucket |
-| ADDRESS_BUILD_COMMON_CRI_GH_ACTIONS_ROLE_ARN         | Assumed role IAM ARN   |
-| ADDRESS_BUILD_SIGNING_PROFILE_NAME                   | Signing profile name   |
-| FRAUD_BUILD_COMMON_CRI_ARTIFACT_SOURCE_BUCKET_NAME   | Upload artifact bucket |
-| FRAUD_BUILD_COMMON_CRI_GH_ACTIONS_ROLE_ARN           | Assumed role IAM ARN   |
-| FRAUD_BUILD_SIGNING_PROFILE_NAME                     | Signing profile name   |
-| KBV_BUILD_COMMON_CRI_ARTIFACT_SOURCE_BUCKET_NAME     | Upload artifact bucket |
-| KBV_BUILD_COMMON_CRI_GH_ACTIONS_ROLE_ARN             | Assumed role IAM ARN   |
-| KBV_BUILD_SIGNING_PROFILE_NAME                       | Signing profile name   |
-
-## Repository variables
-
-Each deployment requires a repository variable in the form CRINAME_DEST_ENABLED
-with the value set to true i.e. FRAUD_DEV_ENABLED KBV_BUILD_ENABLED
+| Output Name | Description |
+|------------|-------------|
+| DbCustomerManagedKeyID | The ID of the CMK used to encrypt DynamoDB tables at rest. Only present if `IsCustomerManagedKeyEnabled` |
+| DbSessionTTL | Time to live for a session item (seconds)|
+| DbSessionTableName | The name of the session table in DynamoDB |
+| DbPersonIdentityTableName | The name of the person identity table in DynamoDB |
+| LambdaSessionFunctionName | The name of the session function |
+| LambdaAuthorizationFunctionName | The name of the authorisation function |
+| LambdaAccessTokenFunctionName | The name of the access token function |
+| PreMergeDevOnlyApiId | ID of the dev-only OAuth Common API. Only present if `isDev` |
+| VCSigningKeyID | The ID of the KMS key used to sign VCs |
 
 ## Hooks
 
 **important:** One you've cloned the repo, run `pre-commit install` to install the pre-commit hooks.
 If you have not installed `pre-commit` then please do so [here](https://pre-commit.com/).
-
-## Authorising with GitHub Packages
-
-Some of the Node modules used in this repository are private modules stored in the One Login GitHub Packages repository. NPM therefore needs credentials in order to access the packages as you.
-
-This can be done by following the instructions from the trust & reuse team here:
-
-https://govukverify.atlassian.net/wiki/spaces/TART/pages/4352999457/Configure+Github+Packages+Authentication
 
 ## Run Cucumber tests
 

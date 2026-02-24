@@ -106,7 +106,6 @@ describe("access-token-handler.ts", () => {
 
     describe("Handler", () => {
         const jwtVerificationConfig: JwtVerificationConfig = {
-            publicSigningJwk: "",
             jwtSigningAlgorithm: "",
             jwksEndpoint: "",
         };

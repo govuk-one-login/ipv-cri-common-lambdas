@@ -1,0 +1,16 @@
+name: Run CodeQL
+
+on:
+  workflow_call:
+
+jobs:
+  codeql:
+    name: CodeQL
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+    steps:
+      - name: Run CodeQL scan
+        uses: govuk-one-login/github-actions/code-quality/codeql@96c9e1a9adc67b587ba9ad8794ea41bb3998e184
+        with:
+          languages: javascript-typescript

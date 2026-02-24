@@ -13,34 +13,32 @@ const logger = new Logger({
 
 describe("Pact Verification", () => {
     let componentId: string;
-    const experianStates = {
+    const stateHandlers = {
         "dummyExperianKbvComponentId is the experianKbv CRI component ID": async () => {
             componentId = "dummyExperianKbvComponentId";
-            return Promise.resolve({ description: "ComponentId set" });
+            return { description: "ComponentId set" };
         },
-        "ExperianKbv CRI uses CORE_BACK_SIGNING_PRIVATE_KEY_JWK to validate core signatures": async () =>
-            Promise.resolve(),
-    };
-    const checkHmrcNinoStates = {
         "dummyNinoComponentId is the NINO CRI component ID": async () => {
             componentId = "dummyNinoComponentId";
-            return Promise.resolve({ description: "ComponentId set" });
+            return { description: "ComponentId set" };
         },
-        "NINO CRI uses CORE_BACK_SIGNING_PRIVATE_KEY_JWK to validate core signatures": async () => Promise.resolve(),
+        "dummyAddressComponentId is the address CRI component ID": async () => {
+            componentId = "dummyAddressComponentId";
+            return { description: "ComponentId set" };
+        },
     };
 
     const verifierOptions: VerifierOptions = {
         provider: CRI_UNDER_TEST,
         providerBaseUrl: `${LOCAL_HOST}:${LOCAL_APP_PORT}`,
-        pactBrokerUrl: "https://" + process.env.PACT_BROKER_HOST,
+        pactBrokerUrl: `https://${process.env.PACT_BROKER_HOST}?testSource=${
+            process.env.PACT_BROKER_SOURCE_SECRET ?? ""
+        }`,
         pactBrokerUsername: process.env.PACT_BROKER_USERNAME,
         pactBrokerPassword: process.env.PACT_BROKER_PASSWORD,
         consumerVersionSelectors: [{ mainBranch: true }, { deployedOrReleased: true }],
         publishVerificationResult: true,
-        stateHandlers: {
-            ...experianStates,
-            ...checkHmrcNinoStates,
-        },
+        stateHandlers,
         requestFilter: (req, _res, next) => {
             req.headers["component-id"] = componentId;
             // This should not be required, but we were seeing a strange bug where pact was not generating the request with the correct content-length

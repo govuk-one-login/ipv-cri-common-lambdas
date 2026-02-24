@@ -22,7 +22,7 @@ coverage/
 
 # Package Files #
 *.jar
-!gradle/wrapper/gradle-wrapper.jar
+!gradle-wrapper.jar
 *.war
 *.nar
 *.ear

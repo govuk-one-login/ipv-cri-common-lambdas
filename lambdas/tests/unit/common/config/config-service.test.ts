@@ -38,7 +38,7 @@ describe("ConfigService", () => {
 
         it("should get the session expiration", async () => {
             ssmProvider.getParametersByName.mockResolvedValue({
-                "/di-ipv-cri-common-lambdas/SessionTtl": "100",
+                "/di-ipv-cri-oauth-common/SessionTtl": "100",
             });
 
             await configService.init([CommonConfigKey.SESSION_TTL]);
@@ -54,7 +54,7 @@ describe("ConfigService", () => {
 
             expect(ssmProvider.getParametersByName).toBeCalledWith(
                 {
-                    "/di-ipv-cri-common-lambdas/SessionTtl": {},
+                    "/di-ipv-cri-oauth-common/SessionTtl": {},
                 },
                 expect.objectContaining({
                     maxAge: 300,
@@ -88,7 +88,7 @@ describe("ConfigService", () => {
 
             expect(ssmProvider.getParametersByName).toBeCalledWith(
                 {
-                    "/di-ipv-cri-common-lambdas/clients/test/jwtAuthentication/issuer": {},
+                    "/di-ipv-cri-oauth-common/clients/test/jwtAuthentication/issuer": {},
                 },
                 expect.objectContaining({
                     maxAge: 300,
@@ -107,7 +107,7 @@ describe("ConfigService", () => {
 
             expect(ssmProvider.getParametersByName).toBeCalledWith(
                 {
-                    "/di-ipv-cri-common-lambdas/clients/test/jwtAuthentication/issuer": {},
+                    "/di-ipv-cri-oauth-common/clients/test/jwtAuthentication/issuer": {},
                 },
                 expect.objectContaining({
                     maxAge: 300,
@@ -117,14 +117,14 @@ describe("ConfigService", () => {
 
         it("should successfully initialise the client config", async () => {
             ssmProvider.getParametersByName.mockResolvedValue({
-                "/di-ipv-cri-common-lambdas/clients/test/jwtAuthentication/issuer": "test",
+                "/di-ipv-cri-oauth-common/clients/test/jwtAuthentication/issuer": "test",
             });
 
             await configService.initClientConfig("test", [ClientConfigKey.JWT_ISSUER]);
 
             expect(ssmProvider.getParametersByName).toBeCalledWith(
                 {
-                    "/di-ipv-cri-common-lambdas/clients/test/jwtAuthentication/issuer": {},
+                    "/di-ipv-cri-oauth-common/clients/test/jwtAuthentication/issuer": {},
                 },
                 expect.objectContaining({
                     maxAge: 300,
@@ -147,7 +147,7 @@ describe("ConfigService", () => {
 
         it("should fail to initialise the client config when value is empty", async () => {
             ssmProvider.getParametersByName.mockResolvedValue({
-                "/di-ipv-cri-common-lambdas/clients/test/jwtAuthentication/issuer": "",
+                "/di-ipv-cri-oauth-common/clients/test/jwtAuthentication/issuer": "",
             });
 
             await expect(() => configService.initClientConfig("test", [ClientConfigKey.JWT_ISSUER])).rejects.toThrow(
@@ -227,7 +227,7 @@ describe("ConfigService", () => {
     describe("hasClientConfig", () => {
         it("should return true for existing client config", async () => {
             ssmProvider.getParametersByName.mockResolvedValue({
-                "/di-ipv-cri-common-lambdas/SessionTableName": "session-cic-common-cri-api-local",
+                "/di-ipv-cri-oauth-common/SessionTableName": "session-cic-common-cri-api-local",
             });
 
             await configService.initClientConfig("client-id", [ClientConfigKey.JWT_ISSUER]);
@@ -243,7 +243,7 @@ describe("ConfigService", () => {
     describe("getClientConfig", () => {
         it("returns the client config if available", async () => {
             ssmProvider.getParametersByName.mockResolvedValue({
-                "/di-ipv-cri-common-lambdas/SessionTableName": "session-cic-common-cri-api-local",
+                "/di-ipv-cri-oauth-common/SessionTableName": "session-cic-common-cri-api-local",
             });
 
             await configService.initClientConfig("client-id", [ClientConfigKey.JWT_ISSUER]);
