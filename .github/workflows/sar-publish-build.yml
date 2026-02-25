@@ -1,0 +1,24 @@
+name: Publish to SAR (build)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  publish:
+    name: Publish app to SAR
+    runs-on: ubuntu-latest
+    environment: sar-publish-build
+    steps:
+      - name: Pull repository
+        uses: actions/checkout@v4
+
+      - name: Publish to SAR
+        uses: ./.github/actions/sar-publish
+        with:
+          roleArn: ${{ vars.ROLE_ARN }}
+          artifactBucketName: ${{ vars.ARTIFACT_BUCKET_NAME }}
+          signingProfile: SigningProfile_5SIYY1UbWL7m

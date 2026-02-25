@@ -1,0 +1,134 @@
+name: Publish to SAR
+description: Releases a public SAM application to the Serverless Application Repository
+inputs:
+  roleArn:
+    description: The ARN of the AWS IAM role to assume
+    required: true
+  artifactBucketName:
+    description: The name of the bucket that SAM artifacts should be pushed to
+    required: true
+  templateLocation:
+    description: The location of the SAM template
+    required: false
+    default: infrastructure/template.yaml
+  applicationPolicyStatement:
+    description: "The statement to apply to the published application, in the shorthand syntax defined at https://docs.aws.amazon.com/cli/latest/reference/serverlessrepo/put-application-policy.html"
+    required: false
+    default: "Principals='*',Actions=Deploy"
+  awsRegion:
+    description: The AWS region. Defaults to eu-west-2.
+    required: false
+    default: eu-west-2
+  signingProfile:
+    description: The signing profile to use for the Lambda source code
+    required: false
+  allowOverwriteOfExistingVersion:
+    description: Whether to allow an overwrite of a version that already exists in SAR. Defaults to false.
+    required: false
+    default: false
+runs:
+  using: composite
+  steps:
+    - name: Pull repository
+      uses: actions/checkout@v4
+
+    - name: Extract AWS account information
+      shell: bash
+      id: extract-account-info
+      env:
+        ROLE_ARN: ${{ inputs.roleArn }}
+      run: echo "account=$(echo $ROLE_ARN | cut -d':' -f5)" >> $GITHUB_OUTPUT
+
+    - name: Extract template metadata
+      shell: bash
+      id: extract-template-metadata
+      env:
+        TEMPLATE_PATH: ${{ inputs.templateLocation }}
+      run: |
+        echo "applicationName=$(yq '.Metadata["AWS::ServerlessRepo::Application"].Name' $TEMPLATE_PATH)" >> $GITHUB_OUTPUT
+        echo "applicationVersion=$(yq '.Metadata["AWS::ServerlessRepo::Application"].SemanticVersion' $TEMPLATE_PATH)" >> $GITHUB_OUTPUT
+
+    - name: Construct published application ARN
+      shell: bash
+      id: construct-app-arn
+      env:
+        AWS_REGION: ${{ inputs.awsRegion }}
+      run: echo "result=arn:aws:serverlessrepo:$AWS_REGION:${{ steps.extract-account-info.outputs.account }}:applications/${{ steps.extract-template-metadata.outputs.applicationName }}" >> $GITHUB_OUTPUT
+
+    - name: Assume AWS Role
+      uses: aws-actions/configure-aws-credentials@v6
+      with:
+        role-to-assume: ${{ inputs.roleArn }}
+        aws-region: ${{ inputs.awsRegion }}
+
+    - name: Check if the given version already exists
+      if: ${{ inputs.allowOverwriteOfExistingVersion != 'true' }}
+      shell: bash
+      run: |
+        versions=$(aws serverlessrepo list-application-versions \
+          --application-id ${{ steps.construct-app-arn.outputs.result }} \
+          --query "Versions[*].SemanticVersion" \
+          --output yaml) || echo "Error when retrieving existing versions. This is most likely to be because the application doesn't exist yet."
+        if echo "$versions" | grep -Fxq -- "- ${{ steps.extract-template-metadata.outputs.applicationVersion }}" ; then
+          echo "Version ${{ steps.extract-template-metadata.outputs.applicationVersion }} already exists!"
+          exit 1
+        else
+          echo "No existing version ${{ steps.extract-template-metadata.outputs.applicationVersion }}. Proceeding..."
+        fi
+
+    - name: Set signing-profiles argument
+      if: ${{ inputs.signingProfile }}
+      shell: bash
+      id: set-signing-profiles
+      env:
+        SIGNING_PROFILE: ${{ inputs.signingProfile }}
+        TEMPLATE_PATH: ${{ inputs.templateLocation }}
+      run: |
+        mapfile -t lambdas < <(yq \
+          '.Resources[] | select(
+            .Type=="AWS::Serverless::Function" or
+            .Type=="AWS::Serverless::LayerVersion"
+          ) | key' "$TEMPLATE_PATH")
+        profiles=${lambdas[*]/%/=$SIGNING_PROFILE}
+        {
+          echo "result<<EOF"
+          echo "$profiles"
+          echo "EOF"
+        } >> $GITHUB_OUTPUT
+
+    - name: Build SAM application
+      uses: govuk-one-login/github-actions/sam/build-application@87ae1213145261e3837cc38d5b9317422acd95c2
+      with:
+        template: ${{ inputs.templateLocation }}
+        cache-name: common-oauth-${{ github.head_ref || github.ref_name }}
+        pull-repository: false
+
+    - name: Package SAM application (pushing artifacts to S3)
+      shell: bash
+      env:
+        S3_BUCKET: ${{ inputs.artifactBucketName }}
+      run: sam package
+        --template .aws-sam/build/template.yaml
+        --output-template-file .aws-sam/packaged.yaml
+        --s3-bucket $S3_BUCKET
+        ${{ steps.set-signing-profiles.conclusion == 'success' && format('--signing-profiles "{0}"', steps.set-signing-profiles.outputs.result) || '' }}
+
+    - name: Publish SAM application to SAR
+      shell: bash
+      env:
+        AWS_REGION: ${{ inputs.awsRegion }}
+      run: sam publish
+        --template .aws-sam/packaged.yaml
+        --region $AWS_REGION
+
+    - name: Set application policy
+      shell: bash
+      env:
+        STATEMENTS: ${{ inputs.applicationPolicyStatement }}
+        AWS_REGION: ${{ inputs.awsRegion }}
+      run: |
+        echo "Waiting 10 seconds to ensure that application exists before updating policy..."
+        sleep 10
+        aws serverlessrepo put-application-policy \
+          --application-id ${{ steps.construct-app-arn.outputs.result }} \
+          --statements $STATEMENTS
