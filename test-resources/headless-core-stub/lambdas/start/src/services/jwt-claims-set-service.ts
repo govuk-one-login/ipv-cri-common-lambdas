@@ -6,7 +6,7 @@ import { v4 as uuidv4 } from "uuid";
 import { ClaimsSetOverrides } from "../types/claims-set-overrides";
 import { JWTClaimsSet } from "../types/jwt-claims-set";
 import { logger } from "../start-handler";
-import { base64Encode } from "../../../../utils/src/base64";
+import { base64Encode, base64Decode } from "../../../../utils/src/base64";
 import { HeadlessCoreStubError } from "../../../../utils/src/errors/headless-core-stub-error";
 import { DEFAULT_CLIENT_ID } from "../../../../utils/src/constants";
 
@@ -30,7 +30,7 @@ export const generateJwtClaimsSet = async (overrides: ClaimsSetOverrides, ssmPar
     const audience = overrides.aud || ssmParameters["audience"];
     const issuer = overrides.iss || ssmParameters["issuer"];
     const redirectUri = overrides.redirect_uri || ssmParameters["redirectUri"];
-    const state = overrides.state || base64Encode(JSON.stringify({ aud: audience, redirect_uri: redirectUri }));
+    const state = createState(audience, redirectUri, overrides.state);
 
     const now = Date.now();
     return {
@@ -84,6 +84,22 @@ export const validateClaimsSet = (claimsSet: JWTClaimsSet) => {
         throw new HeadlessCoreStubError("Claims set failed validation" + errorDetails, 400);
     }
     logger.info("Called validateClaimsSet validated schema successfully");
+};
+
+const createState = (audience: string, redirectUri: string, existingState?: string): string => {
+    const defaultState = { aud: audience, redirect_uri: redirectUri };
+
+    if (!existingState) {
+        return base64Encode(JSON.stringify(defaultState));
+    }
+
+    try {
+        const decodedState = JSON.parse(base64Decode(existingState));
+        const mergedState = { ...defaultState, ...decodedState };
+        return base64Encode(JSON.stringify(mergedState));
+    } catch {
+        return base64Encode(JSON.stringify(defaultState));
+    }
 };
 
 const msToSeconds = (ms: number) => Math.floor(ms / 1000);
