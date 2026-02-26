@@ -1,0 +1,137 @@
+DynamoTablesEncryptionKey:
+  Type: AWS::KMS::Key
+  Properties:
+    EnableKeyRotation: true
+    Description: !Sub ${AWS::StackName} customer-managed key for DynamoDB at-rest encryption
+    KeyPolicy:
+      Version: 2012-10-17
+      Statement:
+        - Effect: Allow
+          Principal:
+            AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
+          Action:
+            - kms:*
+          Resource: "*"
+        - Effect: Allow
+          Principal:
+            Service: "dynamodb.amazonaws.com"
+          Action:
+            - "kms:Encrypt*"
+            - "kms:Decrypt*"
+            - "kms:ReEncrypt*"
+            - "kms:GenerateDataKey*"
+            - "kms:Describe*"
+          Resource: "*"
+          Condition:
+            StringEquals:
+              "kms:CallerAccount": !Sub "${AWS::AccountId}"
+              "kms:ViaService":
+                - "dynamodb.amazonaws.com"
+                - !Sub "lambda.${AWS::Region}.amazonaws.com"
+
+DynamoDBCustomerManagedKeyIDParameter:
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/DynamoDBCustomerManagedKeyID"
+    Type: String
+    Value: !Ref DynamoTablesEncryptionKey
+    Description: DynamoDB customer managed key ID to be consumed by CRI stacks
+
+SessionTable:
+  Type: "AWS::DynamoDB::Table"
+  Properties:
+    TableName: !Sub "session-${AWS::StackName}"
+    BillingMode: "PAY_PER_REQUEST"
+    AttributeDefinitions:
+      - AttributeName: "sessionId"
+        AttributeType: "S"
+      - AttributeName: "authorizationCode"
+        AttributeType: "S"
+      - AttributeName: "accessToken"
+        AttributeType: "S"
+    KeySchema:
+      - AttributeName: "sessionId"
+        KeyType: "HASH"
+    GlobalSecondaryIndexes:
+      - IndexName: "authorizationCode-index"
+        KeySchema:
+          - AttributeName: "authorizationCode"
+            KeyType: "HASH"
+        Projection:
+          NonKeyAttributes:
+            - "sessionId"
+            - "redirectUri"
+            - "clientId"
+          ProjectionType: "INCLUDE"
+      - IndexName: "access-token-index"
+        KeySchema:
+          - AttributeName: "accessToken"
+            KeyType: "HASH"
+        Projection:
+          NonKeyAttributes:
+            - "sessionId"
+            - "subject"
+          ProjectionType: "INCLUDE"
+      - IndexName: "access-token-index-with-event-data"
+        KeySchema:
+          - AttributeName: "accessToken"
+            KeyType: "HASH"
+        Projection:
+          NonKeyAttributes:
+            - "sessionId"
+            - "subject"
+            - "persistentSessionId"
+            - "clientSessionId"
+            - "clientIpAddress"
+            - "clientId"
+          ProjectionType: "INCLUDE"
+    TimeToLiveSpecification:
+      AttributeName: expiryDate
+      Enabled: true
+    SSESpecification: !If
+      - UseCustomerManagedKey
+      -
+        KMSMasterKeyId: !Ref DynamoTablesEncryptionKey
+        SSEEnabled: true
+        SSEType: KMS
+      - !Ref "AWS::NoValue"
+
+PersonIdentityTable:
+  Type: "AWS::DynamoDB::Table"
+  Properties:
+    TableName: !Sub "person-identity-${AWS::StackName}"
+    BillingMode: "PAY_PER_REQUEST"
+    PointInTimeRecoverySpecification:
+      PointInTimeRecoveryEnabled: true
+    AttributeDefinitions:
+      - AttributeName: "sessionId"
+        AttributeType: "S"
+    KeySchema:
+      - AttributeName: "sessionId"
+        KeyType: "HASH"
+    TimeToLiveSpecification:
+      AttributeName: expiryDate
+      Enabled: true
+    SSESpecification: !If
+      - UseCustomerManagedKey
+      -
+        KMSMasterKeyId: !Ref DynamoTablesEncryptionKey
+        SSEEnabled: true
+        SSEType: KMS
+      - !Ref "AWS::NoValue"
+
+ParameterSessionTableName:
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/SessionTableName"
+    Value: !Sub session-${AWS::StackName}
+    Type: String
+    Description: session dynamodb table name
+
+ParameterPersonIdentityTableName:
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/PersonIdentityTableName"
+    Value: !Sub person-identity-${AWS::StackName}
+    Type: String
+    Description: person identity dynamodb table name
