@@ -91,7 +91,7 @@ jobs:
 
       - name: Upload to S3
         if: ${{ steps.enabled.conclusion == 'success' }}
-        uses: govuk-one-login/devplatform-upload-action@v3.9.2
+        uses: govuk-one-login/devplatform-upload-action@v3.11.0
         with:
           artifact-bucket-name: ${{ vars[format('{0}_ARTIFACTS_BUCKET_NAME', matrix.cri)] }}
           signing-profile-name: ${{ vars[format('{0}_SIGNING_PROFILE_NAME', matrix.cri)] }}
