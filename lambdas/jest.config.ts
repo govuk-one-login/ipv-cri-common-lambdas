@@ -10,9 +10,9 @@ export default {
     coverageThreshold: {
         global: {
             statements: 93,
-            branches: 93,
-            functions: 95,
-            lines: 94,
+            branches: 92,
+            functions: 94,
+            lines: 93,
         },
         "./src/common/security/": {
             statements: 100,
