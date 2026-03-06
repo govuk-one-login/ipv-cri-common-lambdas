@@ -76,9 +76,9 @@ export class SessionLambda implements LambdaInterface {
                 {
                     ...(encodedDeviceInformation && {
                         restricted: {
-                                device_information: {
-                                    encoded: encodedDeviceInformation,
-                                },
+                            device_information: {
+                                encoded: encodedDeviceInformation,
+                            },
                         },
                     }),
                 },

@@ -406,9 +406,9 @@ describe("SessionLambda", () => {
             mockSessionItem,
             {
                 restricted: {
-                        device_information: {
-                            encoded: "encodedHeader",
-                        },
+                    device_information: {
+                        encoded: "encodedHeader",
+                    },
                 },
             },
         );
