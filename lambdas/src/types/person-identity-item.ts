@@ -1,5 +1,15 @@
-export interface PersonIdentitySocialSecurityRecord {
-    personalNumber: string;
+export interface PersonIdentityItem {
+    sessionId: string;
+    names: PersonIdentityName[];
+    birthDates: PersonIdentityDateOfBirth[];
+    addresses: PersonIdentityAddress[];
+    socialSecurityRecord?: PersonIdentitySocialSecurityRecord[];
+    drivingPermits?: PersonIdentityDrivingPermit[]; // NOTE drivingPermit(s)
+    expiryDate: number;
+}
+
+export interface PersonIdentityName {
+    nameParts: PersonIdentityNamePart[];
 }
 
 export interface PersonIdentityNamePart {
@@ -7,8 +17,8 @@ export interface PersonIdentityNamePart {
     value: string;
 }
 
-export interface PersonIdentityName {
-    nameParts: PersonIdentityNamePart[];
+export interface PersonIdentityDateOfBirth {
+    value: string;
 }
 
 export interface PersonIdentityAddress {
@@ -29,15 +39,15 @@ export interface PersonIdentityAddress {
     validUntil: string;
 }
 
-export interface PersonIdentityDateOfBirth {
-    value: string;
+export interface PersonIdentitySocialSecurityRecord {
+    personalNumber: string;
 }
 
-export interface PersonIdentityItem {
-    sessionId: string;
-    addresses: PersonIdentityAddress[];
-    names: PersonIdentityName[];
-    birthDates: PersonIdentityDateOfBirth[];
-    expiryDate: number;
-    socialSecurityRecord?: PersonIdentitySocialSecurityRecord[];
+export interface PersonIdentityDrivingPermit {
+    personalNumber: string;
+    expiryDate: string;
+    issueNumber: string | undefined;
+    issuedBy: string;
+    issueDate: string;
+    fullAddress: string;
 }

@@ -1,7 +1,7 @@
 import { SSMClient } from "@aws-sdk/client-ssm";
 import { SSMProvider } from "@aws-lambda-powertools/parameters/ssm";
 import { ConfigService } from "../../../../src/common/config/config-service";
-import { ClientConfigKey, CommonConfigKey, ConfigKey } from "../../../../src/types/config-keys";
+import { ClientConfigKey, CommonConfigKey } from "../../../../src/types/config-keys";
 
 jest.mock("@aws-lambda-powertools/parameters/ssm");
 
@@ -159,71 +159,6 @@ describe("ConfigService", () => {
         });
     });
 
-    describe("initConfigWithCriIdentifierInPath", () => {
-        it("should successfully initialise the client config", async () => {
-            ssmProvider.getParametersByName.mockResolvedValue({
-                "/di-ipv-cri-check-hmrc-api/strengthScore": "2",
-            });
-
-            await configService.initConfigWithCriIdentifierInPath(
-                "test",
-                "di-ipv-cri-check-hmrc-api",
-                ConfigKey.CRI_EVIDENCE_PROPERTIES,
-            );
-
-            expect(ssmProvider.getParametersByName).toBeCalledWith(
-                {
-                    "/di-ipv-cri-check-hmrc-api/evidence-properties": {},
-                },
-                expect.objectContaining({
-                    maxAge: 300,
-                }),
-            );
-            expect(configService.hasClientConfig("test")).toBe(true);
-        });
-
-        it("should handle an empty SSM response due to an invalid client ID", async () => {
-            ssmProvider.getParametersByName.mockResolvedValue({
-                _errors: [],
-            });
-
-            configService.initConfigWithCriIdentifierInPath(
-                "test",
-                "di-ipv-cri-check-hmrc-api",
-                ConfigKey.CRI_EVIDENCE_PROPERTIES,
-            );
-
-            expect(ssmProvider.getParametersByName).toBeCalledWith(
-                {
-                    "/di-ipv-cri-check-hmrc-api/evidence-properties": {},
-                },
-                expect.objectContaining({
-                    maxAge: 300,
-                }),
-            );
-        });
-
-        it("should handle an SSM response containing errors", async () => {
-            ssmProvider.getParametersByName.mockResolvedValue({
-                _errors: ["blah", "blah", "no"],
-            });
-
-            configService.initConfigWithCriIdentifierInPath(
-                "test",
-                "di-ipv-cri-check-hmrc-api",
-                ConfigKey.CRI_EVIDENCE_PROPERTIES,
-            );
-
-            expect(ssmProvider.getParametersByName).toBeCalledWith(
-                {
-                    "/di-ipv-cri-check-hmrc-api/evidence-properties": {},
-                },
-                expect.objectContaining({
-                    maxAge: 300,
-                }),
-            );
-        });
-    });
     describe("hasClientConfig", () => {
         it("should return true for existing client config", async () => {
             ssmProvider.getParametersByName.mockResolvedValue({

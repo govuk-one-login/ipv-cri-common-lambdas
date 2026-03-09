@@ -1,17 +1,15 @@
 import { JwtVerifier } from "../common/security/jwt-verifier";
 import { JWTPayload, errors } from "jose";
 import { SessionRequestValidationConfig } from "../types/session-request-validation-config";
-import { ClientConfigKey, ConfigKey } from "../types/config-keys";
+import { ClientConfigKey } from "../types/config-keys";
 import { Logger } from "@aws-lambda-powertools/logger";
 import { SessionValidationError } from "../common/utils/errors";
-import { CRIEvidenceProperties } from "./cri_evidence_properties";
-import { EvidenceRequestSchema, EvidenceRequest } from "../schemas/evidence-request.schema";
+import { EvidenceRequestSchema } from "../schemas/evidence-request.schema";
 
 export class SessionRequestValidator {
     constructor(
-        private validationConfig: SessionRequestValidationConfig,
-        private jwtVerifier: JwtVerifier,
-        private criEvidenceProperties?: CRIEvidenceProperties,
+        private readonly validationConfig: SessionRequestValidationConfig,
+        private readonly jwtVerifier: JwtVerifier,
     ) {}
     async validateJwt(jwt: Buffer, requestBodyClientId: string): Promise<JWTPayload> {
         const expectedRedirectUri = this.validationConfig.expectedJwtRedirectUri;
@@ -48,39 +46,9 @@ export class SessionRequestValidator {
 
     private validateEvidenceRequested(evidenceRequestedRaw: unknown): void {
         const result = EvidenceRequestSchema.safeParse(evidenceRequestedRaw);
-        if (result.success) {
-            this.validateCRICapabilities(result.data);
-        } else {
-            const firstIssue = result.error.issues[0];
-            throw new SessionValidationError(
-                "Session Validation Exception",
-                `Invalid request: ${firstIssue.path.join(".")} - ${firstIssue.message}`,
-            );
-        }
-    }
-
-    private validateCRICapabilities(evidenceRequested: EvidenceRequest): void {
-        if (
-            evidenceRequested.strengthScore !== undefined &&
-            this.criEvidenceProperties?.strengthScore &&
-            evidenceRequested.strengthScore !== this.criEvidenceProperties.strengthScore
-        ) {
-            throw new SessionValidationError(
-                "Session Validation Exception",
-                `Invalid request: strengthScore ${evidenceRequested.strengthScore} is not supported by this CRI. Max score: ${this.criEvidenceProperties.strengthScore}`,
-            );
-        }
-
-        if (evidenceRequested.verificationScore !== undefined && this.criEvidenceProperties?.verificationScore) {
-            const allowedScores = this.criEvidenceProperties.verificationScore.map(Number);
-            if (!allowedScores.includes(evidenceRequested.verificationScore)) {
-                throw new SessionValidationError(
-                    "Session Validation Exception",
-                    `Invalid request: verificationScore ${
-                        evidenceRequested.verificationScore
-                    } is not supported by this CRI. Allowed scores: ${allowedScores.join(", ")}`,
-                );
-            }
+        if (!result.success) {
+            const errors = result.error.issues.map((issue) => `${issue.path.join(".")} - ${issue.message}`).join(", ");
+            throw new SessionValidationError("Session Validation Exception", `Invalid request: ${errors}`);
         }
     }
 
@@ -128,7 +96,6 @@ export class SessionRequestValidatorFactory {
                 },
                 this.logger,
             ),
-            JSON.parse(criClientConfig.get(ConfigKey.CRI_EVIDENCE_PROPERTIES) ?? "{}") as CRIEvidenceProperties,
         );
     }
 }
