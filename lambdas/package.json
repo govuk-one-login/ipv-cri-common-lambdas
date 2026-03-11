@@ -37,7 +37,7 @@
         "@opentelemetry/instrumentation-undici": "^0.10.0",
         "@opentelemetry/resource-detector-aws": "^1.11.0",
         "@opentelemetry/sdk-node": "^0.57.1",
-        "@pact-foundation/pact": "15.0.1",
+        "@pact-foundation/pact": "16.3.0",
         "aws-sigv4-fetch": "4.4.1",
         "esbuild": "0.25.0",
         "express": "^4.19.2",
