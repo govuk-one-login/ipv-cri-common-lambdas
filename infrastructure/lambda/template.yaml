@@ -53,6 +53,10 @@ Parameters:
     Type: String
     Default: "initial"
     Description: "For dev only - used to force Java Lambda version updates for locally deployed and pre-merge stacks"
+  BuildNotificationStackName:
+    Description: The topic to publish notification and sns alerts
+    Type: String
+    Default: "none"
 
 Conditions:
   UseCodeSigningConfigArn:
@@ -937,9 +941,9 @@ Resources:
       AlarmDescription: !Sub "Trigger an alarm when lambda errors occurs"
       ActionsEnabled: true
       AlarmActions: 
-        - !ImportValue build-notifications-WarningAlertsTopicArn
+        - Fn::ImportValue: !Sub "${BuildNotificationStackName}-WarningAlertsTopicArn"
       OKActions: 
-        - !ImportValue build-notifications-WarningAlertsTopicArn
+        - Fn::ImportValue: !Sub "${BuildNotificationStackName}-WarningAlertsTopicArn"
       InsufficientDataActions: []
       MetricName: Errors
       Namespace: AWS/Lambda
@@ -961,9 +965,9 @@ Resources:
     Properties:
       ActionsEnabled: true
       AlarmActions: 
-        - !ImportValue build-notifications-WarningAlertsTopicArn
+        - Fn::ImportValue: !Sub "${BuildNotificationStackName}-WarningAlertsTopicArn"
       OKActions:  
-        - !ImportValue build-notifications-WarningAlertsTopicArn
+        - Fn::ImportValue: !Sub "${BuildNotificationStackName}-WarningAlertsTopicArn"
       AlarmName: !Sub "${AWS::StackName}-SessionFunctionCanary5xxErrors"
       AlarmDescription: !Sub "SessionFunction Lambda returning 5xx response."
       Namespace: AWS/ApiGateway
@@ -1100,9 +1104,9 @@ Resources:
       AlarmDescription: !Sub "Trigger an alarm when lambda errors occurs"
       ActionsEnabled: true
       AlarmActions: 
-        - !ImportValue build-notifications-WarningAlertsTopicArn
+        - Fn::ImportValue: !Sub "${BuildNotificationStackName}-WarningAlertsTopicArn"
       OKActions: 
-        - !ImportValue build-notifications-WarningAlertsTopicArn
+        - Fn::ImportValue: !Sub "${BuildNotificationStackName}-WarningAlertsTopicArn"
       InsufficientDataActions: []
       MetricName: Errors
       Namespace: AWS/Lambda
@@ -1185,9 +1189,9 @@ Resources:
       AlarmDescription: !Sub "Trigger an alarm when lambda errors occurs"
       ActionsEnabled: true
       AlarmActions: 
-        - !ImportValue build-notifications-WarningAlertsTopicArn
+        - Fn::ImportValue: !Sub "${BuildNotificationStackName}-WarningAlertsTopicArn"
       OKActions: 
-        - !ImportValue build-notifications-WarningAlertsTopicArn
+        - Fn::ImportValue: !Sub "${BuildNotificationStackName}-WarningAlertsTopicArn"
       InsufficientDataActions: []
       MetricName: Errors
       Namespace: AWS/Lambda
@@ -1209,9 +1213,9 @@ Resources:
     Properties:
       ActionsEnabled: true
       AlarmActions: 
-        - !ImportValue build-notifications-WarningAlertsTopicArn
+        - Fn::ImportValue: !Sub "${BuildNotificationStackName}-WarningAlertsTopicArn"
       OKActions: 
-        - !ImportValue build-notifications-WarningAlertsTopicArn
+        - Fn::ImportValue: !Sub "${BuildNotificationStackName}-WarningAlertsTopicArn"
       AlarmName: !Sub "${AWS::StackName}-AuthorizationFunctionCanary5xxErrors"
       AlarmDescription: !Sub "AuthorizationFunction Lambda returning 5xx response."
       Namespace: AWS/ApiGateway
@@ -1326,9 +1330,9 @@ Resources:
       AlarmDescription: !Sub "Trigger an alarm when lambda errors occurs"
       ActionsEnabled: true
       AlarmActions: 
-        - !ImportValue build-notifications-WarningAlertsTopicArn
+        - Fn::ImportValue: !Sub "${BuildNotificationStackName}-WarningAlertsTopicArn"
       OKActions: 
-        - !ImportValue build-notifications-WarningAlertsTopicArn
+        - Fn::ImportValue: !Sub "${BuildNotificationStackName}-WarningAlertsTopicArn"
       InsufficientDataActions: []
       MetricName: Errors
       Namespace: AWS/Lambda
@@ -1412,9 +1416,9 @@ Resources:
       AlarmDescription: !Sub "Trigger an alarm when lambda errors occurs"
       ActionsEnabled: true
       AlarmActions: 
-        - !ImportValue build-notifications-WarningAlertsTopicArn
+        - Fn::ImportValue: !Sub "${BuildNotificationStackName}-WarningAlertsTopicArn"
       OKActions: 
-        - !ImportValue build-notifications-WarningAlertsTopicArn
+        - Fn::ImportValue: !Sub "${BuildNotificationStackName}-WarningAlertsTopicArn"
       InsufficientDataActions: []
       MetricName: Errors
       Namespace: AWS/Lambda
@@ -1436,9 +1440,9 @@ Resources:
     Properties:
       ActionsEnabled: true
       AlarmActions: 
-        - !ImportValue build-notifications-WarningAlertsTopicArn
+        - Fn::ImportValue: !Sub "${BuildNotificationStackName}-WarningAlertsTopicArn"
       OKActions: 
-        - !ImportValue build-notifications-WarningAlertsTopicArn
+        - Fn::ImportValue: !Sub "${BuildNotificationStackName}-WarningAlertsTopicArn"
       AlarmName: !Sub "${AWS::StackName}-AccessTokenFunctionCanary5xxErrors"
       AlarmDescription: !Sub "AccessTokenFunction Lambda returning 5xx response."
       Namespace: AWS/ApiGateway
@@ -1580,9 +1584,9 @@ Resources:
       AlarmDescription: !Sub "Trigger an alarm when lambda errors occurs"
       ActionsEnabled: true
       AlarmActions: 
-        - !ImportValue build-notifications-WarningAlertsTopicArn
+        - Fn::ImportValue: !Sub "${BuildNotificationStackName}-WarningAlertsTopicArn"
       OKActions: 
-        - !ImportValue build-notifications-WarningAlertsTopicArn
+        - Fn::ImportValue: !Sub "${BuildNotificationStackName}-WarningAlertsTopicArn"
       InsufficientDataActions: []
       MetricName: Errors
       Namespace: AWS/Lambda
