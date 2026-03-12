@@ -1,0 +1,639 @@
+SessionTtlParameter:
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/SessionTtl"
+    Type: String
+    Value: !FindInMap [SessionTtlMapping, Environment, !Ref "Environment"]
+    Description: default time to live for a session item (seconds)
+
+AuthRequestKmsEncryptionKeyIdParameter:
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/AuthRequestKmsEncryptionKeyId"
+    Type: String
+    Value: !ImportValue core-infrastructure-CriDecryptionKey1Id
+    Description: The (KMS) encryption key identifier for decrypting authorisation requests
+
+VerifiableCredentialIssuerParameter:
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/verifiable-credential/issuer"
+    Type: String
+    Value:
+      !FindInMap [
+        VerifiableCredentialIssuerMapping,
+        !Ref CriIdentifier,
+        !Ref Environment,
+      ]
+    Description: Issuer of the Verifiable Credential
+
+VerifiableCredentialKmsSigningKeyParameter:
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/verifiableCredentialKmsSigningKeyId"
+    Type: String
+    Value: !ImportValue core-infrastructure-CriVcSigningKey1Id
+    Description: Verifiable Credential Key Id
+
+IPVCoreJwksEndpointParameter:
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/clients/ipv-core/jwtAuthentication/jwksEndpoint"
+    Type: String
+    Value:
+      !FindInMap [CoreJwksEndpoint, Environment, !Ref Environment]
+
+IPVCoreStubAwsProdAuthenticationAlgParameter:
+  Condition: IsStubEnvironment
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod/jwtAuthentication/authenticationAlg"
+    Type: String
+    Value: ES256
+
+IPVCoreStubAwsProdAudienceParameter:
+  Condition: IsStubEnvironment
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod/jwtAuthentication/audience"
+    Type: String
+    Value:
+      !FindInMap [CriAudienceMapping, !Ref CriIdentifier, !Ref Environment]
+
+IPVCoreStubAwsProdIssuerParameter:
+  Condition: IsStubEnvironment
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod/jwtAuthentication/issuer"
+    Type: String
+    Value:
+      !FindInMap [
+        IPVCoreStubAwsProdIssuerMapping,
+        Environment,
+        !Ref "Environment",
+      ]
+
+IPVCoreStubAwsProdPublicSigningJwkBase64Parameter:
+  Condition: IsStubEnvironment
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod/jwtAuthentication/publicSigningJwkBase64"
+    Type: String
+    Value:
+      !FindInMap [
+        IPVCoreStubAwsBuildPublicSigningJwkBase64Mapping,
+        Environment,
+        !Ref "Environment",
+      ]
+
+IPVCoreStubAwsProdRedirectURIParameter:
+  Condition: IsStubEnvironment
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod/jwtAuthentication/redirectUri"
+    Type: String
+    Value:
+      !FindInMap [
+        IPVCoreStubAwsProdRedirectURIMapping,
+        Environment,
+        !Ref "Environment",
+      ]
+
+IPVCoreStubAWSProdJwksEndpointParameter:
+  Condition: IsStubEnvironment
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod/jwtAuthentication/jwksEndpoint"
+    Type: String
+    Value:
+      !FindInMap [StubJwksEndpoint, !Ref CriIdentifier, !Ref Environment]
+
+IPVCoreStubAwsBuildAuthenticationAlgParameter:
+  Condition: IsStubEnvironment
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build/jwtAuthentication/authenticationAlg"
+    Type: String
+    Value: ES256
+
+IPVCoreStubAwsBuildAudienceParameter:
+  Condition: IsStubEnvironment
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build/jwtAuthentication/audience"
+    Type: String
+    Value:
+      !FindInMap [CriAudienceMapping, !Ref CriIdentifier, !Ref Environment]
+
+IPVCoreStubAwsBuildIssuerParameter:
+  Condition: IsStubEnvironment
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build/jwtAuthentication/issuer"
+    Type: String
+    Value:
+      !FindInMap [
+        IPVCoreStubAwsBuildIssuerMapping,
+        Environment,
+        !Ref "Environment",
+      ]
+
+IPVCoreStubAwsBuildPublicSigningJwkBase64Parameter:
+  Condition: IsStubEnvironment
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build/jwtAuthentication/publicSigningJwkBase64"
+    Type: String
+    Value:
+      !FindInMap [
+        IPVCoreStubAwsBuildPublicSigningJwkBase64Mapping,
+        Environment,
+        !Ref "Environment",
+      ]
+
+IPVCoreStubAwsBuildRedirectURIParameter:
+  Condition: IsStubEnvironment
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build/jwtAuthentication/redirectUri"
+    Type: String
+    Value:
+      !FindInMap [
+        IPVCoreStubAwsBuildRedirectURIMapping,
+        Environment,
+        !Ref "Environment",
+      ]
+
+IPVCoreStubAWSBuildJwksEndpointParameter:
+  Condition: IsStubEnvironment
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build/jwtAuthentication/jwksEndpoint"
+    Type: String
+    Value:
+      !FindInMap [StubJwksEndpoint, !Ref CriIdentifier, !Ref Environment]
+
+IPVCoreStubAuthenticationAlgParameter:
+  Condition: IsStubEnvironment
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub/jwtAuthentication/authenticationAlg"
+    Type: String
+    Value: ES256
+
+IPVCoreStubAudienceParameter:
+  Condition: IsStubEnvironment
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub/jwtAuthentication/audience"
+    Type: String
+    Value:
+      !FindInMap [CriAudienceMapping, !Ref CriIdentifier, !Ref Environment]
+
+IPVCoreStubIssuerParameter:
+  Condition: IsStubEnvironment
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub/jwtAuthentication/issuer"
+    Type: String
+    Value:
+      !FindInMap [IPVCoreStubIssuerMapping, Environment, !Ref "Environment"]
+
+IPVCoreStubPublicSigningJwkBase64Parameter:
+  Condition: IsStubEnvironment
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub/jwtAuthentication/publicSigningJwkBase64"
+    Type: String
+    Value:
+      !FindInMap [
+        IPVCoreStubPublicSigningJwkBase64Mapping,
+        Environment,
+        !Ref "Environment",
+      ]
+
+IPVCoreStubRedirectURIParameter:
+  Condition: IsStubEnvironment
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub/jwtAuthentication/redirectUri"
+    Type: String
+    Value:
+      !FindInMap [
+        IPVCoreStubRedirectURIMapping,
+        Environment,
+        !Ref "Environment",
+      ]
+
+IPVCoreStubJwksEndpointParameter:
+  Condition: IsStubEnvironment
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub/jwtAuthentication/jwksEndpoint"
+    Type: String
+    Value:
+      !FindInMap [StubJwksEndpoint, !Ref CriIdentifier, !Ref Environment]
+
+IPVCoreStubPreProdAwsBuildAuthenticationAlgParameter:
+  Condition: IsProdLikeEnvironment
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod-aws-build/jwtAuthentication/authenticationAlg"
+    Type: String
+    Value: ES256
+
+IPVCoreStubPreProdAwsBuildAudienceParameter:
+  Condition: IsProdEnvironment
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod-aws-build/jwtAuthentication/audience"
+    Type: String
+    Value:
+      !FindInMap [CriAudienceMapping, !Ref CriIdentifier, !Ref Environment]
+
+IPVCoreStubPreProdAwsBuildIssuerParameter:
+  Condition: IsProdEnvironment
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod-aws-build/jwtAuthentication/issuer"
+    Type: String
+    Value:
+      !FindInMap [
+        IPVCoreStubPreProdAwsBuildIssuerMapping,
+        Environment,
+        !Ref "Environment",
+      ]
+
+IPVCoreStubPreProdAwsBuildPublicSigningJwkBase64Parameter:
+  Condition: IsProdEnvironment
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod-aws-build/jwtAuthentication/publicSigningJwkBase64"
+    Type: String
+    Value:
+      !FindInMap [
+        IPVCoreStubPreProdAwsBuildPublicSigningJwkBase64Mapping,
+        Environment,
+        !Ref "Environment",
+      ]
+
+IPVCoreStubPreProdAwsBuildRedirectURIParameter:
+  Condition: IsProdEnvironment
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod-aws-build/jwtAuthentication/redirectUri"
+    Type: String
+    Value:
+      !FindInMap [
+        IPVCoreStubPreProdAwsBuildRedirectURIMapping,
+        Environment,
+        !Ref "Environment",
+      ]
+
+IPVCoreStubPreProdAWSBuildJwksEndpointParameter:
+  Condition: IsStubEnvironment
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod-aws-build/jwtAuthentication/jwksEndpoint"
+    Type: String
+    Value:
+      !FindInMap [StubJwksEndpoint, !Ref CriIdentifier, !Ref Environment]
+
+IPVCoreStubPreProdAuthenticationAlgParameter:
+  Condition: IsProdLikeEnvironment
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod/jwtAuthentication/authenticationAlg"
+    Type: String
+    Value: ES256
+
+IPVCoreStubPreProdAudienceParameter:
+  Condition: IsProdEnvironment
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod/jwtAuthentication/audience"
+    Type: String
+    Value:
+      !FindInMap [CriAudienceMapping, !Ref CriIdentifier, !Ref Environment]
+
+IPVCoreStubPreProdIssuerParameter:
+  Condition: IsProdEnvironment
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod/jwtAuthentication/issuer"
+    Type: String
+    Value:
+      !FindInMap [
+        IPVCoreStubPreProdIssuerMapping,
+        Environment,
+        !Ref "Environment",
+      ]
+
+IPVCoreStubPreProdPublicSigningJwkBase64Parameter:
+  Condition: IsProdEnvironment
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod/jwtAuthentication/publicSigningJwkBase64"
+    Type: String
+    Value:
+      !FindInMap [
+        IPVCoreStubPreProdPublicSigningJwkBase64Mapping,
+        Environment,
+        !Ref "Environment",
+      ]
+
+IPVCoreStubPreProdRedirectURIParameter:
+  Condition: IsProdEnvironment
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod/jwtAuthentication/redirectUri"
+    Type: String
+    Value:
+      !FindInMap [
+        IPVCoreStubPreProdRedirectURIMapping,
+        Environment,
+        !Ref "Environment",
+      ]
+
+IPVCoreStubPreProdJwksEndpointParameter:
+  Condition: IsStubEnvironment
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-pre-prod/jwtAuthentication/jwksEndpoint"
+    Type: String
+    Value:
+      !FindInMap [StubJwksEndpoint, !Ref CriIdentifier, !Ref Environment]
+
+IPVCore1AuthenticationAlgParameter:
+  Condition: IsProdLikeEnvironment
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/clients/ipv-core/jwtAuthentication/authenticationAlg"
+    Type: String
+    Value: ES256
+
+IPVCore1AudienceParameter:
+  Condition: IsProdLikeEnvironment
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/clients/ipv-core/jwtAuthentication/audience"
+    Type: String
+    Value:
+      !FindInMap [CriAudienceMapping, !Ref CriIdentifier, !Ref Environment]
+
+IPVCore1IssuerParameter:
+  Condition: IsProdLikeEnvironment
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/clients/ipv-core/jwtAuthentication/issuer"
+    Type: String
+    Value: !FindInMap [IPVCore1IssuerMapping, Environment, !Ref "Environment"]
+
+IPVCore1PublicSigningJwkBase64Parameter:
+  Condition: IsProdLikeEnvironment
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/clients/ipv-core/jwtAuthentication/publicSigningJwkBase64"
+    Type: String
+    Value:
+      !FindInMap [
+        IPVCore1PublicSigningJwkBase64Mapping,
+        Environment,
+        !Ref "Environment",
+      ]
+
+IPVCore1RedirectURIParameter:
+  Condition: IsProdLikeEnvironment
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/clients/ipv-core/jwtAuthentication/redirectUri"
+    Type: String
+    Value:
+      !FindInMap [
+        IPVCore1RedirectURIMapping,
+        !Ref CriIdentifier,
+        !Ref Environment,
+      ]
+
+IPVCore3rdPartyStubsAudienceParameter:
+  Condition: IsIpvCore3rdPartyStubEnvironment
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/clients/ipv-core-3rd-party-stubs/jwtAuthentication/audience"
+    Type: String
+    Value:
+      !FindInMap [CriAudienceMapping, !Ref CriIdentifier, !Ref Environment]
+
+IPVCore3rdPartyStubsPublicSigningJwkBase64Parameter:
+  Condition: IsIpvCore3rdPartyStubEnvironment
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/clients/ipv-core-3rd-party-stubs/jwtAuthentication/publicSigningJwkBase64"
+    Type: String
+    Value:
+      !FindInMap [IPVCore1PublicSigningJwkBase64Mapping, Environment,!Ref "Environment"]
+
+IPVCore3rdPartyStubsIssuerParameter:
+  Condition: IsIpvCore3rdPartyStubEnvironment
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/clients/ipv-core-3rd-party-stubs/jwtAuthentication/issuer"
+    Type: String
+    Value: !FindInMap [IPVCore1IssuerMapping, Environment, !Ref "Environment"]
+
+IPVCore3rdPartyStubsRedirectURIParameter:
+  Condition: IsIpvCore3rdPartyStubEnvironment
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/clients/ipv-core-3rd-party-stubs/jwtAuthentication/redirectUri"
+    Type: String
+    Value:
+      !FindInMap [IPVCore1RedirectURIMapping, !Ref CriIdentifier, !Ref Environment ]
+
+IPVCore3rdPartyStubsAuthenticationAlgParameter:
+  Condition: IsIpvCore3rdPartyStubEnvironment
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/clients/ipv-core-3rd-party-stubs/jwtAuthentication/authenticationAlg"
+    Type: String
+    Value: ES256
+
+IPVCoreThirdPartyStubsJwksEndpointParameter:
+  Condition: IsStubEnvironment
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/clients/ipv-core-3rd-party-stubs/jwtAuthentication/jwksEndpoint"
+    Type: String
+    Value:
+      !FindInMap [CoreJwksEndpoint, Environment, !Ref Environment]
+
+IPVCoreStubAwsHeadlessAudienceParameter:
+  Condition: IsStubEnvironment
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-headless/jwtAuthentication/audience"
+    Type: String
+    Value:
+      !FindInMap [CriAudienceMapping, !Ref CriIdentifier, !Ref Environment]
+
+IPVCoreStubAwsHeadlessPublicSigningJwkBase64Parameter:
+  Condition: IsStubEnvironment
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-headless/jwtAuthentication/publicSigningJwkBase64"
+    Type: String
+    Value: "ewogICAgImt0eSI6ICJFQyIsCiAgICAidXNlIjogInNpZyIsCiAgICAiY3J2IjogIlAtMjU2IiwKICAgICJraWQiOiAiaXB2LWNvcmUtc3R1Yi0yLWZyb20tbWtqd2sub3JnIiwKICAgICJ4IjogImszOXVLYWNTdWtRQnJNWnJIRFRCVVpzbGl2cFhLRE5aVGc2aW5DSHdyTGMiLAogICAgInkiOiAiOEY4TG5RN3dHOWh4c1Q0YXgwQXR5N2lNR0l5aVlfWUdwM19xSVp6S28xQSIsCiAgICAiYWxnIjogIkVTMjU2Igp9"
+
+IPVCoreStubAwsHeadlessIssuerParameter:
+  Condition: IsStubEnvironment
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-headless/jwtAuthentication/issuer"
+    Type: String
+    Value: !Join
+      - ''
+      - - 'https://test-resources.'
+        - !Select
+          - 1
+          - !Split
+            - 'https://'
+            - !FindInMap
+              - VerifiableCredentialIssuerMapping
+              - !Ref CriIdentifier
+              - !Ref Environment
+
+IPVCoreStubAwsHeadlessRedirectURIParameter:
+  Condition: IsStubEnvironment
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-headless/jwtAuthentication/redirectUri"
+    Type: String
+    Value: !Join
+      - ''
+      - - 'https://test-resources.'
+        - !Select
+          - 1
+          - !Split
+            - 'https://'
+            - !FindInMap
+              - VerifiableCredentialIssuerMapping
+              - !Ref CriIdentifier
+              - !Ref Environment
+        - '/callback'
+
+IPVCoreStubAwsHeadlessAuthenticationAlgParameter:
+  Condition: IsStubEnvironment
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-headless/jwtAuthentication/authenticationAlg"
+    Type: String
+    Value: ES256
+
+IPVCoreStubAWSHeadlessJwksEndpointParameter:
+  Condition: IsStubEnvironment
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-headless/jwtAuthentication/jwksEndpoint"
+    Type: String
+    Value:
+      !FindInMap [StubJwksEndpoint, !Ref CriIdentifier, !Ref Environment]
+
+IPVCoreStubAwsProd3rdPartyAudienceParameter:
+  Condition: IsStubEnvironment
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod_3rdparty/jwtAuthentication/audience"
+    Type: String
+    Value:
+      !FindInMap [CriAudienceMapping, !Ref CriIdentifier, !Ref Environment]
+
+IPVCoreStubAwsProd3rdPartyPublicSigningJwkBase64Parameter:
+  Condition: IsStubEnvironment
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod_3rdparty/jwtAuthentication/publicSigningJwkBase64"
+    Type: String
+    Value: "ewogICAgImt0eSI6ICJFQyIsCiAgICAidXNlIjogInNpZyIsCiAgICAiY3J2IjogIlAtMjU2IiwKICAgICJraWQiOiAiaXB2LWNvcmUtc3R1Yi0yLWZyb20tbWtqd2sub3JnIiwKICAgICJ4IjogImszOXVLYWNTdWtRQnJNWnJIRFRCVVpzbGl2cFhLRE5aVGc2aW5DSHdyTGMiLAogICAgInkiOiAiOEY4TG5RN3dHOWh4c1Q0YXgwQXR5N2lNR0l5aVlfWUdwM19xSVp6S28xQSIsCiAgICAiYWxnIjogIkVTMjU2Igp9"
+
+IPVCoreStubAwsProd3rdPartyIssuerParameter:
+  Condition: IsStubEnvironment
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod_3rdparty/jwtAuthentication/issuer"
+    Type: String
+    Value: "https://cri-3rdparty.core.stubs.account.gov.uk"
+
+IPVCoreStubAwsProd3rdPartyRedirectURIParameter:
+  Condition: IsStubEnvironment
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod_3rdparty/jwtAuthentication/redirectUri"
+    Type: String
+    Value: "https://cri-3rdparty.core.stubs.account.gov.uk/callback"
+
+IPVCoreStubAwsProd3rdPartyAuthenticationAlgParameter:
+  Condition: IsStubEnvironment
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod_3rdparty/jwtAuthentication/authenticationAlg"
+    Type: String
+    Value: ES256
+
+IPVCoreStubAWSProdThirdPartyJwksEndpointParameter:
+  Condition: IsStubEnvironment
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-prod_3rdparty/jwtAuthentication/jwksEndpoint"
+    Type: String
+    Value:
+      !FindInMap [StubJwksEndpoint, !Ref CriIdentifier, !Ref Environment]
+
+IPVCoreStubAwsBuild3rdPartyAudienceParameter:
+  Condition: IsStubEnvironment
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build_3rdparty/jwtAuthentication/audience"
+    Type: String
+    Value:
+      !FindInMap [CriAudienceMapping, !Ref CriIdentifier, !Ref Environment]
+
+IPVCoreStubAwsBuild3rdPartyPublicSigningJwkBase64Parameter:
+  Condition: IsStubEnvironment
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build_3rdparty/jwtAuthentication/publicSigningJwkBase64"
+    Type: String
+    Value: "ewogICAgImt0eSI6ICJFQyIsCiAgICAidXNlIjogInNpZyIsCiAgICAiY3J2IjogIlAtMjU2IiwKICAgICJraWQiOiAiaXB2LWNvcmUtc3R1Yi0yLWZyb20tbWtqd2sub3JnIiwKICAgICJ4IjogImszOXVLYWNTdWtRQnJNWnJIRFRCVVpzbGl2cFhLRE5aVGc2aW5DSHdyTGMiLAogICAgInkiOiAiOEY4TG5RN3dHOWh4c1Q0YXgwQXR5N2lNR0l5aVlfWUdwM19xSVp6S28xQSIsCiAgICAiYWxnIjogIkVTMjU2Igp9"
+
+IPVCoreStubAwsBuild3rdPartyIssuerParameter:
+  Condition: IsStubEnvironment
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build_3rdparty/jwtAuthentication/issuer"
+    Type: String
+    Value: "https://cri-3rdparty.core.build.stubs.account.gov.uk"
+
+IPVCoreStubAwsBuild3rdPartyRedirectURIParameter:
+  Condition: IsStubEnvironment
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build_3rdparty/jwtAuthentication/redirectUri"
+    Type: String
+    Value: "https://cri-3rdparty.core.build.stubs.account.gov.uk/callback"
+
+IPVCoreStubAwsBuild3rdPartyAuthenticationAlgParameter:
+  Condition: IsStubEnvironment
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build_3rdparty/jwtAuthentication/authenticationAlg"
+    Type: String
+    Value: ES256
+
+IPVCoreStubAWSBuildThirdPartyJwksEndpointParameter:
+  Condition: IsStubEnvironment
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub-aws-build_3rdparty/jwtAuthentication/jwksEndpoint"
+    Type: String
+    Value:
+      !FindInMap [StubJwksEndpoint, !Ref CriIdentifier, !Ref Environment]

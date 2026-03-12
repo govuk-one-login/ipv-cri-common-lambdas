@@ -1,0 +1,104 @@
+CreateAuthCodeFunction:
+  Type: AWS::Serverless::Function
+  Condition: IsDevEnvironment
+  Properties:
+    FunctionName: !Sub "${AWS::StackName}-CreateAuthCodeFunction"
+    CodeUri: ../../lambdas
+    Handler: create-auth-code-handler.lambdaHandler
+    Runtime: nodejs22.x
+    Layers:
+      - arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_313_2_20250404-043044_with_collector_nodejs:1
+    VpcConfig:
+      SubnetIds: !If
+        - IsDevPlatformDeploy
+        - [
+          !ImportValue cri-vpc-PrivateSubnetIdA,
+          !ImportValue cri-vpc-PrivateSubnetIdB,
+        ]
+        - !Split [",", !ImportValue cri-vpc-PrivateSubnets]
+    Environment:
+      Variables:
+        POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-create-auth-code"
+        SESSION_TABLE: !Ref SessionTable
+    Policies:
+      - DynamoDBWritePolicy:
+          TableName:
+            Ref: SessionTable
+      - KMSDecryptPolicy:
+          KeyId: !Ref DynamoTablesEncryptionKey
+      - Statement:
+          - Effect: Allow
+            Action:
+              - ssm:GetParameters
+            Resource:
+              - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/SessionTableName"
+              - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/clients/*"
+  Metadata:
+    BuildMethod: esbuild
+    BuildProperties:
+      Minify: true
+      Target: "node18"
+      Sourcemap: true
+      EntryPoints:
+        - src/handlers/create-auth-code-handler.ts
+      External:
+        - "@aws-sdk/*"
+
+CreateAuthCodeFunctionPermission:
+  Type: AWS::Lambda::Permission
+  Condition: IsDevEnvironment
+  Properties:
+    Action: lambda:InvokeFunction
+    FunctionName: !GetAtt CreateAuthCodeFunction.Arn
+    Principal: apigateway.amazonaws.com
+
+PreMergeDevOnlyApi:
+  Type: AWS::Serverless::Api
+  Condition: IsDevEnvironment
+  Properties:
+    Description: CRI API Gateway for pre-merge testing in dev only
+    MethodSettings:
+      - LoggingLevel: INFO
+        ResourcePath: "/*"
+        HttpMethod: "*"
+        ThrottlingRateLimit: 5
+        ThrottlingBurstLimit: 10
+    AccessLogSetting:
+      DestinationArn: !Sub "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${PreMergeDevOnlyApiAccessLogGroup}"
+      Format: >-
+        {
+        "requestId":"$context.requestId",
+        "ip":"$context.identity.sourceIp",
+        "requestTime":"$context.requestTime",
+        "httpMethod":"$context.httpMethod",
+        "path":"$context.path",
+        "routeKey":"$context.routeKey",
+        "status":"$context.status",
+        "protocol":"$context.protocol",
+        "responseLatency":"$context.responseLatency",
+        "responseLength":"$context.responseLength"
+        }
+    Name: !Sub "common-lambdas-${AWS::StackName}"
+    StageName: !Ref Environment
+    DefinitionBody:
+      openapi: "3.0.1"
+      paths:
+        /never-created:
+          options: {}
+      Fn::Transform:
+        Name: AWS::Include
+        Parameters:
+          Location: "./pre-merge-api.yaml"
+    OpenApiVersion: 3.0.1
+    EndpointConfiguration:
+      Type: REGIONAL
+    Tags:
+      FMSRegionalPolicy: false
+      CustomPolicy: true
+
+PreMergeDevOnlyApiAccessLogGroup:
+  Type: AWS::Logs::LogGroup
+  Condition: IsDevEnvironment
+  Properties:
+    LogGroupName: !Sub /aws/apigateway/${AWS::StackName}-${PreMergeDevOnlyApi}-private-AccessLogs
+    RetentionInDays: 30
