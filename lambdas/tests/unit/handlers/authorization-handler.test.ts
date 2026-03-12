@@ -216,6 +216,7 @@ describe("authorization-handler.ts", () => {
                     "Authorization Lambda error occurred: access_denied: Authorization permission denied",
                     expect.any(AccessDeniedError),
                 );
+                expect(metricsSpyAddMetrics).toHaveBeenCalledWith("no_authorization_code", "Count", 1);
                 expect(metricsSpyAddMetrics).toHaveBeenCalledWith("authorization_sent", "Count", 0);
             });
         });

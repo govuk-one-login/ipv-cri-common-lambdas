@@ -68,25 +68,58 @@ describe("EvidenceRequestSchema", () => {
     });
 
     describe("Should return success false when field values are not within value boundaries or are invalid", () => {
-        it.each([
+        const commonInvalidJsonTypes: Array<[unknown, string]> = [
+            [null, "Invalid input: expected number, received null"],
+            ["test", "Invalid input: expected number, received string"],
+            [[], "Invalid input: expected number, received array"],
+            [{}, "Invalid input: expected number, received object"],
+            [true, "Invalid input: expected number, received boolean"],
+        ];
+
+        const numericFieldTests: Record<string, Array<[unknown, string]>> = {
+            strengthScore: [
+                [0, "Too small: expected number to be >=1"],
+                [5, "Too big: expected number to be <=4"],
+                [1.5, "Invalid input: expected int, received number"],
+                ...commonInvalidJsonTypes,
+            ],
+            validityScore: [
+                [-1, "Too small: expected number to be >=0"],
+                [5, "Too big: expected number to be <=4"],
+                [1.5, "Invalid input: expected int, received number"],
+                ...commonInvalidJsonTypes,
+            ],
+            verificationScore: [
+                [-1, "Too small: expected number to be >=0"],
+                [5, "Too big: expected number to be <=4"],
+                [1.5, "Invalid input: expected int, received number"],
+                ...commonInvalidJsonTypes,
+            ],
+            activityHistoryScore: [
+                [-1, "Too small: expected number to be >=0"],
+                [5, "Too big: expected number to be <=4"],
+                [1.5, "Invalid input: expected int, received number"],
+                ...commonInvalidJsonTypes,
+            ],
+            identityFraudScore: [
+                [-1, "Too small: expected number to be >=0"],
+                [4, "Too big: expected number to be <=3"],
+                [1.5, "Invalid input: expected int, received number"],
+                ...commonInvalidJsonTypes,
+            ],
+        };
+
+        // Create the combined test combinations
+        const allTests = [
+            ["scoringPolicy", null, 'Invalid input: expected "gpg45"'],
             ["scoringPolicy", "gpg46", 'Invalid input: expected "gpg45"'],
-            ["strengthScore", 0, "Too small: expected number to be >=1"],
-            ["strengthScore", 5, "Too big: expected number to be <=4"],
-            ["strengthScore", 1.5, "Invalid input: expected int, received number"],
-            ["validityScore", -1, "Too small: expected number to be >=0"],
-            ["validityScore", 5, "Too big: expected number to be <=4"],
-            ["validityScore", 1.5, "Invalid input: expected int, received number"],
-            ["verificationScore", -1, "Too small: expected number to be >=0"],
-            ["verificationScore", 5, "Too big: expected number to be <=4"],
-            ["verificationScore", 1.5, "Invalid input: expected int, received number"],
-            ["activityHistoryScore", -1, "Too small: expected number to be >=0"],
-            ["activityHistoryScore", 5, "Too big: expected number to be <=4"],
-            ["activityHistoryScore", 1.5, "Invalid input: expected int, received number"],
-            ["identityFraudScore", -1, "Too small: expected number to be >=0"],
-            ["identityFraudScore", 4, "Too big: expected number to be <=3"],
-            ["identityFraudScore", 1.5, "Invalid input: expected int, received number"],
-        ])("%s = %p", (field, value, failureErrorMessage) => {
-            const result = EvidenceRequestSchema.safeParse({ ...allValidValues, [field]: value });
+            ...Object.entries(numericFieldTests).flatMap(([field, tests]) =>
+                tests.map(([value, msg]) => [field, value, msg]),
+            ),
+        ] as Array<[string, unknown, string]>;
+
+        it.each(allTests)("%s = %p", (field, value, failureErrorMessage) => {
+            const result = EvidenceRequestSchema.safeParse({ ...allValidValues, [field as string]: value });
             expect(result.success).toBe(false);
             expect(result.error!.issues[0].path).toEqual([field]);
             expect(result.error!.issues[0].message).toBe(failureErrorMessage);

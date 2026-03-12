@@ -27,6 +27,7 @@ const dynamoDbClient = createClient(AwsClientType.DYNAMO);
 const ssmClient = createClient(AwsClientType.SSM);
 const configService = new ConfigService(new SSMProvider({ awsSdkV3Client: ssmClient }));
 const AUTHORIZATION_SENT_METRIC = "authorization_sent";
+const NO_AUTHORIZATION_CODE = "no_authorization_code";
 
 export class AuthorizationLambda implements LambdaInterface {
     constructor(private readonly authorizationRequestValidator: AuthorizationRequestValidator) {}
@@ -50,6 +51,8 @@ export class AuthorizationLambda implements LambdaInterface {
             logger.info("Session validated");
 
             if (!sessionItem.authorizationCode) {
+                logger.info("No Auth Code retrieved returning Oauth access_denied");
+                metrics.addMetric(NO_AUTHORIZATION_CODE, MetricUnit.Count, 1);
                 throw new AccessDeniedError();
             }
 
