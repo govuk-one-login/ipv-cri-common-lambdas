@@ -29,9 +29,7 @@ ext {
 }
 
 repositories {
-	maven {
-		url 'https://gds.jfrog.io/artifactory/di-allowed-repos'
-	}
+	mavenCentral()
 }
 
 spotless {
@@ -67,9 +65,7 @@ subprojects {
 	}
 
 	repositories {
-		maven {
-			url 'https://gds.jfrog.io/artifactory/di-allowed-repos'
-		}
+		mavenCentral()
 		//flatDir {
 		//	dirs '<Location of your projects absolute path>/di-ipv-cri-lib/build/libs'
 		//}
