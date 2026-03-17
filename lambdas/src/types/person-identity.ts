@@ -1,14 +1,18 @@
-export interface SocialSecurityRecord {
-    personalNumber: string;
+export interface PersonIdentity {
+    name: Name[];
+    birthDate: BirthDate[];
+    address: Address[];
+    socialSecurityRecord?: SocialSecurityRecord[];
+    drivingPermit?: DrivingPermit[];
+}
+
+export interface Name {
+    nameParts: NamePart[];
 }
 
 export interface NamePart {
     type: string;
     value: string;
-}
-
-export interface Name {
-    nameParts: NamePart[];
 }
 
 export interface BirthDate {
@@ -33,11 +37,17 @@ export interface Address {
     validUntil: string;
 }
 
-export interface PersonIdentity {
-    socialSecurityRecord?: SocialSecurityRecord[];
-    name: Name[];
-    birthDate: BirthDate[];
-    address: Address[];
+export interface SocialSecurityRecord {
+    personalNumber: string;
+}
+
+export interface DrivingPermit {
+    personalNumber: string;
+    expiryDate: string;
+    issueNumber: string | undefined;
+    issuedBy: string;
+    issueDate: string;
+    fullAddress: string;
 }
 
 export interface TxMAPersonIdentity {

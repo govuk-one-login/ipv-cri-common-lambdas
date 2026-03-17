@@ -3,7 +3,7 @@ import middy from "@middy/core";
 import { Logger } from "@aws-lambda-powertools/logger";
 import { Metrics, MetricUnit } from "@aws-lambda-powertools/metrics";
 import { APIGatewayProxyEvent, APIGatewayProxyEventHeaders, Context } from "aws-lambda";
-import { ClientConfigKey, CommonConfigKey, ConfigKey } from "../../../src/types/config-keys";
+import { ClientConfigKey, CommonConfigKey } from "../../../src/types/config-keys";
 import { ConfigService } from "../../../src/common/config/config-service";
 import { PersonIdentity } from "../../../src/types/person-identity";
 import { SessionLambda } from "../../../src/handlers/session-handler";
@@ -404,10 +404,8 @@ describe("SessionLambda", () => {
             mockSessionItem,
             {
                 restricted: {
-                    personIdentity: {
-                        device_information: {
-                            encoded: "encodedHeader",
-                        },
+                    device_information: {
+                        encoded: "encodedHeader",
                     },
                 },
             },
@@ -479,9 +477,6 @@ describe("SessionLambda", () => {
                             ClientConfigKey.JWT_REDIRECT_URI,
                             ClientConfigKey.JWT_SIGNING_ALGORITHM,
                             ClientConfigKey.JWKS_ENDPOINT,
-                        ],
-                        client_absolute_paths: [
-                            { prefix: previousCriIdentifier, suffix: ConfigKey.CRI_EVIDENCE_PROPERTIES },
                         ],
                     }),
                 )
@@ -655,9 +650,6 @@ describe("SessionLambda", () => {
                             ClientConfigKey.JWT_REDIRECT_URI,
                             ClientConfigKey.JWKS_ENDPOINT,
                             ClientConfigKey.JWT_SIGNING_ALGORITHM,
-                        ],
-                        client_absolute_paths: [
-                            { prefix: previousCriIdentifier, suffix: ConfigKey.CRI_EVIDENCE_PROPERTIES },
                         ],
                     }),
                 )

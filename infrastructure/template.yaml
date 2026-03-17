@@ -9,7 +9,7 @@ Metadata:
     SpdxLicenseId: MIT
     LicenseUrl: ../LICENSE
     HomePageUrl: https://github.com/govuk-one-login/ipv-cri-oauth-common
-    SemanticVersion: 0.0.0
+    SemanticVersion: 0.0.1
     SourceCodeUrl: https://github.com/govuk-one-login/ipv-cri-oauth-common
 
 Parameters:
@@ -69,7 +69,7 @@ Parameters:
   Environment:
     Type: String
     Description: The deployed environment
-    AllowedValues: 
+    AllowedValues:
       - dev
       - build
       - staging
@@ -86,7 +86,7 @@ Parameters:
     Description: >
       Stubbed JWKS endpoint for non-prod environments
       Example: https://test-resources.review-hc.dev.account.gov.uk/.well-known/jwks.json
-    Default: "" 
+    Default: ""
 
   KeyRotation:
     Type: String
@@ -115,7 +115,7 @@ Parameters:
     Type: Number
     Description: Provisioned concurrency for the Lambdas (0 = disabled)
     Default: 0
-  LambdaVpcConfiguration: 
+  LambdaVpcConfiguration:
     Type: String
     Description: >
       Deploy type, so the correct VPC configuration is used.
@@ -153,11 +153,11 @@ Mappings:
       IPVCoreIssuer: "https://identity.account.gov.uk"
 
 Conditions:
-  IsDev: !Equals [ !Ref Environment, "dev" ]
-  IsIntegration: !Equals [ !Ref Environment, "integration" ]
-  IsStaging: !Equals [ !Ref Environment, "staging" ]
-  IsProd: !Equals [ !Ref Environment, "production" ]
-  IsNotProd: !Not [ !Condition IsProd ]
+  IsDev: !Equals [!Ref Environment, "dev"]
+  IsIntegration: !Equals [!Ref Environment, "integration"]
+  IsStaging: !Equals [!Ref Environment, "staging"]
+  IsProd: !Equals [!Ref Environment, "production"]
+  IsNotProd: !Not [!Condition IsProd]
   IsStagingIntegrationOrProd: !Or
     - !Condition IsIntegration
     - !Condition IsStaging
@@ -172,15 +172,16 @@ Conditions:
   IsCodeSigningEnabled: !Not
     - !Equals [!Ref LambdaCodeSigningConfigArn, "none"]
   IsPermissionsBoundaryEnabled: !Not
-    - !Equals [ !Ref PermissionsBoundaryArn, "none" ]
+    - !Equals [!Ref PermissionsBoundaryArn, "none"]
   IsProvisionedConcurrencyEnabled: !Not
-    - !Equals [ !Ref LambdaProvisionedConcurrentExecutions, 0 ]
-  IsDevPlatformDeploy: !Equals [ !Ref LambdaVpcConfiguration, "di-devplatform-deploy" ]
+    - !Equals [!Ref LambdaProvisionedConcurrentExecutions, 0]
+  IsDevPlatformDeploy:
+    !Equals [!Ref LambdaVpcConfiguration, "di-devplatform-deploy"]
   IsCSLSEnabled: !Not
-    - !Equals [ !Ref CSLSDestinationArn, "none" ]
-  IsCanaryDeployment: !Not 
+    - !Equals [!Ref CSLSDestinationArn, "none"]
+  IsCanaryDeployment: !Not
     - !Equals [!Ref LambdaDeploymentPreference, "AllAtOnce"]
-  IsCustomerManagedKeyEnabled: !Equals [ !Ref DbCustomerManagedKey, "true" ]
+  IsCustomerManagedKeyEnabled: !Equals [!Ref DbCustomerManagedKey, "true"]
 
 Globals:
   Function:
@@ -213,43 +214,23 @@ Globals:
         DT_CONNECTION_AUTH_TOKEN: !Sub
           - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_CONNECTION_AUTH_TOKEN}}"
           - SecretArn:
-              !FindInMap [
-                EnvConfig,
-                !Ref Environment,
-                DynatraceSecretArn,
-              ]
+              !FindInMap [EnvConfig, !Ref Environment, DynatraceSecretArn]
         DT_CONNECTION_BASE_URL: !Sub
           - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_CONNECTION_BASE_URL}}"
           - SecretArn:
-              !FindInMap [
-                EnvConfig,
-                !Ref Environment,
-                DynatraceSecretArn,
-              ]
+              !FindInMap [EnvConfig, !Ref Environment, DynatraceSecretArn]
         DT_CLUSTER_ID: !Sub
           - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_CLUSTER_ID}}"
           - SecretArn:
-              !FindInMap [
-                EnvConfig,
-                !Ref Environment,
-                DynatraceSecretArn,
-              ]
+              !FindInMap [EnvConfig, !Ref Environment, DynatraceSecretArn]
         DT_LOG_COLLECTION_AUTH_TOKEN: !Sub
           - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_LOG_COLLECTION_AUTH_TOKEN}}"
           - SecretArn:
-              !FindInMap [
-                EnvConfig,
-                !Ref Environment,
-                DynatraceSecretArn,
-              ]
+              !FindInMap [EnvConfig, !Ref Environment, DynatraceSecretArn]
         DT_TENANT: !Sub
           - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_TENANT}}"
           - SecretArn:
-              !FindInMap [
-                EnvConfig,
-                !Ref Environment,
-                DynatraceSecretArn,
-              ]
+              !FindInMap [EnvConfig, !Ref Environment, DynatraceSecretArn]
         DT_OPEN_TELEMETRY_ENABLE_INTEGRATION: "true"
 
 Resources:
@@ -283,7 +264,7 @@ Resources:
           SQS_AUDIT_EVENT_QUEUE_URL:
             Fn::ImportValue: !Sub ${AuditTxmaStackName}-AuditEventQueueUrl
           CRI_IDENTIFIER: !Sub "${CriIdentifier}"
-          ENV_VAR_FEATURE_FLAG_KEY_ROTATION: !Ref KeyRotation 
+          ENV_VAR_FEATURE_FLAG_KEY_ROTATION: !Ref KeyRotation
           ENV_VAR_FEATURE_FLAG_KEY_ROTATION_LEGACY_KEY_FALLBACK: !Ref KeyRotationFallback
           SESSION_TABLE: !Ref SessionTable
           PERSON_IDENTITY_TABLE: !Ref PersonIdentityTable

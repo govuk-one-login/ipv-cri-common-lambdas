@@ -51,15 +51,6 @@ export class ConfigService {
         await this.setParametersByAbsolutePath(ssmParameters, clientId);
     }
 
-    public async initConfigWithCriIdentifierInPath(clientId: string, parameterPrefix: string, paramNameSuffix: string) {
-        const ssmParameters = await this.getCriIdentifierParameters([`/${parameterPrefix}/${paramNameSuffix}`]);
-        if (ssmParameters.length === 0) {
-            logger.info(`Invalid parameter beginning with ${parameterPrefix} encountered`);
-            return;
-        }
-        await this.setParametersByAbsolutePath(ssmParameters, clientId);
-    }
-
     private async setParametersByAbsolutePath(ssmParameters: Parameter[], identifier: string) {
         const clientConfigEntries: Map<string, string> =
             this.clientConfigurations.get(identifier) || new Map<string, string>();

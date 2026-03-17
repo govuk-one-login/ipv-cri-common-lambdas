@@ -53,12 +53,18 @@ describe("Pact Verification", () => {
         logger.debug("Starting Pact Verification");
 
         try {
-            const output = await new Verifier(verifierOptions).verifyProvider();
+            const output = JSON.parse(await new Verifier(verifierOptions).verifyProvider());
             logger.info("Pact Verification Complete!");
             logger.info("Output: ", output);
 
-            const mismatchCount = Number(output.match(/\d+/)?.[0]);
-            expect(mismatchCount).toBe(0);
+            expect(output).toHaveProperty("pendingErrors");
+            expect(output).toHaveProperty("errors");
+
+            const pendingErrors = output.pendingErrors;
+            const errors = output.errors;
+
+            expect(pendingErrors.length).toBe(0);
+            expect(errors.length).toBe(0);
         } catch (error) {
             logger.error("Pact verification failed :(", { error });
 
