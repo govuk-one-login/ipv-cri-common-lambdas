@@ -1,10 +1,18 @@
 import { DynamoDBDocument, PutCommand } from "@aws-sdk/lib-dynamodb";
 import { ConfigService } from "../common/config/config-service";
 import { CommonConfigKey } from "../types/config-keys";
-import { Address, BirthDate, Name, PersonIdentity, SocialSecurityRecord } from "../types/person-identity";
+import {
+    Address,
+    BirthDate,
+    DrivingPermit,
+    Name,
+    PersonIdentity,
+    SocialSecurityRecord,
+} from "../types/person-identity";
 import {
     PersonIdentityAddress,
     PersonIdentityDateOfBirth,
+    PersonIdentityDrivingPermit,
     PersonIdentityItem,
     PersonIdentityName,
     PersonIdentitySocialSecurityRecord,
@@ -32,13 +40,19 @@ export class PersonIdentityService {
         sessionId: string,
         sessionExpirationEpoch: number,
     ): PersonIdentityItem {
+        const drivingPermitAddresses = this.extractAddressPostalCodeFromDrivingPermitFullAddress(
+            sharedClaims.drivingPermit,
+        );
+
         return {
             sessionId: sessionId,
-            addresses: this.mapAddresses(sharedClaims.address),
+            addresses:
+                drivingPermitAddresses.length > 0 ? drivingPermitAddresses : this.mapAddresses(sharedClaims.address),
             birthDates: this.mapBirthDates(sharedClaims.birthDate),
             expiryDate: sessionExpirationEpoch,
             names: this.mapNames(sharedClaims.name),
             socialSecurityRecord: this.mapNino(sharedClaims.socialSecurityRecord),
+            drivingPermits: this.mapDrivingPermit(sharedClaims.drivingPermit),
         };
     }
     private mapAddresses(addresses: Address[]): PersonIdentityAddress[] {
@@ -73,5 +87,43 @@ export class PersonIdentityService {
     }
     private mapNino(socialSecurityRecord?: SocialSecurityRecord[]): PersonIdentitySocialSecurityRecord[] | undefined {
         return socialSecurityRecord?.map((record) => ({ personalNumber: record?.personalNumber }));
+    }
+    private mapDrivingPermit(drivingPermit?: DrivingPermit[]): PersonIdentityDrivingPermit[] | undefined {
+        return drivingPermit?.map((record) => ({
+            personalNumber: record?.personalNumber,
+            expiryDate: record?.expiryDate,
+            issueNumber: record?.issueNumber,
+            issuedBy: record?.issuedBy,
+            issueDate: record?.issueDate,
+            fullAddress: record?.fullAddress,
+        }));
+    }
+
+    private extractAddressPostalCodeFromDrivingPermitFullAddress(
+        drivingPermit?: DrivingPermit[],
+    ): PersonIdentityAddress[] {
+        if (!drivingPermit) return [];
+
+        return drivingPermit
+            .filter((permit) => permit.fullAddress)
+            .map(
+                (permit) =>
+                    ({
+                        postalCode: this.extractPostalCode(permit),
+                    }) as PersonIdentityAddress,
+            )
+            .filter((addr) => addr.postalCode);
+    }
+
+    private extractPostalCode(dp: DrivingPermit): string | undefined {
+        const fullAddress = dp.fullAddress.toUpperCase();
+
+        if (fullAddress.length <= 6) {
+            return fullAddress;
+        }
+
+        const suffix = fullAddress.length >= 8 ? fullAddress.slice(-8) : fullAddress;
+        const trimmed = suffix.startsWith(",") ? suffix.slice(1) : suffix;
+        return trimmed.trim();
     }
 }

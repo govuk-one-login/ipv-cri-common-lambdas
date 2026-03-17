@@ -20,10 +20,6 @@ export enum ClientConfigKey {
     JWKS_ENDPOINT = "jwksEndpoint",
 }
 
-export enum ConfigKey {
-    CRI_EVIDENCE_PROPERTIES = "evidence-properties",
-}
-
 export interface ParameterPath {
     prefix: string;
     suffix: string;
