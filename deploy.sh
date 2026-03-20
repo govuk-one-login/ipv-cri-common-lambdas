@@ -32,4 +32,5 @@ sam deploy --stack-name "$stack_name" \
   Environment=dev \
   ${audit_event_name_prefix:+AuditEventNamePrefix=$audit_event_name_prefix} \
   ${cri_identifier:+CriIdentifier=$cri_identifier} \
+  BuildNotificationStackName=build-notifications \
   ForceLambdaUpdate="$(date +%s)"
