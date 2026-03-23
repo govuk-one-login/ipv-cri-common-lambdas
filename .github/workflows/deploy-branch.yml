@@ -92,5 +92,4 @@ jobs:
             cri:deployment-source=github-actions
           parameters: |
             Environment=dev
-            BuildNotificationStackName=build-notifications \
             ForceLambdaUpdate=${{ steps.set_timestamp.outputs.timestamp }}
