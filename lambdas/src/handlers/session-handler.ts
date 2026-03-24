@@ -14,7 +14,7 @@ import { JWTPayload } from "jose";
 import { AwsClientType, createClient } from "../common/aws-client-factory";
 import { getClientIpAddress, getEncodedDeviceInformation } from "../common/utils/request-utils";
 import { errorPayload } from "../common/utils/errors";
-import { metrics, tracer as _tracer } from "../common/utils/power-tool";
+import { metrics } from "../common/utils/power-tool";
 import errorMiddleware from "../middlewares/error/error-middleware";
 import { injectLambdaContext } from "@aws-lambda-powertools/logger/middleware";
 import initialiseConfigMiddleware from "../middlewares/config/initialise-config-middleware";
@@ -44,7 +44,6 @@ export class SessionLambda implements LambdaInterface {
         private readonly personIdentityService: PersonIdentityService,
     ) {}
 
-    @_tracer.captureLambdaHandler({ captureResponse: false })
     @metrics.logMetrics({ throwOnEmptyMetrics: false, captureColdStartMetric: true })
     public async handler(event: APIGatewayProxyEvent, _context: unknown): Promise<APIGatewayProxyResult> {
         try {
