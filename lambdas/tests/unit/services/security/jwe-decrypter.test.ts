@@ -8,9 +8,6 @@ jest.mock("../../../../src/common/utils/power-tool", () => ({
     metrics: {
         addMetric: jest.fn(),
     },
-    tracer: {
-        captureLambdaHandler: (handler: unknown) => handler,
-    },
 }));
 
 jest.mock("@govuk-one-login/cri-logger", () => ({

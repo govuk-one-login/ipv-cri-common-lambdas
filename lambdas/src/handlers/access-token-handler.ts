@@ -13,7 +13,7 @@ import { AwsClientType, createClient } from "../common/aws-client-factory";
 import setGovUkSigningJourneyIdMiddleware from "../middlewares/session/set-gov-uk-signing-journey-id-middleware";
 import { LambdaInterface } from "@aws-lambda-powertools/commons/types";
 import getSessionByAuthCodeMiddleware from "../middlewares/session/get-session-by-auth-code-middleware";
-import { metrics, tracer as _tracer } from "../common/utils/power-tool";
+import { metrics } from "../common/utils/power-tool";
 import { MetricUnit } from "@aws-lambda-powertools/metrics";
 import { injectLambdaContext } from "@aws-lambda-powertools/logger/middleware";
 import { RequestPayload } from "../types/request_payload";
@@ -61,7 +61,6 @@ export class AccessTokenLambda implements LambdaInterface {
         this.requestValidator = requestValidator || new AccessTokenRequestValidator(new JwtVerifierFactory(logger));
     }
     @metrics.logMetrics({ throwOnEmptyMetrics: false, captureColdStartMetric: true })
-    @_tracer.captureLambdaHandler({ captureResponse: false })
     public async handler(event: APIGatewayProxyEvent, _context: Context): Promise<APIGatewayProxyResult> {
         try {
             logger.info("Access Token Lambda triggered");

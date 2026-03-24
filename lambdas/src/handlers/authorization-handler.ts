@@ -8,7 +8,7 @@ import { AuthorizationRequestValidator } from "../services/auth-request-validato
 import { AwsClientType, createClient } from "../common/aws-client-factory";
 import { ClientConfigKey, CommonConfigKey } from "../types/config-keys";
 import { AccessDeniedError, errorPayload } from "../common/utils/errors";
-import { metrics, tracer as _tracer } from "../common/utils/power-tool";
+import { metrics } from "../common/utils/power-tool";
 import errorMiddleware from "../middlewares/error/error-middleware";
 import initialiseConfigMiddleware from "../middlewares/config/initialise-config-middleware";
 import getSessionByIdMiddleware from "../middlewares/session/get-session-by-id-middleware";
@@ -33,7 +33,6 @@ export class AuthorizationLambda implements LambdaInterface {
     constructor(private readonly authorizationRequestValidator: AuthorizationRequestValidator) {}
 
     @metrics.logMetrics({ throwOnEmptyMetrics: false, captureColdStartMetric: true })
-    @_tracer.captureLambdaHandler({ captureResponse: false })
     public async handler(event: APIGatewayProxyEvent, _context: unknown): Promise<APIGatewayProxyResult> {
         try {
             logger.info("Authorisation Lambda triggered");
