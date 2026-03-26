@@ -79,6 +79,11 @@ export class SessionLambda implements LambdaInterface {
                             },
                         },
                     }),
+                    ...(sessionItem.context && {
+                        extensions: {
+                            evidence: [{ context: sessionItem.context }],
+                        },
+                    }),
                 },
             );
 
