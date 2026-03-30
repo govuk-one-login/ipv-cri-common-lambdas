@@ -87,4 +87,4 @@ jobs:
             cri:deployment-source=github-actions
           parameters: |
             Environment=dev
-            AuditEventRelayTopicArn=""
+            AuditEventRelayTopicArn="arn:aws:sns:eu-west-2:486210938254:preview-test-resources-oj-3543-AuditEventRelayTopic-bA1iCxOs9dR9"
