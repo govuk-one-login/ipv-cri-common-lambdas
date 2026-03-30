@@ -95,7 +95,7 @@ Mappings:
   AuditEventRelayAccounts:
     "486210938254":  # di-ipv-cri-common-dev
       Enabled: "true"
-      RelayTopicArn: "arn:aws:sns:eu-west-2:486210938254:test-resources-audit-event-relay"
+      RelayTopicArn: "arn:aws:sns:eu-west-2:486210938254:preview-test-resources-oj-3543-audit-event-relay"
 
 Metadata:
   cfn-lint:
