@@ -34,11 +34,9 @@ Parameters:
     Description: "The name of the stack containing the common CRI lambdas/infra"
     Type: String
     Default: common-cri-api
-  IsPreview:
-    Description: "Set to true for preview stack deployments - routes audit events via the SNS relay topic rather than attaching directly to the TXMA queue"
+  AuditEventRelayTopicArn:
     Type: String
-    Default: "false"
-    AllowedValues: ["true", "false"]
+    Default: ""
 
 Mappings:
   KeyRotationMapping:
@@ -105,7 +103,7 @@ Conditions:
     - !Not [!Equals [!Ref Environment, localdev]]
     - !Not [!Equals [!Ref Environment, staging]]
     - !Not [!Equals [!Ref Environment, integration]]
-  IsPreviewStack: !Equals [!Ref IsPreview, "true"]
+  IsPreviewStack: !Not [!Equals [!Ref AuditEventRelayTopicArn, ""]]
   IsNotPreviewStack: !Not [!Condition IsPreviewStack]
 
   # Don't create domain resources for the common dev account as there are none
@@ -425,15 +423,13 @@ Resources:
             Resource: !GetAtt PerStackAuditQueue.Arn
             Condition:
               ArnEquals:
-                aws:SourceArn:
-                  Fn::ImportValue: !Sub "${TxmaStackName}-AuditEventRelayTopicArn"
+                aws:SourceArn: !Ref AuditEventRelayTopicArn
 
   AuditEventRelaySubscription:
     Type: AWS::SNS::Subscription
     Condition: IsPreviewStack
     Properties:
-      TopicArn:
-        Fn::ImportValue: !Sub "${TxmaStackName}-AuditEventRelayTopicArn"
+      TopicArn: !Ref AuditEventRelayTopicArn
       Protocol: sqs
       Endpoint: !GetAtt PerStackAuditQueue.Arn
       RawMessageDelivery: true
