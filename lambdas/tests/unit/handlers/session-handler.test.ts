@@ -365,6 +365,25 @@ describe("SessionLambda", () => {
         );
     });
 
+    it("should send the audit event with context evidence", async () => {
+        const mockSessionItemWithContext = { ...mockSessionItem, context: "test-context" };
+        jest.spyOn(sessionService.prototype, "saveSession").mockResolvedValue(mockSessionItemWithContext);
+
+        await lambdaHandler(mockEvent, {} as Context);
+
+        expect(buildAndSendAuditEvent).toHaveBeenCalledWith(
+            mockAuditConfig.queueUrl,
+            START_AUDIT_EVENT,
+            mockAuditConfig.issuer,
+            mockSessionItemWithContext,
+            {
+                extensions: {
+                    evidence: [{ context: "test-context" }],
+                },
+            },
+        );
+    });
+
     it("should send the audit event", async () => {
         await lambdaHandler(mockEvent, {} as Context);
         jest.spyOn(sessionRequestValidator.prototype, "validateJwt").mockReturnValue(
