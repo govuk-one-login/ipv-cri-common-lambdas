@@ -34,6 +34,11 @@ Parameters:
     Description: "The name of the stack containing the common CRI lambdas/infra"
     Type: String
     Default: common-cri-api
+  IsPreview:
+    Description: "Set to true for preview stack deployments to use a per-stack SNS relay queue instead of attaching directly to the TXMA queue"
+    Type: String
+    Default: "false"
+    AllowedValues: ["true", "false"]
 
 Mappings:
   KeyRotationMapping:
@@ -87,6 +92,11 @@ Mappings:
     di-ipv-cri-kbv-api:
       pipeline: "di-ipv-cri-pipeline-deployment"
 
+  AuditEventRelayAccounts:
+    "486210938254":  # di-ipv-cri-common-dev
+      Enabled: "true"
+      RelayTopicArn: "arn:aws:sns:eu-west-2:486210938254:test-resources-audit-event-relay"
+
 Metadata:
   cfn-lint:
     config:
@@ -100,6 +110,17 @@ Conditions:
     - !Not [!Equals [!Ref Environment, localdev]]
     - !Not [!Equals [!Ref Environment, staging]]
     - !Not [!Equals [!Ref Environment, integration]]
+  IsPreviewStack: !And
+    - !Equals [!Ref IsPreview, "true"]
+    - !Equals
+      - !FindInMap [AuditEventRelayAccounts, !Sub "${AWS::AccountId}", Enabled, DefaultValue: "false"]
+      - "true"
+  IsNotPreviewStack: !Not [!Condition IsPreviewStack]
+  CreateRelayInfrastructure: !And
+    - !Condition IsNotPreviewStack
+    - !Equals
+      - !FindInMap [AuditEventRelayAccounts, !Sub "${AWS::AccountId}", Enabled, DefaultValue: "false"]
+      - "true"
 
   # Don't create domain resources for the common dev account as there are none
   CreateDomainResources: !Not [!Equals [!Sub "${AWS::AccountId}", "486210938254"]]
@@ -310,14 +331,17 @@ Resources:
         Variables:
           POWERTOOLS_SERVICE_NAME: AuditEventDequeueFunction
           EVENTS_TABLE_NAME: !Ref AuditEventsTable
+          RELAY_TOPIC_ARN: !If [CreateRelayInfrastructure, !Ref AuditEventRelayTopic, !Ref AWS::NoValue]
       Policies:
         - Statement:
             - Sid: DecryptAuditEventKeyPolicy
               Effect: Allow
               Action:
                 - kms:Decrypt
-              Resource:
-                Fn::ImportValue: !Sub "${TxmaStackName}-AuditEventQueueEncryptionKeyArn"
+              Resource: !If
+                - IsPreviewStack
+                - !GetAtt PerStackAuditQueueKey.Arn
+                - Fn::ImportValue: !Sub "${TxmaStackName}-AuditEventQueueEncryptionKeyArn"
             - Sid: ConsumeAuditEventPolicy
               Effect: Allow
               Action:
@@ -325,21 +349,33 @@ Resources:
                 - sqs:GetQueueAttributes
                 - sqs:ChangeMessageVisibility
                 - sqs:ReceiveMessage
-              Resource:
-                Fn::ImportValue: !Sub "${TxmaStackName}-AuditEventQueueArn"
+              Resource: !If
+                - IsPreviewStack
+                - !GetAtt PerStackAuditQueue.Arn
+                - Fn::ImportValue: !Sub "${TxmaStackName}-AuditEventQueueArn"
             - Sid: PutEventsPolicy
               Effect: Allow
               Action:
                 - dynamodb:PutItem
               Resource:
                 !GetAtt AuditEventsTable.Arn
+            - !If
+              - CreateRelayInfrastructure
+              - Sid: PublishToRelayTopic
+                Effect: Allow
+                Action:
+                  - sns:Publish
+                Resource: !Ref AuditEventRelayTopic
+              - !Ref AWS::NoValue
       Events:
         AuditSQSEvent:
           Type: SQS
           Properties:
             Enabled: !If [DequeueEvents, true, false]
-            Queue:
-              Fn::ImportValue: !Sub "${TxmaStackName}-AuditEventQueueArn"
+            Queue: !If
+              - IsPreviewStack
+              - !GetAtt PerStackAuditQueue.Arn
+              - Fn::ImportValue: !Sub "${TxmaStackName}-AuditEventQueueArn"
             FunctionResponseTypes:
               - ReportBatchItemFailures
 
@@ -348,6 +384,70 @@ Resources:
     Properties:
       LogGroupName: !Sub "/aws/lambda/${DequeueFunction}"
       RetentionInDays: 30
+
+  AuditEventRelayTopic:
+    Type: AWS::SNS::Topic
+    Condition: CreateRelayInfrastructure
+    Properties:
+      TopicName: !Sub "${AWS::StackName}-audit-event-relay"
+
+  PerStackAuditQueueKey:
+    Type: AWS::KMS::Key
+    Condition: IsPreviewStack
+    Properties:
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: EnableRootAccess
+            Effect: Allow
+            Principal:
+              AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
+            Action: "kms:*"
+            Resource: "*"
+          - Sid: AllowSNSToUseKey
+            Effect: Allow
+            Principal:
+              Service: sns.amazonaws.com
+            Action:
+              - kms:GenerateDataKey
+              - kms:Decrypt
+            Resource: "*"
+
+  PerStackAuditQueue:
+    Type: AWS::SQS::Queue
+    Condition: IsPreviewStack
+    Properties:
+      KmsMasterKeyId: !Ref PerStackAuditQueueKey
+      VisibilityTimeout: 30
+      RedriveAllowPolicy:
+        redrivePermission: denyAll
+
+  PerStackAuditQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Condition: IsPreviewStack
+    Properties:
+      Queues: [!Ref PerStackAuditQueue]
+      PolicyDocument:
+        Statement:
+          - Sid: AllowSNSToSendMessages
+            Effect: Allow
+            Principal:
+              Service: sns.amazonaws.com
+            Action: sqs:SendMessage
+            Resource: !GetAtt PerStackAuditQueue.Arn
+            Condition:
+              ArnEquals:
+                aws:SourceArn: !FindInMap [AuditEventRelayAccounts, !Sub "${AWS::AccountId}", RelayTopicArn]
+
+  AuditEventRelaySubscription:
+    Type: AWS::SNS::Subscription
+    Condition: IsPreviewStack
+    Properties:
+      TopicArn: !FindInMap [AuditEventRelayAccounts, !Sub "${AWS::AccountId}", RelayTopicArn]
+      Protocol: sqs
+      Endpoint: !GetAtt PerStackAuditQueue.Arn
+      RawMessageDelivery: true
 
   AuditEventsTable:
     Type: AWS::DynamoDB::Table

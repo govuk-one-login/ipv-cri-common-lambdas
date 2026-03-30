@@ -1,16 +1,19 @@
 import { PutItemCommand, DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import { PublishCommand, SNSClient } from "@aws-sdk/client-sns";
 import type { LambdaInterface } from "@aws-lambda-powertools/commons/types";
 import { Logger } from "@aws-lambda-powertools/logger";
 import { SQSEvent, SQSBatchItemFailure } from "aws-lambda";
 
 export const logger = new Logger();
 export const dbClient = new DynamoDBClient({ region: process.env.REGION });
+export const snsClient = new SNSClient({ region: process.env.REGION });
 
 export class DequeueLambdaHandler implements LambdaInterface {
     async handler(event: SQSEvent): Promise<{ batchItemFailures: SQSBatchItemFailure[] }> {
         logger.info("Starting to process records");
 
         const tableName = process.env.EVENTS_TABLE_NAME;
+        const relayTopicArn = process.env.RELAY_TOPIC_ARN;
         const batchItemFailures: SQSBatchItemFailure[] = [];
 
         for (const { body, messageId } of event.Records) {
@@ -34,6 +37,16 @@ export class DequeueLambdaHandler implements LambdaInterface {
             } catch (error) {
                 batchItemFailures.push({ itemIdentifier: messageId });
                 logger.error({ message: `Error writing events to DB table ${tableName}`, error });
+                continue;
+            }
+
+            if (relayTopicArn) {
+                try {
+                    await snsClient.send(new PublishCommand({ TopicArn: relayTopicArn, Message: body }));
+                    logger.info({ message: "Event relayed to SNS topic", relayTopicArn, sessionId, eventName });
+                } catch (error) {
+                    logger.error({ message: "Error relaying event to SNS topic", relayTopicArn, error });
+                }
             }
         }
 
