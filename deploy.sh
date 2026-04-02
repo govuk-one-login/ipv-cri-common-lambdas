@@ -17,6 +17,7 @@ sam validate -t infrastructure/lambda/template.yaml --lint
 
 sam build -t infrastructure/lambda/template.yaml --cached --parallel
 
+# BuildNotificationStackName may be "slack-notifications" for address and other CRI accounts
 sam deploy --stack-name "$stack_name" \
   --no-fail-on-empty-changeset \
   --no-confirm-changeset \
