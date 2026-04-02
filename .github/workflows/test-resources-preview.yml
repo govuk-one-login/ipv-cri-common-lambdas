@@ -87,4 +87,4 @@ jobs:
             cri:deployment-source=github-actions
           parameters: |
             Environment=dev
-            IsPreview=false
+            IsPreview=true
