@@ -28,7 +28,7 @@ jobs:
       - name: Get stale preview stacks
         uses: govuk-one-login/github-actions/sam/get-stale-stacks@ca188729ecb0c92e5fe5ae7c024f9894815da3a1
         with:
-          threshold-days: 14
+          threshold-days: 5
           stack-name-filter: preview
           stack-tag-filters: |
             cri:deployment-source=github-actions
