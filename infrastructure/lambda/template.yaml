@@ -961,7 +961,7 @@ Resources:
 
   SessionFunctionCanary5xxErrors:
     Type: AWS::CloudWatch::Alarm
-    # Condition: UseCanaryDeploymentAlarms
+    Condition: UseCanaryDeploymentAlarms
     Properties:
       ActionsEnabled: true
       AlarmActions: 
