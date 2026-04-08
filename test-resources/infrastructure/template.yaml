@@ -31,9 +31,9 @@ Parameters:
     Default: "cri-vpc"
     Description: The name of the VPC stack deployed.
   CommonStackName:
-    Description: "The name of the stack containing the common CRI lambdas/infra"
-    Type: String
-    Default: common-cri-api
+    Description: "The SSM param containing the stack name of the oauth/common lambdas stack"
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /common-cri/oauth-common/stack-name
   IsPreview:
     Description: "Set to true for preview stack deployments to use a per-stack SNS relay queue instead of attaching directly to the TXMA queue"
     Type: String
