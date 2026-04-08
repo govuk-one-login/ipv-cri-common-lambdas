@@ -1,3 +1,4 @@
+import { describe, expect, it } from "vitest";
 import { EvidenceRequestSchema } from "../../../src/schemas/evidence-request.schema";
 
 const allValidValues: Record<string, unknown> = {

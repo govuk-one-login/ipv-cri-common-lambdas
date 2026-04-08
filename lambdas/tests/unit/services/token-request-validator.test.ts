@@ -2,10 +2,11 @@ import { AccessTokenRequestValidator } from "../../../src/services/token-request
 import { JwtVerifierFactory } from "../../../src/common/security/jwt-verifier";
 import { SessionItem, UnixSecondsTimestamp } from "@govuk-one-login/cri-types";
 import { InvalidPayloadError } from "../../../src/common/utils/errors";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 describe("token-request-validator.ts", () => {
     let accessTokenRequestValidator: AccessTokenRequestValidator;
-    const mockJwtVerifierFactory = jest.mocked(JwtVerifierFactory);
+    const mockJwtVerifierFactory = vi.mocked(JwtVerifierFactory);
     const code = "test";
     const redirect_uri = "http://abc123.com";
     const client_assertion = "test";
@@ -13,7 +14,7 @@ describe("token-request-validator.ts", () => {
     const grant_type = "authorization_code";
 
     beforeEach(() => {
-        jest.resetAllMocks();
+        vi.resetAllMocks();
         accessTokenRequestValidator = new AccessTokenRequestValidator(mockJwtVerifierFactory.prototype);
     });
 

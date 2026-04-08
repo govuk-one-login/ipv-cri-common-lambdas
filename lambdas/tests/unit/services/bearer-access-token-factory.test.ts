@@ -1,3 +1,4 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { BearerAccessTokenFactory } from "../../../src/services/bearer-access-token-factory";
 
 describe("access-token-service", () => {
@@ -5,7 +6,7 @@ describe("access-token-service", () => {
 
     describe("createBearerAccessToken", () => {
         beforeEach(() => {
-            jest.resetAllMocks();
+            vi.resetAllMocks();
             bearerAccessTokenFactory = new BearerAccessTokenFactory(10);
         });
 

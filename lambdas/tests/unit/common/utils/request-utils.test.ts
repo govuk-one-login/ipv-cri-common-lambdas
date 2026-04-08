@@ -5,6 +5,7 @@ import {
     getSessionId,
 } from "../../../../src/common/utils/request-utils";
 import { InvalidRequestError } from "../../../../src/common/utils/errors";
+import { describe, expect, test } from "vitest";
 
 describe("request-utils", () => {
     describe("getClientIpAddress", () => {

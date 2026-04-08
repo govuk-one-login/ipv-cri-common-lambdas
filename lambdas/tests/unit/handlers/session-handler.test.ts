@@ -1,4 +1,5 @@
 import middy from "@middy/core";
+import { beforeEach, describe, expect, it, vi, type MockInstance, type MockedObject } from "vitest";
 
 import { Logger } from "@aws-lambda-powertools/logger";
 import { Metrics, MetricUnit } from "@aws-lambda-powertools/metrics";
@@ -28,30 +29,30 @@ import { buildAndSendAuditEvent } from "@govuk-one-login/cri-audit";
 import { CriAuditConfig } from "../../../src/types/cri-audit-config";
 import { SessionItem, UnixMillisecondsTimestamp, UnixSecondsTimestamp } from "@govuk-one-login/cri-types";
 
-jest.mock("@aws-sdk/lib-dynamodb");
-jest.mock("@aws-sdk/client-ssm");
-jest.mock("@aws-sdk/client-sqs");
-jest.mock("@aws-sdk/client-kms");
-jest.mock("@aws-lambda-powertools/metrics");
-jest.mock("@aws-lambda-powertools/logger");
-jest.mock("../../../src/common/config/config-service");
-jest.mock("../../../src/services/session-request-validator");
-jest.mock("@govuk-one-login/cri-audit");
+vi.mock("@aws-sdk/lib-dynamodb");
+vi.mock("@aws-sdk/client-ssm");
+vi.mock("@aws-sdk/client-sqs");
+vi.mock("@aws-sdk/client-kms");
+vi.mock("@aws-lambda-powertools/metrics");
+vi.mock("@aws-lambda-powertools/logger");
+vi.mock("../../../src/common/config/config-service");
+vi.mock("../../../src/services/session-request-validator");
+vi.mock("@govuk-one-login/cri-audit");
 
 const SESSION_CREATED_METRIC = "session_created";
 
 describe("SessionLambda", () => {
     let sessionLambda: SessionLambda;
     let lambdaHandler: middy.MiddyfiedHandler;
-    let errorSpy: jest.SpyInstance<unknown, never, unknown>;
-    let logger: jest.MockedObjectDeep<typeof Logger>;
-    let metrics: jest.MockedObjectDeep<typeof Metrics>;
-    let personIdentityService: jest.MockedObjectDeep<typeof PersonIdentityService>;
-    let jweDecrypter: jest.MockedObjectDeep<typeof JweDecrypter>;
-    let configService: jest.MockedObjectDeep<typeof ConfigService>;
-    let sessionService: jest.MockedObjectDeep<typeof SessionService>;
-    let sessionRequestValidator: jest.MockedObjectDeep<typeof SessionRequestValidator>;
-    let sessionRequestValidatorFactory: jest.MockedObjectDeep<typeof SessionRequestValidatorFactory>;
+    let errorSpy: MockInstance;
+    let logger: MockedObject<typeof Logger>;
+    let metrics: MockedObject<typeof Metrics>;
+    let personIdentityService: MockedObject<typeof PersonIdentityService>;
+    let jweDecrypter: MockedObject<typeof JweDecrypter>;
+    let configService: MockedObject<typeof ConfigService>;
+    let sessionService: MockedObject<typeof SessionService>;
+    let sessionRequestValidator: MockedObject<typeof SessionRequestValidator>;
+    let sessionRequestValidatorFactory: MockedObject<typeof SessionRequestValidatorFactory>;
 
     const mockAuditConfig: CriAuditConfig = {
         queueUrl: "cool-queuez.com",
@@ -135,20 +136,20 @@ describe("SessionLambda", () => {
     } as APIGatewayProxyEvent;
 
     beforeEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         mockMap.set("test-client-id", "test-config-value");
 
-        logger = jest.mocked(Logger);
-        metrics = jest.mocked(Metrics);
-        personIdentityService = jest.mocked(PersonIdentityService);
-        jweDecrypter = jest.mocked(JweDecrypter);
-        configService = jest.mocked(ConfigService);
-        sessionService = jest.mocked(SessionService);
-        sessionRequestValidator = jest.mocked(SessionRequestValidator);
-        sessionRequestValidatorFactory = jest.mocked(SessionRequestValidatorFactory);
+        logger = vi.mocked(Logger);
+        metrics = vi.mocked(Metrics);
+        personIdentityService = vi.mocked(PersonIdentityService);
+        jweDecrypter = vi.mocked(JweDecrypter);
+        configService = vi.mocked(ConfigService);
+        sessionService = vi.mocked(SessionService);
+        sessionRequestValidator = vi.mocked(SessionRequestValidator);
+        sessionRequestValidatorFactory = vi.mocked(SessionRequestValidatorFactory);
 
-        errorSpy = jest.spyOn(logger.prototype, "error").mockImplementation();
-        jest.spyOn(logger.prototype, "info").mockImplementation();
+        errorSpy = vi.spyOn(logger.prototype, "error");
+        vi.spyOn(logger.prototype, "info");
 
         sessionLambda = new SessionLambda(sessionService.prototype, personIdentityService.prototype);
 
@@ -195,15 +196,15 @@ describe("SessionLambda", () => {
             .use(setGovUkSigningJourneyIdMiddleware(logger.prototype))
             .use(setRequestedVerificationScoreMiddleware(logger.prototype));
 
-        jest.spyOn(jweDecrypter.prototype, "decryptJwe").mockResolvedValue(Buffer.from("test-data"));
-        jest.spyOn(personIdentityService.prototype, "savePersonIdentity").mockImplementation();
-        jest.spyOn(configService.prototype, "init").mockImplementation(() => new Promise<void>((res) => res()));
-        jest.spyOn(configService.prototype, "getClientConfig").mockReturnValue(mockMap);
-        jest.spyOn(configService.prototype, "getAuditConfig").mockReturnValue(mockAuditConfig);
-        jest.spyOn(sessionService.prototype, "saveSession").mockReturnValue(
+        vi.spyOn(jweDecrypter.prototype, "decryptJwe").mockResolvedValue(Buffer.from("test-data"));
+        vi.spyOn(personIdentityService.prototype, "savePersonIdentity").mockResolvedValue("");
+        vi.spyOn(configService.prototype, "init").mockImplementation(() => new Promise<void>((res) => res()));
+        vi.spyOn(configService.prototype, "getClientConfig").mockReturnValue(mockMap);
+        vi.spyOn(configService.prototype, "getAuditConfig").mockReturnValue(mockAuditConfig);
+        vi.spyOn(sessionService.prototype, "saveSession").mockReturnValue(
             new Promise<SessionItem>((res) => res(mockSessionItem)),
         );
-        jest.spyOn(sessionRequestValidator.prototype, "validateJwt").mockReturnValue(
+        vi.spyOn(sessionRequestValidator.prototype, "validateJwt").mockReturnValue(
             new Promise<JWTPayload>((res) =>
                 res({
                     client_id: "test-client-id",
@@ -216,9 +217,7 @@ describe("SessionLambda", () => {
                 } as JWTPayload),
             ),
         );
-        jest.spyOn(sessionRequestValidatorFactory.prototype, "create").mockReturnValue(
-            sessionRequestValidator.prototype,
-        );
+        vi.spyOn(sessionRequestValidatorFactory.prototype, "create").mockReturnValue(sessionRequestValidator.prototype);
     });
 
     it("should decrypt the JWE", async () => {
@@ -228,8 +227,8 @@ describe("SessionLambda", () => {
     });
 
     it("should error on JWE decryption fail", async () => {
-        const metricSpy = jest.spyOn(metrics.prototype, "addMetric");
-        jest.spyOn(jweDecrypter.prototype, "decryptJwe").mockRejectedValueOnce(
+        const metricSpy = vi.spyOn(metrics.prototype, "addMetric");
+        vi.spyOn(jweDecrypter.prototype, "decryptJwe").mockRejectedValueOnce(
             new SessionValidationError(
                 "Session Validation Exception",
                 "Invalid request: JWT validation/verification failed: failure",
@@ -248,7 +247,7 @@ describe("SessionLambda", () => {
     });
 
     it("should initialise the client config if unavailable", async () => {
-        jest.spyOn(configService.prototype, "hasClientConfig").mockReturnValue(false);
+        vi.spyOn(configService.prototype, "hasClientConfig").mockReturnValue(false);
 
         await lambdaHandler(mockEvent, {} as Context);
 
@@ -279,8 +278,8 @@ describe("SessionLambda", () => {
     });
 
     it("should error on JWT validation fail", async () => {
-        const metricSpy = jest.spyOn(metrics.prototype, "addMetric");
-        jest.spyOn(sessionRequestValidator.prototype, "validateJwt").mockRejectedValueOnce(
+        const metricSpy = vi.spyOn(metrics.prototype, "addMetric");
+        vi.spyOn(sessionRequestValidator.prototype, "validateJwt").mockRejectedValueOnce(
             new SessionValidationError(
                 "Session Validation Exception",
                 "Invalid request: JWT validation/verification failed: failure",
@@ -295,8 +294,8 @@ describe("SessionLambda", () => {
     });
 
     it("should error on JWT validation fail and send expired metirc", async () => {
-        const metricSpy = jest.spyOn(metrics.prototype, "addMetric");
-        jest.spyOn(sessionRequestValidator.prototype, "validateJwt").mockRejectedValueOnce(
+        const metricSpy = vi.spyOn(metrics.prototype, "addMetric");
+        vi.spyOn(sessionRequestValidator.prototype, "validateJwt").mockRejectedValueOnce(
             new SessionValidationError(
                 "Session Validation Exception",
                 "Invalid request: JWT validation/verification failed: ERR_JWT_EXPIRED",
@@ -311,7 +310,7 @@ describe("SessionLambda", () => {
     });
 
     it("should save the session details", async () => {
-        const spy = jest.spyOn(sessionService.prototype, "saveSession");
+        const spy = vi.spyOn(sessionService.prototype, "saveSession");
         await lambdaHandler(mockEvent, {} as Context);
 
         const expectedSessionRequestSummary = {
@@ -327,14 +326,14 @@ describe("SessionLambda", () => {
     });
 
     it("should save the personal identity information", async () => {
-        const spy = jest.spyOn(personIdentityService.prototype, "savePersonIdentity");
+        const spy = vi.spyOn(personIdentityService.prototype, "savePersonIdentity");
         await lambdaHandler(mockEvent, {} as Context);
 
         expect(spy).toHaveBeenCalledWith(mockPerson, "test-session-id");
     });
 
     it("should not save the personal identity information is no shared claims are available", async () => {
-        jest.spyOn(sessionRequestValidator.prototype, "validateJwt").mockReturnValue(
+        vi.spyOn(sessionRequestValidator.prototype, "validateJwt").mockReturnValue(
             new Promise<JWTPayload>((res) =>
                 res({
                     client_id: "test-client-id",
@@ -347,7 +346,7 @@ describe("SessionLambda", () => {
             ),
         );
 
-        const spy = jest.spyOn(personIdentityService.prototype, "savePersonIdentity");
+        const spy = vi.spyOn(personIdentityService.prototype, "savePersonIdentity");
         await lambdaHandler(mockEvent, {} as Context);
 
         expect(spy).not.toHaveBeenCalled();
@@ -367,7 +366,7 @@ describe("SessionLambda", () => {
 
     it("should send the audit event with context evidence", async () => {
         const mockSessionItemWithContext = { ...mockSessionItem, context: "test-context" };
-        jest.spyOn(sessionService.prototype, "saveSession").mockResolvedValue(mockSessionItemWithContext);
+        vi.spyOn(sessionService.prototype, "saveSession").mockResolvedValue(mockSessionItemWithContext);
 
         await lambdaHandler(mockEvent, {} as Context);
 
@@ -386,7 +385,7 @@ describe("SessionLambda", () => {
 
     it("should send the audit event", async () => {
         await lambdaHandler(mockEvent, {} as Context);
-        jest.spyOn(sessionRequestValidator.prototype, "validateJwt").mockReturnValue(
+        vi.spyOn(sessionRequestValidator.prototype, "validateJwt").mockReturnValue(
             new Promise<JWTPayload>((res) =>
                 res({
                     client_id: "test-client-id",
@@ -434,8 +433,8 @@ describe("SessionLambda", () => {
     });
 
     it("should successfully register the metrics", async () => {
-        const dimensionSpy = jest.spyOn(metrics.prototype, "addDimension");
-        const metricSpy = jest.spyOn(metrics.prototype, "addMetric");
+        const dimensionSpy = vi.spyOn(metrics.prototype, "addDimension");
+        const metricSpy = vi.spyOn(metrics.prototype, "addMetric");
         await lambdaHandler(mockEvent, {} as Context);
         expect(dimensionSpy).toHaveBeenCalledWith("issuer", "test-client-id");
         expect(metricSpy).toHaveBeenCalledWith("session_created", MetricUnit.Count, 1);
@@ -452,7 +451,7 @@ describe("SessionLambda", () => {
     });
 
     it("should catch and return any errors", async () => {
-        jest.spyOn(sessionRequestValidator.prototype, "validateJwt").mockRejectedValue(new GenericServerError());
+        vi.spyOn(sessionRequestValidator.prototype, "validateJwt").mockRejectedValue(new GenericServerError());
 
         const result = await lambdaHandler(mockEvent, {} as Context);
         expect(errorSpy).toHaveBeenCalledWith(
@@ -511,7 +510,7 @@ describe("SessionLambda", () => {
                 .use(setGovUkSigningJourneyIdMiddleware(logger.prototype))
                 .use(setRequestedVerificationScoreMiddleware(logger.prototype));
             process.env.CRI_IDENTIFIER = previousCriIdentifier;
-            jest.spyOn(sessionRequestValidator.prototype, "validateJwt").mockReturnValue(
+            vi.spyOn(sessionRequestValidator.prototype, "validateJwt").mockReturnValue(
                 new Promise<JWTPayload>((res) =>
                     res({
                         client_id: "test-client-id",
@@ -532,7 +531,7 @@ describe("SessionLambda", () => {
         });
 
         it("should save to the session with socialSecurityRecord included", async () => {
-            const saveSpy = jest.spyOn(personIdentityService.prototype, "savePersonIdentity");
+            const saveSpy = vi.spyOn(personIdentityService.prototype, "savePersonIdentity");
 
             process.env.CRI_IDENTIFIER = "ipv-cri-kbv-hmrc-api";
 
@@ -589,7 +588,7 @@ describe("SessionLambda", () => {
         });
 
         it("should save the session details without the context field", async () => {
-            jest.spyOn(sessionRequestValidator.prototype, "validateJwt").mockReturnValue(
+            vi.spyOn(sessionRequestValidator.prototype, "validateJwt").mockReturnValue(
                 new Promise<JWTPayload>((res) =>
                     res({
                         client_id: "test-client-id",
@@ -607,7 +606,7 @@ describe("SessionLambda", () => {
                     } as JWTPayload),
                 ),
             );
-            const spySaveSession = jest.spyOn(sessionService.prototype, "saveSession");
+            const spySaveSession = vi.spyOn(sessionService.prototype, "saveSession");
 
             await lambdaHandler(mockEvent, {} as Context);
 
@@ -685,7 +684,7 @@ describe("SessionLambda", () => {
                 .use(setGovUkSigningJourneyIdMiddleware(logger.prototype))
                 .use(setRequestedVerificationScoreMiddleware(logger.prototype));
             process.env.CRI_IDENTIFIER = previousCriIdentifier;
-            jest.spyOn(sessionRequestValidator.prototype, "validateJwt").mockReturnValue(
+            vi.spyOn(sessionRequestValidator.prototype, "validateJwt").mockReturnValue(
                 new Promise<JWTPayload>((res) =>
                     res({
                         client_id: "test-client-id",
@@ -704,7 +703,7 @@ describe("SessionLambda", () => {
             );
         });
         it("should save to the session with no socialSecurityRecord included", async () => {
-            const saveSpy = jest.spyOn(personIdentityService.prototype, "savePersonIdentity");
+            const saveSpy = vi.spyOn(personIdentityService.prototype, "savePersonIdentity");
 
             process.env.CRI_IDENTIFIER = "ipv-cri-kbv-hmrc-api";
 
@@ -757,8 +756,8 @@ describe("SessionLambda", () => {
     });
 
     it("should return a 500 error from the handlers catch block", async () => {
-        const metricSpy = jest.spyOn(metrics.prototype, "addMetric");
-        const spy = jest.spyOn(sessionService.prototype, "saveSession");
+        const metricSpy = vi.spyOn(metrics.prototype, "addMetric");
+        const spy = vi.spyOn(sessionService.prototype, "saveSession");
         spy.mockRejectedValue(new Error("Error"));
 
         const result = await lambdaHandler(mockEvent, {} as Context);

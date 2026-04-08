@@ -31,8 +31,6 @@ For example:
 it.only("will only run this test in this file",() => );
 ```
 
-Note that if you dont specify Jest to run just the file with the test, then it will also run the other files in parallel.
-
 ## how to deploy
 
 set up your AWS accounts using:

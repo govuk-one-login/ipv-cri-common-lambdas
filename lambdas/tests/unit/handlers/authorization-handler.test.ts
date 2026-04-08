@@ -1,5 +1,6 @@
 import middy from "@middy/core";
 import { injectLambdaContext } from "@aws-lambda-powertools/logger/middleware";
+import { beforeEach, describe, expect, it, MockInstance, vi } from "vitest";
 
 import { DynamoDBDocument } from "@aws-sdk/lib-dynamodb";
 import { AuthorizationLambda } from "../../../src/handlers/authorization-handler";
@@ -12,7 +13,6 @@ import {
     APIGatewayProxyEventHeaders,
     APIGatewayProxyEventQueryStringParameters,
 } from "aws-lambda/trigger/api-gateway-proxy";
-import { Logger } from "@aws-lambda-powertools/logger";
 import { Metrics } from "@aws-lambda-powertools/metrics";
 import {
     InvalidRequestError,
@@ -30,26 +30,31 @@ import setGovUkSigningJourneyIdMiddleware from "../../../src/middlewares/session
 import initialiseClientConfigMiddleware from "../../../src/middlewares/config/initialise-client-config-middleware";
 import setRequestedVerificationScoreMiddleware from "../../../src/middlewares/session/set-requested-verification-score-middleware";
 import { SSMProvider } from "@aws-lambda-powertools/parameters/ssm";
+import { logger } from "@govuk-one-login/cri-logger";
 
-jest.mock("../../../src/common/config/config-service");
-jest.mock("@aws-lambda-powertools/metrics");
-jest.mock("@aws-lambda-powertools/logger");
-jest.mock("@aws-sdk/lib-dynamodb", () => {
-    return {
-        __esModule: true,
-        ...jest.requireActual("@aws-sdk/lib-dynamodb"),
-        GetCommand: jest.fn(),
-        UpdateCommand: jest.fn(),
-    };
-});
+vi.mock("../../../src/common/config/config-service");
+vi.mock("@aws-lambda-powertools/metrics");
+vi.mock("@govuk-one-login/cri-logger", () => ({
+    logger: {
+        info: vi.fn(),
+        error: vi.fn(),
+        clearBuffer: vi.fn(),
+        resetKeys: vi.fn(),
+        refreshSampleRateCalculation: vi.fn(),
+        addContext: vi.fn(),
+        logEventIfEnabled: vi.fn(),
+        appendKeys: vi.fn(),
+    },
+}));
+
 const AUTHORIZATION_SENT_METRIC = "authorization_sent";
 
 describe("authorization-handler.ts", () => {
-    const mockDynamoDbClient = jest.mocked(DynamoDBDocument);
+    const mockDynamoDbClient = vi.mocked(DynamoDBDocument);
 
     beforeEach(() => {
-        jest.resetAllMocks();
-        const impl = () => jest.fn().mockImplementation(() => Promise.resolve({ Parameters: [] }));
+        vi.resetAllMocks();
+        const impl = () => vi.fn().mockImplementation(() => Promise.resolve({ Parameters: [] }));
         mockDynamoDbClient.prototype.send = impl();
         mockDynamoDbClient.prototype.query = impl();
     });
@@ -59,12 +64,11 @@ describe("authorization-handler.ts", () => {
         let headers = {};
         let authorizationHandlerLambda: AuthorizationLambda;
         let lambdaHandler: middy.MiddyfiedHandler;
-        const configService = new ConfigService(jest.fn() as unknown as SSMProvider);
+        const configService = new ConfigService(vi.fn() as unknown as SSMProvider);
         const sessionService = new SessionService(mockDynamoDbClient.prototype, configService);
         const authorizationRequestValidator = new AuthorizationRequestValidator();
-        const mockConfigService = jest.mocked(ConfigService);
-        const logger = jest.mocked(Logger);
-        const metrics = jest.mocked(Metrics);
+        const mockConfigService = vi.mocked(ConfigService);
+        const metrics = vi.mocked(Metrics);
 
         beforeEach(() => {
             body = {
@@ -77,17 +81,17 @@ describe("authorization-handler.ts", () => {
             headers = {
                 "session-id": "1",
             } as APIGatewayProxyEventHeaders;
-            jest.resetAllMocks();
+            vi.resetAllMocks();
             configService.init = () => Promise.resolve();
             authorizationHandlerLambda = new AuthorizationLambda(authorizationRequestValidator);
             lambdaHandler = middy(authorizationHandlerLambda.handler.bind(authorizationHandlerLambda))
                 .use(
-                    errorMiddleware(logger.prototype, metrics.prototype, {
+                    errorMiddleware(logger, metrics.prototype, {
                         metric_name: AUTHORIZATION_SENT_METRIC,
                         message: "Authorization Lambda error occurred",
                     }),
                 )
-                .use(injectLambdaContext(logger.prototype, { clearState: true }))
+                .use(injectLambdaContext(logger, { clearState: true }))
                 .use(
                     initialiseConfigMiddleware({
                         configService: configService,
@@ -101,8 +105,8 @@ describe("authorization-handler.ts", () => {
                         client_config_keys: [ClientConfigKey.JWT_REDIRECT_URI],
                     }),
                 )
-                .use(setGovUkSigningJourneyIdMiddleware(logger.prototype))
-                .use(setRequestedVerificationScoreMiddleware(logger.prototype));
+                .use(setGovUkSigningJourneyIdMiddleware(logger))
+                .use(setRequestedVerificationScoreMiddleware(logger));
 
             const sessionItem: Partial<SessionItem> = {
                 sessionId: "abc",
@@ -114,11 +118,11 @@ describe("authorization-handler.ts", () => {
                 accessTokenExpiryDate: 0 as UnixSecondsTimestamp,
                 authorizationCode: "abc",
             };
-            jest.spyOn(sessionService, "getSession").mockReturnValue(Promise.resolve(sessionItem as SessionItem));
+            vi.spyOn(sessionService, "getSession").mockReturnValue(Promise.resolve(sessionItem as SessionItem));
             const clientConfig = new Map<string, string>();
             clientConfig.set("code", "abc");
             clientConfig.set("redirectUri", "http://123.com");
-            jest.spyOn(mockConfigService.prototype, "getClientConfig").mockReturnValueOnce(clientConfig);
+            vi.spyOn(mockConfigService.prototype, "getClientConfig").mockReturnValueOnce(clientConfig);
         });
 
         describe("has queryStringParameters parameters all populated", () => {
@@ -131,9 +135,9 @@ describe("authorization-handler.ts", () => {
                 } as APIGatewayProxyEventQueryStringParameters;
             });
             it("should pass with 200 status code and return non empty body", async () => {
-                const metricsSpyAddMetrics = jest.spyOn(metrics.prototype, "addMetric");
-                const loggerSpyAppendkeys = jest.spyOn(logger.prototype, "appendKeys");
-                const loggerSpyInfo = jest.spyOn(logger.prototype, "info");
+                const metricsSpyAddMetrics = vi.spyOn(metrics.prototype, "addMetric");
+                const loggerSpyAppendkeys = vi.spyOn(logger, "appendKeys");
+                const loggerSpyInfo = vi.spyOn(logger, "info");
 
                 const output = await lambdaHandler(
                     {
@@ -152,9 +156,9 @@ describe("authorization-handler.ts", () => {
             });
 
             it("should pass with log message and metrics sent", async () => {
-                const metricsSpyAddMetrics = jest.spyOn(metrics.prototype, "addMetric");
-                const loggerSpyAppendkeys = jest.spyOn(logger.prototype, "appendKeys");
-                const loggerSpyInfo = jest.spyOn(logger.prototype, "info");
+                const metricsSpyAddMetrics = vi.spyOn(metrics.prototype, "addMetric");
+                const loggerSpyAppendkeys = vi.spyOn(logger, "appendKeys");
+                const loggerSpyInfo = vi.spyOn(logger, "info");
 
                 await lambdaHandler(
                     {
@@ -172,8 +176,8 @@ describe("authorization-handler.ts", () => {
         });
 
         describe("authorization request returns access_denied", () => {
-            let metricsSpyAddMetrics: jest.SpyInstance;
-            let loggerSpyError: jest.SpyInstance;
+            let metricsSpyAddMetrics: MockInstance;
+            let loggerSpyError: MockInstance;
             const sessionItem: Partial<SessionItem> = {
                 sessionId: "abc",
                 authorizationCodeExpiryDate: 1 as UnixSecondsTimestamp,
@@ -184,11 +188,9 @@ describe("authorization-handler.ts", () => {
                 authorizationCode: undefined,
             };
             beforeEach(() => {
-                metricsSpyAddMetrics = jest.spyOn(metrics.prototype, "addMetric");
-                loggerSpyError = jest.spyOn(logger.prototype, "error");
-                jest.spyOn(sessionService, "getSession").mockReturnValueOnce(
-                    Promise.resolve(sessionItem as SessionItem),
-                );
+                metricsSpyAddMetrics = vi.spyOn(metrics.prototype, "addMetric");
+                loggerSpyError = vi.spyOn(logger, "error");
+                vi.spyOn(sessionService, "getSession").mockReturnValueOnce(Promise.resolve(sessionItem as SessionItem));
             });
             it("should return 403 status code and return body with access_denied", async () => {
                 const result = await lambdaHandler(
@@ -222,11 +224,11 @@ describe("authorization-handler.ts", () => {
         });
 
         describe("authorization request has missing attributes", () => {
-            let metricsSpyAddMetrics: jest.SpyInstance;
-            let loggerSpyError: jest.SpyInstance;
+            let metricsSpyAddMetrics: MockInstance;
+            let loggerSpyError: MockInstance;
             beforeEach(() => {
-                metricsSpyAddMetrics = jest.spyOn(metrics.prototype, "addMetric");
-                loggerSpyError = jest.spyOn(logger.prototype, "error");
+                metricsSpyAddMetrics = vi.spyOn(metrics.prototype, "addMetric");
+                loggerSpyError = vi.spyOn(logger, "error");
             });
 
             it("should fail validation when response_type is missing from queryString", async () => {
@@ -305,8 +307,8 @@ describe("authorization-handler.ts", () => {
 
         describe("has session present", () => {
             it("should should fail when there is no session-id in the authorization request header", async () => {
-                const metricsSpyAddMetrics = jest.spyOn(metrics.prototype, "addMetric");
-                const loggerSpyError = jest.spyOn(logger.prototype, "error");
+                const metricsSpyAddMetrics = vi.spyOn(metrics.prototype, "addMetric");
+                const loggerSpyError = vi.spyOn(logger, "error");
                 const output = await lambdaHandler(
                     {
                         body,
@@ -322,11 +324,11 @@ describe("authorization-handler.ts", () => {
                 expect(metricsSpyAddMetrics).toHaveBeenCalledWith("authorization_sent", "Count", 0);
             });
             it("should should fail when no existing session is found for the current request", async () => {
-                const metricsSpyAddMetrics = jest.spyOn(metrics.prototype, "addMetric");
-                const loggerSpyError = jest.spyOn(logger.prototype, "error");
+                const metricsSpyAddMetrics = vi.spyOn(metrics.prototype, "addMetric");
+                const loggerSpyError = vi.spyOn(logger, "error");
                 const sessionId = "1";
                 const sessionNotFound = new SessionNotFoundError(sessionId);
-                jest.spyOn(sessionService, "getSession").mockRejectedValueOnce(sessionNotFound);
+                vi.spyOn(sessionService, "getSession").mockRejectedValueOnce(sessionNotFound);
 
                 const output = await lambdaHandler(
                     {
@@ -345,10 +347,10 @@ describe("authorization-handler.ts", () => {
             });
 
             it("should should fail when a server error occurs", async () => {
-                const metricsSpyAddMetrics = jest.spyOn(metrics.prototype, "addMetric");
-                const loggerSpyError = jest.spyOn(logger.prototype, "error");
+                const metricsSpyAddMetrics = vi.spyOn(metrics.prototype, "addMetric");
+                const loggerSpyError = vi.spyOn(logger, "error");
                 const serverError = new ServerError();
-                jest.spyOn(sessionService, "getSession").mockRejectedValueOnce(serverError);
+                vi.spyOn(sessionService, "getSession").mockRejectedValueOnce(serverError);
 
                 const output = await lambdaHandler(
                     {
