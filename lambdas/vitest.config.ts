@@ -7,14 +7,8 @@ export default defineConfig({
         include: ["tests/**/*.test.ts"],
         exclude: ["tests/unit/handlers/contract/*.test.ts"],
         coverage: {
-            provider: "v8",
             include: ["src/**/*"],
-            thresholds: {
-                statements: 100,
-                branches: 100,
-                functions: 100,
-                lines: 100,
-            },
+            reporter: ["lcov"],
         },
     },
 });

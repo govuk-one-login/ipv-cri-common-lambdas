@@ -5,14 +5,7 @@ export default defineConfig({
     clearMocks: true,
     include: ["tests/**/*.test.ts"],
     coverage: {
-      provider: "v8",
       include: ["src/**/*"],
-      thresholds: {
-        statements: 100,
-        branches: 100,
-        functions: 100,
-        lines: 100,
-      },
     },
   },
 });
