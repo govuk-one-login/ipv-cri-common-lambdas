@@ -1,4 +1,5 @@
 import { getHashedKid } from "../../src/hashing";
+import { describe, it, expect } from "vitest";
 
 describe("hashing", () => {
     describe("getHashedKid", () => {

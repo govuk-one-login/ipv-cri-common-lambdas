@@ -4,11 +4,12 @@ import { CallBackService } from "../src/services/callback-service";
 import * as KeyJwtHelper from "../src/services/private-key-jwt-helper";
 import { ClientConfiguration } from "../../../utils/src/services/client-configuration";
 import { DEFAULT_CLIENT_ID } from "../../../utils/src/constants";
+import { vi, it, describe, expect, MockInstance } from "vitest";
 
-jest.mock("../src/services/callback-service");
-jest.mock("../../../utils/src/services/client-configuration");
+vi.mock("../src/services/callback-service");
+vi.mock("../../../utils/src/services/client-configuration");
 
-jest.spyOn(CallBackService.prototype, "fetchApiKeyValue").mockReturnValue(Promise.resolve("test-api-key"));
+vi.spyOn(CallBackService.prototype, "fetchApiKeyValue").mockReturnValue(Promise.resolve("test-api-key"));
 
 describe("callback-handler", () => {
     const authorizationCode = "an-authorization-code";
@@ -18,31 +19,31 @@ describe("callback-handler", () => {
     const keyJwtValue =
         "client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion-type%3Ajwt-bearer&code=an-authorization-code&grant_type=authorization_code&redirect_uri=https%3A%2F%2Ftest-resources.headless-core-stub.redirect%2Fcallback&client_assertion=fake.jwt.key";
 
-    let getTokenSpy: jest.SpyInstance;
-    let getParametersSpy: jest.SpyInstance;
-    let issueCredentialSpy: jest.SpyInstance;
+    let getTokenSpy: MockInstance;
+    let getParametersSpy: MockInstance;
+    let issueCredentialSpy: MockInstance;
     let lambdaHandler: (_event: APIGatewayProxyEvent, _context: Context) => Promise<APIGatewayProxyResult>;
 
     beforeEach(() => {
         const callbackHandler = new CallbackLambdaHandler();
         lambdaHandler = callbackHandler.handler.bind(callbackHandler);
     });
-    afterEach(() => jest.clearAllMocks());
+    afterEach(() => vi.clearAllMocks());
 
     it("returns 200 when entire flow is successful", async () => {
-        jest.spyOn(KeyJwtHelper, "generatePrivateJwtParams").mockResolvedValueOnce(keyJwtValue);
+        vi.spyOn(KeyJwtHelper, "generatePrivateJwtParams").mockResolvedValueOnce(keyJwtValue);
 
-        getParametersSpy = jest.spyOn(ClientConfiguration, "getConfig").mockResolvedValueOnce({
+        getParametersSpy = vi.spyOn(ClientConfiguration, "getConfig").mockResolvedValueOnce({
             redirectUri,
             audience,
             issuer: "https://issuer.example.com",
             privateSigningKey: JSON.stringify({}),
         });
-        getTokenSpy = jest.spyOn(CallBackService.prototype, "invokeTokenEndpoint").mockResolvedValueOnce({
+        getTokenSpy = vi.spyOn(CallBackService.prototype, "invokeTokenEndpoint").mockResolvedValueOnce({
             statusCode: 200,
             body: JSON.stringify({ access_token: accessTokenValue }),
         });
-        issueCredentialSpy = jest.spyOn(CallBackService.prototype, "invokeCredentialEndpoint").mockResolvedValueOnce({
+        issueCredentialSpy = vi.spyOn(CallBackService.prototype, "invokeCredentialEndpoint").mockResolvedValueOnce({
             statusCode: 200,
             body: "vc.jwt.credential",
         });
@@ -72,19 +73,19 @@ describe("callback-handler", () => {
     it("uses client_id from request params if provided", async () => {
         const clientIdOverride = "test-client-id";
 
-        jest.spyOn(KeyJwtHelper, "generatePrivateJwtParams").mockResolvedValueOnce(keyJwtValue);
+        vi.spyOn(KeyJwtHelper, "generatePrivateJwtParams").mockResolvedValueOnce(keyJwtValue);
 
-        getParametersSpy = jest.spyOn(ClientConfiguration, "getConfig").mockResolvedValueOnce({
+        getParametersSpy = vi.spyOn(ClientConfiguration, "getConfig").mockResolvedValueOnce({
             redirectUri,
             audience,
             issuer: "https://issuer.example.com",
             privateSigningKey: JSON.stringify({}),
         });
-        getTokenSpy = jest.spyOn(CallBackService.prototype, "invokeTokenEndpoint").mockResolvedValueOnce({
+        getTokenSpy = vi.spyOn(CallBackService.prototype, "invokeTokenEndpoint").mockResolvedValueOnce({
             statusCode: 200,
             body: JSON.stringify({ access_token: accessTokenValue }),
         });
-        issueCredentialSpy = jest.spyOn(CallBackService.prototype, "invokeCredentialEndpoint").mockResolvedValueOnce({
+        issueCredentialSpy = vi.spyOn(CallBackService.prototype, "invokeCredentialEndpoint").mockResolvedValueOnce({
             statusCode: 200,
             body: "vc.jwt.credential",
         });
@@ -116,19 +117,19 @@ describe("callback-handler", () => {
         const stateOverride =
             "eyJhdWQiOiJodHRwczovL2F1ZGllbmNlLW92ZXJyaWRlLmV4YW1wbGUuY29tIiwicmVkaXJlY3RfdXJpIjoicmVkaXJlY3QtdXJpLW92ZXJyaWRlIn0="; // pragma: allowlist secret
 
-        jest.spyOn(KeyJwtHelper, "generatePrivateJwtParams").mockResolvedValueOnce(keyJwtValue);
+        vi.spyOn(KeyJwtHelper, "generatePrivateJwtParams").mockResolvedValueOnce(keyJwtValue);
 
-        getParametersSpy = jest.spyOn(ClientConfiguration, "getConfig").mockResolvedValueOnce({
+        getParametersSpy = vi.spyOn(ClientConfiguration, "getConfig").mockResolvedValueOnce({
             redirectUri,
             audience,
             issuer: "https://issuer.example.com",
             privateSigningKey: JSON.stringify({}),
         });
-        getTokenSpy = jest.spyOn(CallBackService.prototype, "invokeTokenEndpoint").mockResolvedValueOnce({
+        getTokenSpy = vi.spyOn(CallBackService.prototype, "invokeTokenEndpoint").mockResolvedValueOnce({
             statusCode: 200,
             body: JSON.stringify({ access_token: accessTokenValue }),
         });
-        issueCredentialSpy = jest.spyOn(CallBackService.prototype, "invokeCredentialEndpoint").mockResolvedValueOnce({
+        issueCredentialSpy = vi.spyOn(CallBackService.prototype, "invokeCredentialEndpoint").mockResolvedValueOnce({
             statusCode: 200,
             body: "vc.jwt.credential",
         });
@@ -161,15 +162,15 @@ describe("callback-handler", () => {
                 code: authorizationCode,
             },
         };
-        jest.spyOn(KeyJwtHelper, "generatePrivateJwtParams").mockResolvedValueOnce(keyJwtValue);
+        vi.spyOn(KeyJwtHelper, "generatePrivateJwtParams").mockResolvedValueOnce(keyJwtValue);
 
-        getParametersSpy = jest.spyOn(ClientConfiguration, "getConfig").mockResolvedValueOnce({
+        getParametersSpy = vi.spyOn(ClientConfiguration, "getConfig").mockResolvedValueOnce({
             redirectUri,
             audience,
             issuer: "https://issuer.example.com",
             privateSigningKey: JSON.stringify({}),
         });
-        getTokenSpy = jest.spyOn(CallBackService.prototype, "invokeTokenEndpoint").mockRejectedValueOnce(
+        getTokenSpy = vi.spyOn(CallBackService.prototype, "invokeTokenEndpoint").mockRejectedValueOnce(
             new Error("failed with 500 status", {
                 cause: "No session item found for provided authorizationCode",
             }),
@@ -189,19 +190,19 @@ describe("callback-handler", () => {
             },
         };
 
-        jest.spyOn(KeyJwtHelper, "generatePrivateJwtParams").mockResolvedValueOnce(keyJwtValue);
+        vi.spyOn(KeyJwtHelper, "generatePrivateJwtParams").mockResolvedValueOnce(keyJwtValue);
 
-        getParametersSpy = jest.spyOn(ClientConfiguration, "getConfig").mockResolvedValueOnce({
+        getParametersSpy = vi.spyOn(ClientConfiguration, "getConfig").mockResolvedValueOnce({
             redirectUri,
             audience,
             issuer: "https://issuer.example.com",
             privateSigningKey: JSON.stringify({}),
         });
-        getTokenSpy = jest.spyOn(CallBackService.prototype, "invokeTokenEndpoint").mockResolvedValueOnce({
+        getTokenSpy = vi.spyOn(CallBackService.prototype, "invokeTokenEndpoint").mockResolvedValueOnce({
             statusCode: 200,
             body: JSON.stringify({ access_token: accessTokenValue }),
         });
-        issueCredentialSpy = jest.spyOn(CallBackService.prototype, "invokeCredentialEndpoint").mockResolvedValueOnce({
+        issueCredentialSpy = vi.spyOn(CallBackService.prototype, "invokeCredentialEndpoint").mockResolvedValueOnce({
             statusCode: 500,
             body: "mock-credential-error",
         });
@@ -218,19 +219,19 @@ describe("callback-handler", () => {
         // This is "test string" encoded
         const stateOverride = "dGVzdCBzdHJpbmc=";
 
-        jest.spyOn(ClientConfiguration, "getConfig").mockResolvedValueOnce({
+        vi.spyOn(ClientConfiguration, "getConfig").mockResolvedValueOnce({
             redirectUri,
             audience,
             issuer: "https://issuer.example.com",
             privateSigningKey: JSON.stringify({}),
         });
-        jest.spyOn(KeyJwtHelper, "generatePrivateJwtParams").mockResolvedValueOnce(keyJwtValue);
+        vi.spyOn(KeyJwtHelper, "generatePrivateJwtParams").mockResolvedValueOnce(keyJwtValue);
 
-        jest.spyOn(CallBackService.prototype, "invokeTokenEndpoint").mockResolvedValueOnce({
+        vi.spyOn(CallBackService.prototype, "invokeTokenEndpoint").mockResolvedValueOnce({
             statusCode: 200,
             body: JSON.stringify({ access_token: accessTokenValue }),
         });
-        jest.spyOn(CallBackService.prototype, "invokeCredentialEndpoint").mockResolvedValueOnce({
+        vi.spyOn(CallBackService.prototype, "invokeCredentialEndpoint").mockResolvedValueOnce({
             statusCode: 200,
             body: "vc.jwt.credential",
         });

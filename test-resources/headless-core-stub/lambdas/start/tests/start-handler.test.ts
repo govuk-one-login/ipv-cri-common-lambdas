@@ -7,14 +7,15 @@ import { StartLambdaHandler } from "../src/start-handler";
 import { TestData } from "../../../utils/tests/test-data";
 import { Context } from "aws-lambda";
 import { ClientConfiguration } from "../../../utils/src/services/client-configuration";
+import { describe, it, expect, vi, MockInstance } from "vitest";
 
 const mockKMSClient = mockClient(KMSClient);
-let getParametersSpy: jest.SpyInstance;
+let getParametersSpy: MockInstance;
 describe("start-handler", () => {
     process.env.DECRYPTION_KEY_ID = "abc123";
 
     beforeEach(() => {
-        getParametersSpy = jest.spyOn(ClientConfiguration, "getConfig").mockResolvedValueOnce({
+        getParametersSpy = vi.spyOn(ClientConfiguration, "getConfig").mockResolvedValueOnce({
             redirectUri: "https://localhost/callback",
             audience: "https://localhost",
             issuer: "https://localhost",

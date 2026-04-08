@@ -1,13 +1,14 @@
 import { CloudFormationClient, DescribeStacksCommandOutput } from "@aws-sdk/client-cloudformation";
 import { stackOutputs } from "../../src/stack-outputs";
+import { describe, it, expect, vi } from "vitest";
 
-jest.mock("@aws-sdk/client-cloudformation");
-const mockSend = jest.fn();
+vi.mock("@aws-sdk/client-cloudformation");
+const mockSend = vi.fn();
 
 describe("stackOutputs", () => {
     beforeEach(() => {
-        jest.clearAllMocks();
-        jest.spyOn(CloudFormationClient.prototype, "send").mockImplementation(mockSend);
+        vi.clearAllMocks();
+        vi.spyOn(CloudFormationClient.prototype, "send").mockImplementation(mockSend);
     });
 
     it("returns stack outputs as key-value pairs", async () => {

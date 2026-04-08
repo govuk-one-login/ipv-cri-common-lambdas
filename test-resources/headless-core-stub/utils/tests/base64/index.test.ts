@@ -1,4 +1,5 @@
 import { base64Encode, base64Decode } from "../../src/base64";
+import { describe, it, expect } from "vitest";
 
 describe("base64 utils", () => {
     describe("#base64Encode", () => {

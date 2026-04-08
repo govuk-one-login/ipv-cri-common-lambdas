@@ -1,4 +1,5 @@
 import { getJwkKeyPair, GetJwkKeyPairOptions } from "../../src/keypair";
+import { describe, it, expect } from "vitest";
 
 describe("getJwkKeyPair", () => {
     it("generates a valid key pair when no current keys are provided", async () => {
