@@ -48,7 +48,7 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.npm-token }}
 
       - name: Run tests
-        run: npm run test:coverage -- --config jest.config.ci.ts
+        run: npm run test:coverage -- --config vitest.config.ts
 
       - name: Archive coverage results
         if: ${{ inputs.coverage-report }}
