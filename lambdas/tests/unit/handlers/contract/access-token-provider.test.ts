@@ -1,6 +1,7 @@
 import { VerifierOptions, Verifier } from "@pact-foundation/pact";
 import { Logger } from "@aws-lambda-powertools/logger";
 import { LogLevel, Constants } from "./utils/constants";
+import { describe, expect, it } from "vitest";
 
 const { LOCAL_HOST, LOCAL_APP_PORT } = Constants;
 

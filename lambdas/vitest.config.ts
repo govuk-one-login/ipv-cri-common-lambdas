@@ -5,6 +5,7 @@ export default defineConfig({
         setupFiles: "setEnvVars.js",
         clearMocks: true,
         include: ["tests/**/*.test.ts"],
+        exclude: ["tests/unit/handlers/contract/*.test.ts"],
         coverage: {
             provider: "v8",
             include: ["src/**/*"],

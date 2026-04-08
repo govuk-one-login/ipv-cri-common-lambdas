@@ -9,7 +9,7 @@
         "sam:validate": "cd ../../infrastructure/lambda && sam validate && sam validate --lint",
         "sam:build": "npm run sam:validate && sam build --template ../../infrastructure/lambda/template.yaml --cached --parallel",
         "start:contract": "cd tests/unit/handlers/contract && tsx ./app.ts",
-        "test:contract": "wait-on tcp:127.0.0.1:3000; vitest run tests/unit/handlers/contract/*.test.ts --runInBand",
+        "test:contract": "wait-on tcp:127.0.0.1:3000; vitest run tests/unit/handlers/contract/*.test.ts --no-file-parallelism",
         "test:contract:ci": "npm-run-all -p -r start:contract test:contract",
         "deploy": "../../deploy.sh",
         "compile": "tsc"
@@ -51,6 +51,7 @@
         "@types/node": "22.13.14",
         "@typescript-eslint/eslint-plugin": "6.13.2",
         "@typescript-eslint/parser": "6.13.2",
+        "@vitest/coverage-v8": "^4.1.2",
         "eslint": "8.55.0",
         "eslint-config-prettier": "9.1.0",
         "eslint-plugin-prettier": "5.0.1",
