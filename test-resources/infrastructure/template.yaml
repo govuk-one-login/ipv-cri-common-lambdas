@@ -30,10 +30,10 @@ Parameters:
     Type: String
     Default: "cri-vpc"
     Description: The name of the VPC stack deployed.
-  CommonStackName:
-    Description: "The name of the stack containing the common CRI lambdas/infra"
+  CommonStackNameOverride:
     Type: String
-    Default: common-cri-api
+    Description: "Optional override of the oauth/common stack name, only needed for localdev. SSM param will be used by default /common-cri/oauth-common/stack-name"
+    Default: ""
   IsPreview:
     Description: "Set to true for preview stack deployments to use a per-stack SNS relay queue instead of attaching directly to the TXMA queue"
     Type: String
@@ -128,6 +128,8 @@ Conditions:
   IsDevOrBuildEnviroment: !Or
     - !Equals [!Ref Environment, dev]
     - !Equals [!Ref Environment, build]
+  
+  UseCommonStackNameOverride: !Not [!Equals [!Ref CommonStackNameOverride, ""]]
 
 Globals:
   Function:
@@ -151,7 +153,10 @@ Globals:
         NODE_OPTIONS: --enable-source-maps
         POWERTOOLS_METRICS_NAMESPACE: !Ref CriIdentifier
         POWERTOOLS_LOG_LEVEL: DEBUG
-        COMMON_STACK_NAME: !Ref CommonStackName
+        COMMON_STACK_NAME: !If
+            - UseCommonStackNameOverride
+            - !Ref CommonStackNameOverride
+            - "{{resolve:ssm:/common-cri/oauth-common/stack-name}}"
         AWS_STACK_NAME: !Sub ${AWS::StackName}
     AutoPublishAlias: live
     ProvisionedConcurrencyConfig: !If
@@ -193,7 +198,10 @@ Resources:
                 - ssm:GetParameters
                 - ssm:GetParameter
               Resource:
-                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${CommonStackName}/clients/*/jwtAuthentication/*"
+                - !If
+                  - UseCommonStackNameOverride
+                  - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${CommonStackNameOverride}/clients/*"
+                  - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/{{resolve:ssm:/common-cri/oauth-common/stack-name}}/clients/*"
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/test-resources/ipv-core-stub-aws-headless/privateSigningKey"
 
 
@@ -241,7 +249,10 @@ Resources:
                 - ssm:GetParameters
                 - ssm:GetParameter
               Resource:
-                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${CommonStackName}/clients/*/jwtAuthentication/*"
+                - !If
+                  - UseCommonStackNameOverride
+                  - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${CommonStackNameOverride}/clients/*/jwtAuthentication/*"
+                  - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/{{resolve:ssm:/common-cri/oauth-common/stack-name}}/clients/*/jwtAuthentication/*"
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/test-resources/ipv-core-stub-aws-headless/privateSigningKey"
 
   StartFunctionLogGroup:
@@ -277,7 +288,10 @@ Resources:
           CORE_INFRASTRUCTURE: !Sub "${CoreInfraStackName}"
       Policies:
         - DynamoDBReadPolicy:
-            TableName: !Sub "{{resolve:ssm:/${CommonStackName}/SessionTableName}}"
+            TableName: !If
+              - UseCommonStackNameOverride
+              - !Sub "{{resolve:ssm:/${CommonStackNameOverride}/SessionTableName}}"
+              - !Sub "{{resolve:ssm:/common-cri/oauth-common/stack-name}}/SessionTableName}}"
         - Statement:
             - Effect: Allow
               Action:
@@ -285,7 +299,10 @@ Resources:
                 - ssm:GetParameters
                 - ssm:GetParameter
               Resource:
-                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${CommonStackName}/clients/*/jwtAuthentication/*"
+                - !If
+                  - UseCommonStackNameOverride
+                  - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${CommonStackNameOverride}/clients/*/jwtAuthentication/*"
+                  - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/{{resolve:ssm:/common-cri/oauth-common/stack-name}}/clients/*/jwtAuthentication/*"
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/test-resources/ipv-core-stub-aws-headless/privateSigningKey"
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/test-resources/apiKey"
             - Effect: Allow
@@ -627,4 +644,7 @@ Outputs:
     Description: Common stack name used by the test resources
     Export:
       Name: !Sub ${AWS::StackName}-CommonStackName
-    Value: !Ref CommonStackName
+    Value: !If
+      - UseCommonStackNameOverride
+      - !Ref CommonStackNameOverride
+      - "{{resolve:ssm:/common-cri/oauth-common/stack-name}}"

@@ -31,7 +31,7 @@ sam deploy --stack-name "$stack_name" \
   cri:stack-type=localdev \
   --parameter-overrides \
   Environment=localdev \
-  ${common_stack_name:+CommonStackName=$common_stack_name} \
+  ${common_stack_name:+CommonStackNameOverride=$common_stack_name} \
   ${test_txma_stack:+TxmaStackName=$test_txma_stack} \
   ${core_infra_stack:+CoreInfraStackName=$core_infra_stack}
 
