@@ -1,4 +1,5 @@
 import { JSONWebKeySet } from "jose";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import {
     clearJWKSCache,
     parseCacheControlMaxAge,
@@ -7,10 +8,10 @@ import {
     fetchAndCacheJWKS,
 } from "../../src/jwks-cache-control";
 
-global.fetch = jest.fn();
+global.fetch = vi.fn();
 
 const mockLogger = {
-    info: jest.fn(),
+    info: vi.fn(),
 };
 
 const fakeJWKS: JSONWebKeySet = {
@@ -25,11 +26,11 @@ const fakeJWKS: JSONWebKeySet = {
     ],
 };
 
-const fetchMock = fetch as jest.Mock;
+const fetchMock = vi.mocked(fetch);
 describe("JWKS Cache Control", () => {
     beforeEach(() => {
         clearJWKSCache();
-        jest.clearAllMocks();
+        vi.clearAllMocks();
     });
 
     describe("parseCacheControlMaxAge", () => {
@@ -70,7 +71,7 @@ describe("JWKS Cache Control", () => {
                 },
             };
 
-            fetchMock.mockResolvedValueOnce(mockResponse);
+            fetchMock.mockResolvedValueOnce(mockResponse as unknown as Response);
 
             await fetchAndCacheJWKS(new URL("https://a-cri-endpoint.co.uk/.well-known/jwks.json"), mockLogger);
 
@@ -83,7 +84,7 @@ describe("JWKS Cache Control", () => {
             fetchMock.mockResolvedValueOnce({
                 ok: false,
                 status: 500,
-            });
+            } as Response);
 
             await expect(
                 fetchAndCacheJWKS(new URL("https://a-cri-endpoint.co.uk/.well-known/jwks.json"), mockLogger),
@@ -99,7 +100,7 @@ describe("JWKS Cache Control", () => {
                 },
             };
 
-            fetchMock.mockResolvedValueOnce(mockResponse);
+            fetchMock.mockResolvedValueOnce(mockResponse as unknown as Response);
             await fetchAndCacheJWKS(new URL("https://example.com"), mockLogger);
 
             clearJWKSCache();

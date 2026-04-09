@@ -1,24 +1,25 @@
 import { CallBackService } from "../../src/services/callback-service";
 import { Logger } from "@aws-lambda-powertools/logger";
+import { vi, describe, expect, it, beforeEach, afterEach, MockInstance } from "vitest";
 
-global.fetch = jest.fn();
-const mockFetch = fetch as jest.MockedFunction<typeof fetch>;
+global.fetch = vi.fn();
+const mockFetch = vi.mocked(fetch);
 
-jest.spyOn(CallBackService.prototype, "fetchApiKeyValue").mockReturnValue(Promise.resolve("test-api-key"));
+vi.spyOn(CallBackService.prototype, "fetchApiKeyValue").mockReturnValue(Promise.resolve("test-api-key"));
 
 describe("CallBack Service", () => {
-    let mockLoggerError: jest.Mock;
-    let mockLoggerInfo: jest.Mock;
-    let mockLoggerWarn: jest.Mock;
+    let mockLoggerError: MockInstance;
+    let mockLoggerInfo: MockInstance;
+    let mockLoggerWarn: MockInstance;
 
     let callbackService: CallBackService;
 
     beforeEach(() => {
         process.env.API_KEY = "test-api-key";
 
-        mockLoggerError = jest.fn();
-        mockLoggerInfo = jest.fn();
-        mockLoggerWarn = jest.fn();
+        mockLoggerError = vi.fn();
+        mockLoggerInfo = vi.fn();
+        mockLoggerWarn = vi.fn();
 
         callbackService = new CallBackService({
             error: mockLoggerError,
@@ -26,7 +27,7 @@ describe("CallBack Service", () => {
             warn: mockLoggerWarn,
         } as unknown as Logger);
     });
-    afterEach(() => jest.clearAllMocks());
+    afterEach(() => vi.clearAllMocks());
 
     describe("callTokenEndpoint", () => {
         const accessTokenValue = "mock-access-token";

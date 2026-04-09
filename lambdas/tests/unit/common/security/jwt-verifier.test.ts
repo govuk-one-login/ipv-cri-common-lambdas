@@ -1,13 +1,14 @@
+import { beforeEach, afterEach, describe, expect, it, vi, type MockedFunction, type Mock } from "vitest";
 import { Logger } from "@aws-lambda-powertools/logger";
 import { JwtVerifier, JwtVerifierFactory } from "../../../../src/common/security/jwt-verifier";
 import { JwtVerificationConfig } from "../../../../src/types/jwt-verification-config";
 import * as jose from "jose";
 import { importJWK, JWTHeaderParameters, jwtVerify } from "jose";
 
-jest.mock("jose", () => ({
-    importJWK: jest.fn(),
-    jwtVerify: jest.fn(),
-    createLocalJWKSet: jest.fn(),
+vi.mock("jose", () => ({
+    importJWK: vi.fn(),
+    jwtVerify: vi.fn(),
+    createLocalJWKSet: vi.fn(),
 }));
 
 describe("jwt-verifier", () => {
@@ -45,14 +46,14 @@ describe("jwt-verifier", () => {
         ["aud", "some-audience"],
     ]);
 
-    const jwtVerifyMock = jwtVerify as jest.MockedFunction<typeof jwtVerify>;
+    const jwtVerifyMock = jwtVerify as MockedFunction<typeof jwtVerify>;
 
     beforeEach(() => {
-        global.fetch = jest.fn();
+        global.fetch = vi.fn();
 
         logger = {
-            error: jest.fn(),
-            info: jest.fn(),
+            error: vi.fn(),
+            info: vi.fn(),
         } as unknown as Logger;
 
         publicKey = new Uint8Array([3, 101, 120, 26, 14, 184, 5, 99, 172, 149]);
@@ -76,26 +77,26 @@ describe("jwt-verifier", () => {
 
     afterEach(() => {
         jwtVerifier.clearJWKSCacheForAllEndpoints();
-        jest.clearAllMocks();
+        vi.clearAllMocks();
     });
 
     it("should succeed with a JWT that has signing key and mandatory claims", async () => {
         const encodedJwt = Buffer.from("example.encoded.jwt");
 
-        (global.fetch as jest.Mock).mockResolvedValueOnce({
+        (global.fetch as Mock).mockResolvedValueOnce({
             headers: {
-                get: jest.fn().mockReturnValue("max-age=300"),
+                get: vi.fn().mockReturnValue("max-age=300"),
             },
-            json: jest.fn().mockResolvedValueOnce(encodedJwt),
+            json: vi.fn().mockResolvedValueOnce(encodedJwt),
             status: 200,
             ok: true,
         });
 
-        jest.spyOn(global.Buffer, "from").mockReturnValueOnce(encodedJwt);
-        jest.spyOn(global.JSON, "parse").mockReturnValueOnce(signingPublicJwk);
+        vi.spyOn(global.Buffer, "from").mockReturnValueOnce(encodedJwt);
+        vi.spyOn(global.JSON, "parse").mockReturnValueOnce(signingPublicJwk);
 
-        const importJWKMock = importJWK as jest.MockedFunction<typeof importJWK>;
-        const jwtVerifyMock = jwtVerify as jest.MockedFunction<typeof jwtVerify>;
+        const importJWKMock = importJWK as MockedFunction<typeof importJWK>;
+        const jwtVerifyMock = jwtVerify as MockedFunction<typeof jwtVerify>;
         const mandatoryClaims = new Set(["iss", "sub"]);
         const expectedClaimValues = new Map([
             ["iss", "some-issuer"],
@@ -125,20 +126,20 @@ describe("jwt-verifier", () => {
     it("should throw an error when mandatory claim is missing in JWT payload", async () => {
         const encodedJwt = Buffer.from("example.encoded.jwt");
 
-        (global.fetch as jest.Mock).mockResolvedValueOnce({
+        (global.fetch as vi.Mock).mockResolvedValueOnce({
             headers: {
-                get: jest.fn().mockReturnValue("max-age=300"),
+                get: vi.fn().mockReturnValue("max-age=300"),
             },
-            json: jest.fn().mockResolvedValueOnce(encodedJwt),
+            json: vi.fn().mockResolvedValueOnce(encodedJwt),
             status: 200,
             ok: true,
         });
 
-        jest.spyOn(global.Buffer, "from").mockReturnValueOnce(encodedJwt);
-        jest.spyOn(global.JSON, "parse").mockReturnValueOnce(signingPublicJwk);
+        vi.spyOn(global.Buffer, "from").mockReturnValueOnce(encodedJwt);
+        vi.spyOn(global.JSON, "parse").mockReturnValueOnce(signingPublicJwk);
 
-        const importJWKMock = importJWK as jest.MockedFunction<typeof importJWK>;
-        const jwtVerifyMock = jwtVerify as jest.MockedFunction<typeof jwtVerify>;
+        const importJWKMock = importJWK as MockedFunction<typeof importJWK>;
+        const jwtVerifyMock = jwtVerify as MockedFunction<typeof jwtVerify>;
 
         const mandatoryClaims = new Set(["iss", "sub"]);
         const expectedClaimValues = new Map([
@@ -167,15 +168,15 @@ describe("jwt-verifier", () => {
     });
 
     it("should throw an error when it fails to import JWK", async () => {
-        jest.spyOn(jose, "importJWK").mockRejectedValue(new Error("Failed to import JWK"));
-        jest.spyOn(global.JSON, "parse").mockReturnValueOnce("some-parsed-value");
+        vi.spyOn(jose, "importJWK").mockRejectedValue(new Error("Failed to import JWK"));
+        vi.spyOn(global.JSON, "parse").mockReturnValueOnce("some-parsed-value");
         const encodedJwt = Buffer.from("expect.jwt.value");
 
-        (global.fetch as jest.Mock).mockResolvedValueOnce({
+        (global.fetch as Mock).mockResolvedValueOnce({
             headers: {
-                get: jest.fn().mockReturnValue("max-age=300"),
+                get: vi.fn().mockReturnValue("max-age=300"),
             },
-            json: jest.fn().mockResolvedValueOnce(encodedJwt),
+            json: vi.fn().mockResolvedValueOnce(encodedJwt),
             status: 200,
             ok: true,
         });
@@ -186,17 +187,17 @@ describe("jwt-verifier", () => {
     });
 
     it("should throw an error when it fails to verify JWT", async () => {
-        jest.spyOn(jose, "jwtVerify").mockRejectedValue(new Error("JWT verification failed with JWKS Endpoint"));
-        jest.spyOn(global.JSON, "parse").mockReturnValueOnce("some-parsed-value");
+        vi.spyOn(jose, "jwtVerify").mockRejectedValue(new Error("JWT verification failed with JWKS Endpoint"));
+        vi.spyOn(global.JSON, "parse").mockReturnValueOnce("some-parsed-value");
         const encodedJwt = Buffer.from("expect.jwt.value");
-        const importJWKMock = importJWK as jest.MockedFunction<typeof importJWK>;
+        const importJWKMock = importJWK as MockedFunction<typeof importJWK>;
         importJWKMock.mockResolvedValueOnce(publicKey);
 
-        (global.fetch as jest.Mock).mockResolvedValueOnce({
+        (global.fetch as Mock).mockResolvedValueOnce({
             headers: {
-                get: jest.fn().mockReturnValue("max-age=300"),
+                get: vi.fn().mockReturnValue("max-age=300"),
             },
-            json: jest.fn().mockResolvedValueOnce(encodedJwt),
+            json: vi.fn().mockResolvedValueOnce(encodedJwt),
             status: 200,
             ok: true,
         });
@@ -213,11 +214,11 @@ describe("jwt-verifier", () => {
     it("should throw and log an error if JWT verification fails due to invalid public signing jwk", async () => {
         const encodedJwt = Buffer.from("exampleEncodedJwt");
 
-        (global.fetch as jest.Mock).mockResolvedValueOnce({
+        (global.fetch as Mock).mockResolvedValueOnce({
             headers: {
-                get: jest.fn().mockReturnValue("max-age=300"),
+                get: vi.fn().mockReturnValue("max-age=300"),
             },
-            json: jest.fn().mockResolvedValueOnce(encodedJwt),
+            json: vi.fn().mockResolvedValueOnce(encodedJwt),
             status: 200,
             ok: true,
         });
@@ -235,19 +236,19 @@ describe("jwt-verifier", () => {
     it("should thrown and log an error if one of JWT verification Options is invalid", async () => {
         const encodedJwt = Buffer.from("example.encoded.jwt");
 
-        (global.fetch as jest.Mock).mockResolvedValueOnce({
+        (global.fetch as Mock).mockResolvedValueOnce({
             headers: {
-                get: jest.fn().mockReturnValue("max-age=300"),
+                get: vi.fn().mockReturnValue("max-age=300"),
             },
-            json: jest.fn().mockResolvedValueOnce(encodedJwt),
+            json: vi.fn().mockResolvedValueOnce(encodedJwt),
             status: 200,
             ok: true,
         });
 
-        jest.spyOn(global.Buffer, "from").mockReturnValueOnce(encodedJwt);
-        jest.spyOn(global.JSON, "parse").mockReturnValueOnce(signingPublicJwk);
+        vi.spyOn(global.Buffer, "from").mockReturnValueOnce(encodedJwt);
+        vi.spyOn(global.JSON, "parse").mockReturnValueOnce(signingPublicJwk);
 
-        const importJWKMock = importJWK as jest.MockedFunction<typeof importJWK>;
+        const importJWKMock = importJWK as MockedFunction<typeof importJWK>;
 
         const mandatoryClaims = new Set(["iss", "sub"]);
         const expectedClaimValues = new Map([
@@ -267,20 +268,20 @@ describe("jwt-verifier", () => {
 
     it("should throw an error when mandatory claims is empty", async () => {
         const encodedJwt = Buffer.from("example.encoded.jwt");
-        jest.spyOn(global.Buffer, "from").mockReturnValueOnce(encodedJwt);
-        jest.spyOn(global.JSON, "parse").mockReturnValueOnce(signingPublicJwk);
+        vi.spyOn(global.Buffer, "from").mockReturnValueOnce(encodedJwt);
+        vi.spyOn(global.JSON, "parse").mockReturnValueOnce(signingPublicJwk);
 
-        (global.fetch as jest.Mock).mockResolvedValueOnce({
+        (global.fetch as Mock).mockResolvedValueOnce({
             headers: {
-                get: jest.fn().mockReturnValue("max-age=300"),
+                get: vi.fn().mockReturnValue("max-age=300"),
             },
-            json: jest.fn().mockResolvedValueOnce(encodedJwt),
+            json: vi.fn().mockResolvedValueOnce(encodedJwt),
             status: 200,
             ok: true,
         });
 
-        const importJWKMock = importJWK as jest.MockedFunction<typeof importJWK>;
-        const jwtVerifyMock = jwtVerify as jest.MockedFunction<typeof jwtVerify>;
+        const importJWKMock = importJWK as MockedFunction<typeof importJWK>;
+        const jwtVerifyMock = jwtVerify as MockedFunction<typeof jwtVerify>;
 
         const mandatoryClaims = new Set([]);
         const expectedClaimValues = new Map([
@@ -310,20 +311,20 @@ describe("jwt-verifier", () => {
 
     it("should throw an error when mandatory claims is undefined", async () => {
         const encodedJwt = Buffer.from("example.encoded.jwt");
-        jest.spyOn(global.Buffer, "from").mockReturnValueOnce(encodedJwt);
-        jest.spyOn(global.JSON, "parse").mockReturnValueOnce(signingPublicJwk);
+        vi.spyOn(global.Buffer, "from").mockReturnValueOnce(encodedJwt);
+        vi.spyOn(global.JSON, "parse").mockReturnValueOnce(signingPublicJwk);
 
-        (global.fetch as jest.Mock).mockResolvedValueOnce({
+        (global.fetch as Mock).mockResolvedValueOnce({
             headers: {
-                get: jest.fn().mockReturnValue("max-age=300"),
+                get: vi.fn().mockReturnValue("max-age=300"),
             },
-            json: jest.fn().mockResolvedValueOnce(encodedJwt),
+            json: vi.fn().mockResolvedValueOnce(encodedJwt),
             status: 200,
             ok: true,
         });
 
-        const importJWKMock = importJWK as jest.MockedFunction<typeof importJWK>;
-        const jwtVerifyMock = jwtVerify as jest.MockedFunction<typeof jwtVerify>;
+        const importJWKMock = importJWK as MockedFunction<typeof importJWK>;
+        const jwtVerifyMock = jwtVerify as MockedFunction<typeof jwtVerify>;
 
         const expectedClaimValues = new Map([
             ["iss", "some-issuer"],
@@ -353,11 +354,11 @@ describe("jwt-verifier", () => {
     });
 
     it("should successfully verify JWT using JWKS endpoint", async () => {
-        (global.fetch as jest.Mock).mockResolvedValueOnce({
+        (global.fetch as Mock).mockResolvedValueOnce({
             headers: {
-                get: jest.fn().mockReturnValueOnce("max-age=300"),
+                get: vi.fn().mockReturnValueOnce("max-age=300"),
             },
-            json: jest.fn().mockResolvedValueOnce(MOCK_JWKS),
+            json: vi.fn().mockResolvedValueOnce(MOCK_JWKS),
             status: 200,
             ok: true,
         });
@@ -377,11 +378,11 @@ describe("jwt-verifier", () => {
     });
 
     it("should successfully use the cached JWKS when populated", async () => {
-        (global.fetch as jest.Mock).mockResolvedValue({
+        (global.fetch as Mock).mockResolvedValue({
             headers: {
-                get: jest.fn().mockReturnValue("max-age=300"),
+                get: vi.fn().mockReturnValue("max-age=300"),
             },
-            json: jest.fn().mockResolvedValue(MOCK_JWKS),
+            json: vi.fn().mockResolvedValue(MOCK_JWKS),
             status: 200,
             ok: true,
         });
@@ -408,11 +409,11 @@ describe("jwt-verifier", () => {
     });
 
     it("should be able to cache separate JWKS for different endpoints simultaneously", async () => {
-        (global.fetch as jest.Mock).mockResolvedValue({
+        (global.fetch as Mock).mockResolvedValue({
             headers: {
-                get: jest.fn().mockReturnValue("max-age=300"),
+                get: vi.fn().mockReturnValue("max-age=300"),
             },
-            json: jest.fn().mockResolvedValue(MOCK_JWKS),
+            json: vi.fn().mockResolvedValue(MOCK_JWKS),
             status: 200,
             ok: true,
         });
@@ -454,11 +455,11 @@ describe("jwt-verifier", () => {
     });
 
     it("should be able to clear cached JWKS for single endpoints without affecting other caches", async () => {
-        (global.fetch as jest.Mock).mockResolvedValue({
+        (global.fetch as Mock).mockResolvedValue({
             headers: {
-                get: jest.fn().mockReturnValue("max-age=300"),
+                get: vi.fn().mockReturnValue("max-age=300"),
             },
-            json: jest.fn().mockResolvedValue(MOCK_JWKS),
+            json: vi.fn().mockResolvedValue(MOCK_JWKS),
             status: 200,
             ok: true,
         });
@@ -502,11 +503,11 @@ describe("jwt-verifier", () => {
     });
 
     it("should successfully verify JWT using JWKS endpoint when Cache-Control regex does not match", async () => {
-        (global.fetch as jest.Mock).mockResolvedValueOnce({
+        (global.fetch as Mock).mockResolvedValueOnce({
             headers: {
-                get: jest.fn().mockReturnValueOnce("no-cache"),
+                get: vi.fn().mockReturnValueOnce("no-cache"),
             },
-            json: jest.fn().mockResolvedValueOnce(MOCK_JWKS),
+            json: vi.fn().mockResolvedValueOnce(MOCK_JWKS),
             status: 200,
             ok: true,
         });
@@ -524,11 +525,11 @@ describe("jwt-verifier", () => {
     });
 
     it("should successfully verify JWT using JWKS endpoint when Cache-Control header is not present", async () => {
-        (global.fetch as jest.Mock).mockResolvedValueOnce({
+        (global.fetch as Mock).mockResolvedValueOnce({
             headers: {
-                get: jest.fn().mockReturnValueOnce(null),
+                get: vi.fn().mockReturnValueOnce(null),
             },
-            json: jest.fn().mockResolvedValueOnce(MOCK_JWKS),
+            json: vi.fn().mockResolvedValueOnce(MOCK_JWKS),
             status: 200,
             ok: true,
         });
@@ -560,7 +561,7 @@ describe("jwt-verifier", () => {
     });
 
     it("should throw if JWKS endpoint does not return 200", async () => {
-        (global.fetch as jest.Mock).mockResolvedValueOnce({
+        (global.fetch as Mock).mockResolvedValueOnce({
             status: 400,
             ok: false,
         });
@@ -576,11 +577,11 @@ describe("jwt-verifier", () => {
     });
 
     it("should fail if JWT does not have mandatory claims", async () => {
-        (global.fetch as jest.Mock).mockResolvedValueOnce({
+        (global.fetch as Mock).mockResolvedValueOnce({
             headers: {
-                get: jest.fn().mockReturnValueOnce("max-age=300"),
+                get: vi.fn().mockReturnValueOnce("max-age=300"),
             },
-            json: jest.fn().mockResolvedValueOnce(MOCK_JWKS),
+            json: vi.fn().mockResolvedValueOnce(MOCK_JWKS),
             status: 200,
             ok: true,
         });
@@ -596,8 +597,8 @@ describe("jwt-verifier", () => {
 
     describe("SessionRequestValidatorFactory", () => {
         let jwtVerifierFactory: JwtVerifierFactory;
-        jest.mocked(JwtVerifier);
-        jest.mocked(JwtVerifier);
+        vi.mocked(JwtVerifier);
+        vi.mocked(JwtVerifier);
 
         beforeEach(() => {
             jwtVerifierFactory = new JwtVerifierFactory(logger);

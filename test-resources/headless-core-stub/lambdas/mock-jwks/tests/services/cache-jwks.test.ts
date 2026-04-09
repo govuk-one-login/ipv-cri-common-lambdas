@@ -1,9 +1,10 @@
 import { generateJWKS } from "../../src/services/cache-jwk";
 import * as ParameterHelper from "../../../../utils/src/parameter/get-parameters";
+import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 
 describe("generateJWKS", () => {
     beforeEach(() => {
-        jest.spyOn(ParameterHelper, "getParametersValues").mockResolvedValueOnce({
+        vi.spyOn(ParameterHelper, "getParametersValues").mockResolvedValueOnce({
             privateSigningKey: JSON.stringify({
                 kty: "EC",
                 crv: "P-256",
@@ -14,7 +15,7 @@ describe("generateJWKS", () => {
         });
     });
 
-    afterEach(() => jest.clearAllMocks());
+    afterEach(() => vi.clearAllMocks());
 
     it("generates JWKS with reused and fresh key, then caches the result", async () => {
         const { jwks } = await generateJWKS();

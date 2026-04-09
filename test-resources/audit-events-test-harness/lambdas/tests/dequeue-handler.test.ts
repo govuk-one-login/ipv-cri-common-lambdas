@@ -1,18 +1,23 @@
 import { SQSEvent } from "aws-lambda";
 import { dbClient, logger, lambdaHandler } from "../src/dequeue-handler";
+import { vi, it, describe, expect, afterEach } from "vitest";
 
-jest.mock("@aws-sdk/client-dynamodb", () => ({
-    DynamoDBClient: jest.fn().mockImplementation(() => ({
-        send: jest.fn(),
-    })),
-    PutItemCommand: jest.fn().mockImplementation(() => ({})),
+vi.mock("@aws-sdk/client-dynamodb", () => ({
+    DynamoDBClient: vi.fn().mockImplementation(function () {
+        return {
+            send: vi.fn(),
+        };
+    }),
+    PutItemCommand: vi.fn().mockImplementation(function () {}),
 }));
 
-jest.mock("@aws-lambda-powertools/logger", () => ({
-    Logger: jest.fn().mockImplementation(() => ({
-        info: jest.fn(),
-        error: jest.fn(),
-    })),
+vi.mock("@aws-lambda-powertools/logger", () => ({
+    Logger: vi.fn().mockImplementation(function () {
+        return {
+            info: vi.fn(),
+            error: vi.fn(),
+        };
+    }),
 }));
 
 describe("dequeue-handler", () => {
@@ -37,10 +42,10 @@ describe("dequeue-handler", () => {
         ],
     };
 
-    afterEach(() => jest.resetAllMocks());
+    afterEach(() => vi.resetAllMocks());
 
     it("Returns no batchItemFailures if all events were successfully put into the DB", async () => {
-        jest.spyOn(dbClient, "send").mockReturnValueOnce();
+        vi.spyOn(dbClient, "send").mockReturnValueOnce();
 
         const result = await lambdaHandler(event as SQSEvent);
         expect(logger.info).toHaveBeenCalledWith("Starting to process records");
@@ -62,7 +67,7 @@ describe("dequeue-handler", () => {
 
     it("Returns batchItemFailures if events could not be put into the DB", async () => {
         const error = new Error("Failed to send to DDB");
-        jest.spyOn(dbClient, "send").mockImplementationOnce(() => {
+        vi.spyOn(dbClient, "send").mockImplementationOnce(() => {
             throw error;
         });
 

@@ -1,7 +1,8 @@
 import { generatePrivateJwtParams } from "../../src/services/private-key-jwt-helper";
 import { generateKeyPair, exportJWK, JWK } from "jose";
+import { vi, describe, expect, beforeAll, it } from "vitest";
 
-jest.useFakeTimers().setSystemTime(new Date("2025-03-26T12:00:00Z"));
+vi.useFakeTimers().setSystemTime(new Date("2025-03-26T12:00:00Z"));
 
 describe("generatePrivateJwtParams", () => {
     let privateJwtKey: JWK;

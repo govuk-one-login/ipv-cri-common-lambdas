@@ -10,6 +10,10 @@ import {
 import { TestData } from "../../../../utils/tests/test-data";
 
 import * as jose from "jose";
+import { vi, describe, expect, it, beforeEach, afterEach } from "vitest";
+
+vi.mock("jose", { spy: true });
+
 describe("signing-service", () => {
     const audience = "https://test-audience.com";
     const mockKMSClient = mockClient(KMSClient);
@@ -18,7 +22,7 @@ describe("signing-service", () => {
     const resetEnvironment = () => {
         _resetCachedPublicKeyForTest();
         mockKMSClient.reset();
-        jest.restoreAllMocks();
+        vi.resetAllMocks();
         delete process.env.KEY_ROTATION_FEATURE_FLAG_ENABLED;
         delete process.env.DECRYPTION_KEY_ID;
         global.fetch = originalFetch;
@@ -26,7 +30,7 @@ describe("signing-service", () => {
 
     beforeEach(() => {
         originalFetch = global.fetch;
-        jest.resetModules();
+        vi.resetModules();
         _resetCachedPublicKeyForTest();
     });
 
@@ -101,12 +105,12 @@ describe("signing-service", () => {
                 ],
             };
 
-            global.fetch = jest.fn().mockResolvedValueOnce({
+            global.fetch = vi.fn().mockResolvedValueOnce({
                 ok: true,
                 json: () => Promise.resolve(mockJwks),
             });
 
-            const spyImportJWK = jest.spyOn(jose, "importJWK").mockImplementation(async (key: jose.JWK) => {
+            const spyImportJWK = vi.spyOn(jose, "importJWK").mockImplementation(async (key: jose.JWK) => {
                 expect(key?.kid).toBe("dummy-kid_2");
                 return { type: "public" } as jose.KeyLike;
             });
@@ -121,7 +125,7 @@ describe("signing-service", () => {
                 keys: [{ kty: "RSA", e: "AQAB", use: "enc", alg: "RS256", n: "dummy-n", kid: "dummy-kid" }],
             };
 
-            global.fetch = jest.fn().mockResolvedValueOnce({
+            global.fetch = vi.fn().mockResolvedValueOnce({
                 ok: true,
                 json: () => Promise.resolve(mockJwks),
             });
@@ -152,7 +156,7 @@ describe("signing-service", () => {
                 privateKeyEncoding: { type: "pkcs8", format: "der" },
             });
 
-            global.fetch = jest.fn().mockResolvedValueOnce({
+            global.fetch = vi.fn().mockResolvedValueOnce({
                 ok: true,
                 json: () => Promise.resolve(mockJwks),
             });
@@ -196,16 +200,16 @@ describe("signing-service", () => {
                 keys: [{ kty: "RSA", e: "AQAB", use: "enc", alg: "RS256", n: "mocked-n", kid: "mocked-kid" }],
             };
 
-            const fetchSpy = jest.fn().mockResolvedValue({
+            const fetchSpy = vi.fn().mockResolvedValue({
                 headers: {
-                    get: jest.fn().mockReturnValue("max-age=300"),
+                    get: vi.fn().mockReturnValue("max-age=300"),
                 },
                 ok: true,
                 json: () => Promise.resolve(mockJwks),
             });
 
             global.fetch = fetchSpy;
-            const importSpy = jest.spyOn(jose, "importJWK").mockResolvedValue({ type: "public" } as jose.KeyLike);
+            const importSpy = vi.spyOn(jose, "importJWK").mockResolvedValue({ type: "public" } as jose.KeyLike);
 
             const key1 = await getPublicEncryptionKey(audience);
             const key2 = await getPublicEncryptionKey(audience);
@@ -222,13 +226,13 @@ describe("signing-service", () => {
                 keys: [{ kty: "RSA", e: "AQAB", use: "enc", alg: "RS256", n: "mocked-n", kid: "mocked-kid" }],
             };
 
-            const fetchSpy = jest.fn().mockResolvedValue({
+            const fetchSpy = vi.fn().mockResolvedValue({
                 ok: true,
                 json: () => Promise.resolve(mockJwks),
             });
 
             global.fetch = fetchSpy;
-            jest.spyOn(jose, "importJWK").mockResolvedValue({ type: "public" } as jose.KeyLike);
+            vi.spyOn(jose, "importJWK").mockResolvedValue({ type: "public" } as jose.KeyLike);
 
             await getPublicEncryptionKey(audience);
             _resetCachedPublicKeyForTest();
@@ -253,13 +257,13 @@ describe("signing-service", () => {
 
             const keyBuffer = Buffer.from(publicKey);
 
-            global.fetch = jest.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve(mockJwks) });
+            global.fetch = vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve(mockJwks) });
             mockKMSClient
                 .on(GetPublicKeyCommand, { KeyId: "abc123" })
                 .resolvesOnce({ PublicKey: keyBuffer })
                 .resolvesOnce({ PublicKey: keyBuffer });
 
-            const importSpy = jest.spyOn(jose, "importSPKI").mockResolvedValue({ type: "public" } as jose.KeyLike);
+            const importSpy = vi.spyOn(jose, "importSPKI").mockResolvedValue({ type: "public" } as jose.KeyLike);
 
             const key1 = await getPublicEncryptionKey(audience);
             const key2 = await getPublicEncryptionKey(audience);
@@ -284,31 +288,31 @@ describe("signing-service", () => {
                 keys: [{ kty: "RSA", e: "AQAB", use: "enc", alg: "RS256", n: "mocked-n", kid: "mocked-kid" }],
             };
 
-            const fetchSpy = jest
+            const fetchSpy = vi
                 .fn()
                 .mockResolvedValueOnce({
                     headers: {
-                        get: jest.fn().mockReturnValueOnce("max-age=300"),
+                        get: vi.fn().mockReturnValueOnce("max-age=300"),
                     },
                     ok: true,
                     json: () => Promise.resolve(mockJwks),
                 })
                 .mockResolvedValueOnce({
                     headers: {
-                        get: jest.fn().mockReturnValueOnce("max-age=300"),
+                        get: vi.fn().mockReturnValueOnce("max-age=300"),
                     },
                     ok: true,
                     json: () => Promise.resolve(mockJwks),
                 });
 
             global.fetch = fetchSpy;
-            const importSpy = jest
+            const importSpy = vi
                 .spyOn(jose, "importJWK")
                 .mockResolvedValueOnce({ type: "public" } as jose.KeyLike)
                 .mockResolvedValueOnce({ type: "public" } as jose.KeyLike);
 
             const now = Date.now();
-            const dateNowSpy = jest.spyOn(Date, "now").mockImplementation(() => now);
+            const dateNowSpy = vi.spyOn(Date, "now").mockImplementation(() => now);
 
             await getPublicEncryptionKey(audience);
 
@@ -329,21 +333,21 @@ describe("signing-service", () => {
                 keys: [{ kty: "RSA", e: "AQAB", use: "enc", alg: "RS256", n: "mocked-n", kid: "mocked-kid" }],
             };
 
-            const fetchSpy = jest.fn().mockResolvedValueOnce({
+            const fetchSpy = vi.fn().mockResolvedValueOnce({
                 headers: {
-                    get: jest.fn().mockReturnValueOnce("max-age=300"),
+                    get: vi.fn().mockReturnValueOnce("max-age=300"),
                 },
                 ok: true,
                 json: () => Promise.resolve(mockJwks),
             });
 
             global.fetch = fetchSpy;
-            const importSpy = jest.spyOn(jose, "importJWK").mockResolvedValueOnce({ type: "public" } as jose.KeyLike);
+            const importSpy = vi.spyOn(jose, "importJWK").mockResolvedValueOnce({ type: "public" } as jose.KeyLike);
 
             await getPublicEncryptionKey(audience);
 
             const fourMinuteWithinTtl = Date.now() + 1000 * 60 * 4;
-            jest.spyOn(Date, "now").mockReturnValue(fourMinuteWithinTtl);
+            vi.spyOn(Date, "now").mockReturnValue(fourMinuteWithinTtl);
 
             await getPublicEncryptionKey(audience);
 

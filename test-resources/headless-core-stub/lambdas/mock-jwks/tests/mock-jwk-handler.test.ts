@@ -2,6 +2,7 @@ import { JSONWebKeySet } from "jose";
 import { MockJwkHandler } from "../src/mock-jwk-handler";
 import * as JWKS from "../src/services/cache-jwk";
 import { APIGatewayProxyEvent, Context } from "aws-lambda";
+import { expect, describe, MockInstance, vi } from "vitest";
 
 const mockJwksEmpty = {
     jwks: { keys: [] } as JSONWebKeySet,
@@ -11,14 +12,14 @@ const mockJwksNonEmpty = {
     jwks: { keys: [{ kid: "key-1" }] } as JSONWebKeySet,
 };
 describe("MockJwkHandler", () => {
-    let generateJWKSSpy: jest.SpyInstance;
+    let generateJWKSSpy: MockInstance;
     beforeEach(() => {
-        generateJWKSSpy = jest.spyOn(JWKS, "generateJWKS").mockResolvedValueOnce(mockJwksEmpty);
+        generateJWKSSpy = vi.spyOn(JWKS, "generateJWKS").mockResolvedValueOnce(mockJwksEmpty);
     });
 
-    afterEach(async () => jest.clearAllMocks());
+    afterEach(async () => vi.clearAllMocks());
     it("returns 404 when JWKS is empty", async () => {
-        generateJWKSSpy = jest.spyOn(JWKS, "generateJWKS").mockResolvedValueOnce(mockJwksNonEmpty);
+        generateJWKSSpy = vi.spyOn(JWKS, "generateJWKS").mockResolvedValueOnce(mockJwksNonEmpty);
 
         const event = {
             httpMethod: "GET",

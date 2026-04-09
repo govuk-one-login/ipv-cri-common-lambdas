@@ -1,5 +1,6 @@
 import { Logger } from "@aws-lambda-powertools/logger";
 import { formatAudience } from "../../src/audience-formatter";
+import { describe, it, expect, vi } from "vitest";
 
 describe("formatAudience", () => {
     it("replaces 'review-' with 'api.review-' and adds trailing slash", () => {
@@ -20,7 +21,7 @@ describe("formatAudience", () => {
     });
 
     it("logs when logger is provided", () => {
-        const logger: Logger = { info: jest.fn() } as unknown as Logger;
+        const logger: Logger = { info: vi.fn() } as unknown as Logger;
 
         formatAudience("https://review-example.co.uk", logger);
 

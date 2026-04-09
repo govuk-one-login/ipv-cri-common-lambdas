@@ -1,10 +1,11 @@
 import { Logger } from "@aws-lambda-powertools/logger";
 import { handleErrorResponse } from "../../src/errors/error-response";
 import { HeadlessCoreStubError } from "../../src/errors/headless-core-stub-error";
+import { describe, it, expect, vi } from "vitest";
 
 describe("error-response", () => {
     const logger = new Logger();
-    jest.spyOn(logger, "error");
+    vi.spyOn(logger, "error");
 
     it("returns error with message on 400 HeadlessCoreStubError", () => {
         const error = new HeadlessCoreStubError("Custom error", 400);

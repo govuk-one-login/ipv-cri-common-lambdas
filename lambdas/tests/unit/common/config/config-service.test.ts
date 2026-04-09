@@ -1,12 +1,14 @@
+vi.stubEnv("AWS_STACK_NAME", "di-ipv-cri-common-lambdas");
+import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import { SSMClient } from "@aws-sdk/client-ssm";
 import { SSMProvider } from "@aws-lambda-powertools/parameters/ssm";
 import { ConfigService } from "../../../../src/common/config/config-service";
 import { ClientConfigKey, CommonConfigKey } from "../../../../src/types/config-keys";
 
-jest.mock("@aws-lambda-powertools/parameters/ssm");
+vi.mock("@aws-lambda-powertools/parameters/ssm");
 
-const ssmProvider = jest.mocked(SSMProvider).prototype;
-jest.spyOn(ssmProvider, "getParametersByName");
+const ssmProvider = vi.mocked(SSMProvider).prototype;
+vi.spyOn(ssmProvider, "getParametersByName");
 
 describe("ConfigService", () => {
     const mockUrl = "https://sqs.eu-west-2.amazonaws.com/123456789/txma-infrastructure-AuditEventQueue";
@@ -30,11 +32,11 @@ describe("ConfigService", () => {
     });
 
     afterEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
     });
 
     describe("getSessionExpirationEpoch", () => {
-        jest.spyOn(global.Date, "now").mockReturnValue(1675382400000);
+        vi.spyOn(global.Date, "now").mockReturnValue(1675382400000);
 
         it("should get the session expiration", async () => {
             ssmProvider.getParametersByName.mockResolvedValue({
@@ -262,7 +264,7 @@ describe("ConfigService", () => {
     });
 
     describe("getBearerAccessTokenExpirationEpoch", () => {
-        jest.spyOn(Date.prototype, "getTime").mockReturnValue(1675382400000);
+        vi.spyOn(Date.prototype, "getTime").mockReturnValue(1675382400000);
         it("should return the ttl of the access token", () => {
             const output = configService.getBearerAccessTokenExpirationEpoch();
 
@@ -272,14 +274,14 @@ describe("ConfigService", () => {
 
     describe("getAuthorizationCodeExpirationEpoch", () => {
         it("should get the authorization expiration", () => {
-            jest.spyOn(global.Date, "now").mockReturnValue(1675382400000);
+            vi.spyOn(global.Date, "now").mockReturnValue(1675382400000);
             const epoch = configService.getAuthorizationCodeExpirationEpoch();
 
             expect(epoch).toEqual(1675382500);
         });
 
         it("should use the default expiration if not available", () => {
-            jest.spyOn(global.Date, "now").mockReturnValue(1675382400000);
+            vi.spyOn(global.Date, "now").mockReturnValue(1675382400000);
             process.env.AUTHORIZATION_CODE_TTL = undefined;
 
             const epoch = configService.getAuthorizationCodeExpirationEpoch();
