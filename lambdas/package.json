@@ -1,5 +1,6 @@
 {
     "name": "di-ipv-common-lambdas",
+    "type": "module",
     "scripts": {
         "lint": "eslint .",
         "lint:fix": "eslint . --fix",

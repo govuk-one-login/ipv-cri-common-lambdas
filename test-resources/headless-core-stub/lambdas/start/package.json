@@ -1,6 +1,7 @@
 {
     "name": "headless-core-stub-start",
     "description": "Start lambda for the headless core stub",
+    "type": "module",
     "scripts": {
         "lint": "eslint .",
         "lint:fix": "eslint . --fix",

@@ -184,10 +184,18 @@ Resources:
     Metadata:
       BuildMethod: esbuild
       BuildProperties:
+        EntryPoints:
+          - headless-core-stub/lambdas/mock-jwks/src/mock-jwk-handler.ts
+        Format: esm
+        Target: es2022
         Sourcemap: true
+        OutExtension:
+          - .js=.mjs
+        Banner:
+          - js=import { createRequire } from 'module'; const require = createRequire(import.meta.url);
     Properties:
       FunctionName: !Sub "${AWS::StackName}-MockJwkFunction"
-      Handler: headless-core-stub/lambdas/mock-jwks/src/mock-jwk-handler.lambdaHandler
+      Handler: mock-jwk-handler.lambdaHandler
       CodeSigningConfigArn:
         !If [EnforceCodeSigning, !Ref CodeSigningConfigArn, !Ref AWS::NoValue]
       Policies:
@@ -223,10 +231,18 @@ Resources:
     Metadata:
       BuildMethod: esbuild
       BuildProperties:
+        EntryPoints:
+          - headless-core-stub/lambdas/start/src/start-handler.ts
+        Format: esm
+        Target: es2022
         Sourcemap: true
+        OutExtension:
+          - .js=.mjs
+        Banner:
+          - js=import { createRequire } from 'module'; const require = createRequire(import.meta.url);
     Properties:
       FunctionName: !Sub "${AWS::StackName}-StartFunction"
-      Handler: headless-core-stub/lambdas/start/src/start-handler.lambdaHandler
+      Handler: start-handler.lambdaHandler
       CodeSigningConfigArn:
         !If [EnforceCodeSigning, !Ref CodeSigningConfigArn, !Ref AWS::NoValue]
       LoggingConfig:
@@ -273,10 +289,18 @@ Resources:
     Metadata:
       BuildMethod: esbuild
       BuildProperties:
+        EntryPoints:
+          - headless-core-stub/lambdas/callback/src/callback-handler.ts
+        Format: esm
+        Target: es2022
         Sourcemap: true
+        OutExtension:
+          - .js=.mjs
+        Banner:
+          - js=import { createRequire } from 'module'; const require = createRequire(import.meta.url);
     Properties:
       FunctionName: !Sub "${AWS::StackName}-CallbackFunction"
-      Handler: headless-core-stub/lambdas/callback/src/callback-handler.lambdaHandler
+      Handler: callback-handler.lambdaHandler
       CodeSigningConfigArn:
         !If [EnforceCodeSigning, !Ref CodeSigningConfigArn, !Ref AWS::NoValue]
       Environment:
@@ -333,9 +357,17 @@ Resources:
     Metadata:
       BuildMethod: esbuild
       BuildProperties:
+        EntryPoints:
+          - audit-events-test-harness/lambdas/src/dequeue-handler.ts
+        Format: esm
+        Target: es2022
         Sourcemap: true
+        OutExtension:
+          - .js=.mjs
+        Banner:
+          - js=import { createRequire } from 'module'; const require = createRequire(import.meta.url);
     Properties:
-      Handler: audit-events-test-harness/lambdas/src/dequeue-handler.lambdaHandler
+      Handler: dequeue-handler.lambdaHandler
       CodeSigningConfigArn:
         !If [EnforceCodeSigning, !Ref CodeSigningConfigArn, !Ref AWS::NoValue]
       VpcConfig:
