@@ -5,9 +5,11 @@ import { PersonIdentity } from "../../../src/types/person-identity";
 import { PersonIdentityService } from "../../../src/services/person-identity-service";
 import { PersonIdentityDrivingPermit } from "../../../src/types/person-identity-item";
 
-jest.mock("@aws-sdk/lib-dynamodb", () => {
-    const mockPut = jest.fn();
-    mockPut.mockImplementation(() => {
+import { beforeEach, describe, expect, it, vi, test } from "vitest";
+
+vi.mock("@aws-sdk/lib-dynamodb", () => {
+    const mockPut = vi.fn();
+    mockPut.mockImplementation(function () {
         return {
             input: {
                 Item: {
@@ -17,12 +19,10 @@ jest.mock("@aws-sdk/lib-dynamodb", () => {
         };
     });
     return {
-        __esModule: true,
-        ...jest.requireActual("@aws-sdk/lib-dynamodb"),
         PutCommand: mockPut,
         DynamoDBDocument: {
             prototype: {
-                send: jest.fn(),
+                send: vi.fn(),
             },
         },
     };
@@ -30,11 +30,11 @@ jest.mock("@aws-sdk/lib-dynamodb", () => {
 
 describe("PersonIdentityService", () => {
     let personIdentityService: PersonIdentityService;
-    const mockPutCommand = jest.mocked(PutCommand);
-    const mockDynamoDb = jest.mocked(DynamoDBDocument);
-    const mockConfigService = jest.mocked(ConfigService);
+    const mockPutCommand = vi.mocked(PutCommand);
+    const mockDynamoDb = vi.mocked(DynamoDBDocument);
+    const mockConfigService = vi.mocked(ConfigService);
 
-    jest.spyOn(mockConfigService.prototype, "getConfigEntry").mockImplementation((key: CommonConfigKey) => {
+    vi.spyOn(mockConfigService.prototype, "getConfigEntry").mockImplementation((key: CommonConfigKey) => {
         if (key === CommonConfigKey.PERSON_IDENTITY_TABLE_NAME) {
             return "PersonIdentityTable";
         } else if (key === CommonConfigKey.SESSION_TTL) {
@@ -91,7 +91,7 @@ describe("PersonIdentityService", () => {
     };
 
     beforeEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
 
         personIdentityService = new PersonIdentityService(mockDynamoDb.prototype, mockConfigService.prototype);
     });
@@ -159,7 +159,7 @@ describe("PersonIdentityService", () => {
     // Test ported from the Java Person Identity Mapper Tests - Tests postcode extraction from full address
     describe("PersonIdentityService - Driving Permit Mapping", () => {
         beforeEach(() => {
-            jest.clearAllMocks();
+            vi.clearAllMocks();
         });
 
         const testCases: [string, string | undefined, string | undefined][] = [

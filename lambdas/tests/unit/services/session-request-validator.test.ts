@@ -8,13 +8,14 @@ import {
 import { ClientConfigKey } from "../../../src/types/config-keys";
 import { PersonIdentity } from "../../../src/types/person-identity";
 import { SessionRequestValidationConfig } from "../../../src/types/session-request-validation-config";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 describe("session-request-validator.ts", () => {
     const logger = new Logger();
     const mockMap = new Map<string, string>();
     mockMap.set("session-id", "test-session-id");
-    const personIdentity = jest.mocked({} as PersonIdentity);
-    const jwtVerifier = jest.mocked(JwtVerifier);
+    const personIdentity = vi.mocked({} as PersonIdentity);
+    const jwtVerifier = vi.mocked(JwtVerifier);
 
     describe("SessionRequestValidator", () => {
         let sessionRequestValidatorFactory: SessionRequestValidatorFactory;
@@ -26,7 +27,7 @@ describe("session-request-validator.ts", () => {
         });
 
         it("should return an error on JWT verification failure", async () => {
-            jest.spyOn(jwtVerifier.prototype, "verify").mockRejectedValue(new Error());
+            vi.spyOn(jwtVerifier.prototype, "verify").mockRejectedValue(new Error());
 
             await expect(
                 sessionRequestValidator.validateJwt(Buffer.from("test-jwt"), "request-client-id"),
@@ -39,7 +40,7 @@ describe("session-request-validator.ts", () => {
         });
 
         it("should return an expired error on JWT Expired failures", async () => {
-            jest.spyOn(jwtVerifier.prototype, "verify").mockRejectedValue(new errors.JWTExpired("", {}));
+            vi.spyOn(jwtVerifier.prototype, "verify").mockRejectedValue(new errors.JWTExpired("", {}));
 
             await expect(
                 sessionRequestValidator.validateJwt(Buffer.from("test-jwt"), "request-client-id"),
@@ -52,7 +53,7 @@ describe("session-request-validator.ts", () => {
         });
 
         it("should return an error on mismatched client ID", async () => {
-            jest.spyOn(jwtVerifier.prototype, "verify").mockResolvedValue({
+            vi.spyOn(jwtVerifier.prototype, "verify").mockResolvedValue({
                 client_id: "payload-client-id",
                 shared_claims: personIdentity,
             } as JWTPayload);
@@ -69,7 +70,7 @@ describe("session-request-validator.ts", () => {
         });
 
         it("should return an error on failure to retrieve redirect URI", async () => {
-            jest.spyOn(jwtVerifier.prototype, "verify").mockResolvedValue({
+            vi.spyOn(jwtVerifier.prototype, "verify").mockResolvedValue({
                 client_id: "request-client-id",
                 shared_claims: personIdentity,
             } as JWTPayload);
@@ -86,7 +87,7 @@ describe("session-request-validator.ts", () => {
         });
 
         it("should return an error on mismatched redirect URI", async () => {
-            jest.spyOn(jwtVerifier.prototype, "verify").mockResolvedValue({
+            vi.spyOn(jwtVerifier.prototype, "verify").mockResolvedValue({
                 client_id: "request-client-id",
                 redirect_uri: "wrong-redirect-uri",
                 shared_claims: personIdentity,
@@ -108,7 +109,7 @@ describe("session-request-validator.ts", () => {
 
         it("should successfully validate the jwt", async () => {
             const state = "state";
-            jest.spyOn(jwtVerifier.prototype, "verify").mockResolvedValue({
+            vi.spyOn(jwtVerifier.prototype, "verify").mockResolvedValue({
                 client_id: "request-client-id",
                 redirect_uri: "redirect-uri",
                 state: state,
@@ -131,7 +132,7 @@ describe("session-request-validator.ts", () => {
     describe("sessionRequestValidator for di-ipv-cri-check-hmrc-api", () => {
         let sessionRequestValidator: SessionRequestValidator;
         let sessionRequestValidationConfig: SessionRequestValidationConfig;
-        const jwtVerifier = jest.mocked(JwtVerifier);
+        const jwtVerifier = vi.mocked(JwtVerifier);
 
         beforeEach(() => {
             sessionRequestValidationConfig = {
@@ -154,7 +155,7 @@ describe("session-request-validator.ts", () => {
                 shared_claims: personIdentity,
             } as JWTPayload;
 
-            jest.spyOn(jwtVerifier.prototype, "verify").mockResolvedValue(jwtPayload);
+            vi.spyOn(jwtVerifier.prototype, "verify").mockResolvedValue(jwtPayload);
 
             const payload = (await sessionRequestValidator.validateJwt(
                 Buffer.from("test-jwt"),
@@ -172,7 +173,7 @@ describe("session-request-validator.ts", () => {
             const previousCriIdentifier = process.env.CRI_IDENTIFIER;
             process.env.CRI_IDENTIFIER = "di-ipv-cri-check-hmrc-api";
 
-            jest.spyOn(jwtVerifier.prototype, "verify").mockResolvedValue({
+            vi.spyOn(jwtVerifier.prototype, "verify").mockResolvedValue({
                 client_id: client_id,
                 redirect_uri: redirect_uri,
                 state: state,
@@ -197,7 +198,7 @@ describe("session-request-validator.ts", () => {
             const redirect_uri = "redirect-uri";
             const state = "state";
 
-            jest.spyOn(jwtVerifier.prototype, "verify").mockReturnValue(
+            vi.spyOn(jwtVerifier.prototype, "verify").mockReturnValue(
                 await Promise.resolve({
                     client_id: client_id,
                     redirect_uri: redirect_uri,
@@ -222,7 +223,7 @@ describe("session-request-validator.ts", () => {
             const redirect_uri = "redirect-uri";
             const state = "state";
 
-            jest.spyOn(jwtVerifier.prototype, "verify").mockResolvedValue({
+            vi.spyOn(jwtVerifier.prototype, "verify").mockResolvedValue({
                 client_id: client_id,
                 redirect_uri: redirect_uri,
                 state: state,
@@ -244,7 +245,7 @@ describe("session-request-validator.ts", () => {
             const redirect_uri = "redirect-uri";
             const state = "state";
 
-            jest.spyOn(jwtVerifier.prototype, "verify").mockResolvedValue({
+            vi.spyOn(jwtVerifier.prototype, "verify").mockResolvedValue({
                 client_id: client_id,
                 redirect_uri: redirect_uri,
                 state: state,
@@ -262,7 +263,7 @@ describe("session-request-validator.ts", () => {
             const client_id = "request-client-id";
             const redirect_uri = "redirect-uri";
 
-            jest.spyOn(jwtVerifier.prototype, "verify").mockResolvedValue({
+            vi.spyOn(jwtVerifier.prototype, "verify").mockResolvedValue({
                 client_id: client_id,
                 redirect_uri: redirect_uri,
                 shared_claims: personIdentity,
@@ -280,7 +281,7 @@ describe("session-request-validator.ts", () => {
     describe("isValidVerificationScore tests", () => {
         let sessionRequestValidator: SessionRequestValidator;
         let sessionRequestValidationConfig: SessionRequestValidationConfig;
-        const jwtVerifier = jest.mocked(JwtVerifier);
+        const jwtVerifier = vi.mocked(JwtVerifier);
 
         beforeEach(() => {
             sessionRequestValidationConfig = {
@@ -298,7 +299,7 @@ describe("session-request-validator.ts", () => {
             const redirect_uri = "redirect-uri";
             const state = "state";
 
-            jest.spyOn(jwtVerifier.prototype, "verify").mockResolvedValue({
+            vi.spyOn(jwtVerifier.prototype, "verify").mockResolvedValue({
                 client_id: client_id,
                 redirect_uri: redirect_uri,
                 state: state,
@@ -330,8 +331,8 @@ describe("session-request-validator.ts", () => {
 
     describe("SessionRequestValidatorFactory", () => {
         let sessionRequestValidatorFactory: SessionRequestValidatorFactory;
-        jest.mocked(SessionRequestValidator);
-        jest.mocked(JwtVerifier);
+        vi.mocked(SessionRequestValidator);
+        vi.mocked(JwtVerifier);
 
         beforeEach(() => {
             sessionRequestValidatorFactory = new SessionRequestValidatorFactory(logger);

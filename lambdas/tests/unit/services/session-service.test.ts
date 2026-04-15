@@ -1,40 +1,33 @@
 import { SessionService } from "../../../src/services/session-service";
 import { ConfigService } from "../../../src/common/config/config-service";
-import { DynamoDBDocument, GetCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
+import { DynamoDBDocument } from "@aws-sdk/lib-dynamodb";
 import { InvalidAccessTokenError, SessionNotFoundError } from "../../../src/common/utils/errors";
 import { SessionItem, UnixSecondsTimestamp } from "@govuk-one-login/cri-types";
 import { SSMProvider } from "@aws-lambda-powertools/parameters/ssm";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const UUID_REGEX = new RegExp(/^[0-9A-F]{8}-[0-9A-F]{4}-[4][0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}$/i);
 
-jest.mock("@aws-sdk/lib-dynamodb", () => {
-    return {
-        __esModule: true,
-        ...jest.requireActual("@aws-sdk/lib-dynamodb"),
-        GetCommand: jest.fn(),
-        UpdateCommand: jest.fn(),
-    };
-});
-
-jest.mock("../../../src/common/config/config-service");
+vi.mock("../../../src/common/config/config-service");
 
 describe("session-service", () => {
     let sessionService: SessionService;
 
-    const configService = new ConfigService(jest.fn() as unknown as SSMProvider);
-    const mockDynamoDbClient = jest.mocked(DynamoDBDocument);
-    const mockConfigService = jest.mocked(ConfigService);
-    const mockGetCommand = jest.mocked(GetCommand);
-    const mockUpdateCommand = jest.mocked(UpdateCommand);
+    const configService = new ConfigService(vi.fn() as unknown as SSMProvider);
+    // let mockDynamoDbClient: MockedObject<typeof DynamoDBDocument>;
+    const mockDynamoDbClient = vi.mocked(DynamoDBDocument);
+    const mockConfigService = vi.mocked(ConfigService);
+    // const mockGetCommand = vi.mocked(GetCommand);
+    // const mockUpdateCommand = vi.mocked(UpdateCommand);
 
     beforeEach(() => {
-        jest.resetAllMocks();
+        vi.resetAllMocks();
         sessionService = new SessionService(mockDynamoDbClient.prototype, configService);
         const impl = () => {
             const mockPromise = new Promise<unknown>((resolve) => {
                 resolve({ Parameters: [] });
             });
-            return jest.fn().mockImplementation(() => {
+            return vi.fn().mockImplementation(() => {
                 return mockPromise;
             });
         };
@@ -47,31 +40,32 @@ describe("session-service", () => {
             const tableName = "sessionTable";
             const sessionVal = "myItem";
             const sessionId = "1";
-            jest.spyOn(mockDynamoDbClient.prototype, "send").mockImplementation(() => {
+            vi.spyOn(mockDynamoDbClient.prototype, "send").mockImplementation(async () => {
                 return Promise.resolve({
                     Item: sessionVal,
                 });
             });
-            jest.spyOn(mockConfigService.prototype, "getConfigEntry").mockReturnValue(tableName);
+            vi.spyOn(mockConfigService.prototype, "getConfigEntry").mockReturnValue(tableName);
             const output = await sessionService.getSession(sessionId);
             expect(output).toBe("myItem");
-            expect(mockGetCommand).toHaveBeenCalled();
-            expect(mockGetCommand).toHaveBeenCalledWith({ TableName: tableName, Key: { sessionId: sessionId } });
-            expect(mockDynamoDbClient.prototype.send).toHaveBeenCalled();
+            expect(mockDynamoDbClient.prototype.send).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    input: expect.objectContaining({ TableName: tableName, Key: { sessionId: sessionId } }),
+                }),
+            );
         });
 
         it("Should throw session item not found when session not found", async () => {
-            expect.assertions(3);
+            expect.assertions(2);
             try {
                 const tableName = "sessionTable";
                 const sessionId = "1";
-                jest.spyOn(mockDynamoDbClient.prototype, "send").mockImplementation(() => {
+                vi.spyOn(mockDynamoDbClient.prototype, "send").mockImplementation(() => {
                     return Promise.resolve({});
                 });
-                jest.spyOn(mockConfigService.prototype, "getConfigEntry").mockReturnValue(tableName);
+                vi.spyOn(mockConfigService.prototype, "getConfigEntry").mockReturnValue(tableName);
                 await sessionService.getSession(sessionId);
             } catch (err) {
-                expect(mockGetCommand).toHaveBeenCalled();
                 expect(mockDynamoDbClient.prototype.send).toHaveBeenCalled();
                 expect(err).toBeInstanceOf(SessionNotFoundError);
             }
@@ -90,17 +84,17 @@ describe("session-service", () => {
                 accessToken: "",
                 accessTokenExpiryDate: 0 as UnixSecondsTimestamp,
             };
-            jest.spyOn(mockConfigService.prototype, "getConfigEntry").mockReturnValue(tableName);
-            expect.assertions(2);
+            vi.spyOn(mockConfigService.prototype, "getConfigEntry").mockReturnValue(tableName);
             await sessionService.createAuthorizationCode(sessionItem as SessionItem);
-            expect(mockUpdateCommand).toHaveBeenCalled();
-            expect(mockUpdateCommand).toHaveBeenCalledWith(
+            expect(mockDynamoDbClient.prototype.send).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    TableName: tableName,
-                    ExpressionAttributeValues: {
-                        ":authCode": sessionItem.authorizationCode,
-                        ":authCodeExpiry": sessionItem.authorizationCodeExpiryDate,
-                    },
+                    input: expect.objectContaining({
+                        TableName: tableName,
+                        ExpressionAttributeValues: {
+                            ":authCode": sessionItem.authorizationCode,
+                            ":authCodeExpiry": sessionItem.authorizationCodeExpiryDate,
+                        },
+                    }),
                 }),
             );
         });
@@ -110,8 +104,8 @@ describe("session-service", () => {
         it("should call dynamodb with the authorization code and tablename", async () => {
             const tableName = "sessionTable";
             const authCode = "123";
-            jest.spyOn(mockConfigService.prototype, "getConfigEntry").mockReturnValue(tableName);
-            jest.spyOn(mockDynamoDbClient.prototype, "query").mockImplementation(() => {
+            vi.spyOn(mockConfigService.prototype, "getConfigEntry").mockReturnValue(tableName);
+            vi.spyOn(mockDynamoDbClient.prototype, "query").mockImplementation(() => {
                 return Promise.resolve({ Items: ["1"] } as never);
             });
             expect.assertions(3);
@@ -129,8 +123,8 @@ describe("session-service", () => {
         it("should throw a Invalid Access token Error when Session not found", async () => {
             const tableName = "sessionTable";
             const authCode = "123";
-            jest.spyOn(mockConfigService.prototype, "getConfigEntry").mockReturnValue(tableName);
-            jest.spyOn(mockDynamoDbClient.prototype, "query").mockImplementation(() => {
+            vi.spyOn(mockConfigService.prototype, "getConfigEntry").mockReturnValue(tableName);
+            vi.spyOn(mockDynamoDbClient.prototype, "query").mockImplementation(() => {
                 return Promise.resolve({} as never);
             });
             expect.assertions(1);
@@ -158,21 +152,24 @@ describe("session-service", () => {
                 token_type: "token-type",
                 expires_in: 0,
             };
-            jest.spyOn(configService, "getConfigEntry").mockReturnValue("session-table-name");
-            jest.spyOn(configService, "getBearerAccessTokenExpirationEpoch").mockReturnValueOnce(1675382400000);
+            vi.spyOn(configService, "getConfigEntry").mockReturnValue("session-table-name");
+            vi.spyOn(configService, "getBearerAccessTokenExpirationEpoch").mockReturnValueOnce(1675382400000);
             await sessionService.createAccessTokenCodeAndRemoveAuthCode(sessionItem as SessionItem, accessToken);
 
-            expect(mockUpdateCommand).toHaveBeenCalledWith({
-                TableName: "session-table-name",
-                Key: { sessionId: "session-id" },
-                UpdateExpression:
-                    "SET accessToken=:accessTokenCode, accessTokenExpiryDate=:accessTokenExpiry REMOVE authorizationCode",
-                ExpressionAttributeValues: {
-                    ":accessTokenCode": "token-type access-token",
-                    ":accessTokenExpiry": 1675382400000,
-                },
-            });
-            expect(mockDynamoDbClient.prototype.send).toHaveBeenCalledTimes(1);
+            expect(mockDynamoDbClient.prototype.send).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    input: expect.objectContaining({
+                        TableName: "session-table-name",
+                        Key: { sessionId: "session-id" },
+                        UpdateExpression:
+                            "SET accessToken=:accessTokenCode, accessTokenExpiryDate=:accessTokenExpiry REMOVE authorizationCode",
+                        ExpressionAttributeValues: {
+                            ":accessTokenCode": "token-type access-token",
+                            ":accessTokenExpiry": 1675382400000,
+                        },
+                    }),
+                }),
+            );
         });
     });
 
@@ -188,9 +185,9 @@ describe("session-service", () => {
                 subject: "test-sub",
             };
 
-            jest.spyOn(global.Date, "now").mockReturnValueOnce(1675382400000);
-            jest.spyOn(configService, "getSessionExpirationEpoch").mockReturnValue(1675382500000);
-            jest.spyOn(configService, "getConfigEntry").mockReturnValue("session-table-name");
+            vi.spyOn(global.Date, "now").mockReturnValueOnce(1675382400000);
+            vi.spyOn(configService, "getSessionExpirationEpoch").mockReturnValue(1675382500000);
+            vi.spyOn(configService, "getConfigEntry").mockReturnValue("session-table-name");
             const output = await sessionService.saveSession(mockSessionRequestSummary);
             expect(mockDynamoDbClient.prototype.send).toHaveBeenCalledWith(
                 expect.objectContaining({
@@ -233,9 +230,9 @@ describe("session-service", () => {
                 context: "test-context",
             };
 
-            jest.spyOn(global.Date, "now").mockReturnValueOnce(1675382400000);
-            jest.spyOn(configService, "getSessionExpirationEpoch").mockReturnValue(1675382500000);
-            jest.spyOn(configService, "getConfigEntry").mockReturnValue("session-table-name");
+            vi.spyOn(global.Date, "now").mockReturnValueOnce(1675382400000);
+            vi.spyOn(configService, "getSessionExpirationEpoch").mockReturnValue(1675382500000);
+            vi.spyOn(configService, "getConfigEntry").mockReturnValue("session-table-name");
             const output = await sessionService.saveSession(mockSessionRequestSummary);
             expect(mockDynamoDbClient.prototype.send).toHaveBeenCalledWith(
                 expect.objectContaining({
@@ -279,9 +276,9 @@ describe("session-service", () => {
                 context: "test-context",
             };
 
-            jest.spyOn(global.Date, "now").mockReturnValueOnce(1675382400000);
-            jest.spyOn(configService, "getSessionExpirationEpoch").mockReturnValue(1675382500000);
-            jest.spyOn(configService, "getConfigEntry").mockReturnValue("session-table-name");
+            vi.spyOn(global.Date, "now").mockReturnValueOnce(1675382400000);
+            vi.spyOn(configService, "getSessionExpirationEpoch").mockReturnValue(1675382500000);
+            vi.spyOn(configService, "getConfigEntry").mockReturnValue("session-table-name");
             const output = await sessionService.saveSession(mockSessionRequestSummary);
             expect(mockDynamoDbClient.prototype.send).toHaveBeenCalledWith(
                 expect.objectContaining({

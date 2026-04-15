@@ -11,6 +11,7 @@ const getSessionByIdMiddleware = (opts: { sessionService: SessionService }): Mid
         const event = request.event;
         const sessionId = event?.body?.sessionId || getSessionId(event);
         const sessionItem = await options.sessionService.getSession(sessionId);
+
         request.event = {
             ...request.event,
             body: {
