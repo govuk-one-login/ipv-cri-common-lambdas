@@ -1,6 +1,7 @@
 {
     "name": "audit-events-test-harness",
     "description": "Harness to enable automation testing",
+    "type": "module",
     "scripts": {
         "lint": "eslint .",
         "lint:fix": "eslint . --fix",

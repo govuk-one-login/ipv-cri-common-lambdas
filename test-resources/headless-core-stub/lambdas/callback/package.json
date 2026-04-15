@@ -1,6 +1,7 @@
 {
     "name": "headless-core-stub-callback",
     "description": "Callback lambda for the headless core stub",
+    "type": "module",
     "scripts": {
         "lint": "eslint .",
         "lint:fix": "eslint . --fix",
