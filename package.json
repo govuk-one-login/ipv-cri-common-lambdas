@@ -1,5 +1,6 @@
 {
   "name": "ipv-cri-oauth-common",
+  "type": "module",
   "workspaces": [
     "lambdas"
   ]

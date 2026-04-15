@@ -3,45 +3,49 @@ import { KMSClient } from "@aws-sdk/client-kms";
 import { JweDecrypter } from "../../../../src/services/security/jwe-decrypter";
 import { metrics } from "../../../../src/common/utils/power-tool";
 import { logger } from "@govuk-one-login/cri-logger";
+import { vi, describe, it, expect, beforeEach } from "vitest";
+import { Decipher } from "node:crypto";
 
-jest.mock("../../../../src/common/utils/power-tool", () => ({
+vi.mock("../../../../src/common/utils/power-tool", () => ({
     metrics: {
-        addMetric: jest.fn(),
+        addMetric: vi.fn(),
     },
 }));
 
-jest.mock("@govuk-one-login/cri-logger", () => ({
+vi.mock("@govuk-one-login/cri-logger", () => ({
     logger: {
-        info: jest.fn(),
-        warn: jest.fn(),
-        error: jest.fn(),
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
     },
 }));
 
-jest.mock("crypto", () => ({
-    createDecipheriv: jest.fn().mockReturnValue({
-        setAuthTag: jest.fn(),
-        setAAD: jest.fn(),
-        update: jest.fn().mockReturnValue(Buffer.from("decrypted content")),
-        final: jest.fn(),
+vi.mock("crypto", () => ({
+    createDecipheriv: vi.fn().mockReturnValue({
+        setAuthTag: vi.fn(),
+        setAAD: vi.fn(),
+        update: vi.fn().mockReturnValue(Buffer.from("decrypted content")),
+        final: vi.fn(),
     }),
 }));
 
-jest.mock("@aws-sdk/client-kms", () => ({
-    KMSClient: jest.fn(() => ({
-        send: jest.fn().mockResolvedValue({
-            Plaintext: "decryptedContentEncKey",
-        }),
-    })),
-    DecryptCommand: jest.fn(() => ({})),
+vi.mock("@aws-sdk/client-kms", async (importOriginal) => ({
+    ...(await importOriginal()),
+    KMSClient: vi.fn(function () {
+        return {
+            send: vi.fn().mockResolvedValue({
+                Plaintext: "decryptedContentEncKey",
+            }),
+        };
+    }),
     EncryptionAlgorithmSpec: {
         RSAES_OAEP_SHA_256: "RSAES_OAEP_SHA_256",
     },
 }));
 
-jest.mock("jose", () => ({
+vi.mock("jose", () => ({
     base64url: {
-        decode: jest.fn().mockReturnValue(new Uint8Array([1, 2, 3, 4])),
+        decode: vi.fn().mockReturnValue(new Uint8Array([1, 2, 3, 4])),
     },
 }));
 
@@ -51,7 +55,7 @@ const decodedIv = new Uint8Array([1, 2, 3, 4]);
 describe("JweDecrypter", () => {
     let kmsClient: KMSClient;
     let jweDecrypter: JweDecrypter;
-    const getEncryptionKeyId = jest.fn();
+    const getEncryptionKeyId = vi.fn();
     const jweProtectedHeader = {
         alg: "RSA-OAEP",
         enc: "A256GCM",
@@ -62,8 +66,8 @@ describe("JweDecrypter", () => {
     beforeEach(() => {
         kmsClient = new KMSClient({});
         jweDecrypter = new JweDecrypter(kmsClient, getEncryptionKeyId.mockReturnValueOnce("test-key-id"));
-        jest.spyOn(JSON, "parse").mockReturnValueOnce(jweProtectedHeader);
-        jest.clearAllMocks();
+        vi.spyOn(JSON, "parse").mockReturnValueOnce(jweProtectedHeader);
+        vi.clearAllMocks();
     });
 
     it("decrypts JWE", async () => {
@@ -77,11 +81,11 @@ describe("JweDecrypter", () => {
     });
 
     it("throws error when decrypts JWE fails", async () => {
-        (createDecipheriv as jest.Mock).mockReturnValueOnce({
-            setAAD: jest.fn(),
-            update: jest.fn(),
-            final: jest.fn(),
-        });
+        vi.mocked(createDecipheriv).mockReturnValueOnce({
+            setAAD: vi.fn(),
+            update: vi.fn(),
+            final: vi.fn(),
+        } as unknown as Decipher);
 
         await expect(jweDecrypter.decryptJwe(compactJwe)).rejects.toMatchObject({
             statusCode: 403,
@@ -95,7 +99,7 @@ describe("JweDecrypter", () => {
     });
 
     it("should throw an error on KmsClient send operation", async () => {
-        const kmsClientMock = <jest.Mock>kmsClient.send;
+        const kmsClientMock = vi.mocked(kmsClient.send);
         kmsClientMock.mockRejectedValue(new Error("Failed to decrypt with legacy key"));
 
         await expect(jweDecrypter.decryptJwe(compactJwe)).rejects.toThrowError("Failed to decrypt with legacy key");
@@ -111,14 +115,14 @@ describe("JweDecrypter", () => {
                 it("fails to decrypt with any alias initially, then the legacy key was successfully used for decryption", async () => {
                     process.env.ENV_VAR_FEATURE_FLAG_KEY_ROTATION = "true";
                     process.env.ENV_VAR_FEATURE_FLAG_KEY_ROTATION_LEGACY_KEY_FALLBACK = "true";
-                    const kmsClientMock = <jest.Mock>kmsClient.send;
+                    const kmsClientMock = vi.mocked(kmsClient.send);
                     const decodedIv = new Uint8Array([1, 2, 3, 4]);
 
                     kmsClientMock
                         .mockRejectedValueOnce(new Error("active alias failed"))
                         .mockRejectedValueOnce(new Error("inactive alias failed"))
                         .mockRejectedValueOnce(new Error("previous alias failed"))
-                        .mockResolvedValueOnce({ Plaintext: decodedIv });
+                        .mockImplementationOnce(() => ({ Plaintext: decodedIv }));
 
                     const decrypter = new JweDecrypter(kmsClient, getEncryptionKeyId);
                     const result = await decrypter.decryptJwe(compactJwe);
@@ -132,7 +136,7 @@ describe("JweDecrypter", () => {
                     process.env.ENV_VAR_FEATURE_FLAG_KEY_ROTATION = "true";
                     process.env.ENV_VAR_FEATURE_FLAG_KEY_ROTATION_LEGACY_KEY_FALLBACK = "true";
 
-                    const kmsClientMock = <jest.Mock>kmsClient.send;
+                    const kmsClientMock = vi.mocked(kmsClient.send);
 
                     kmsClientMock
                         .mockRejectedValueOnce(new Error("active alias failed"))
@@ -176,7 +180,7 @@ describe("JweDecrypter", () => {
                     process.env.ENV_VAR_FEATURE_FLAG_KEY_ROTATION = "true";
                     process.env.ENV_VAR_FEATURE_FLAG_KEY_ROTATION_LEGACY_KEY_FALLBACK = "false";
 
-                    const kmsClientMock = <jest.Mock>kmsClient.send;
+                    const kmsClientMock = vi.mocked(kmsClient.send);
                     kmsClientMock
                         .mockRejectedValueOnce(new Error("active alias failed"))
                         .mockRejectedValueOnce(new Error("inactive alias failed"))
@@ -198,8 +202,8 @@ describe("JweDecrypter", () => {
             it("decrypts successfully using active alias", async () => {
                 process.env.ENV_VAR_FEATURE_FLAG_KEY_ROTATION = "true";
 
-                const kmsClientMock = <jest.Mock>kmsClient.send;
-                kmsClientMock.mockResolvedValueOnce({ Plaintext: new Uint8Array([1, 2, 3, 4]) });
+                const kmsClientMock = vi.mocked(kmsClient.send);
+                kmsClientMock.mockImplementation(() => ({ Plaintext: new Uint8Array([1, 2, 3, 4]) }));
 
                 const decrypter = new JweDecrypter(kmsClient, getEncryptionKeyId);
                 const result = await decrypter.decryptJwe(compactJwe);
@@ -215,13 +219,13 @@ describe("JweDecrypter", () => {
 
             it("fails to decrypt with the other aliases but succeeds decryption using the previous alias", async () => {
                 process.env.ENV_VAR_FEATURE_FLAG_KEY_ROTATION = "true";
-                const kmsClientMock = <jest.Mock>kmsClient.send;
+                const kmsClientMock = vi.mocked(kmsClient.send);
                 const decodedIv = new Uint8Array([1, 2, 3, 4]);
 
                 kmsClientMock
                     .mockRejectedValueOnce(new Error("active alias failed"))
                     .mockRejectedValueOnce(new Error("inactive alias failed"))
-                    .mockResolvedValueOnce({ Plaintext: decodedIv });
+                    .mockImplementationOnce(() => ({ Plaintext: decodedIv }));
 
                 const decrypter = new JweDecrypter(kmsClient, getEncryptionKeyId);
                 const result = await decrypter.decryptJwe(compactJwe);
@@ -243,8 +247,8 @@ describe("JweDecrypter", () => {
             it("decrypts using legacy Kms key Id", async () => {
                 process.env.ENV_VAR_FEATURE_FLAG_KEY_ROTATION = "false";
 
-                const kmsClientMock = <jest.Mock>kmsClient.send;
-                kmsClientMock.mockResolvedValueOnce({ Plaintext: new Uint8Array([1, 2, 3, 4]) });
+                const kmsClientMock = vi.mocked(kmsClient.send);
+                kmsClientMock.mockImplementation(() => ({ Plaintext: new Uint8Array([1, 2, 3, 4]) }));
 
                 const decrypter = new JweDecrypter(kmsClient, getEncryptionKeyId);
                 const result = await decrypter.decryptJwe(compactJwe);
@@ -256,7 +260,7 @@ describe("JweDecrypter", () => {
             });
             it("throws an error if legacy Key fails using Kms Id", async () => {
                 process.env.ENV_VAR_FEATURE_FLAG_KEY_ROTATION = "false";
-                const kmsClientMock = <jest.Mock>kmsClient.send;
+                const kmsClientMock = vi.mocked(kmsClient.send);
                 kmsClientMock.mockRejectedValueOnce(new Error("KMS decryption failed"));
 
                 const decrypter = new JweDecrypter(kmsClient, getEncryptionKeyId);
@@ -275,8 +279,8 @@ describe("JweDecrypter", () => {
             it("decrypts successfully using active alias", async () => {
                 process.env.ENV_VAR_FEATURE_FLAG_KEY_ROTATION = "true";
 
-                const kmsClientMock = <jest.Mock>kmsClient.send;
-                kmsClientMock.mockResolvedValueOnce({ Plaintext: new Uint8Array([1, 2, 3, 4]) });
+                const kmsClientMock = vi.mocked(kmsClient.send);
+                kmsClientMock.mockImplementation(() => ({ Plaintext: new Uint8Array([1, 2, 3, 4]) }));
 
                 const decrypter = new JweDecrypter(kmsClient, getEncryptionKeyId);
                 const result = await decrypter.decryptJwe(compactJwe);
@@ -297,7 +301,7 @@ describe("JweDecrypter", () => {
             });
             it("decrypts fails using legacy Kms key Id", async () => {
                 process.env.ENV_VAR_FEATURE_FLAG_KEY_ROTATION = "false";
-                const kmsClientMock = <jest.Mock>kmsClient.send;
+                const kmsClientMock = vi.mocked(kmsClient.send);
                 kmsClientMock.mockRejectedValueOnce(new Error("KMS decryption failed"));
 
                 const decrypter = new JweDecrypter(kmsClient, getEncryptionKeyId);

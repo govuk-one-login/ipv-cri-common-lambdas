@@ -2,6 +2,8 @@
 
 This repository is the home for a shared stack containing resources that handle the OAuth relationship with IPV Core.
 
+Below is detailed documentation for working with OAuth Common, but further information can also be found [in Confluence](https://govukverify.atlassian.net/wiki/spaces/OJ/pages/6428000475/).
+
 ## Stack Parameters
 
 > **Note:** All example values are taken from the `ipv-cri-check-hmrc-api` dev environment.

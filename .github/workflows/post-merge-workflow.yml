@@ -14,6 +14,8 @@ jobs:
     name: Delete preview stack
     runs-on: ubuntu-latest
     environment: integration-tests
+    concurrency: deploy-development-${{ github.head_ref || github.ref_name }}
+
     steps:
       - name: Get stack name
         uses: govuk-one-login/github-actions/beautify-branch-name@ca188729ecb0c92e5fe5ae7c024f9894815da3a1
