@@ -13,7 +13,9 @@ describe("generatePrivateJwtParams", () => {
     const jwtHeader = { alg: "ES256", typ: "JWT" };
 
     beforeAll(async () => {
-        const { privateKey } = await generateKeyPair("ES256");
+        const { privateKey } = await generateKeyPair("ES256", {
+            extractable: true,
+        });
         privateJwtKey = await exportJWK(privateKey);
     });
 
