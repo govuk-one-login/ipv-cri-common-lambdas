@@ -1,5 +1,4 @@
-import { createLocalJWKSet, JWTPayload, jwtVerify } from "jose";
-import { JWTVerifyOptions } from "jose/dist/types/jwt/verify";
+import { createLocalJWKSet, JWTPayload, jwtVerify, JWTVerifyOptions } from "jose";
 import { Logger } from "@aws-lambda-powertools/logger";
 import { JwtVerificationConfig } from "../../types/jwt-verification-config";
 import { JWKCacheCollection, JWKS } from "../../types/jwks";

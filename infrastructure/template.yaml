@@ -23,6 +23,11 @@ Parameters:
     Description: The stack containing the TXMA infrastructure
     Default: "txma-infrastructure"
 
+  BuildNotificationStackName:
+    Description: The topic to publish notification and sns alerts
+    Type: String
+    Default: "build-notifications"
+
   CSLSDestinationArn:
     Type: String
     Description: ARN of the CSLSEGRESS destination
@@ -360,9 +365,9 @@ Resources:
       AlarmDescription: !Sub "Trigger an alarm when lambda errors occurs"
       ActionsEnabled: true
       AlarmActions:
-        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
+        - Fn::ImportValue: !Sub "${BuildNotificationStackName}-WarningAlertsTopicArn"
       OKActions:
-        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
+        - Fn::ImportValue: !Sub "${BuildNotificationStackName}-WarningAlertsTopicArn"
       InsufficientDataActions: []
       MetricName: Errors
       Namespace: AWS/Lambda
@@ -384,9 +389,9 @@ Resources:
     Properties:
       ActionsEnabled: true
       AlarmActions:
-        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
+        - Fn::ImportValue: !Sub "${BuildNotificationStackName}-WarningAlertsTopicArn"
       OKActions:
-        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
+        - Fn::ImportValue: !Sub "${BuildNotificationStackName}-WarningAlertsTopicArn"
       AlarmName: !Sub "${AWS::StackName}-SessionFunctionCanary5xxErrors"
       AlarmDescription: !Sub "SessionFunction Lambda returning 5xx response."
       Namespace: AWS/ApiGateway
@@ -508,9 +513,9 @@ Resources:
       AlarmDescription: !Sub "Trigger an alarm when lambda errors occurs"
       ActionsEnabled: true
       AlarmActions:
-        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
+        - Fn::ImportValue: !Sub "${BuildNotificationStackName}-WarningAlertsTopicArn"
       OKActions:
-        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
+        - Fn::ImportValue: !Sub "${BuildNotificationStackName}-WarningAlertsTopicArn"
       InsufficientDataActions: []
       MetricName: Errors
       Namespace: AWS/Lambda
@@ -532,9 +537,9 @@ Resources:
     Properties:
       ActionsEnabled: true
       AlarmActions:
-        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
+        - Fn::ImportValue: !Sub "${BuildNotificationStackName}-WarningAlertsTopicArn"
       OKActions:
-        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
+        - Fn::ImportValue: !Sub "${BuildNotificationStackName}-WarningAlertsTopicArn"
       AlarmName: !Sub "${AWS::StackName}-AuthorizationFunctionCanary5xxErrors"
       AlarmDescription: !Sub "AuthorizationFunction Lambda returning 5xx response."
       Namespace: AWS/ApiGateway
@@ -660,9 +665,9 @@ Resources:
       AlarmDescription: !Sub "Trigger an alarm when lambda errors occurs"
       ActionsEnabled: true
       AlarmActions:
-        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
+        - Fn::ImportValue: !Sub "${BuildNotificationStackName}-WarningAlertsTopicArn"
       OKActions:
-        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
+        - Fn::ImportValue: !Sub "${BuildNotificationStackName}-WarningAlertsTopicArn"
       InsufficientDataActions: []
       MetricName: Errors
       Namespace: AWS/Lambda
@@ -684,9 +689,9 @@ Resources:
     Properties:
       ActionsEnabled: true
       AlarmActions:
-        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
+        - Fn::ImportValue: !Sub "${BuildNotificationStackName}-WarningAlertsTopicArn"
       OKActions:
-        - !Sub arn:aws:sns:eu-west-2:${AWS::AccountId}:platform-alarm-topic-warning-alert
+        - Fn::ImportValue: !Sub "${BuildNotificationStackName}-WarningAlertsTopicArn"
       AlarmName: !Sub "${AWS::StackName}-AccessTokenFunctionCanary5xxErrors"
       AlarmDescription: !Sub "AccessTokenFunction Lambda returning 5xx response."
       Namespace: AWS/ApiGateway
