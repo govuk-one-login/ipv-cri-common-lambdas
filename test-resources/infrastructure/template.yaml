@@ -63,6 +63,12 @@ Mappings:
       staging: true
       integration: true
       production: true
+    di-ipv-cri-ob-api:
+      dev: true
+      build: true
+      staging: true
+      integration: true
+      production: true
 
   TestHarnessUrl:
     di-ipv-cri-check-hmrc-api:
@@ -83,6 +89,11 @@ Mappings:
       build: review-k.build.account.gov.uk
       staging: review-k.staging.account.gov.uk
       integration: review-k.integration.account.gov.uk
+    di-ipv-cri-ob-api:
+      dev: review-ob.dev.account.gov.uk
+      build: review-ob.build.account.gov.uk
+      staging: review-ob.staging.account.gov.uk
+      integration: review-ob.integration.account.gov.uk
 
   CriVpcMapping:
     di-ipv-cri-check-hmrc-api:
@@ -91,6 +102,8 @@ Mappings:
       pipeline: "di-ipv-cri-pipeline-deployment"
     di-ipv-cri-kbv-api:
       pipeline: "di-ipv-cri-pipeline-deployment"
+    di-ipv-cri-ob-api:
+      pipeline: "di-devplatform-deploy"
 
   AuditEventRelayAccounts:
     "486210938254":  # di-ipv-cri-common-dev
