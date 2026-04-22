@@ -1,7 +1,6 @@
 import middy from "@middy/core";
 import { afterEach, beforeEach, describe, expect, it, vi, type MockedObject, type MockInstance } from "vitest";
 
-import { Metrics, MetricUnit } from "@aws-lambda-powertools/metrics";
 import { APIGatewayProxyEvent, Context } from "aws-lambda";
 import { AccessTokenLambda } from "../../../src/handlers/access-token-handler";
 import { SessionService } from "../../../src/services/session-service";
@@ -23,10 +22,18 @@ import setGovUkSigningJourneyIdMiddleware from "../../../src/middlewares/session
 import { CommonConfigKey } from "../../../src/types/config-keys";
 import setRequestedVerificationScoreMiddleware from "../../../src/middlewares/session/set-requested-verification-score-middleware";
 import { SSMProvider } from "@aws-lambda-powertools/parameters/ssm";
+import { captureMetric } from "@govuk-one-login/cri-metrics";
 
 vi.mock("../../../src/common/config/config-service");
 vi.mock("../../../src/common/security/jwt-verifier");
-vi.mock("@aws-lambda-powertools/metrics");
+vi.mock("@govuk-one-login/cri-metrics", () => ({
+    metrics: {
+        addDimension: vi.fn(),
+        publishStoredMetrics: vi.fn(),
+        logMetrics: vi.fn(),
+    },
+    captureMetric: vi.fn(),
+}));
 vi.mock("@govuk-one-login/cri-logger", () => ({
     logger: {
         info: vi.fn(),
@@ -41,7 +48,6 @@ vi.mock("@govuk-one-login/cri-logger", () => ({
 }));
 
 describe("access-token-handler.ts", () => {
-    let metrics: Metrics;
     let configService: ConfigService;
     let sessionService: SessionService;
     let accessTokenLambda: AccessTokenLambda;
@@ -49,6 +55,7 @@ describe("access-token-handler.ts", () => {
     let mockDynamoDbClient: MockedObject<typeof DynamoDBDocument>;
     let mockJwtVerifierFactory: MockedObject<typeof JwtVerifierFactory>;
     let accessTokenRequestValidator: AccessTokenRequestValidator;
+    const metricsSpy = vi.mocked(captureMetric);
 
     afterEach(() => vi.resetAllMocks());
 
@@ -59,7 +66,6 @@ describe("access-token-handler.ts", () => {
         mockDynamoDbClient.prototype.query = impl();
         mockJwtVerifierFactory = vi.mocked(JwtVerifierFactory);
 
-        metrics = new Metrics();
         configService = new ConfigService(vi.fn() as unknown as SSMProvider);
         sessionService = new SessionService(mockDynamoDbClient.prototype, configService);
         accessTokenRequestValidator = new AccessTokenRequestValidator(mockJwtVerifierFactory.prototype);
@@ -74,7 +80,7 @@ describe("access-token-handler.ts", () => {
 
         lambdaHandler = middy(accessTokenLambda.handler.bind(accessTokenLambda))
             .use(
-                errorMiddleware(logger, metrics, {
+                errorMiddleware(logger, {
                     metric_name: "accesstoken",
                     message: "Access Token Lambda error occurred",
                 }),
@@ -104,8 +110,6 @@ describe("access-token-handler.ts", () => {
             jwksEndpoint: "",
         };
         let jwtVerifier: JwtVerifier;
-        let mockMetrics: MockedObject<typeof Metrics>;
-        let metricsSpy: MockInstance;
         let mockConfigService: MockedObject<typeof ConfigService>;
 
         const redirectUri = "http://123.abc.com";
@@ -120,9 +124,6 @@ describe("access-token-handler.ts", () => {
             const expiry = Math.floor((twentyFourthOfFeb2023InMs + sevenDaysInMilliseconds) / 1000);
 
             beforeEach(() => {
-                mockMetrics = vi.mocked(Metrics);
-                metricsSpy = vi.spyOn(mockMetrics.prototype, "addMetric");
-
                 jwtVerifier = new JwtVerifier(jwtVerificationConfig, logger);
                 mockConfigService = vi.mocked(ConfigService);
 
@@ -165,7 +166,7 @@ describe("access-token-handler.ts", () => {
                 );
 
                 expect(response.statusCode).toBe(200);
-                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnit.Count, 1);
+                expect(metricsSpy).toHaveBeenCalledWith("accesstoken");
             });
 
             it("should return http 200 if the authorizationCodeExpiryDate is within date", async () => {
@@ -204,7 +205,7 @@ describe("access-token-handler.ts", () => {
                 );
 
                 expect(response.statusCode).toBe(200);
-                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnit.Count, 1);
+                expect(metricsSpy).toHaveBeenCalledWith("accesstoken");
             });
         });
 
@@ -213,11 +214,9 @@ describe("access-token-handler.ts", () => {
 
             afterEach(() => vi.resetAllMocks());
             beforeEach(() => {
-                mockMetrics = vi.mocked(Metrics);
                 mockConfigService = vi.mocked(ConfigService);
                 jwtVerifier = new JwtVerifier(jwtVerificationConfig, logger);
 
-                metricsSpy = vi.spyOn(mockMetrics.prototype, "addMetric");
                 loggerSpy = vi.spyOn(logger, "error");
 
                 vi.spyOn(mockConfigService.prototype, "getClientConfig").mockReturnValueOnce(clientConfig);
@@ -240,7 +239,7 @@ describe("access-token-handler.ts", () => {
                     "Access Token Lambda error occurred: Invalid request: missing body",
                     expect.objectContaining({ message: "Invalid request: missing body" }),
                 );
-                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnit.Count, 0);
+                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", 0);
             });
 
             it("should fail when request payload is not valid", async () => {
@@ -256,7 +255,7 @@ describe("access-token-handler.ts", () => {
                     "Access Token Lambda error occurred: Invalid request: Missing redirectUri parameter",
                     expect.objectContaining({ message: "Invalid request: Missing redirectUri parameter" }),
                 );
-                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnit.Count, 0);
+                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", 0);
             });
 
             it("should fail when session is not found", async () => {
@@ -285,7 +284,7 @@ describe("access-token-handler.ts", () => {
                     "Access Token Lambda error occurred: 1026: Access token expired",
                     expect.objectContaining({ message: "Access token expired" }),
                 );
-                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnit.Count, 0);
+                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", 0);
             });
 
             it("should fail when authorization code is not found", async () => {
@@ -320,7 +319,7 @@ describe("access-token-handler.ts", () => {
                     "Access Token Lambda error occurred: 1026: Access token expired",
                     expect.objectContaining({ message: "Access token expired" }),
                 );
-                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnit.Count, 0);
+                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", 0);
             });
 
             it("should fail when redirect URIs do not match", async () => {
@@ -359,7 +358,7 @@ describe("access-token-handler.ts", () => {
                 const body = JSON.parse(output.body);
                 expect(output.statusCode).toBe(400);
                 expect(body.message).toContain(`redirect uri ${badUrl} does not match`);
-                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnit.Count, 0);
+                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", 0);
             });
 
             it("should error when jwt verify fails", async () => {
@@ -407,8 +406,8 @@ describe("access-token-handler.ts", () => {
                     "Access Token Lambda error occurred: JWT signature verification failed",
                     expect.objectContaining({ message: "JWT signature verification failed" }),
                 );
-                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnit.Count, 0);
-                expect(metricsSpy).toHaveBeenCalledWith("jwt_verification_failed", MetricUnit.Count, 1);
+                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", 0);
+                expect(metricsSpy).toHaveBeenCalledWith("jwt_verification_failed");
             });
 
             it("should return http 403 when the session item is invalid", async () => {
@@ -439,7 +438,7 @@ describe("access-token-handler.ts", () => {
 
                 expect(response.statusCode).toBe(403);
                 expect(response.body).toContain("Access token expired");
-                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnit.Count, 0);
+                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", 0);
             });
 
             it("should return http 403 if the authorizationCodeExpiryDate has expired", async () => {
@@ -484,7 +483,7 @@ describe("access-token-handler.ts", () => {
 
                 expect(output.statusCode).toBe(403);
                 expect(output.body).toContain("Authorization code expired");
-                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnit.Count, 0);
+                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", 0);
             });
 
             it("should return http 403 if the session has expired", async () => {
@@ -525,7 +524,7 @@ describe("access-token-handler.ts", () => {
 
                 expect(output.statusCode).toBe(403);
                 expect(output.body).toContain("Session expired");
-                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnit.Count, 0);
+                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", 0);
             });
 
             it("should return http 403 when there is more than 1 session item", async () => {
@@ -557,7 +556,7 @@ describe("access-token-handler.ts", () => {
 
                 expect(output.statusCode).toBe(403);
                 expect(output.body).toContain("Access token expired");
-                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnit.Count, 0);
+                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", 0);
             });
 
             it("should fail when dynamoDb is not available", async () => {
@@ -580,7 +579,7 @@ describe("access-token-handler.ts", () => {
                     "Access Token Lambda error occurred: Server error",
                     new ServerError(),
                 );
-                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", MetricUnit.Count, 0);
+                expect(metricsSpy).toHaveBeenCalledWith("accesstoken", 0);
             });
         });
     });

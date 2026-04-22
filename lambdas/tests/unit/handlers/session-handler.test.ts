@@ -2,7 +2,6 @@ import middy from "@middy/core";
 import { beforeEach, describe, expect, it, vi, type MockInstance, type MockedObject } from "vitest";
 
 import { Logger } from "@aws-lambda-powertools/logger";
-import { Metrics, MetricUnit } from "@aws-lambda-powertools/metrics";
 import { APIGatewayProxyEvent, APIGatewayProxyEventHeaders, Context } from "aws-lambda";
 import { ClientConfigKey, CommonConfigKey } from "../../../src/types/config-keys";
 import { ConfigService } from "../../../src/common/config/config-service";
@@ -28,12 +27,32 @@ import { injectLambdaContext } from "@aws-lambda-powertools/logger/middleware";
 import { buildAndSendAuditEvent } from "@govuk-one-login/cri-audit";
 import { CriAuditConfig } from "../../../src/types/cri-audit-config";
 import { SessionItem, UnixMillisecondsTimestamp, UnixSecondsTimestamp } from "@govuk-one-login/cri-types";
+import { captureMetric, metrics } from "@govuk-one-login/cri-metrics";
 
 vi.mock("@aws-sdk/lib-dynamodb");
 vi.mock("@aws-sdk/client-ssm");
 vi.mock("@aws-sdk/client-sqs");
 vi.mock("@aws-sdk/client-kms");
-vi.mock("@aws-lambda-powertools/metrics");
+vi.mock("@govuk-one-login/cri-metrics", () => ({
+    metrics: {
+        addDimension: vi.fn(),
+        publishStoredMetrics: vi.fn(),
+        logMetrics: vi.fn(),
+    },
+    captureMetric: vi.fn(),
+}));
+vi.mock("@govuk-one-login/cri-logger", () => ({
+    logger: {
+        info: vi.fn(),
+        error: vi.fn(),
+        clearBuffer: vi.fn(),
+        resetKeys: vi.fn(),
+        refreshSampleRateCalculation: vi.fn(),
+        addContext: vi.fn(),
+        logEventIfEnabled: vi.fn(),
+        appendKeys: vi.fn(),
+    },
+}));
 vi.mock("@aws-lambda-powertools/logger");
 vi.mock("../../../src/common/config/config-service");
 vi.mock("../../../src/services/session-request-validator");
@@ -46,13 +65,13 @@ describe("SessionLambda", () => {
     let lambdaHandler: middy.MiddyfiedHandler;
     let errorSpy: MockInstance;
     let logger: MockedObject<typeof Logger>;
-    let metrics: MockedObject<typeof Metrics>;
     let personIdentityService: MockedObject<typeof PersonIdentityService>;
     let jweDecrypter: MockedObject<typeof JweDecrypter>;
     let configService: MockedObject<typeof ConfigService>;
     let sessionService: MockedObject<typeof SessionService>;
     let sessionRequestValidator: MockedObject<typeof SessionRequestValidator>;
     let sessionRequestValidatorFactory: MockedObject<typeof SessionRequestValidatorFactory>;
+    const metricsSpy = vi.mocked(captureMetric);
 
     const mockAuditConfig: CriAuditConfig = {
         queueUrl: "cool-queuez.com",
@@ -140,7 +159,6 @@ describe("SessionLambda", () => {
         mockMap.set("test-client-id", "test-config-value");
 
         logger = vi.mocked(Logger);
-        metrics = vi.mocked(Metrics);
         personIdentityService = vi.mocked(PersonIdentityService);
         jweDecrypter = vi.mocked(JweDecrypter);
         configService = vi.mocked(ConfigService);
@@ -155,7 +173,7 @@ describe("SessionLambda", () => {
 
         lambdaHandler = middy(sessionLambda.handler.bind(sessionLambda))
             .use(
-                errorMiddleware(logger.prototype, metrics.prototype, {
+                errorMiddleware(logger.prototype, {
                     metric_name: SESSION_CREATED_METRIC,
                     message: "Session Lambda error occurred",
                 }),
@@ -227,7 +245,6 @@ describe("SessionLambda", () => {
     });
 
     it("should error on JWE decryption fail", async () => {
-        const metricSpy = vi.spyOn(metrics.prototype, "addMetric");
         vi.spyOn(jweDecrypter.prototype, "decryptJwe").mockRejectedValueOnce(
             new SessionValidationError(
                 "Session Validation Exception",
@@ -243,7 +260,7 @@ describe("SessionLambda", () => {
             "Session Lambda error occurred: 1019: Session Validation Exception - Invalid request: JWT validation/verification failed: failure",
             expect.any(SessionValidationError),
         );
-        expect(metricSpy).toHaveBeenCalledWith("jwt_verification_failed", MetricUnit.Count, 1);
+        expect(metricsSpy).toHaveBeenCalledWith("jwt_verification_failed");
     });
 
     it("should initialise the client config if unavailable", async () => {
@@ -278,7 +295,6 @@ describe("SessionLambda", () => {
     });
 
     it("should error on JWT validation fail", async () => {
-        const metricSpy = vi.spyOn(metrics.prototype, "addMetric");
         vi.spyOn(sessionRequestValidator.prototype, "validateJwt").mockRejectedValueOnce(
             new SessionValidationError(
                 "Session Validation Exception",
@@ -289,12 +305,11 @@ describe("SessionLambda", () => {
         const result = await lambdaHandler(mockEvent, {} as Context);
         expect(result.statusCode).toBe(400);
         expect(result.body).toContain("1019: Session Validation Exception");
-        expect(metricSpy).toHaveBeenCalledWith("jwt_verification_failed", MetricUnit.Count, 1);
-        expect(metricSpy).not.toHaveBeenCalledWith("jwt_expired", MetricUnit.Count, 1);
+        expect(metricsSpy).toHaveBeenCalledWith("jwt_verification_failed");
+        expect(metricsSpy).not.toHaveBeenCalledWith("jwt_expired");
     });
 
     it("should error on JWT validation fail and send expired metirc", async () => {
-        const metricSpy = vi.spyOn(metrics.prototype, "addMetric");
         vi.spyOn(sessionRequestValidator.prototype, "validateJwt").mockRejectedValueOnce(
             new SessionValidationError(
                 "Session Validation Exception",
@@ -305,8 +320,8 @@ describe("SessionLambda", () => {
         const result = await lambdaHandler(mockEvent, {} as Context);
         expect(result.statusCode).toBe(400);
         expect(result.body).toContain("1019: Session Validation Exception");
-        expect(metricSpy).toHaveBeenCalledWith("jwt_expired", MetricUnit.Count, 1);
-        expect(metricSpy).not.toHaveBeenCalledWith("jwt_verification_failed", MetricUnit.Count, 1);
+        expect(metricsSpy).toHaveBeenCalledWith("jwt_expired");
+        expect(metricsSpy).not.toHaveBeenCalledWith("jwt_verification_failed");
     });
 
     it("should save the session details", async () => {
@@ -433,11 +448,10 @@ describe("SessionLambda", () => {
     });
 
     it("should successfully register the metrics", async () => {
-        const dimensionSpy = vi.spyOn(metrics.prototype, "addDimension");
-        const metricSpy = vi.spyOn(metrics.prototype, "addMetric");
+        const dimensionSpy = vi.mocked(metrics.addDimension);
         await lambdaHandler(mockEvent, {} as Context);
         expect(dimensionSpy).toHaveBeenCalledWith("issuer", "test-client-id");
-        expect(metricSpy).toHaveBeenCalledWith("session_created", MetricUnit.Count, 1);
+        expect(metricsSpy).toHaveBeenCalledWith("session_created");
     });
 
     it("should successfully start the session", async () => {
@@ -469,7 +483,7 @@ describe("SessionLambda", () => {
 
             lambdaHandler = middy(sessionLambda.handler.bind(sessionLambda))
                 .use(
-                    errorMiddleware(logger.prototype, metrics.prototype, {
+                    errorMiddleware(logger.prototype, {
                         metric_name: SESSION_CREATED_METRIC,
                         message: "Session Lambda error occurred",
                     }),
@@ -643,7 +657,7 @@ describe("SessionLambda", () => {
 
             lambdaHandler = middy(sessionLambda.handler.bind(sessionLambda))
                 .use(
-                    errorMiddleware(logger.prototype, metrics.prototype, {
+                    errorMiddleware(logger.prototype, {
                         metric_name: SESSION_CREATED_METRIC,
                         message: "Session Lambda error occurred",
                     }),
@@ -756,7 +770,6 @@ describe("SessionLambda", () => {
     });
 
     it("should return a 500 error from the handlers catch block", async () => {
-        const metricSpy = vi.spyOn(metrics.prototype, "addMetric");
         const spy = vi.spyOn(sessionService.prototype, "saveSession");
         spy.mockRejectedValue(new Error("Error"));
 
@@ -765,6 +778,6 @@ describe("SessionLambda", () => {
         expect(result.statusCode).toBe(500);
         expect(result.body).toBe('{"message":"Server Error"}');
 
-        expect(metricSpy).toHaveBeenCalledWith("session_created", MetricUnit.Count, 0);
+        expect(metricsSpy).toHaveBeenCalledWith("session_created", 0);
     });
 });

@@ -13,8 +13,6 @@ import { AwsClientType, createClient } from "../common/aws-client-factory";
 import setGovUkSigningJourneyIdMiddleware from "../middlewares/session/set-gov-uk-signing-journey-id-middleware";
 import { LambdaInterface } from "@aws-lambda-powertools/commons/types";
 import getSessionByAuthCodeMiddleware from "../middlewares/session/get-session-by-auth-code-middleware";
-import { metrics } from "../common/utils/power-tool";
-import { MetricUnit } from "@aws-lambda-powertools/metrics";
 import { injectLambdaContext } from "@aws-lambda-powertools/logger/middleware";
 import { RequestPayload } from "../types/request_payload";
 import getSessionByIdMiddleware from "../middlewares/session/get-session-by-id-middleware";
@@ -25,6 +23,7 @@ import setRequestedVerificationScoreMiddleware from "../middlewares/session/set-
 import { SSMProvider } from "@aws-lambda-powertools/parameters/ssm";
 import { initOpenTelemetry } from "../common/utils/otel-setup";
 import { logger } from "@govuk-one-login/cri-logger";
+import { captureMetric, metrics } from "@govuk-one-login/cri-metrics";
 
 initOpenTelemetry();
 
@@ -87,7 +86,7 @@ export class AccessTokenLambda implements LambdaInterface {
             await this.sessionService.createAccessTokenCodeAndRemoveAuthCode(sessionItem, accessTokenResponse);
 
             logger.info("Access token created");
-            metrics.addMetric(ACCESS_TOKEN, MetricUnit.Count, 1);
+            captureMetric(ACCESS_TOKEN);
 
             return {
                 statusCode: 200,
@@ -95,9 +94,9 @@ export class AccessTokenLambda implements LambdaInterface {
             };
         } catch (err: unknown) {
             if (err instanceof InvalidRequestError && err.message === JWT_VERIFICATION_FAILED_ERR_MSG) {
-                metrics.addMetric(JWT_VERIFICATION_FAILED_METRIC, MetricUnit.Count, 1);
+                captureMetric(JWT_VERIFICATION_FAILED_METRIC);
             }
-            metrics.addMetric(ACCESS_TOKEN, MetricUnit.Count, 0);
+            captureMetric(ACCESS_TOKEN, 0);
             return errorPayload(err as Error, logger, "Access Token Lambda error occurred");
         }
     }
@@ -105,7 +104,7 @@ export class AccessTokenLambda implements LambdaInterface {
 
 const handlerClass = new AccessTokenLambda();
 export const lambdaHandler = middy(handlerClass.handler.bind(handlerClass))
-    .use(errorMiddleware(logger, metrics, { metric_name: ACCESS_TOKEN, message: "Access Token Lambda error occurred" }))
+    .use(errorMiddleware(logger, { metric_name: ACCESS_TOKEN, message: "Access Token Lambda error occurred" }))
     .use(injectLambdaContext(logger, { clearState: true }))
     .use(
         initialiseConfigMiddleware({

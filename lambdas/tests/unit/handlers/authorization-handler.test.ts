@@ -13,7 +13,6 @@ import {
     APIGatewayProxyEventHeaders,
     APIGatewayProxyEventQueryStringParameters,
 } from "aws-lambda/trigger/api-gateway-proxy";
-import { Metrics } from "@aws-lambda-powertools/metrics";
 import {
     InvalidRequestError,
     ServerError,
@@ -31,9 +30,17 @@ import initialiseClientConfigMiddleware from "../../../src/middlewares/config/in
 import setRequestedVerificationScoreMiddleware from "../../../src/middlewares/session/set-requested-verification-score-middleware";
 import { SSMProvider } from "@aws-lambda-powertools/parameters/ssm";
 import { logger } from "@govuk-one-login/cri-logger";
+import { captureMetric } from "@govuk-one-login/cri-metrics";
 
 vi.mock("../../../src/common/config/config-service");
-vi.mock("@aws-lambda-powertools/metrics");
+vi.mock("@govuk-one-login/cri-metrics", () => ({
+    metrics: {
+        addDimension: vi.fn(),
+        publishStoredMetrics: vi.fn(),
+        logMetrics: vi.fn(),
+    },
+    captureMetric: vi.fn(),
+}));
 vi.mock("@govuk-one-login/cri-logger", () => ({
     logger: {
         info: vi.fn(),
@@ -51,6 +58,7 @@ const AUTHORIZATION_SENT_METRIC = "authorization_sent";
 
 describe("authorization-handler.ts", () => {
     const mockDynamoDbClient = vi.mocked(DynamoDBDocument);
+    const metricsSpy = vi.mocked(captureMetric);
 
     beforeEach(() => {
         vi.resetAllMocks();
@@ -68,7 +76,6 @@ describe("authorization-handler.ts", () => {
         const sessionService = new SessionService(mockDynamoDbClient.prototype, configService);
         const authorizationRequestValidator = new AuthorizationRequestValidator();
         const mockConfigService = vi.mocked(ConfigService);
-        const metrics = vi.mocked(Metrics);
 
         beforeEach(() => {
             body = {
@@ -86,7 +93,7 @@ describe("authorization-handler.ts", () => {
             authorizationHandlerLambda = new AuthorizationLambda(authorizationRequestValidator);
             lambdaHandler = middy(authorizationHandlerLambda.handler.bind(authorizationHandlerLambda))
                 .use(
-                    errorMiddleware(logger, metrics.prototype, {
+                    errorMiddleware(logger, {
                         metric_name: AUTHORIZATION_SENT_METRIC,
                         message: "Authorization Lambda error occurred",
                     }),
@@ -135,7 +142,6 @@ describe("authorization-handler.ts", () => {
                 } as APIGatewayProxyEventQueryStringParameters;
             });
             it("should pass with 200 status code and return non empty body", async () => {
-                const metricsSpyAddMetrics = vi.spyOn(metrics.prototype, "addMetric");
                 const loggerSpyAppendkeys = vi.spyOn(logger, "appendKeys");
                 const loggerSpyInfo = vi.spyOn(logger, "info");
 
@@ -152,11 +158,10 @@ describe("authorization-handler.ts", () => {
                 expect(output.body).not.toBeNull();
                 expect(loggerSpyInfo).toHaveBeenCalledWith("Session found");
                 expect(loggerSpyAppendkeys).toHaveBeenCalledWith({ govuk_signin_journey_id: "1" });
-                expect(metricsSpyAddMetrics).toHaveBeenCalledWith("authorization_sent", "Count", 1);
+                expect(metricsSpy).toHaveBeenCalledWith("authorization_sent");
             });
 
             it("should pass with log message and metrics sent", async () => {
-                const metricsSpyAddMetrics = vi.spyOn(metrics.prototype, "addMetric");
                 const loggerSpyAppendkeys = vi.spyOn(logger, "appendKeys");
                 const loggerSpyInfo = vi.spyOn(logger, "info");
 
@@ -171,12 +176,11 @@ describe("authorization-handler.ts", () => {
 
                 expect(loggerSpyInfo).toHaveBeenCalledWith("Session found");
                 expect(loggerSpyAppendkeys).toHaveBeenCalledWith({ govuk_signin_journey_id: "1" });
-                expect(metricsSpyAddMetrics).toHaveBeenCalledWith("authorization_sent", "Count", 1);
+                expect(metricsSpy).toHaveBeenCalledWith("authorization_sent");
             });
         });
 
         describe("authorization request returns access_denied", () => {
-            let metricsSpyAddMetrics: MockInstance;
             let loggerSpyError: MockInstance;
             const sessionItem: Partial<SessionItem> = {
                 sessionId: "abc",
@@ -188,7 +192,6 @@ describe("authorization-handler.ts", () => {
                 authorizationCode: undefined,
             };
             beforeEach(() => {
-                metricsSpyAddMetrics = vi.spyOn(metrics.prototype, "addMetric");
                 loggerSpyError = vi.spyOn(logger, "error");
                 vi.spyOn(sessionService, "getSession").mockReturnValueOnce(Promise.resolve(sessionItem as SessionItem));
             });
@@ -218,16 +221,14 @@ describe("authorization-handler.ts", () => {
                     "Authorization Lambda error occurred: access_denied: Authorization permission denied",
                     expect.any(AccessDeniedError),
                 );
-                expect(metricsSpyAddMetrics).toHaveBeenCalledWith("no_authorization_code", "Count", 1);
-                expect(metricsSpyAddMetrics).toHaveBeenCalledWith("authorization_sent", "Count", 0);
+                expect(metricsSpy).toHaveBeenCalledWith("no_authorization_code");
+                expect(metricsSpy).toHaveBeenCalledWith("authorization_sent", 0);
             });
         });
 
         describe("authorization request has missing attributes", () => {
-            let metricsSpyAddMetrics: MockInstance;
             let loggerSpyError: MockInstance;
             beforeEach(() => {
-                metricsSpyAddMetrics = vi.spyOn(metrics.prototype, "addMetric");
                 loggerSpyError = vi.spyOn(logger, "error");
             });
 
@@ -253,7 +254,7 @@ describe("authorization-handler.ts", () => {
                     "Authorization Lambda error occurred: 1019: Session Validation Exception - Missing response_type parameter",
                     expect.any(SessionValidationError),
                 );
-                expect(metricsSpyAddMetrics).toHaveBeenCalledWith("authorization_sent", "Count", 0);
+                expect(metricsSpy).toHaveBeenCalledWith("authorization_sent", 0);
             });
             it("should fail validation when the redirect_uri is missing from from queryString", async () => {
                 const queryString = {
@@ -277,7 +278,7 @@ describe("authorization-handler.ts", () => {
                     "Authorization Lambda error occurred: 1019: Session Validation Exception - Missing redirect_uri parameter",
                     expect.any(SessionValidationError),
                 );
-                expect(metricsSpyAddMetrics).toHaveBeenCalledWith("authorization_sent", "Count", 0);
+                expect(metricsSpy).toHaveBeenCalledWith("authorization_sent", 0);
             });
             it("should fail validation should fail when the client_id is missing", async () => {
                 const queryString = {
@@ -301,13 +302,12 @@ describe("authorization-handler.ts", () => {
                     "Authorization Lambda error occurred: 1019: Session Validation Exception - Missing client_id parameter",
                     expect.any(SessionValidationError),
                 );
-                expect(metricsSpyAddMetrics).toHaveBeenCalledWith("authorization_sent", "Count", 0);
+                expect(metricsSpy).toHaveBeenCalledWith("authorization_sent", 0);
             });
         });
 
         describe("has session present", () => {
             it("should should fail when there is no session-id in the authorization request header", async () => {
-                const metricsSpyAddMetrics = vi.spyOn(metrics.prototype, "addMetric");
                 const loggerSpyError = vi.spyOn(logger, "error");
                 const output = await lambdaHandler(
                     {
@@ -321,10 +321,9 @@ describe("authorization-handler.ts", () => {
                     "Authorization Lambda error occurred: Invalid request: Missing session-id header",
                     expect.any(InvalidRequestError),
                 );
-                expect(metricsSpyAddMetrics).toHaveBeenCalledWith("authorization_sent", "Count", 0);
+                expect(metricsSpy).toHaveBeenCalledWith("authorization_sent", 0);
             });
             it("should should fail when no existing session is found for the current request", async () => {
-                const metricsSpyAddMetrics = vi.spyOn(metrics.prototype, "addMetric");
                 const loggerSpyError = vi.spyOn(logger, "error");
                 const sessionId = "1";
                 const sessionNotFound = new SessionNotFoundError(sessionId);
@@ -343,11 +342,10 @@ describe("authorization-handler.ts", () => {
                     "Authorization Lambda error occurred: 1029: Could not find session item with id: 1",
                     sessionNotFound,
                 );
-                expect(metricsSpyAddMetrics).toHaveBeenCalledWith("authorization_sent", "Count", 0);
+                expect(metricsSpy).toHaveBeenCalledWith("authorization_sent", 0);
             });
 
             it("should should fail when a server error occurs", async () => {
-                const metricsSpyAddMetrics = vi.spyOn(metrics.prototype, "addMetric");
                 const loggerSpyError = vi.spyOn(logger, "error");
                 const serverError = new ServerError();
                 vi.spyOn(sessionService, "getSession").mockRejectedValueOnce(serverError);
@@ -365,7 +363,7 @@ describe("authorization-handler.ts", () => {
                     "Authorization Lambda error occurred: Server error",
                     serverError,
                 );
-                expect(metricsSpyAddMetrics).toHaveBeenCalledWith("authorization_sent", "Count", 0);
+                expect(metricsSpy).toHaveBeenCalledWith("authorization_sent", 0);
             });
         });
     });

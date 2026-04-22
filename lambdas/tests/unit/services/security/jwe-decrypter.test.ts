@@ -1,16 +1,10 @@
 import { createDecipheriv } from "crypto";
 import { KMSClient } from "@aws-sdk/client-kms";
 import { JweDecrypter } from "../../../../src/services/security/jwe-decrypter";
-import { metrics } from "../../../../src/common/utils/power-tool";
 import { logger } from "@govuk-one-login/cri-logger";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import { Decipher } from "node:crypto";
-
-vi.mock("../../../../src/common/utils/power-tool", () => ({
-    metrics: {
-        addMetric: vi.fn(),
-    },
-}));
+import { captureMetric } from "@govuk-one-login/cri-metrics";
 
 vi.mock("@govuk-one-login/cri-logger", () => ({
     logger: {
@@ -18,6 +12,15 @@ vi.mock("@govuk-one-login/cri-logger", () => ({
         warn: vi.fn(),
         error: vi.fn(),
     },
+}));
+
+vi.mock("@govuk-one-login/cri-metrics", () => ({
+    metrics: {
+        addDimension: vi.fn(),
+        publishStoredMetrics: vi.fn(),
+        logMetrics: vi.fn(),
+    },
+    captureMetric: vi.fn(),
 }));
 
 vi.mock("crypto", () => ({
@@ -148,11 +151,7 @@ describe("JweDecrypter", () => {
 
                     await expect(decrypter.decryptJwe(compactJwe)).rejects.toThrow("Failed to decrypt with legacy key");
 
-                    expect(metrics.addMetric).toHaveBeenCalledWith(
-                        "all_aliases_unavailable_for_decryption",
-                        "Count",
-                        1,
-                    );
+                    expect(captureMetric).toHaveBeenCalledWith("all_aliases_unavailable_for_decryption");
                     expect(logger.warn).toHaveBeenCalledWith({
                         message: "Key rotation enabled",
                         alias: "alias/session_decryption_key_previous_alias",
@@ -168,11 +167,7 @@ describe("JweDecrypter", () => {
                         alias: "alias/session_decryption_key_active_alias",
                         error: new Error("active alias failed"),
                     });
-                    expect(metrics.addMetric).toHaveBeenCalledWith(
-                        "all_aliases_unavailable_for_decryption",
-                        "Count",
-                        1,
-                    );
+                    expect(captureMetric).toHaveBeenCalledWith("all_aliases_unavailable_for_decryption");
                 });
             });
             describe("legacy fallback flag to false", () => {
@@ -192,11 +187,7 @@ describe("JweDecrypter", () => {
                         "Failed to decrypt with all available key aliases.",
                     );
 
-                    expect(metrics.addMetric).toHaveBeenCalledWith(
-                        "all_aliases_unavailable_for_decryption",
-                        "Count",
-                        1,
-                    );
+                    expect(captureMetric).toHaveBeenCalledWith("all_aliases_unavailable_for_decryption");
                 });
             });
             it("decrypts successfully using active alias", async () => {
