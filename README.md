@@ -48,6 +48,7 @@ Below is detailed documentation for working with OAuth Common, but further infor
 | LambdaAccessTokenFunctionName | The name of the access token function |
 | PreMergeDevOnlyApiId | ID of the dev-only OAuth Common API. Only present if `isDev` |
 | VCSigningKeyID | The ID of the KMS key used to sign VCs |
+| StackName | The name of the OAuth common API stack |
 
 ## Hooks
 
