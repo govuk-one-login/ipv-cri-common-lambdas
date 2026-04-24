@@ -2,13 +2,11 @@ import middy from "@middy/core";
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { SessionService } from "../services/session-service";
 import { LambdaInterface } from "@aws-lambda-powertools/commons/types";
-import { MetricUnit } from "@aws-lambda-powertools/metrics";
 import { ConfigService } from "../common/config/config-service";
 import { AuthorizationRequestValidator } from "../services/auth-request-validator";
 import { AwsClientType, createClient } from "../common/aws-client-factory";
 import { ClientConfigKey, CommonConfigKey } from "../types/config-keys";
 import { AccessDeniedError, errorPayload } from "../common/utils/errors";
-import { metrics } from "../common/utils/power-tool";
 import errorMiddleware from "../middlewares/error/error-middleware";
 import initialiseConfigMiddleware from "../middlewares/config/initialise-config-middleware";
 import getSessionByIdMiddleware from "../middlewares/session/get-session-by-id-middleware";
@@ -20,6 +18,7 @@ import setRequestedVerificationScoreMiddleware from "../middlewares/session/set-
 import { SSMProvider } from "@aws-lambda-powertools/parameters/ssm";
 import { initOpenTelemetry } from "../common/utils/otel-setup";
 import { logger } from "@govuk-one-login/cri-logger";
+import { captureMetric, metrics } from "@govuk-one-login/cri-metrics";
 
 initOpenTelemetry();
 
@@ -51,7 +50,7 @@ export class AuthorizationLambda implements LambdaInterface {
 
             if (!sessionItem.authorizationCode) {
                 logger.info("No Auth Code retrieved returning Oauth access_denied");
-                metrics.addMetric(NO_AUTHORIZATION_CODE, MetricUnit.Count, 1);
+                captureMetric(NO_AUTHORIZATION_CODE);
                 throw new AccessDeniedError();
             }
 
@@ -66,14 +65,14 @@ export class AuthorizationLambda implements LambdaInterface {
             };
 
             logger.info("Authorisation response created");
-            metrics.addMetric(AUTHORIZATION_SENT_METRIC, MetricUnit.Count, 1);
+            captureMetric(AUTHORIZATION_SENT_METRIC);
 
             return {
                 statusCode: 200,
                 body: JSON.stringify(authorizationResponse),
             };
         } catch (err: unknown) {
-            metrics.addMetric(AUTHORIZATION_SENT_METRIC, MetricUnit.Count, 0);
+            captureMetric(AUTHORIZATION_SENT_METRIC, 0);
             return errorPayload(err as Error, logger, "Authorization Lambda error occurred");
         }
     }
@@ -82,7 +81,7 @@ const sessionService = new SessionService(dynamoDbClient, configService);
 const handlerClass = new AuthorizationLambda(new AuthorizationRequestValidator());
 export const lambdaHandler = middy(handlerClass.handler.bind(handlerClass))
     .use(
-        errorMiddleware(logger, metrics, {
+        errorMiddleware(logger, {
             metric_name: AUTHORIZATION_SENT_METRIC,
             message: "Authorization Lambda error occurred",
         }),

@@ -2,7 +2,6 @@ import middy from "@middy/core";
 import express, { NextFunction, Request, Response } from "express";
 import { APIGatewayProxyEvent, Context } from "aws-lambda";
 import { Constants } from "../utils/constants";
-import { metrics } from "../../../../../src/common/utils/power-tool";
 import { injectLambdaContext } from "@aws-lambda-powertools/logger/middleware";
 import initialiseClientConfigMiddleware from "../../../../../src/middlewares/config/initialise-client-config-middleware";
 import initialiseConfigMiddleware from "../../../../../src/middlewares/config/initialise-config-middleware";
@@ -53,7 +52,7 @@ class AccessTokenRouter {
     private middyfy(lambda: AccessTokenLambda) {
         return middy(lambda.handler.bind(lambda))
             .use(
-                errorMiddleware(logger, metrics, {
+                errorMiddleware(logger, {
                     metric_name: "accesstoken",
                     message: "Access Token Lambda error occurred",
                 }),
