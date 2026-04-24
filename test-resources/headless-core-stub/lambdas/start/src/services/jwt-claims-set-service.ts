@@ -2,7 +2,7 @@ import { IssuerAuthorizationRequestSchema } from "@govuk-one-login/data-vocab-sc
 import { IssuerAuthorizationRequestClass } from "@govuk-one-login/data-vocab/credentials";
 import Ajv from "ajv";
 import addFormats from "ajv-formats";
-import { v4 as uuidv4 } from "uuid";
+import { randomUUID } from "node:crypto";
 import { ClaimsSetOverrides } from "../types/claims-set-overrides";
 import { JWTClaimsSet } from "../types/jwt-claims-set";
 import { logger } from "../start-handler";
@@ -35,7 +35,7 @@ export const generateJwtClaimsSet = async (overrides: ClaimsSetOverrides, ssmPar
     const now = Date.now();
     return {
         iss: issuer,
-        sub: overrides.sub || "urn:fdc:gov.uk:" + uuidv4(),
+        sub: overrides.sub || "urn:fdc:gov.uk:" + randomUUID(),
         aud: audience,
         iat: overrides.iat || msToSeconds(now),
         exp: overrides.exp || msToSeconds(now + 5 * 60 * 1000),
@@ -44,7 +44,7 @@ export const generateJwtClaimsSet = async (overrides: ClaimsSetOverrides, ssmPar
         client_id: overrides.client_id,
         redirect_uri: redirectUri,
         state,
-        govuk_signin_journey_id: overrides.govuk_signin_journey_id || uuidv4(),
+        govuk_signin_journey_id: overrides.govuk_signin_journey_id || randomUUID(),
         shared_claims: overrides.shared_claims != null ? overrides.shared_claims : defaultClaims,
         ...(overrides.evidence_requested && { evidence_requested: overrides.evidence_requested }),
         ...(overrides.context && { context: overrides.context }),

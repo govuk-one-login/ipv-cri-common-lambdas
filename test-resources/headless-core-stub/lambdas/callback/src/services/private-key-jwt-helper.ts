@@ -1,5 +1,5 @@
 import { JWK, JWTPayload } from "jose";
-import { v4 as uuidv4 } from "uuid";
+import { randomUUID } from "node:crypto";
 import { signJwt } from "../../../../utils/src/crypto/signer";
 import { getHashedKid } from "../../../../utils/src/hashing";
 
@@ -15,7 +15,7 @@ export const generatePrivateJwtParams = async (
         sub: clientId,
         aud: audience,
         exp: msToSeconds(Date.now() + 5 * 60 * 1000),
-        jti: uuidv4(),
+        jti: randomUUID(),
     };
 
     const jwtHeader = {

@@ -1,4 +1,3 @@
-import { validate as isValidUUID } from "uuid";
 import { HeadlessCoreStubError } from "../../../../utils/src/errors/headless-core-stub-error";
 import {
     generateJwtClaimsSet,
@@ -8,6 +7,8 @@ import {
 import { ClaimsSetOverrides } from "../../src/types/claims-set-overrides";
 import { TestData } from "../../../../utils/tests/test-data";
 import { base64Decode } from "../../../../utils/src/base64";
+
+const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 describe("jwt-claims-set-service", () => {
     describe("parseJwtClaimsSetOverrides", () => {
@@ -105,7 +106,7 @@ describe("jwt-claims-set-service", () => {
             const before = Math.round(Date.now() / 1000);
             const jwtClaimsSet = await generateJwtClaimsSet(overrides, ssmParameters);
             const after = Math.round(Date.now() / 1000);
-            expect(isValidUUID(jwtClaimsSet.govuk_signin_journey_id || "")).toBeTruthy();
+            expect(uuidRegex.test(jwtClaimsSet.govuk_signin_journey_id || "")).toBeTruthy();
             expect(JSON.parse(base64Decode(jwtClaimsSet.state))).toEqual({
                 aud: ssmParameters.audience,
                 redirect_uri: ssmParameters.redirectUri,
