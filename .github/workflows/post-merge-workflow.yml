@@ -22,7 +22,7 @@ jobs:
         id: get-stack-name
         with:
           usage: Stack name
-          prefix: preview-common-lambdas
+          prefix: preview-oauth-common
           length-limit: 37
           verbose: false
 

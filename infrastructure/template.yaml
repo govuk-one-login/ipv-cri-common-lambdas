@@ -9,7 +9,7 @@ Metadata:
     SpdxLicenseId: MIT
     LicenseUrl: ../LICENSE
     HomePageUrl: https://github.com/govuk-one-login/ipv-cri-oauth-common
-    SemanticVersion: 0.2.0
+    SemanticVersion: 0.3.0
     SourceCodeUrl: https://github.com/govuk-one-login/ipv-cri-oauth-common
 
 Parameters:
@@ -1727,3 +1727,6 @@ Outputs:
   VCSigningKeyID:
     Description: The ID of the KMS key used to sign VCs
     Value: !GetAtt VerifiableCredentialKmsSigningKeyParameter.Value
+  StackName:
+    Description: The name of the OAuth common API stack
+    Value: !Ref AWS::StackName
