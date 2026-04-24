@@ -1,7 +1,6 @@
 import middy from "@middy/core";
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { LambdaInterface } from "@aws-lambda-powertools/commons/types";
-import { MetricUnit } from "@aws-lambda-powertools/metrics";
 import { ClientConfigKey, CommonConfigKey } from "../types/config-keys";
 import { SessionService } from "../services/session-service";
 import { JweDecrypter } from "../services/security/jwe-decrypter";
@@ -14,7 +13,6 @@ import { JWTPayload } from "jose";
 import { AwsClientType, createClient } from "../common/aws-client-factory";
 import { getClientIpAddress, getEncodedDeviceInformation } from "../common/utils/request-utils";
 import { errorPayload } from "../common/utils/errors";
-import { metrics } from "../common/utils/power-tool";
 import errorMiddleware from "../middlewares/error/error-middleware";
 import { injectLambdaContext } from "@aws-lambda-powertools/logger/middleware";
 import initialiseConfigMiddleware from "../middlewares/config/initialise-config-middleware";
@@ -30,6 +28,7 @@ import { logger } from "@govuk-one-login/cri-logger";
 import { SessionItem } from "@govuk-one-login/cri-types";
 import { CriAuditConfig } from "../types/cri-audit-config";
 import { EvidenceRequest } from "../schemas/evidence-request.schema";
+import { captureMetric, metrics } from "@govuk-one-login/cri-metrics";
 
 initOpenTelemetry();
 
@@ -88,7 +87,7 @@ export class SessionLambda implements LambdaInterface {
             );
 
             metrics.addDimension("issuer", sessionRequestSummary.clientId);
-            metrics.addMetric(SESSION_CREATED_METRIC, MetricUnit.Count, 1);
+            captureMetric(SESSION_CREATED_METRIC);
 
             return {
                 statusCode: 201,
@@ -99,7 +98,7 @@ export class SessionLambda implements LambdaInterface {
                 }),
             };
         } catch (err: unknown) {
-            metrics.addMetric(SESSION_CREATED_METRIC, MetricUnit.Count, 0);
+            captureMetric(SESSION_CREATED_METRIC, 0);
             return errorPayload(err as Error, logger, "Session Lambda error occurred");
         }
     }
@@ -128,7 +127,7 @@ const handlerClass = new SessionLambda(
 );
 export const lambdaHandler = middy(handlerClass.handler.bind(handlerClass))
     .use(
-        errorMiddleware(logger, metrics, {
+        errorMiddleware(logger, {
             metric_name: SESSION_CREATED_METRIC,
             message: "Session Lambda error occurred",
         }),
