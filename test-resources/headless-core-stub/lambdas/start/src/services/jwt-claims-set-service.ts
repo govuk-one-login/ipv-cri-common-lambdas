@@ -44,7 +44,7 @@ export const generateJwtClaimsSet = async (overrides: ClaimsSetOverrides, ssmPar
         client_id: overrides.client_id,
         redirect_uri: redirectUri,
         state,
-        govuk_signin_journey_id: overrides.govuk_signin_journey_id || uuidv4(),
+        govuk_signin_journey_id: overrides.govuk_signin_journey_id || randomUUID(),
         shared_claims: overrides.shared_claims != null ? overrides.shared_claims : defaultClaims,
         ...(overrides.evidence_requested && { evidence_requested: overrides.evidence_requested }),
         ...(overrides.context && { context: overrides.context }),
