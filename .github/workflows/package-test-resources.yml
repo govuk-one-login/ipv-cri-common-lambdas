@@ -54,12 +54,13 @@ jobs:
       fail-fast: false
       matrix:
         environment: [dev, build]
-        cri: [COMMON, ADDRESS, CHECK_HMRC, EXPERIAN_KBV]
+        cri: [COMMON, ADDRESS, CHECK_HMRC, EXPERIAN_KBV, OPEN_BANKING]
         include:
           - {cri: COMMON, name: "Common CRI"}
           - {cri: ADDRESS, name: Address}
           - {cri: CHECK_HMRC, name: "Check HMRC"}
           - {cri: EXPERIAN_KBV, name: "Experian KBV"}
+          - { cri: OPEN_BANKING, name: "Open Banking" }
     steps:
       - name: Check deployment enabled
         id: enabled
