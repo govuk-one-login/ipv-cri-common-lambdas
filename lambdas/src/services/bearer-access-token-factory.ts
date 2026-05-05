@@ -1,7 +1,7 @@
 import { BearerAccessToken } from "../types/bearer-access-token";
 
 export class BearerAccessTokenFactory {
-    constructor(private bearerAccessTokenTtl: number) {}
+    constructor(private readonly bearerAccessTokenTtl: number) {}
     public async create(): Promise<BearerAccessToken> {
         const { randomBytes } = await import("node:crypto");
 

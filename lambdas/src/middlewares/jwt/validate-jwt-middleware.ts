@@ -16,7 +16,7 @@ const validateJwtMiddleware = (
     const before = async (request: Request) => {
         const { clientId, decryptedJwe } = request.event.body as JweRequest;
 
-        const criClientConfig = options.configService.getClientConfig(clientId) as Map<string, string>;
+        const criClientConfig = options.configService.getClientConfig(clientId);
         const jwtValidator = options.jwtValidatorFactory.create(criClientConfig);
         const jwtPayload = await jwtValidator.validateJwt(decryptedJwe, clientId);
         const clientSessionId = jwtPayload["govuk_signin_journey_id"] as string;

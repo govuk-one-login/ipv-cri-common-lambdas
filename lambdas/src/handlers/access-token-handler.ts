@@ -33,10 +33,11 @@ const JWT_VERIFICATION_FAILED_METRIC = "jwt_verification_failed";
 const JWT_VERIFICATION_FAILED_ERR_MSG = "JWT signature verification failed";
 
 export class AccessTokenLambda implements LambdaInterface {
-    private sessionService: SessionService;
-    private requestValidator: AccessTokenRequestValidator;
-    private configService: ConfigService;
+    private readonly sessionService: SessionService;
+    private readonly requestValidator: AccessTokenRequestValidator;
+    private readonly configService: ConfigService;
     private bearerAccessTokenFactory: BearerAccessTokenFactory;
+
     getSessionService() {
         return this.sessionService;
     }
@@ -78,7 +79,7 @@ export class AccessTokenLambda implements LambdaInterface {
             await this.requestValidator.verifyJwtSignature(
                 requestPayload.client_assertion,
                 sessionItem.clientId,
-                clientConfig as Map<string, string>,
+                clientConfig,
             );
             logger.info("JWT signature verified");
 
