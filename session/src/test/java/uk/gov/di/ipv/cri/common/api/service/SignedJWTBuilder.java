@@ -144,7 +144,7 @@ class SignedJWTBuilder {
             certificate = generateCertificate(certificateFile);
 
             String kid = UUID.randomUUID().toString();
-            String ipv_session_id = UUID.randomUUID().toString();
+            String ipvSessionId = UUID.randomUUID().toString();
 
             JWTClaimsSet.Builder jwtClaimSetBuilder =
                     new JWTClaimsSet.Builder()
@@ -164,7 +164,7 @@ class SignedJWTBuilder {
                             .claim("govuk_signin_journey_id", clientSessionId);
 
             if (includeSubject) {
-                jwtClaimSetBuilder.subject(ipv_session_id);
+                jwtClaimSetBuilder.subject(ipvSessionId);
             }
             if (Objects.isNull(sharedClaims) && includeSharedClaims) {
                 jwtClaimSetBuilder.claim(

@@ -15,7 +15,7 @@ public class MockHttpServer {
 
         server = HttpServer.create(new InetSocketAddress(port), 0);
         endpointList.forEach(
-                (injector) ->
+                injector ->
                         server.createContext(
                                 injector.getEndpoint(), new PreLambdaHandler(injector)));
         server.setExecutor(Executors.newCachedThreadPool()); // creates a default executor

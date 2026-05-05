@@ -157,14 +157,12 @@ public class IpvCoreStubUtil {
         sendHttpRequest(request);
     }
 
-    private static HttpRequest getHttpRequest(String sessionId, URI url) throws URISyntaxException {
-        var request =
-                HttpRequest.newBuilder(url)
-                        .setHeader("Accept", "application/json")
-                        .setHeader("session-id", sessionId)
-                        .GET()
-                        .build();
-        return request;
+    private static HttpRequest getHttpRequest(String sessionId, URI url) {
+        return HttpRequest.newBuilder(url)
+                .setHeader("Accept", "application/json")
+                .setHeader("session-id", sessionId)
+                .GET()
+                .build();
     }
 
     public static HttpResponse<String> sendAccessTokenRequest(String authorizationCode)
