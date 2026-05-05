@@ -20,8 +20,8 @@ import {
 
 export class PersonIdentityService {
     constructor(
-        private dynamoDbClient: DynamoDBDocument,
-        private configService: ConfigService,
+        private readonly dynamoDbClient: DynamoDBDocument,
+        private readonly configService: ConfigService,
     ) {}
 
     public async savePersonIdentity(sharedClaims: PersonIdentity, sessionId: string): Promise<string> {

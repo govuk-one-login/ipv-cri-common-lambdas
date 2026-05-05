@@ -10,4 +10,4 @@ import org.junit.runner.RunWith;
         features = "src/test/resources/features",
         glue = "gov/uk/di/ipv/cri/common/api/stepDefinitions",
         dryRun = false)
-public class RunCucumberTest {}
+class RunCucumberTest {} // NOSONAR

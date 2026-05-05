@@ -1,7 +1,7 @@
 import { DynamoDBDocument, GetCommand, PutCommand, QueryCommandInput, UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import { BearerAccessToken } from "../types/bearer-access-token";
 import { ConfigService } from "../common/config/config-service";
-import { randomUUID } from "crypto";
+import { randomUUID } from "node:crypto";
 import {
     AuthorizationCodeExpiredError,
     InvalidAccessTokenError,
@@ -14,8 +14,8 @@ import { SessionItem, UnixMillisecondsTimestamp, UnixSecondsTimestamp } from "@g
 
 export class SessionService {
     constructor(
-        private dynamoDbClient: DynamoDBDocument,
-        private configService: ConfigService,
+        private readonly dynamoDbClient: DynamoDBDocument,
+        private readonly configService: ConfigService,
     ) {}
 
     public async getSession(sessionId: string | undefined): Promise<SessionItem> {

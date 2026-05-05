@@ -1,5 +1,5 @@
 import { base64url } from "jose";
-import { CipherGCMTypes, createDecipheriv, KeyObject } from "crypto";
+import { CipherGCMTypes, createDecipheriv, KeyObject } from "node:crypto";
 import { DecryptCommand, EncryptionAlgorithmSpec, KMSClient } from "@aws-sdk/client-kms";
 import { JweDecrypterError } from "../../common/utils/errors";
 import { logger } from "@govuk-one-login/cri-logger";
@@ -48,7 +48,6 @@ export class JweDecrypter {
         }
     }
 
-    // TODO: check if we can import this from the jose package
     private gcmDecrypt(
         enc: string,
         cek: KeyObject | Uint8Array,
@@ -57,7 +56,7 @@ export class JweDecrypter {
         tag: Uint8Array,
         aad: Uint8Array,
     ): Buffer {
-        const keySize = parseInt(enc.slice(1, 4), 10);
+        const keySize = Number.parseInt(enc.slice(1, 4), 10);
 
         const algorithm = <CipherGCMTypes>`aes-${keySize}-gcm`;
 
