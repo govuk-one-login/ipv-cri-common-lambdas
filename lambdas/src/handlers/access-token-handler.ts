@@ -36,7 +36,7 @@ export class AccessTokenLambda implements LambdaInterface {
     private readonly sessionService: SessionService;
     private readonly requestValidator: AccessTokenRequestValidator;
     private readonly configService: ConfigService;
-    private bearerAccessTokenFactory: BearerAccessTokenFactory;
+    private readonly bearerAccessTokenFactory: BearerAccessTokenFactory;
 
     getSessionService() {
         return this.sessionService;
