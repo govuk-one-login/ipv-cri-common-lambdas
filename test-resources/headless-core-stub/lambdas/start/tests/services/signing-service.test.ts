@@ -1,6 +1,6 @@
 import { GetPublicKeyCommand, KMSClient } from "@aws-sdk/client-kms";
 import { mockClient } from "aws-sdk-client-mock";
-import { generateKeyPairSync } from "crypto";
+import { generateKeyPairSync } from "node:crypto";
 import { HeadlessCoreStubError } from "../../../../utils/src/errors/headless-core-stub-error";
 import {
     encryptSignedJwt,

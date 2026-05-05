@@ -1,5 +1,5 @@
 import { base64url } from "jose";
-import { CipherGCMTypes, createDecipheriv, KeyObject } from "crypto";
+import { CipherGCMTypes, createDecipheriv, KeyObject } from "node:crypto";
 import { DecryptCommand, EncryptionAlgorithmSpec, KMSClient } from "@aws-sdk/client-kms";
 import { JweDecrypterError } from "../../common/utils/errors";
 import { logger } from "@govuk-one-login/cri-logger";
