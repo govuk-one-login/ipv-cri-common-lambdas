@@ -102,7 +102,7 @@ export class ConfigService {
     }
 
     public getSessionExpirationEpoch() {
-        const sessionTtl = parseInt(this.getConfigEntry(CommonConfigKey.SESSION_TTL), 10);
+        const sessionTtl = Number.parseInt(this.getConfigEntry(CommonConfigKey.SESSION_TTL), 10);
         return Math.floor((Date.now() + sessionTtl * 1000) / 1000);
     }
 
@@ -122,10 +122,12 @@ export class ConfigService {
         const name = nameSuffix?.split("/").pop();
         const value = nameSuffixValue;
         if (!name) {
-            throw Error("NameSuffix may not be a valid string or the parameter is not found in the parameter store");
+            throw new Error(
+                "NameSuffix may not be a valid string or the parameter is not found in the parameter store",
+            );
         }
         if (!value) {
-            throw Error("The value of the parameter maybe undefined or empty");
+            throw new Error("The value of the parameter maybe undefined or empty");
         }
         return [name, value];
     }
@@ -137,7 +139,7 @@ export class ConfigService {
         );
         if (errors?.length) {
             logger.info(`Couldn't retrieve SSM parameters: ${errors.join(", ")}`);
-            return Promise.resolve([]);
+            return [];
         }
 
         return Object.entries(parameters).map(([name, value]) => ({ Name: name, Value: value }));
@@ -157,5 +159,5 @@ export class ConfigService {
 }
 
 function parseNumber(value?: string) {
-    return parseInt(value || "", 10) || undefined;
+    return Number.parseInt(value || "", 10) || undefined;
 }
