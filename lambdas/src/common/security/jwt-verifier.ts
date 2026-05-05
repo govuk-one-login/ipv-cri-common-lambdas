@@ -19,7 +19,7 @@ export enum ClaimNames {
 }
 
 export class JwtVerifier {
-    public static ClaimNames = ClaimNames;
+    public static readonly ClaimNames = ClaimNames;
 
     constructor(
         private readonly jwtVerifierConfig: JwtVerificationConfig,
