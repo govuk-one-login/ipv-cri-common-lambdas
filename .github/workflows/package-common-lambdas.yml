@@ -23,7 +23,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
 
       - name: Set up JDK
         uses: actions/setup-java@v4
@@ -110,7 +110,7 @@ jobs:
     steps:
       - name: Checkout code
         if: matrix.ENABLED == 'true'
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
 
       - name: Cache restore common lambdas build
         if: ${{ matrix.ENABLED == 'true' }}
@@ -206,7 +206,7 @@ jobs:
     steps:
       - name: Checkout code
         if: matrix.ENABLED == 'true'
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
 
       - name: Cache restore common lambdas build
         if: ${{ matrix.ENABLED == 'true' }}
