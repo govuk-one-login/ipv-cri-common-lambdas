@@ -3,7 +3,7 @@ import { InvalidRequestError } from "./errors";
 
 const getHeaderValue = (event: APIGatewayProxyEvent, desiredHeader: string) => {
     // https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-develop-integrations-lambda.html
-    const matchingHeaders: string[] = Object.keys(event?.multiValueHeaders ?? {}).filter(
+    const matchingHeaders: string[] = Object.keys(event?.multiValueHeaders ?? {}).find(
         (header) => header.toLowerCase().trim() === desiredHeader,
     );
     const matchingHeadersLength =

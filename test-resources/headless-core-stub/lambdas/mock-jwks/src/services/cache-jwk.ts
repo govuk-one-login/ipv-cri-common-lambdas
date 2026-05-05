@@ -1,4 +1,4 @@
-import { randomUUID } from "crypto";
+import { randomUUID } from "node:crypto";
 import { JSONWebKeySet, JWK } from "jose";
 import { getJwkKeyPair, GetJwkKeyPairOptions } from "../../../../utils/src/keypair";
 import { getHashedKid } from "../../../../utils/src/hashing";

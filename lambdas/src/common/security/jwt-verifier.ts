@@ -19,11 +19,11 @@ export enum ClaimNames {
 }
 
 export class JwtVerifier {
-    static ClaimNames = ClaimNames;
+    public static ClaimNames = ClaimNames;
 
     constructor(
-        private jwtVerifierConfig: JwtVerificationConfig,
-        private logger: Logger,
+        private readonly jwtVerifierConfig: JwtVerificationConfig,
+        private readonly logger: Logger,
     ) {}
 
     public async verify(
@@ -95,7 +95,7 @@ export class JwtVerifier {
 
     private parseCacheControlHeader(cacheControlHeaderValue: string | null) {
         const matches = cacheControlHeaderValue?.match(/max-age=(\d+)/);
-        const maxAgeSeconds = matches ? parseInt(matches[1], 10) : -1;
+        const maxAgeSeconds = matches ? Number.parseInt(matches[1], 10) : -1;
         return Date.now() + maxAgeSeconds * 1000;
     }
 
