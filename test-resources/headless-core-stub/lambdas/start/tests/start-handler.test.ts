@@ -2,7 +2,7 @@ import { clearCaches } from "@aws-lambda-powertools/parameters";
 import { GetPublicKeyCommand, KMSClient } from "@aws-sdk/client-kms";
 import { APIGatewayProxyEvent } from "aws-lambda/trigger/api-gateway-proxy";
 import { mockClient } from "aws-sdk-client-mock";
-import { generateKeyPairSync } from "crypto";
+import { generateKeyPairSync } from "node:crypto";
 import { StartLambdaHandler } from "../src/start-handler";
 import { TestData } from "../../../utils/tests/test-data";
 import { Context } from "aws-lambda";

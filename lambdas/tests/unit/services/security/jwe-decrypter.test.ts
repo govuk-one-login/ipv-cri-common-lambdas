@@ -1,4 +1,4 @@
-import { createDecipheriv } from "crypto";
+import { createDecipheriv } from "node:crypto";
 import { KMSClient } from "@aws-sdk/client-kms";
 import { JweDecrypter } from "../../../../src/services/security/jwe-decrypter";
 import { logger } from "@govuk-one-login/cri-logger";
