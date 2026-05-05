@@ -48,7 +48,7 @@ public class Injector {
         for (int i = 0; i < arr.length; i++) {
             if (arr[i].charAt(0) == '{') {
                 pathParams.put(i, arr[i].substring(1, arr.length));
-                LOGGER.info("added path param : " + pathParams.get(i) + " with key: " + i);
+                LOGGER.info("added path param : {} with key: {}", pathParams.get(i), i);
             }
         }
     }

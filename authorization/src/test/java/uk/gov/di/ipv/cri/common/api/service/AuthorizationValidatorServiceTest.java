@@ -25,7 +25,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-public class AuthorizationValidatorServiceTest {
+class AuthorizationValidatorServiceTest {
 
     @Mock private ConfigurationService mockConfigurationService;
     @InjectMocks private AuthorizationValidatorService authorizationValidatorService;

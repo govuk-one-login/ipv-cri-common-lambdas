@@ -102,12 +102,14 @@ class AccessTokenHandlerTest {
     }
 
     @AfterEach
-    public void tearDown() {
+    void tearDown() {
         MockHttpServer.stopServer();
     }
 
     @State("dummyApiKey is a valid api key")
-    void dummyAPIKeyIsValid() {}
+    void dummyAPIKeyIsValid() {
+        // No check/setup required
+    }
 
     @State("dummyInvalidAuthCode is an invalid authorization code")
     void invalidAuthCode() {
@@ -135,16 +137,24 @@ class AccessTokenHandlerTest {
     }
 
     @State("Passport CRI uses CORE_BACK_SIGNING_PRIVATE_KEY_JWK to validate core signatures")
-    void passportIsUsingExpectedSigningKey() {}
+    void passportIsUsingExpectedSigningKey() {
+        // No check/setup required
+    }
 
     @State("FRAUD CRI uses CORE_BACK_SIGNING_PRIVATE_KEY_JWK to validate core signatures")
-    void fraudCheck2IsUsingExpectedSigningKey() {}
+    void fraudCheck2IsUsingExpectedSigningKey() {
+        // No check/setup required
+    }
 
     @State("FRAUD CHECK CRI uses CORE_BACK_SIGNING_PRIVATE_KEY_JWK to validate core signatures")
-    void fraudCheckIsUsingExpectedSigningKey() {}
+    void fraudCheckIsUsingExpectedSigningKey() {
+        // No check/setup required
+    }
 
     @State("Driving licence CRI uses CORE_BACK_SIGNING_PRIVATE_KEY_JWK to validate core signatures")
-    void drivingLicenceIsUsingExpectedSigningKey() {}
+    void drivingLicenceIsUsingExpectedSigningKey() {
+        // No check/setup required
+    }
 
     @State("Address CRI uses CORE_BACK_SIGNING_PRIVATE_KEY_JWK to validate core signatures")
     void addressIsUsingExpectedSigningKey() {
@@ -190,10 +200,6 @@ class AccessTokenHandlerTest {
     @TestTemplate
     @ExtendWith(PactVerificationInvocationContextProvider.class)
     void testMethod(PactVerificationContext context, HttpRequest request) {
-        // Simulates session creation and CRI lambda completion by generating an auth code
-        long todayPlusADay =
-                LocalDate.now().plusDays(2).toEpochSecond(LocalTime.now(), ZoneOffset.UTC);
-
         context.verifyInteraction();
     }
 

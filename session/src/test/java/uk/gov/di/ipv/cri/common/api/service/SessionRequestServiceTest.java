@@ -428,7 +428,6 @@ class SessionRequestServiceTest {
     }
 
     private String marshallToJSON(Object sessionRequest) throws IOException {
-        ObjectMapper objectMapper = new ObjectMapper();
         return objectMapper.writeValueAsString(sessionRequest);
     }
 
