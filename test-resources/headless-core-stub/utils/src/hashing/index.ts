@@ -1,4 +1,4 @@
-import { createHash } from "crypto";
+import { createHash } from "node:crypto";
 
 export const getHashedKid = (keyId: string) => {
     const kidBytes = Buffer.from(keyId, "utf8");
