@@ -3,12 +3,12 @@ import { InvalidRequestError } from "./errors";
 
 const getHeaderValue = (event: APIGatewayProxyEvent, desiredHeader: string) => {
     // https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-develop-integrations-lambda.html
-    const matchingHeaders: string[] = Object.keys(event?.multiValueHeaders ?? {}).find(
+    const matchingMultiValueHeader = Object.keys(event?.multiValueHeaders ?? {}).find(
         (header) => header.toLowerCase().trim() === desiredHeader,
     );
     const matchingHeadersLength =
-        matchingHeaders[0] && (event?.multiValueHeaders[matchingHeaders[0]]?.length as number);
-    if (+matchingHeadersLength > 1) {
+        matchingMultiValueHeader && (event?.multiValueHeaders[matchingMultiValueHeader]?.length as number);
+    if (matchingHeadersLength && +matchingHeadersLength > 1) {
         throw new InvalidRequestError(
             `Unexpected quantity of ${desiredHeader} headers encountered: ${matchingHeadersLength}`,
         );
