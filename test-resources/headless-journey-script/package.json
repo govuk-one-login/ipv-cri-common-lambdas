@@ -1,0 +1,16 @@
+{
+    "name": "headless-journey-script",
+    "description": "A TypeScript workflow that completes an end-to-end GOV.UK One Login credential issuer journey in a simple and automatic way",
+    "type": "module",
+    "scripts": {
+        "journey": "node src/index.ts"
+    },
+    "license": "MIT",
+    "devDependencies": {
+        "@aws-sdk/client-api-gateway": "^3.1012.0",
+        "@aws-sdk/client-ssm": "^3.1012.0",
+        "@aws-sdk/credential-providers": "^3.1012.0",
+        "@types/node": "^24.12.2",
+        "aws-sigv4-fetch": "^4.4.1"
+    }
+}
