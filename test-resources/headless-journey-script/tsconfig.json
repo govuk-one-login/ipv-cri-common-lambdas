@@ -1,0 +1,13 @@
+{
+    "compilerOptions": {
+        "module": "nodenext",
+        "target": "esnext",
+        "strict": true,
+        "esModuleInterop": true,
+        "skipLibCheck": true,
+        "moduleResolution": "node16",
+        "types": ["node"],
+        "noEmit": true,
+        "allowImportingTsExtensions": true
+    }
+}

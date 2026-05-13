@@ -1,6 +1,6 @@
 import { IssuerAuthorizationRequestSchema } from "@govuk-one-login/data-vocab-schemas";
 import { IssuerAuthorizationRequestClass } from "@govuk-one-login/data-vocab/credentials";
-import Ajv from "ajv";
+import Ajv2019 from "ajv/dist/2019";
 import addFormats from "ajv-formats";
 import { randomUUID } from "node:crypto";
 import { ClaimsSetOverrides } from "../types/claims-set-overrides";
@@ -65,7 +65,7 @@ export const validateClaimsSet = (claimsSet: JWTClaimsSet) => {
     }
     const dataVocabClaimsSet: IssuerAuthorizationRequestClass = { ...claimsSetCopy, scope: "", nonce: "" };
 
-    const ajv = new Ajv({ allErrors: true });
+    const ajv = new Ajv2019({ allErrors: true });
     addFormats(ajv);
     const validateCredential = ajv
         .addSchema(IssuerAuthorizationRequestSchema)

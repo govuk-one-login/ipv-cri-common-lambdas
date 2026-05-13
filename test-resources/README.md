@@ -1,13 +1,22 @@
 # Test Resources
 
 This directory contains resources to support automated testing in a common way. This includes:
-- [Audit events test harness](audit-events-test-harness/README.md): for testing of audit events sent to SQS
+
+-   [Audit events test harness](audit-events-test-harness/README.md): for testing of audit events sent to SQS
+-   [Headless core stub](headless-core-stub/README.md): Lambda functions for testing CRIs
+-   [Headless journey script](headless-journey-script/README.md): CLI tool for running an automated journey in a CRI
 
 ## Using the test resources
 
 To start using the test resources to an account of your choosing follow these steps:
-1. Add the relevant deployment pipeline in [identity-common-infra](https://github.com/govuk-one-login/identity-common-infra)
-2. Add `{CRI}_ARTIFACTS_BUCKET_NAME`, `{CRI}_ENABLED`, `{CRI}_ROLE_ARN`, `{CRI}_SIGNING_PROFILE_NAME` environment variables to github for the relevant `test-resources-{env}` environments
-3. Update the matrix in [package-test-resources workflow](../.github/workflows/package-test-resources.yml) to include your CRI in the `cri` and `include` sections so that it works for your CRI
-4. Update the `TestHarnessUrl` mapping in [the template file](./infrastructure/template.yaml) to include your CRI and the dev, build and staging domains. This will be used to created a test harness domain for your account
-5. Ensure the account you are deploying to has the SSM param `/common-cri/oauth-common/stack-name`, containing the oauth/common stackname in use in that account. 
+
+1. Add the relevant deployment pipeline in
+   [identity-common-infra](https://github.com/govuk-one-login/identity-common-infra)
+2. Add `{CRI}_ARTIFACTS_BUCKET_NAME`, `{CRI}_ENABLED`, `{CRI}_ROLE_ARN`, `{CRI}_SIGNING_PROFILE_NAME` environment
+   variables to github for the relevant `test-resources-{env}` environments
+3. Update the matrix in [package-test-resources workflow](../.github/workflows/package-test-resources.yml) to include
+   your CRI in the `cri` and `include` sections so that it works for your CRI
+4. Update the `TestHarnessUrl` mapping in [the template file](./infrastructure/template.yaml) to include your CRI and
+   the dev, build and staging domains. This will be used to created a test harness domain for your account
+5. Ensure the account you are deploying to has the SSM param `/common-cri/oauth-common/stack-name`, containing the
+   oauth/common stackname in use in that account.
