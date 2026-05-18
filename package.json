@@ -3,7 +3,8 @@
   "type": "module",
   "workspaces": [
     "lambdas",
-    "test-resources/**"
+    "test-resources",
+    "test-resources/headless-journey-script"
   ],
   "devDependencies": {
     "@eslint/js": "^10.0.1",

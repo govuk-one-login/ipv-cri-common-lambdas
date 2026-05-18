@@ -1,8 +1,9 @@
+import { beforeAll, describe, expect, it } from "vitest";
 import { stackOutputs } from "../helpers/cloudformation";
 import { signedFetch } from "../helpers/fetch";
 
 describe("start endpoint unhappy path", () => {
-    let testHarnessExecuteUrl;
+    let testHarnessExecuteUrl: string;
     const aud = "https://test-aud";
     const iss = "https://test-issuer";
     const clientId = "ipv-core-stub-aws-headless";

@@ -17,15 +17,12 @@ defaults:
   run:
     shell: bash
 
-permissions: { }
+permissions: {}
 
 jobs:
   run-unit-tests:
     name: TypeScript
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: lambdas
     steps:
       - name: Pull repository
         uses: actions/checkout@v4
@@ -40,6 +37,7 @@ jobs:
         run: npm ci
 
       - name: Run tests
+        working-directory: lambdas
         run: npm run test:coverage -- --config vitest.config.ts
 
       - name: Archive coverage results

@@ -4,7 +4,7 @@ import { CallBackService } from "../src/services/callback-service";
 import * as KeyJwtHelper from "../src/services/private-key-jwt-helper";
 import { ClientConfiguration } from "../../../utils/src/services/client-configuration";
 import { DEFAULT_CLIENT_ID } from "../../../utils/src/constants";
-import { vi, it, describe, expect, MockInstance } from "vitest";
+import { vi, it, describe, expect, MockInstance, beforeEach, afterEach } from "vitest";
 
 vi.mock("../src/services/callback-service");
 vi.mock("../../../utils/src/services/client-configuration");

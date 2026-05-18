@@ -6,9 +6,9 @@
         "sam:build": "npm run sam:validate && sam build --template infrastructure/template.yaml --cached --parallel",
         "sam:validate": "cd infrastructure && sam validate && sam validate --lint",
         "test": "npm run unit --",
-        "test:integration": "vitest run --config integration-tests/vitest.config.ts --no-file-parallelism",
+        "test:integration": "vitest run --config vitest.config.integration.ts --no-file-parallelism",
         "test:coverage": "npm run unit -- --coverage",
-        "unit": "export POWERTOOLS_DEV=true && vitest run --exclude 'integration-tests/**'",
+        "unit": "POWERTOOLS_LOG_LEVEL=SILENT vitest run --exclude 'integration-tests/**'",
         "unit:logs": "vitest run"
     },
     "dependencies": {
@@ -16,9 +16,11 @@
         "@aws-lambda-powertools/logger": "2.33.0",
         "@aws-lambda-powertools/parameters": "2.33.0",
         "@aws-sdk/client-cloudformation": "3.1048.0",
+        "@aws-sdk/client-dynamodb": "3.1048.0",
         "@aws-sdk/client-kms": "3.1048.0",
         "@aws-sdk/client-sns": "^3.1048.0",
         "@aws-sdk/client-ssm": "3.1048.0",
+        "@aws-sdk/credential-providers": "3.1048.0",
         "@govuk-one-login/data-vocab": "2.0.2",
         "@govuk-one-login/data-vocab-schemas": "2.0.2",
         "@middy/core": "4.7.0",
@@ -30,8 +32,6 @@
         "jose": "6.2.3"
     },
     "devDependencies": {
-        "@aws-sdk/client-dynamodb": "3.1048.0",
-        "@aws-sdk/credential-providers": "3.1048.0",
         "@aws-sdk/types": "3.973.8",
         "@types/aws-lambda": "^8.10.161",
         "aws-sigv4-fetch": "4.4.1",
