@@ -85,8 +85,8 @@ describe("auth-request-validator", () => {
                     queryStringParams = {};
                 });
                 it("should return missing client id parameter error", () => {
-                    (queryStringParams["redirect_uri"] = "a-valid-redirect-uri"),
-                        (queryStringParams["response_type"] = "a-valid-response-type");
+                    queryStringParams["redirect_uri"] = "a-valid-redirect-uri";
+                    queryStringParams["response_type"] = "a-valid-response-type";
                     expect(() =>
                         authRequestValidator.validate(queryStringParams, existingClientId, configuredRedirectUri),
                     ).toThrow(

@@ -29,7 +29,7 @@ describe("request-utils", () => {
             const result = getClientIpAddress({
                 headers: {},
             } as unknown as APIGatewayProxyEvent);
-            expect(result).toBeUndefined;
+            expect(result).toBeUndefined();
         });
         test("returns undefined, if another header is present instead of x-forwarded-for", () => {
             const result = getClientIpAddress({
@@ -37,7 +37,7 @@ describe("request-utils", () => {
                     forwarded: "12345",
                 },
             } as unknown as APIGatewayProxyEvent);
-            expect(result).toBeUndefined;
+            expect(result).toBeUndefined();
         });
     });
 
@@ -62,7 +62,7 @@ describe("request-utils", () => {
             const result = getEncodedDeviceInformation({
                 headers: {},
             } as unknown as APIGatewayProxyEvent);
-            expect(result).toBeUndefined;
+            expect(result).toBeUndefined();
         });
         test("returns undefined, if another header is present instead of txma-audit-encoded", () => {
             const result = getEncodedDeviceInformation({
@@ -70,7 +70,7 @@ describe("request-utils", () => {
                     encoded: "12345",
                 },
             } as unknown as APIGatewayProxyEvent);
-            expect(result).toBeUndefined;
+            expect(result).toBeUndefined();
         });
     });
 
@@ -97,7 +97,7 @@ describe("request-utils", () => {
                     "session-id": "12345",
                 },
             } as unknown as APIGatewayProxyEvent);
-            expect(result).toBeUndefined;
+            expect(result).toBeUndefined();
         });
         test("returns undefined, if another header is present instead of session-id", () => {
             expect(() =>
