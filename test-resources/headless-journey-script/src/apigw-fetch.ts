@@ -11,10 +11,10 @@ const signedFetch = createSignedFetcher({
     region: input.awsRegion,
 });
 
-const methods = ["POST", "GET", "PUT", "DELETE"] as const;
+type BasicHttpMethod = "POST" | "GET" | "PUT" | "DELETE";
 
 interface Request {
-    method: (typeof methods)[number];
+    method: BasicHttpMethod;
     path: `/${string}`;
     headers?: Record<string, string>;
     jsonBody?: Record<string, unknown> | unknown[];

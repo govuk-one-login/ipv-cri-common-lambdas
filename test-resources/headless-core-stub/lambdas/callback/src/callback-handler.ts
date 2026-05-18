@@ -1,5 +1,5 @@
 import { LambdaInterface } from "@aws-lambda-powertools/commons/types";
-import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from "aws-lambda";
+import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { Logger } from "@aws-lambda-powertools/logger";
 import { CallBackService } from "./services/callback-service";
 import { generatePrivateJwtParams } from "./services/private-key-jwt-helper";
@@ -15,7 +15,7 @@ const logger = new Logger({ serviceName: "CallBackService" });
 const callback = new CallBackService(logger);
 
 export class CallbackLambdaHandler implements LambdaInterface {
-    async handler(event: APIGatewayProxyEvent, _context: Context): Promise<APIGatewayProxyResult> {
+    async handler(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
         try {
             const authorizationCode = event.queryStringParameters?.code as string;
             logger.info({ message: "Received authorizationCode", authorizationCode });
@@ -64,8 +64,8 @@ export class CallbackLambdaHandler implements LambdaInterface {
 
                 audience = statePayload.aud;
                 redirectUri = statePayload.redirect_uri;
-            } catch (error) {
-                throw new HeadlessCoreStubError("State param is not a valid JSON bas64 encoded string", 400);
+            } catch {
+                throw new HeadlessCoreStubError("State param is not a valid JSON base64 encoded string", 400);
             }
         }
 

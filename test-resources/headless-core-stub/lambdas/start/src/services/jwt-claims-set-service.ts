@@ -19,7 +19,7 @@ export const parseJwtClaimsSetOverrides = (body: string | null): ClaimsSetOverri
             claimsSetOverrides.client_id = DEFAULT_CLIENT_ID;
         }
         return claimsSetOverrides;
-    } catch (e) {
+    } catch {
         throw new HeadlessCoreStubError("Body is not valid JSON", 400);
     }
 };

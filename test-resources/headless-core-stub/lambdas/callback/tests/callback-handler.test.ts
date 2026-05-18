@@ -244,6 +244,6 @@ describe("callback-handler", () => {
         );
 
         expect(response.statusCode).toBe(400);
-        expect(JSON.parse(response.body).message).toBe("State param is not a valid JSON bas64 encoded string");
+        expect(JSON.parse(response.body).message).toBe("State param is not a valid JSON base64 encoded string");
     });
 });

@@ -1,4 +1,4 @@
-import { APIGatewayProxyEvent, Context, APIGatewayProxyResult } from "aws-lambda";
+import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { Logger } from "@aws-lambda-powertools/logger";
 import { LambdaInterface } from "@aws-lambda-powertools/commons/types";
 import { handleErrorResponse } from "../../../utils/src/errors/error-response";
@@ -7,7 +7,7 @@ import { generateJWKS } from "./services/cache-jwk";
 const logger = new Logger({ serviceName: "Mock Jwk Handler" });
 
 export class MockJwkHandler implements LambdaInterface {
-    async handler(event: APIGatewayProxyEvent, _context: Context): Promise<APIGatewayProxyResult> {
+    async handler(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
         try {
             logger.info({ message: "Retrieving JWKS", path: event.path });
             const { jwks } = await generateJWKS();

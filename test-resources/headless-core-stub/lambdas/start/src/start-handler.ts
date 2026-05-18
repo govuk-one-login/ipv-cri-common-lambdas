@@ -2,7 +2,7 @@ import type { LambdaInterface } from "@aws-lambda-powertools/commons/types";
 import { Logger } from "@aws-lambda-powertools/logger";
 import { injectLambdaContext } from "@aws-lambda-powertools/logger/middleware";
 import middy from "@middy/core";
-import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from "aws-lambda";
+import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { JWK, JWTPayload, KeyLike } from "jose";
 import { signJwt } from "../../../utils/src/crypto/signer";
 import { handleErrorResponse } from "./../../../utils/src/errors/error-response";
@@ -16,7 +16,7 @@ import { getHashedKid } from "../../../utils/src/hashing";
 export const logger = new Logger();
 
 export class StartLambdaHandler implements LambdaInterface {
-    async handler(event: APIGatewayProxyEvent, _context: Context): Promise<APIGatewayProxyResult> {
+    async handler(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
         try {
             const jwtClaimsSetOverrides: ClaimsSetOverrides = parseJwtClaimsSetOverrides(event?.body);
 

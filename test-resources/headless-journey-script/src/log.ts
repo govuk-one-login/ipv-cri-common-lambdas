@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import { input } from "./cli-args.ts";
 
 export function error(...args: Parameters<typeof console.log>) {
