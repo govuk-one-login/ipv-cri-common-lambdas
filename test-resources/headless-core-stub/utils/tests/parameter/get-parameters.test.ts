@@ -1,6 +1,6 @@
 import { getParametersByName } from "@aws-lambda-powertools/parameters/ssm";
 import * as GetParameters from "../../src/parameter/get-parameters";
-import { vi, describe, expect, it } from "vitest";
+import { vi, describe, expect, it, beforeEach } from "vitest";
 
 vi.mock("@aws-lambda-powertools/parameters/ssm", () => ({
     getParametersByName: vi.fn(),

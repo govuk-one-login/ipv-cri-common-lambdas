@@ -7,6 +7,7 @@ import {
 import { ClaimsSetOverrides } from "../../src/types/claims-set-overrides";
 import { TestData } from "../../../../utils/tests/test-data";
 import { base64Decode } from "../../../../utils/src/base64";
+import { describe, expect, it } from "vitest";
 
 const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
@@ -117,7 +118,7 @@ describe("jwt-claims-set-service", () => {
             let url;
             try {
                 url = new URL(jwtClaimsSet.sub || "");
-            } catch (_) {
+            } catch {
                 return false;
             }
             expect(url).toBeTruthy();

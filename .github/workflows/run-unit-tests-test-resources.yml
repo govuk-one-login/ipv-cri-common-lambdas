@@ -4,7 +4,8 @@ on:
   workflow_call:
     inputs:
       coverage-report: { type: boolean, required: false, default: false }
-      coverage-artifact: { type: string, required: false, default: coverage-test-resources }
+      coverage-artifact:
+        { type: string, required: false, default: coverage-test-resources }
     outputs:
       coverage-artifact:
         value: ${{ inputs.coverage-artifact }}
@@ -19,16 +20,12 @@ defaults:
   run:
     shell: bash
 
-permissions:
-   packages: read
+permissions: {}
 
 jobs:
   run-unit-tests:
     name: Test Resources
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: test-resources
     steps:
       - name: Pull repository
         uses: actions/checkout@v4
@@ -38,16 +35,14 @@ jobs:
         with:
           cache: npm
           cache-dependency-path: test-resources/package.json
-          registry-url: "https://npm.pkg.github.com"
-          scope: "@govuk-one-login"
-          always-auth: true
 
       - name: Install dependencies
-        run: (cd .. && npm ci)
+        run: npm ci
         env:
           NODE_AUTH_TOKEN: ${{ secrets.npm-token }}
 
       - name: Run tests
+        working-directory: test-resources
         run: npm run test:coverage -- --config vitest.config.ts
 
       - name: Archive coverage results

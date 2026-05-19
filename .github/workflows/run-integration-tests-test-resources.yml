@@ -3,9 +3,9 @@ name: Integration tests for test resources
 on:
   workflow_call:
     inputs:
-      aws-region: {required: false, type: string}
-      stack-name: {required: true, type: string}
-      stack-outputs: {required: true, type: string}
+      aws-region: { required: false, type: string }
+      stack-name: { required: true, type: string }
+      stack-outputs: { required: true, type: string }
     secrets:
       npm-token: { required: true }
 
@@ -25,9 +25,6 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: test-resources-dev
-    defaults:
-      run:
-        working-directory: test-resources
     steps:
       - name: Pull repository
         uses: actions/checkout@v3
@@ -61,4 +58,5 @@ jobs:
           STACK_NAME: ${{ inputs.stack-name }}
           COMMON_STACK_NAME: ${{ fromJson(inputs.stack-outputs).CommonStackName }}
           INFRA_STACK_NAME: ${{ fromJson(inputs.stack-outputs).TxmaStackName }}
+        working-directory: test-resources
         run: npm run test:integration

@@ -1,8 +1,8 @@
 import { JSONWebKeySet } from "jose";
 import { MockJwkHandler } from "../src/mock-jwk-handler";
 import * as JWKS from "../src/services/cache-jwk";
-import { APIGatewayProxyEvent, Context } from "aws-lambda";
-import { expect, describe, MockInstance, vi } from "vitest";
+import { APIGatewayProxyEvent } from "aws-lambda";
+import { expect, describe, MockInstance, vi, beforeEach, afterEach, it } from "vitest";
 
 const mockJwksEmpty = {
     jwks: { keys: [] } as JSONWebKeySet,
@@ -27,7 +27,7 @@ describe("MockJwkHandler", () => {
         } as unknown as APIGatewayProxyEvent;
 
         const handler = new MockJwkHandler();
-        const result = await handler.handler(event, {} as Context);
+        const result = await handler.handler(event);
 
         expect(generateJWKSSpy).toHaveBeenCalled();
         expect(result.statusCode).toBe(404);
@@ -40,7 +40,7 @@ describe("MockJwkHandler", () => {
         } as unknown as APIGatewayProxyEvent;
 
         const handler = new MockJwkHandler();
-        const result = await handler.handler(event, {} as Context);
+        const result = await handler.handler(event);
 
         expect(result.statusCode).toBe(200);
         expect(JSON.parse(result.body)).toEqual({ keys: [{ kid: "key-1" }] });

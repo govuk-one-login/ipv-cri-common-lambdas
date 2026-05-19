@@ -55,7 +55,7 @@ export const CreateAccessTokenLambda = (redirectUri: string, componentId: string
     });
 
     const accessTokenValidator = new AccessTokenRequestValidator(new JwtVerifierFactory(logger));
-    const mockVerifySignature = async (_: string, __: string, ___: Map<string, string>) => Promise.resolve();
+    const mockVerifySignature = async () => Promise.resolve();
     accessTokenValidator.verifyJwtSignature = mockVerifySignature;
 
     return new AccessTokenLambda(

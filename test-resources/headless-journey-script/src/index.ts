@@ -138,7 +138,7 @@ describe(`Completes ${input.journeyIdentifier} OAuth journey`, { concurrency: fa
         assert(response.status === 200 && response.body);
 
         const verifiableCredential = response.body;
-        const [headerJSON, payloadJSON, _signature] = verifiableCredential.split(".").map(base64Decode);
+        const [headerJSON, payloadJSON] = verifiableCredential.split(".").map(base64Decode);
 
         const [header, payload] = [headerJSON, payloadJSON].map((v) => JSON.parse(v));
 

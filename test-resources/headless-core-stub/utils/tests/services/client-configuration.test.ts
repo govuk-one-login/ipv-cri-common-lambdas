@@ -1,6 +1,6 @@
 import { ClientConfiguration } from "../../src/services/client-configuration";
 import { getParametersValues } from "../../src/parameter/get-parameters";
-import { vi, describe, expect, it } from "vitest";
+import { vi, describe, expect, it, beforeEach } from "vitest";
 
 vi.mock("../../src/parameter/get-parameters", () => ({
     getParametersValues: vi.fn(),

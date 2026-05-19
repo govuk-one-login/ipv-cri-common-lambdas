@@ -1,6 +1,6 @@
 import { CloudFormationClient, DescribeStacksCommandOutput } from "@aws-sdk/client-cloudformation";
 import { stackOutputs } from "../../src/stack-outputs";
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("@aws-sdk/client-cloudformation");
 const mockSend = vi.fn();

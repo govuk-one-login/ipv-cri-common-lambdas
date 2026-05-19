@@ -1,3 +1,4 @@
+import { describe, expect, it } from "vitest";
 import { stackOutputs } from "../helpers/cloudformation";
 
 describe("happy path mock-jwks", () => {
