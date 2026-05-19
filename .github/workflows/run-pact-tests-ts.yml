@@ -26,7 +26,7 @@ jobs:
     environment: development
     steps:
       - name: Pull repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install Node
         uses: actions/setup-node@v4
