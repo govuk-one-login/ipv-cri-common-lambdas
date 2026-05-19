@@ -1,4 +1,4 @@
-vi.stubEnv("AWS_STACK_NAME", "di-ipv-cri-common-lambdas");
+vi.stubEnv("AWS_STACK_NAME", "di-ipv-cri-oauth-common");
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import { SSMClient } from "@aws-sdk/client-ssm";
 import { SSMProvider } from "@aws-lambda-powertools/parameters/ssm";

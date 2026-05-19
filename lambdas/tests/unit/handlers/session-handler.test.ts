@@ -468,7 +468,11 @@ describe("SessionLambda", () => {
         const result = await lambdaHandler(mockEvent, {} as Context);
         expect(errorSpy).toHaveBeenCalledWith(
             "Session Lambda error occurred: 1025: Request failed due to a server error",
-            new GenericServerError(),
+            expect.objectContaining({
+                statusCode: 500,
+                message: "Request failed due to a server error",
+                code: 1025,
+            }),
         );
         expect(result.statusCode).toBe(500);
         expect(result.body).toContain("1025: Request failed due to a server error");
