@@ -19,9 +19,6 @@ jobs:
       fail-fast: false
       matrix:
         cri-provider: ["ExperianKbvCriTokenProvider", "NinoCriTokenProvider"]
-    defaults:
-      run:
-        working-directory: lambdas
     steps:
       - name: Pull repository
         uses: actions/checkout@v4
@@ -35,6 +32,7 @@ jobs:
         run: npm ci
 
       - name: Run tests
+        working-directory: lambdas
         run: npm run test:contract:ci
         env:
           CRI_UNDER_TEST: ${{ matrix.cri-provider }}

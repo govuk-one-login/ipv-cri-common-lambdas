@@ -110,7 +110,7 @@ export class JweDecrypter {
             logger.info({ message: "Decryption successful with legacy key" });
             return key;
         } catch (error: unknown) {
-            throw new Error(`Failed to decrypt with legacy key: ${error}`);
+            throw new Error(`Failed to decrypt with legacy key: ${error}`, { cause: error });
         }
     }
 

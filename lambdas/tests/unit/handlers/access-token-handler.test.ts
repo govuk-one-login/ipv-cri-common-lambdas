@@ -248,7 +248,7 @@ describe("access-token-handler.ts", () => {
 
                 const body = JSON.parse(response.body);
                 expect(response.statusCode).toBe(400);
-                expect(response.body).not.toBeNull;
+                expect(response.body).not.toBeNull();
                 expect(body.message).toContain("Invalid request");
                 expect(loggerSpy).toHaveBeenCalledWith(
                     "Access Token Lambda error occurred: Invalid request: Missing redirectUri parameter",
@@ -277,7 +277,7 @@ describe("access-token-handler.ts", () => {
                 );
                 const body = JSON.parse(response.body);
                 expect(response.statusCode).toBe(403);
-                expect(response.body).not.toBeNull;
+                expect(response.body).not.toBeNull();
                 expect(body.message).toContain("Access token expired");
                 expect(loggerSpy).toHaveBeenCalledWith(
                     "Access Token Lambda error occurred: 1026: Access token expired",

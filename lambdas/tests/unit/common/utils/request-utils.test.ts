@@ -4,7 +4,6 @@ import {
     getEncodedDeviceInformation,
     getSessionId,
 } from "../../../../src/common/utils/request-utils";
-import { InvalidRequestError } from "../../../../src/common/utils/errors";
 import { describe, expect, test } from "vitest";
 
 describe("request-utils", () => {
@@ -29,7 +28,7 @@ describe("request-utils", () => {
             const result = getClientIpAddress({
                 headers: {},
             } as unknown as APIGatewayProxyEvent);
-            expect(result).toBeUndefined;
+            expect(result).toBeUndefined();
         });
         test("returns undefined, if another header is present instead of x-forwarded-for", () => {
             const result = getClientIpAddress({
@@ -37,7 +36,7 @@ describe("request-utils", () => {
                     forwarded: "12345",
                 },
             } as unknown as APIGatewayProxyEvent);
-            expect(result).toBeUndefined;
+            expect(result).toBeUndefined();
         });
     });
 
@@ -62,7 +61,7 @@ describe("request-utils", () => {
             const result = getEncodedDeviceInformation({
                 headers: {},
             } as unknown as APIGatewayProxyEvent);
-            expect(result).toBeUndefined;
+            expect(result).toBeUndefined();
         });
         test("returns undefined, if another header is present instead of txma-audit-encoded", () => {
             const result = getEncodedDeviceInformation({
@@ -70,7 +69,7 @@ describe("request-utils", () => {
                     encoded: "12345",
                 },
             } as unknown as APIGatewayProxyEvent);
-            expect(result).toBeUndefined;
+            expect(result).toBeUndefined();
         });
     });
 
@@ -90,14 +89,6 @@ describe("request-utils", () => {
                 },
             } as unknown as APIGatewayProxyEvent);
             expect(result).toBe("12345");
-        });
-        test("returns undefined, if session-id header is not present", () => {
-            const result = getSessionId({
-                headers: {
-                    "session-id": "12345",
-                },
-            } as unknown as APIGatewayProxyEvent);
-            expect(result).toBeUndefined;
         });
         test("returns undefined, if another header is present instead of session-id", () => {
             expect(() =>
@@ -119,7 +110,10 @@ describe("request-utils", () => {
             } as unknown as APIGatewayProxyEventHeaders;
 
             expect(() => getSessionId(event as APIGatewayProxyEvent)).toThrow(
-                new InvalidRequestError("Unexpected quantity of session-id headers encountered: 2"),
+                expect.objectContaining({
+                    statusCode: 400,
+                    message: "Unexpected quantity of session-id headers encountered: 2",
+                }),
             );
         });
     });

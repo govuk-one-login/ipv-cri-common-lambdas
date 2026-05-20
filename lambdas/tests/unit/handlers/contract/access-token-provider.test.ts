@@ -69,7 +69,7 @@ describe("Pact Verification", () => {
         } catch (error) {
             logger.error("Pact verification failed :(", { error });
 
-            throw new Error("Pact verification failed.");
+            throw new Error("Pact verification failed.", { cause: error });
         }
     });
 });
