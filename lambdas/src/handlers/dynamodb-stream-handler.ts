@@ -4,18 +4,14 @@ import { AttributeValue } from "@aws-sdk/client-dynamodb";
 import { unmarshall } from "@aws-sdk/util-dynamodb";
 import { AwsClientType, createClient } from "../common/aws-client-factory";
 import { ReplicationService } from "../services/replication-service";
-import { initOpenTelemetry } from "../common/utils/otel-setup";
 import { logger } from "@govuk-one-login/cri-logger";
-import { metrics, tracer as _tracer } from "../common/utils/power-tool";
-
-initOpenTelemetry();
+import { metrics } from "@govuk-one-login/cri-metrics";
 
 const dynamoDbClient = createClient(AwsClientType.DYNAMO);
 
 export class DynamoDbStreamLambda implements LambdaInterface {
     constructor(private readonly replicationService: ReplicationService) {}
 
-    @_tracer.captureLambdaHandler({ captureResponse: false })
     @metrics.logMetrics({ throwOnEmptyMetrics: false, captureColdStartMetric: true })
     public async handler(event: DynamoDBStreamEvent, _context: unknown): Promise<DynamoDBBatchResponse> {
         const batchItemFailures: DynamoDBBatchResponse["batchItemFailures"] = [];

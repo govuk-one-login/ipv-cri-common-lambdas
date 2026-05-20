@@ -1,24 +1,26 @@
 import { ReplicationService } from "../../../src/services/replication-service";
 import { DynamoDBDocument, PutCommand, DeleteCommand } from "@aws-sdk/lib-dynamodb";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-jest.mock("@aws-sdk/lib-dynamodb", () => {
+vi.mock("@aws-sdk/lib-dynamodb", async () => {
+    const actual = await vi.importActual<typeof import("@aws-sdk/lib-dynamodb")>("@aws-sdk/lib-dynamodb");
     return {
         __esModule: true,
-        ...jest.requireActual("@aws-sdk/lib-dynamodb"),
-        PutCommand: jest.fn(),
-        DeleteCommand: jest.fn(),
+        ...actual,
+        PutCommand: vi.fn(),
+        DeleteCommand: vi.fn(),
     };
 });
 
 describe("replication-service", () => {
     let replicationService: ReplicationService;
 
-    const mockDynamoDbClient = jest.mocked(DynamoDBDocument);
-    const mockPutCommand = jest.mocked(PutCommand);
-    const mockDeleteCommand = jest.mocked(DeleteCommand);
+    const mockDynamoDbClient = vi.mocked(DynamoDBDocument);
+    const mockPutCommand = vi.mocked(PutCommand);
+    const mockDeleteCommand = vi.mocked(DeleteCommand);
 
     beforeEach(() => {
-        jest.resetAllMocks();
+        vi.resetAllMocks();
         replicationService = new ReplicationService(
             mockDynamoDbClient.prototype,
             "session-stack-a",
@@ -30,7 +32,7 @@ describe("replication-service", () => {
             const mockPromise = new Promise<unknown>((resolve) => {
                 resolve({});
             });
-            return jest.fn().mockImplementation(() => {
+            return vi.fn().mockImplementation(() => {
                 return mockPromise;
             });
         };

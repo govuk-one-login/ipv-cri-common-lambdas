@@ -1,13 +1,20 @@
-import { Logger } from "@aws-lambda-powertools/logger";
 import { Context, DynamoDBStreamEvent } from "aws-lambda";
 import { DynamoDbStreamLambda } from "../../../src/handlers/dynamodb-stream-handler";
 import { ReplicationService } from "../../../src/services/replication-service";
+import { beforeEach, describe, expect, it, Mock, MockedObject, vi } from "vitest";
+import { LogItemMessage, LogItemExtraInput } from "@aws-lambda-powertools/logger/lib/cjs/types/Logger";
+import { logger } from "@govuk-one-login/cri-logger";
 
-jest.mock("@aws-sdk/lib-dynamodb");
-jest.mock("@aws-sdk/client-dynamodb");
-jest.mock("@aws-lambda-powertools/metrics");
-jest.mock("@aws-lambda-powertools/logger");
-jest.mock("../../../src/services/replication-service");
+vi.mock("@aws-sdk/lib-dynamodb");
+vi.mock("@aws-sdk/client-dynamodb");
+vi.mock("@aws-lambda-powertools/metrics");
+vi.mock("../../../src/services/replication-service");
+vi.mock("@govuk-one-login/cri-logger", () => ({
+    logger: {
+        info: vi.fn(),
+        error: vi.fn(),
+    },
+}));
 
 const SOURCE_SESSION_ARN =
     "arn:aws:dynamodb:eu-west-2:123456789012:table/session-stack-a/stream/2024-01-01T00:00:00.000";
@@ -44,21 +51,20 @@ function makeRecord(overrides: {
 
 describe("DynamoDbStreamLambda", () => {
     let dynamoDbStreamLambda: DynamoDbStreamLambda;
-    let logger: jest.MockedObjectDeep<typeof Logger>;
-    let replicationService: jest.MockedObjectDeep<typeof ReplicationService>;
+    let replicationService: MockedObject<typeof ReplicationService>;
+    let errorSpy: Mock<(input: LogItemMessage, ...extraInput: LogItemExtraInput) => void>;
 
     beforeEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
 
-        logger = jest.mocked(Logger);
-        replicationService = jest.mocked(ReplicationService);
+        replicationService = vi.mocked(ReplicationService);
 
-        jest.spyOn(logger.prototype, "error").mockImplementation();
-        jest.spyOn(logger.prototype, "info").mockImplementation();
+        errorSpy = vi.spyOn(logger, "error");
+        vi.spyOn(logger, "info");
 
-        jest.spyOn(replicationService.prototype, "resolveTargetTable").mockReturnValue("session-stack-b");
-        jest.spyOn(replicationService.prototype, "replicateItem").mockResolvedValue(undefined);
-        jest.spyOn(replicationService.prototype, "deleteItem").mockResolvedValue(undefined);
+        vi.spyOn(replicationService.prototype, "resolveTargetTable").mockReturnValue("session-stack-b");
+        vi.spyOn(replicationService.prototype, "replicateItem").mockResolvedValue(undefined);
+        vi.spyOn(replicationService.prototype, "deleteItem").mockResolvedValue(undefined);
 
         dynamoDbStreamLambda = new DynamoDbStreamLambda(replicationService.prototype);
     });
@@ -87,7 +93,7 @@ describe("DynamoDbStreamLambda", () => {
     });
 
     it("should replicate MODIFY events to the target table", async () => {
-        jest.spyOn(replicationService.prototype, "resolveTargetTable").mockReturnValue("person-identity-stack-b");
+        vi.spyOn(replicationService.prototype, "resolveTargetTable").mockReturnValue("person-identity-stack-b");
         const event = makeStreamEvent([
             makeRecord({
                 eventName: "MODIFY",
@@ -150,7 +156,7 @@ describe("DynamoDbStreamLambda", () => {
     });
 
     it("should report individual record failures without failing the batch", async () => {
-        jest.spyOn(replicationService.prototype, "replicateItem")
+        vi.spyOn(replicationService.prototype, "replicateItem")
             .mockResolvedValueOnce(undefined)
             .mockRejectedValueOnce(new Error("Throttled"))
             .mockResolvedValueOnce(undefined);
@@ -184,8 +190,7 @@ describe("DynamoDbStreamLambda", () => {
     });
 
     it("should log errors with the event ID", async () => {
-        const errorSpy = jest.spyOn(logger.prototype, "error");
-        jest.spyOn(replicationService.prototype, "replicateItem").mockRejectedValueOnce(new Error("DynamoDB error"));
+        vi.spyOn(replicationService.prototype, "replicateItem").mockRejectedValueOnce(new Error("DynamoDB error"));
 
         const event = makeStreamEvent([
             makeRecord({
