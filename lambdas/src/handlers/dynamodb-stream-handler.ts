@@ -18,22 +18,33 @@ export class DynamoDbStreamLambda implements LambdaInterface {
 
         for (const record of event.Records) {
             try {
-                const targetTable = this.replicationService.resolveTargetTable(record.eventSourceARN!);
+                if (!record.eventSourceARN) {
+                    throw new Error("Missing eventSourceARN");
+                }
+                const targetTable = this.replicationService.resolveTargetTable(record.eventSourceARN);
                 const eventName = record.eventName;
 
+                if (!record.dynamodb) {
+                    throw new Error("Missing record.dynamodb");
+                }
+
                 if (eventName === "INSERT" || eventName === "MODIFY") {
-                    const newImage = unmarshall(
-                        record.dynamodb!.NewImage! as unknown as Record<string, AttributeValue>,
-                    );
+                    const newImage = unmarshall(record.dynamodb.NewImage as Record<string, AttributeValue>);
                     await this.replicationService.replicateItem(targetTable, newImage);
                     logger.info(`Replicated ${eventName} event to ${targetTable}`);
                 } else if (eventName === "REMOVE") {
-                    const keys = unmarshall(record.dynamodb!.Keys! as unknown as Record<string, AttributeValue>);
+                    const keys = unmarshall(record.dynamodb.Keys as Record<string, AttributeValue>);
                     await this.replicationService.deleteItem(targetTable, keys);
                     logger.info(`Deleted item from ${targetTable}`);
                 }
             } catch (err: unknown) {
-                logger.error(`Replication error for event ${record.eventID}`, err as Error);
+                if (err instanceof Error) {
+                    logger.error(`Replication error for event ${record.eventID}`, err);
+                } else {
+                    logger.error(`Replication error for event ${record.eventID}`, {
+                        error: err,
+                    });
+                }
                 batchItemFailures.push({ itemIdentifier: record.eventID! });
             }
         }

@@ -7,7 +7,7 @@ import { logger } from "@govuk-one-login/cri-logger";
 
 vi.mock("@aws-sdk/lib-dynamodb");
 vi.mock("@aws-sdk/client-dynamodb");
-vi.mock("@aws-lambda-powertools/metrics");
+vi.mock("@govuk-one-login/cri-metrics");
 vi.mock("../../../src/services/replication-service");
 vi.mock("@govuk-one-login/cri-logger", () => ({
     logger: {

@@ -53,14 +53,6 @@ Parameters:
     Type: String
     Default: "initial"
     Description: "For dev only - used to force Java Lambda version updates for locally deployed and pre-merge stacks"
-  TargetSessionTableName:
-    Type: String
-    Default: "none"
-    Description: "The name of the target session table for DynamoDB stream replication"
-  TargetPersonIdentityTableName:
-    Type: String
-    Default: "none"
-    Description: "The name of the target person identity table for DynamoDB stream replication"
   BuildNotificationStackName:
     Description: The topic to publish notification and sns alerts
     Type: String
@@ -98,15 +90,14 @@ Conditions:
   IsDevEnvironment: !Equals
     - !Ref Environment
     - dev
-  EnableDynamoDbStreamReplication:
-    Fn::Not:
-      - Fn::Or:
-          - Fn::Equals:
-              - !Ref TargetSessionTableName
-              - "none"
-          - Fn::Equals:
-              - !Ref TargetPersonIdentityTableName
-              - "none"
+  EnableDynamoDbStreamReplication: !And
+  - !Equals
+      - !FindInMap [EnableDynamoDbStream, !Ref CriIdentifier, !Ref Environment]
+      - true
+  - !Not # Prevent it enabling in common-dev & common-build as the CriIdentifier is di-ipv-cri-check-hmrc-api in those accounts
+      - !Equals
+          - !Ref AuditEventNamePrefix
+          - IPV_COMMON_CRI
   EnableDynamoDbStreamCSLS: !And
     - !Condition EnableDynamoDbStreamReplication
     - !Condition IsCSLSDisabled
@@ -201,8 +192,50 @@ Globals:
               ]
         DT_OPEN_TELEMETRY_ENABLE_INTEGRATION: "true"
 
-
 Mappings:
+  EnableDynamoDbStream:
+    di-ipv-cri-address-api:
+      dev: false
+      build: false
+      staging: false
+      integration: false
+      production: false
+    di-ipv-cri-fraud-api:
+      dev: false
+      build: false
+      staging: false
+      integration: false
+      production: false
+    di-ipv-cri-kbv-api:
+      dev: false
+      build: false
+      staging: false
+      integration: false
+      production: false
+    di-ipv-cri-dl-api:
+      dev: false
+      build: false
+      staging: false
+      integration: false
+      production: false
+    di-ipv-cri-passport-api:
+      dev: false
+      build: false
+      staging: false
+      integration: false
+      production: false
+    di-ipv-cri-kbv-hmrc-api:
+      dev: false
+      build: false
+      staging: false
+      integration: false
+      production: false
+    di-ipv-cri-check-hmrc-api:
+      dev: false
+      build: false
+      staging: false
+      integration: false
+      production: false
 
   CustomerManagedKey:
     di-ipv-cri-address-api:
@@ -1670,19 +1703,24 @@ Resources:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-dynamodb-stream"
           SOURCE_SESSION_TABLE_NAME: !Ref SessionTable
           SOURCE_PERSON_IDENTITY_TABLE_NAME: !Ref PersonIdentityTable
-          TARGET_SESSION_TABLE_NAME: !Ref TargetSessionTableName
-          TARGET_PERSON_IDENTITY_TABLE_NAME: !Ref TargetPersonIdentityTableName
+          TARGET_SESSION_TABLE_NAME: !Sub "{{resolve:ssm:/common-cri/oauth-common/OAuthSessionTableName}}"
+          TARGET_PERSON_IDENTITY_TABLE_NAME: !Sub "{{resolve:ssm:/common-cri/oauth-common/OAuthPersonIdentityTableName}}"
       AutoPublishAlias: live
       AutoPublishAliasAllProperties: true
       Policies:
         - AWSLambdaBasicExecutionRole
         - AWSXrayWriteOnlyAccess
-        - DynamoDBWritePolicy:
-            TableName: !Ref TargetSessionTableName
-        - DynamoDBWritePolicy:
-            TableName: !Ref TargetPersonIdentityTableName
+        - DynamoDBCrudPolicy:
+            TableName: !Sub "{{resolve:ssm:/common-cri/oauth-common/OAuthSessionTableName}}"
+        - DynamoDBCrudPolicy:
+            TableName: !Sub "{{resolve:ssm:/common-cri/oauth-common/OAuthPersonIdentityTableName}}"
+        - !If
+          - UseCustomerManagedKey
+          - KMSDecryptPolicy:
+              KeyId: !Ref DynamoTablesEncryptionKey
+          - !Ref AWS::NoValue
         - KMSDecryptPolicy:
-            KeyId: !Ref DynamoTablesEncryptionKey
+            KeyId: !Sub "{{resolve:ssm:/common-cri/oauth-common/OAuthCustomerManagedKeyId}}"
       Events:
         SessionTableStream:
           Type: DynamoDB
@@ -1712,9 +1750,14 @@ Resources:
     Metadata:
       BuildMethod: esbuild
       BuildProperties:
+        Format: esm
         Minify: true
-        Target: "node18"
+        Target: es2022
         Sourcemap: true
+        OutExtension:
+          - .js=.mjs
+        Banner:
+          - js=import { createRequire } from 'module'; const require = createRequire(import.meta.url);
         EntryPoints:
           - src/handlers/dynamodb-stream-handler.ts
         External:

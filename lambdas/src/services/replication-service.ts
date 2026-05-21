@@ -3,11 +3,11 @@ import { NativeAttributeValue } from "@aws-sdk/util-dynamodb";
 
 export class ReplicationService {
     constructor(
-        private dynamoDbClient: DynamoDBDocument,
-        private sourceSessionTableName: string,
-        private sourcePersonIdentityTableName: string,
-        private targetSessionTableName: string,
-        private targetPersonIdentityTableName: string,
+        private readonly dynamoDbClient: DynamoDBDocument,
+        private readonly sourceSessionTableName: string,
+        private readonly sourcePersonIdentityTableName: string,
+        private readonly targetSessionTableName: string,
+        private readonly targetPersonIdentityTableName: string,
     ) {}
 
     public resolveTargetTable(eventSourceArn: string): string {
