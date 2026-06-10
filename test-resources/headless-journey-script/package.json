@@ -10,7 +10,7 @@
         "@aws-sdk/client-api-gateway": "^3.1012.0",
         "@aws-sdk/client-ssm": "^3.1012.0",
         "@aws-sdk/credential-providers": "^3.1012.0",
-        "@types/node": "^24.12.2",
+        "@types/node": "^25.9.2",
         "aws-sigv4-fetch": "^4.4.1"
     }
 }
