@@ -61,6 +61,13 @@ Parameters:
     Description: The stack containing VPC infrastructure
     Type: String
     Default: "cri-vpc"
+  IsCredentialIssuer:
+    Description: Whether or not the OAuth protected resource is a signed credential
+    Type: String
+    Default: "true"
+    AllowedValues:
+      - "true"
+      - "false"
 
 Conditions:
   UseCodeSigningConfigArn:
@@ -113,6 +120,9 @@ Conditions:
   IsEncryptionKeyIdRequired: !Or
     - !Equals [ !FindInMap [KeyRotationMapping, !Ref CriIdentifier, !Ref Environment], "false" ]
     - !Equals [ !FindInMap [KeyRotationLegacyFallBackMapping, !Ref CriIdentifier, !Ref Environment], "true" ]
+  IsCredentialIssuer: !Equals
+    - !Ref IsCredentialIssuer
+    - "true"
 
 Globals:
   Function:
@@ -2200,6 +2210,7 @@ Resources:
 
   VerifiableCredentialIssuerParameter:
     Type: AWS::SSM::Parameter
+    Condition: IsCredentialIssuer
     Properties:
       Name: !Sub "/${AWS::StackName}/verifiable-credential/issuer"
       Type: String
@@ -2213,6 +2224,7 @@ Resources:
 
   VerifiableCredentialKmsSigningKeyParameter:
     Type: AWS::SSM::Parameter
+    Condition: IsCredentialIssuer
     Properties:
       Name: !Sub "/${AWS::StackName}/verifiableCredentialKmsSigningKeyId"
       Type: String
