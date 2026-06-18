@@ -29,7 +29,7 @@
         "@govuk-one-login/cri-metrics": "1.0.1",
         "@middy/core": "4.7.0",
         "aws-sigv4-fetch": "4.4.1",
-        "esbuild": "0.28.0",
+        "esbuild": "0.28.1",
         "jose": "6.2.3",
         "zod": "4.4.3"
     },
