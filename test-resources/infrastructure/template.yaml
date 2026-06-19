@@ -154,11 +154,11 @@ Globals:
       !If [UsePermissionsBoundary, !Ref PermissionsBoundary, !Ref AWS::NoValue]
     VpcConfig:
       SecurityGroupIds:
-        - !ImportValue cri-vpc-AWSServicesEndpointSecurityGroupId
+        - Fn::ImportValue: !Sub "${VpcStackName}-AWSServicesEndpointSecurityGroupId"
       SubnetIds: !If
         - IsDevPlatformDeploy
-        - [ !ImportValue cri-vpc-ProtectedSubnetIdA, !ImportValue cri-vpc-ProtectedSubnetIdB ]
-        - [ !ImportValue cri-vpc-PrivateSubnetIdA, !ImportValue cri-vpc-PrivateSubnetIdB ]
+        - [ Fn::ImportValue: !Sub "${VpcStackName}-ProtectedSubnetIdA", Fn::ImportValue: !Sub "${VpcStackName}-ProtectedSubnetIdB" ]
+        - [ Fn::ImportValue: !Sub "${VpcStackName}-PrivateSubnetIdA", Fn::ImportValue: !Sub "${VpcStackName}-PrivateSubnetIdB" ]
     Tracing: Active
     MemorySize: 1024
     Environment:
@@ -385,10 +385,10 @@ Resources:
         !If [EnforceCodeSigning, !Ref CodeSigningConfigArn, !Ref AWS::NoValue]
       VpcConfig:
         SecurityGroupIds:
-          - !ImportValue cri-vpc-AWSServicesEndpointSecurityGroupId
+          - Fn::ImportValue: !Sub "${VpcStackName}-AWSServicesEndpointSecurityGroupId"
         SubnetIds:
-          - !ImportValue cri-vpc-PrivateSubnetIdA
-          - !ImportValue cri-vpc-PrivateSubnetIdB
+          - Fn::ImportValue: !Sub "${VpcStackName}-PrivateSubnetIdA"
+          - Fn::ImportValue: !Sub "${VpcStackName}-PrivateSubnetIdB"
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: AuditEventDequeueFunction
