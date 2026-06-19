@@ -110,6 +110,9 @@ Conditions:
   UseCustomerManagedKey: !Equals
     - !FindInMap [CustomerManagedKey, !Ref "CriIdentifier", useCMK]
     - true
+  IsEncryptionKeyIdRequired: !Or
+    - !Equals [ !FindInMap [KeyRotationMapping, !Ref CriIdentifier, !Ref Environment], "false" ]
+    - !Equals [ !FindInMap [KeyRotationLegacyFallBackMapping, !Ref CriIdentifier, !Ref Environment], "true" ]
 
 Globals:
   Function:
@@ -1044,8 +1047,11 @@ Resources:
         - SQSSendMessagePolicy:
             QueueName:
               Fn::ImportValue: !Sub ${TxmaStackName}-AuditEventQueueName
-        - KMSDecryptPolicy:
-            KeyId: !ImportValue core-infrastructure-CriDecryptionKey1Id
+        - !If
+          - IsEncryptionKeyIdRequired
+          - KMSDecryptPolicy:
+              KeyId: !ImportValue core-infrastructure-CriDecryptionKey1Id
+          - !Ref AWS::NoValue
         - KMSDecryptPolicy:
             KeyId: !Ref DynamoTablesEncryptionKey
         - SSMParameterReadPolicy:
@@ -2185,6 +2191,7 @@ Resources:
 
   AuthRequestKmsEncryptionKeyIdParameter:
     Type: AWS::SSM::Parameter
+    Condition: IsEncryptionKeyIdRequired
     Properties:
       Name: !Sub "/${AWS::StackName}/AuthRequestKmsEncryptionKeyId"
       Type: String
