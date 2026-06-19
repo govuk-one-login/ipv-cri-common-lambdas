@@ -21,8 +21,10 @@ Below is detailed documentation for working with OAuth Common, but further infor
 | CriPublicApiGwName | Yes | - | The public API GW name, for Canary alarms | `check-hmrc-cri-api-public` |
 | DbSessionTTL | No | 7200 | TTL for the Session Table, default 2 hours | 7200 |
 | DbCustomerManagedKey | No | `true` | Use a CustomerManagedKey for the DynamoDB Tables | `false` |
+| DefaultClientId | No | `ipv-core` | The client ID used by the main OAuth client | `ipv-core` |
 | Environment | Yes | - | The deployed environment | `dev` |
 | IPVCoreRedirectURI | Yes | - | Redirect URL to IPV CORE | `dev` |
+| IsCredentialIssuer | No | `true` | Whether or not the OAuth protected resource is a signed credential | `true` |
 | IPVCoreStubJwksEndpoint | No | `""` (empty string) | Stubbed JWKS endpoint for non-prod environments | `https://test-resources.review-hc.dev.account.gov.uk/.well-known/jwks.json` |
 | KeyRotation | No | `true` | Feature flag for ENV_VAR_FEATURE_FLAG_KEY_ROTATION | `false` |
 | KeyRotationFallback | No | `false` | Feature flag for ENV_VAR_FEATURE_FLAG_KEY_ROTATION_LEGACY_KEY_FALLBACK | `true` |
@@ -31,6 +33,7 @@ Below is detailed documentation for working with OAuth Common, but further infor
 | LambdaProvisionedConcurrentExecutions | No | 0 | Stubbed JWKS endpoint for non-prod environments | 1 |
 | LambdaVpcConfiguration | Yes | - | Stubbed JWKS endpoint for non-prod environments | `di-devplatform-deploy` |
 | PermissionsBoundaryArn | No | `none` | The ARN of the permissions boundary to apply when creating IAM roles | `An AWS ARN` |
+| VpcStackName | No | `cri-vpc` | The name of the stack containing VPC infrastructure | `cri-vpc` |
 
 ## Stack Outputs
 
@@ -47,7 +50,7 @@ Below is detailed documentation for working with OAuth Common, but further infor
 | LambdaAuthorizationFunctionName | The name of the authorisation function |
 | LambdaAccessTokenFunctionName | The name of the access token function |
 | PreMergeDevOnlyApiId | ID of the dev-only OAuth Common API. Only present if `isDev` |
-| VCSigningKeyID | The ID of the KMS key used to sign VCs |
+| VCSigningKeyID | The ID of the KMS key used to sign VCs. Only present is IsCredentialIssuer is `true`. |
 | StackName | The name of the OAuth common API stack |
 
 ## Hooks
