@@ -41,6 +41,10 @@ Parameters:
     Description: "The unique credential issuer identifier"
     Type: AWS::SSM::Parameter::Value<String>
     Default: "/common-cri-parameters/CriIdentifier"
+  DefaultClientId:
+    Description: "The client ID used by the main OAuth client"
+    Type: String
+    Default: "ipv-core"
   TxmaStackName:
     Description: "The stack containing the TXMA infrastructure"
     Type: String
@@ -1827,7 +1831,7 @@ Resources:
     Condition: IsProdLikeEnvironment
     Type: AWS::SSM::Parameter
     Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core/jwtAuthentication/authenticationAlg"
+      Name: !Sub "/${AWS::StackName}/clients/${DefaultClientId}/jwtAuthentication/authenticationAlg"
       Type: String
       Value: ES256
 
@@ -1880,7 +1884,7 @@ Resources:
     Condition: IsProdLikeEnvironment
     Type: AWS::SSM::Parameter
     Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core/jwtAuthentication/audience"
+      Name: !Sub "/${AWS::StackName}/clients/${DefaultClientId}/jwtAuthentication/audience"
       Type: String
       Value:
         !FindInMap [CriAudienceMapping, !Ref CriIdentifier, !Ref Environment]
@@ -1950,7 +1954,7 @@ Resources:
     Condition: IsProdLikeEnvironment
     Type: AWS::SSM::Parameter
     Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core/jwtAuthentication/issuer"
+      Name: !Sub "/${AWS::StackName}/clients/${DefaultClientId}/jwtAuthentication/issuer"
       Type: String
       Value: !FindInMap [IPVCore1IssuerMapping, Environment, !Ref "Environment"]
 
@@ -2023,7 +2027,7 @@ Resources:
     Condition: IsProdLikeEnvironment
     Type: AWS::SSM::Parameter
     Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core/jwtAuthentication/publicSigningJwkBase64"
+      Name: !Sub "/${AWS::StackName}/clients/${DefaultClientId}/jwtAuthentication/publicSigningJwkBase64"
       Type: String
       Value:
         !FindInMap [
@@ -2101,7 +2105,7 @@ Resources:
     Condition: IsProdLikeEnvironment
     Type: AWS::SSM::Parameter
     Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core/jwtAuthentication/redirectUri"
+      Name: !Sub "/${AWS::StackName}/clients/${DefaultClientId}/jwtAuthentication/redirectUri"
       Type: String
       Value:
         !FindInMap [
@@ -2194,7 +2198,7 @@ Resources:
   IPVCoreJwksEndpointParameter:
     Type: AWS::SSM::Parameter
     Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core/jwtAuthentication/jwksEndpoint"
+      Name: !Sub "/${AWS::StackName}/clients/${DefaultClientId}/jwtAuthentication/jwksEndpoint"
       Type: String
       Value:
         !FindInMap [CoreJwksEndpoint, Environment, !Ref Environment]
