@@ -61,8 +61,12 @@ Parameters:
     Description: The topic to publish notification and sns alerts
     Type: String
     Default: "none"
-  VpcStackName:
-    Description: The stack containing VPC infrastructure
+  VpcStackNameOverride:
+    Description: "The name of the stack containing VPC infrastructure. This parameter will be renamed to VpcStackName 
+    in line with a similar parameter set on the pipeline. However, some of the pipelines currently set VpcStackName to 
+    None, which is not a valid value for the parameter in this template. This parameter will be renamed once the 
+    pipelines are updated to set the VpcStackName explicitly, or not at all (thus relying on the default value in the 
+    template)."
     Type: String
     Default: "cri-vpc"
   IsCredentialIssuer:
@@ -133,8 +137,8 @@ Globals:
     VpcConfig:
       SecurityGroupIds: !If
         - IsDevPlatformDeploy
-        - [Fn::ImportValue: !Sub "${VpcStackName}-AWSServicesEndpointSecurityGroupId"]
-        - [Fn::ImportValue: !Sub "${VpcStackName}-LambdaSecurityGroup"]
+        - [Fn::ImportValue: !Sub "${VpcStackNameOverride}-AWSServicesEndpointSecurityGroupId"]
+        - [Fn::ImportValue: !Sub "${VpcStackNameOverride}-LambdaSecurityGroup"]
     PermissionsBoundary: !If
       - UsePermissionsBoundary
       - !Ref PermissionsBoundary
@@ -865,10 +869,10 @@ Resources:
         SubnetIds: !If
           - IsDevPlatformDeploy
           - [
-              Fn::ImportValue: !Sub "${VpcStackName}-ProtectedSubnetIdA",
-              Fn::ImportValue: !Sub "${VpcStackName}-ProtectedSubnetIdB",
+              Fn::ImportValue: !Sub "${VpcStackNameOverride}-ProtectedSubnetIdA",
+              Fn::ImportValue: !Sub "${VpcStackNameOverride}-ProtectedSubnetIdB",
             ]
-          - !Split [",", Fn::ImportValue: !Sub "${VpcStackName}-PrivateSubnets"]
+          - !Split [",", Fn::ImportValue: !Sub "${VpcStackNameOverride}-PrivateSubnets"]
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-session"
@@ -1030,10 +1034,10 @@ Resources:
         SubnetIds: !If
           - IsDevPlatformDeploy
           - [
-              Fn::ImportValue: !Sub "${VpcStackName}-ProtectedSubnetIdA",
-              Fn::ImportValue: !Sub "${VpcStackName}-ProtectedSubnetIdB",
+              Fn::ImportValue: !Sub "${VpcStackNameOverride}-ProtectedSubnetIdA",
+              Fn::ImportValue: !Sub "${VpcStackNameOverride}-ProtectedSubnetIdB",
             ]
-          - !Split [",", Fn::ImportValue: !Sub "${VpcStackName}-PrivateSubnets"]
+          - !Split [",", Fn::ImportValue: !Sub "${VpcStackNameOverride}-PrivateSubnets"]
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-sessionTS"
@@ -1171,10 +1175,10 @@ Resources:
         SubnetIds: !If
           - IsDevPlatformDeploy
           - [
-              Fn::ImportValue: !Sub "${VpcStackName}-PrivateSubnetIdA",
-              Fn::ImportValue: !Sub "${VpcStackName}-PrivateSubnetIdB",
+              Fn::ImportValue: !Sub "${VpcStackNameOverride}-PrivateSubnetIdA",
+              Fn::ImportValue: !Sub "${VpcStackNameOverride}-PrivateSubnetIdB",
             ]
-          - !Split [",", Fn::ImportValue: !Sub "${VpcStackName}-PrivateSubnets"]
+          - !Split [",", Fn::ImportValue: !Sub "${VpcStackNameOverride}-PrivateSubnets"]
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-authorization"
@@ -1286,10 +1290,10 @@ Resources:
         SubnetIds: !If
           - IsDevPlatformDeploy
           - [
-              Fn::ImportValue: !Sub "${VpcStackName}-PrivateSubnetIdA",
-              Fn::ImportValue: !Sub "${VpcStackName}-PrivateSubnetIdB",
+              Fn::ImportValue: !Sub "${VpcStackNameOverride}-PrivateSubnetIdA",
+              Fn::ImportValue: !Sub "${VpcStackNameOverride}-PrivateSubnetIdB",
             ]
-          - !Split [",", Fn::ImportValue: !Sub "${VpcStackName}-PrivateSubnets"]
+          - !Split [",", Fn::ImportValue: !Sub "${VpcStackNameOverride}-PrivateSubnets"]
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-authorizationTS"
@@ -1402,10 +1406,10 @@ Resources:
         SubnetIds: !If
           - IsDevPlatformDeploy
           - [
-              Fn::ImportValue: !Sub "${VpcStackName}-ProtectedSubnetIdA",
-              Fn::ImportValue: !Sub "${VpcStackName}-ProtectedSubnetIdB",
+              Fn::ImportValue: !Sub "${VpcStackNameOverride}-ProtectedSubnetIdA",
+              Fn::ImportValue: !Sub "${VpcStackNameOverride}-ProtectedSubnetIdB",
             ]
-          - !Split [",", Fn::ImportValue: !Sub "${VpcStackName}-PrivateSubnets"]
+          - !Split [",", Fn::ImportValue: !Sub "${VpcStackNameOverride}-PrivateSubnets"]
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-access-token"
@@ -1518,10 +1522,10 @@ Resources:
         SubnetIds: !If
           - IsDevPlatformDeploy
           - [
-              Fn::ImportValue: !Sub "${VpcStackName}-ProtectedSubnetIdA",
-              Fn::ImportValue: !Sub "${VpcStackName}-ProtectedSubnetIdB",
+              Fn::ImportValue: !Sub "${VpcStackNameOverride}-ProtectedSubnetIdA",
+              Fn::ImportValue: !Sub "${VpcStackNameOverride}-ProtectedSubnetIdB",
             ]
-          - !Split [",", Fn::ImportValue: !Sub "${VpcStackName}-PrivateSubnets"]
+          - !Split [",", Fn::ImportValue: !Sub "${VpcStackNameOverride}-PrivateSubnets"]
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-access-token-2"
@@ -2346,10 +2350,10 @@ Resources:
         SubnetIds: !If
           - IsDevPlatformDeploy
           - [
-              Fn::ImportValue: !Sub "${VpcStackName}-PrivateSubnetIdA",
-              Fn::ImportValue: !Sub "${VpcStackName}-PrivateSubnetIdB",
+              Fn::ImportValue: !Sub "${VpcStackNameOverride}-PrivateSubnetIdA",
+              Fn::ImportValue: !Sub "${VpcStackNameOverride}-PrivateSubnetIdB",
             ]
-          - !Split [",", Fn::ImportValue: !Sub "${VpcStackName}-PrivateSubnets"]
+          - !Split [",", Fn::ImportValue: !Sub "${VpcStackNameOverride}-PrivateSubnets"]
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-create-auth-code"
