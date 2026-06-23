@@ -33,7 +33,13 @@ Below is detailed documentation for working with OAuth Common, but further infor
 | LambdaProvisionedConcurrentExecutions | No | 0 | Stubbed JWKS endpoint for non-prod environments | 1 |
 | LambdaVpcConfiguration | Yes | - | Stubbed JWKS endpoint for non-prod environments | `di-devplatform-deploy` |
 | PermissionsBoundaryArn | No | `none` | The ARN of the permissions boundary to apply when creating IAM roles | `An AWS ARN` |
-| VpcStackName | No | `cri-vpc` | The name of the stack containing VPC infrastructure | `cri-vpc` |
+| VpcStackNameOverride | No | `cri-vpc` | The name of the stack containing VPC infrastructure | `cri-vpc` |
+
+> **Note:** The `VpcStackNameOverride` parameter will be renamed to `VpcStackName`
+in line with a similar parameter set on the pipeline. However, some of the pipelines currently set `VpcStackName` to
+`None`, which is not a valid value for the parameter in the template. This parameter will be renamed once the
+pipelines are updated to set the `VpcStackName` explicitly, or not at all (thus relying on the default value in the
+template).
 
 ## Stack Outputs
 
@@ -50,7 +56,7 @@ Below is detailed documentation for working with OAuth Common, but further infor
 | LambdaAuthorizationFunctionName | The name of the authorisation function |
 | LambdaAccessTokenFunctionName | The name of the access token function |
 | PreMergeDevOnlyApiId | ID of the dev-only OAuth Common API. Only present if `isDev` |
-| VCSigningKeyID | The ID of the KMS key used to sign VCs. Only present is IsCredentialIssuer is `true`. |
+| VCSigningKeyID | The ID of the KMS key used to sign VCs. Only present if IsCredentialIssuer is `true`. |
 | StackName | The name of the OAuth common API stack |
 
 ## Hooks
