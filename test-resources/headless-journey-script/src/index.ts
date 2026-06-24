@@ -143,10 +143,7 @@ describe(`Completes ${input.journeyIdentifier} OAuth journey`, { concurrency: fa
         const [header, payload] = [headerJSON, payloadJSON].map((v) => JSON.parse(v));
 
         assert(header.typ && header.alg && header.kid);
-        assert(
-            payload.sub && payload.nbf && payload.iss && payload.exp && payload.vc,
-            // && payload.jti | not all CRIs return jti
-        );
+        assert(payload.sub && payload.nbf && payload.iss && payload.vc && payload.jti);
 
         environment.vcPayload = payload;
     });
