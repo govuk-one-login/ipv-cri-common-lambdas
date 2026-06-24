@@ -9,7 +9,7 @@ Metadata:
     SpdxLicenseId: MIT
     LicenseUrl: ../LICENSE
     HomePageUrl: https://github.com/govuk-one-login/ipv-cri-oauth-common
-    SemanticVersion: 0.4.0
+    SemanticVersion: 0.5.0
     SourceCodeUrl: https://github.com/govuk-one-login/ipv-cri-oauth-common
 
 Parameters:
@@ -71,6 +71,11 @@ Parameters:
       - "true"
       - "false"
 
+  DefaultClientId:
+    Description: "The client ID used by the main OAuth client"
+    Type: String
+    Default: "ipv-core"
+
   Environment:
     Type: String
     Description: The deployed environment
@@ -92,6 +97,14 @@ Parameters:
       Stubbed JWKS endpoint for non-prod environments
       Example: https://test-resources.review-hc.dev.account.gov.uk/.well-known/jwks.json
     Default: ""
+
+  IsCredentialIssuer:
+    Description: Whether or not the OAuth protected resource is a signed credential
+    Type: String
+    Default: "true"
+    AllowedValues:
+      - "true"
+      - "false"
 
   KeyRotation:
     Type: String
@@ -130,6 +143,15 @@ Parameters:
     Type: String
     Description: The ARN of the permissions boundary to apply when creating IAM roles
     Default: "none"
+
+  VpcStackNameOverride:
+    Description: "The name of the stack containing VPC infrastructure. This parameter will be renamed to VpcStackName 
+    in line with a similar parameter set on the pipeline. However, some of the pipelines currently set VpcStackName to 
+    None, which is not a valid value for the parameter in this template. This parameter will be renamed once the 
+    pipelines are updated to set the VpcStackName explicitly, or not at all (thus relying on the default value in the 
+    template)."
+    Type: String
+    Default: "cri-vpc"
 
 Mappings:
   EnvConfig:
@@ -187,14 +209,18 @@ Conditions:
   IsCanaryDeployment: !Not
     - !Equals [!Ref LambdaDeploymentPreference, "AllAtOnce"]
   IsCustomerManagedKeyEnabled: !Equals [!Ref DbCustomerManagedKey, "true"]
+  IsEncryptionKeyIdRequired: !Or
+    - !Equals [ !Ref KeyRotation, "false" ]
+    - !Equals [ !Ref KeyRotationFallback, "true" ]
+  IsCredentialIssuer: !Equals [!Ref IsCredentialIssuer, "true"]
 
 Globals:
   Function:
     VpcConfig:
       SecurityGroupIds: !If
         - IsDevPlatformDeploy
-        - [!ImportValue cri-vpc-AWSServicesEndpointSecurityGroupId]
-        - [!ImportValue cri-vpc-LambdaSecurityGroup]
+        - [Fn::ImportValue: !Sub "${VpcStackNameOverride}-AWSServicesEndpointSecurityGroupId"]
+        - [Fn::ImportValue: !Sub "${VpcStackNameOverride}-LambdaSecurityGroup"]
     PermissionsBoundary: !If
       - IsPermissionsBoundaryEnabled
       - !Ref PermissionsBoundaryArn
@@ -259,10 +285,10 @@ Resources:
         SubnetIds: !If
           - IsDevPlatformDeploy
           - [
-              !ImportValue cri-vpc-ProtectedSubnetIdA,
-              !ImportValue cri-vpc-ProtectedSubnetIdB,
+              Fn::ImportValue: !Sub "${VpcStackNameOverride}-ProtectedSubnetIdA",
+              Fn::ImportValue: !Sub "${VpcStackNameOverride}-ProtectedSubnetIdB",
             ]
-          - !Split [",", !ImportValue cri-vpc-PrivateSubnets]
+          - !Split [",", Fn::ImportValue: !Sub "${VpcStackNameOverride}-PrivateSubnets"]
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-sessionTS"
@@ -286,8 +312,11 @@ Resources:
         - SQSSendMessagePolicy:
             QueueName:
               Fn::ImportValue: !Sub ${AuditTxmaStackName}-AuditEventQueueName
-        - KMSDecryptPolicy:
-            KeyId: !ImportValue core-infrastructure-CriDecryptionKey1Id
+        - !If
+          - IsEncryptionKeyIdRequired
+          - KMSDecryptPolicy:
+              KeyId: !ImportValue core-infrastructure-CriDecryptionKey1Id
+          - !Ref AWS::NoValue
         - KMSDecryptPolicy:
             KeyId: !Ref DynamoTablesEncryptionKey
         - SSMParameterReadPolicy:
@@ -436,10 +465,10 @@ Resources:
         SubnetIds: !If
           - IsDevPlatformDeploy
           - [
-              !ImportValue cri-vpc-PrivateSubnetIdA,
-              !ImportValue cri-vpc-PrivateSubnetIdB,
+              Fn::ImportValue: !Sub "${VpcStackNameOverride}-PrivateSubnetIdA",
+              Fn::ImportValue: !Sub "${VpcStackNameOverride}-PrivateSubnetIdB",
             ]
-          - !Split [",", !ImportValue cri-vpc-PrivateSubnets]
+          - !Split [",", Fn::ImportValue: !Sub "${VpcStackNameOverride}-PrivateSubnets"]
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-authorizationTS"
@@ -581,10 +610,10 @@ Resources:
         SubnetIds: !If
           - IsDevPlatformDeploy
           - [
-              !ImportValue cri-vpc-ProtectedSubnetIdA,
-              !ImportValue cri-vpc-ProtectedSubnetIdB,
+              Fn::ImportValue: !Sub "${VpcStackNameOverride}-ProtectedSubnetIdA",
+              Fn::ImportValue: !Sub "${VpcStackNameOverride}-ProtectedSubnetIdB",
             ]
-          - !Split [",", !ImportValue cri-vpc-PrivateSubnets]
+          - !Split [",", Fn::ImportValue: !Sub "${VpcStackNameOverride}-PrivateSubnets"]
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-access-token-2"
@@ -727,10 +756,10 @@ Resources:
         SubnetIds: !If
           - IsDevPlatformDeploy
           - [
-              !ImportValue cri-vpc-PrivateSubnetIdA,
-              !ImportValue cri-vpc-PrivateSubnetIdB,
+              Fn::ImportValue: !Sub "${VpcStackNameOverride}-PrivateSubnetIdA",
+              Fn::ImportValue: !Sub "${VpcStackNameOverride}-PrivateSubnetIdB",
             ]
-          - !Split [",", !ImportValue cri-vpc-PrivateSubnets]
+          - !Split [",", Fn::ImportValue: !Sub "${VpcStackNameOverride}-PrivateSubnets"]
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-create-auth-code"
@@ -950,6 +979,7 @@ Resources:
 
   AuthRequestKmsEncryptionKeyIdParameter:
     Type: AWS::SSM::Parameter
+    Condition: IsEncryptionKeyIdRequired
     Properties:
       Name: !Sub "/${AWS::StackName}/AuthRequestKmsEncryptionKeyId"
       Type: String
@@ -958,6 +988,7 @@ Resources:
 
   VerifiableCredentialIssuerParameter:
     Type: AWS::SSM::Parameter
+    Condition: IsCredentialIssuer
     Properties:
       Name: !Sub "/${AWS::StackName}/verifiable-credential/issuer"
       Type: String
@@ -966,6 +997,7 @@ Resources:
 
   VerifiableCredentialKmsSigningKeyParameter:
     Type: AWS::SSM::Parameter
+    Condition: IsCredentialIssuer
     Properties:
       Name: !Sub "/${AWS::StackName}/verifiableCredentialKmsSigningKeyId"
       Type: String
@@ -1019,7 +1051,7 @@ Resources:
     Condition: IsStagingIntegrationOrProd
     Type: AWS::SSM::Parameter
     Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core/jwtAuthentication/authenticationAlg"
+      Name: !Sub "/${AWS::StackName}/clients/${DefaultClientId}/jwtAuthentication/authenticationAlg"
       Type: String
       Value: ES256
 
@@ -1067,7 +1099,7 @@ Resources:
     Condition: IsStagingIntegrationOrProd
     Type: AWS::SSM::Parameter
     Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core/jwtAuthentication/audience"
+      Name: !Sub "/${AWS::StackName}/clients/${DefaultClientId}/jwtAuthentication/audience"
       Type: String
       Value: !Ref CriAudience
 
@@ -1115,7 +1147,7 @@ Resources:
     Condition: IsStagingIntegrationOrProd
     Type: AWS::SSM::Parameter
     Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core/jwtAuthentication/issuer"
+      Name: !Sub "/${AWS::StackName}/clients/${DefaultClientId}/jwtAuthentication/issuer"
       Type: String
       Value: !FindInMap [EnvConfig, !Ref "Environment", IPVCoreIssuer]
 
@@ -1163,7 +1195,7 @@ Resources:
     Condition: IsStagingIntegrationOrProd
     Type: AWS::SSM::Parameter
     Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core/jwtAuthentication/redirectUri"
+      Name: !Sub "/${AWS::StackName}/clients/${DefaultClientId}/jwtAuthentication/redirectUri"
       Type: String
       Value: !Ref IPVCoreRedirectURI
 
@@ -1242,7 +1274,7 @@ Resources:
   IPVCoreJwksEndpointParameter:
     Type: AWS::SSM::Parameter
     Properties:
-      Name: !Sub "/${AWS::StackName}/clients/ipv-core/jwtAuthentication/jwksEndpoint"
+      Name: !Sub "/${AWS::StackName}/clients/${DefaultClientId}/jwtAuthentication/jwksEndpoint"
       Type: String
       Value: !FindInMap [EnvConfig, !Ref Environment, CoreJwksEndpoint]
 
@@ -1725,6 +1757,7 @@ Outputs:
     Description: ID of the dev-only OAuth Common API
     Value: !Ref PreMergeDevOnlyApi
   VCSigningKeyID:
+    Condition: IsCredentialIssuer
     Description: The ID of the KMS key used to sign VCs
     Value: !GetAtt VerifiableCredentialKmsSigningKeyParameter.Value
   StackName:

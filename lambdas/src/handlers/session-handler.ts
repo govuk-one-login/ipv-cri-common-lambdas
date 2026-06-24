@@ -114,6 +114,7 @@ export class SessionLambda implements LambdaInterface {
         };
     }
 }
+
 const ssmClient = createClient(AwsClientType.SSM);
 const configService = new ConfigService(new SSMProvider({ awsSdkV3Client: ssmClient }));
 const jweDecrypter = new JweDecrypter(kmsClient, () => configService.getConfigEntry(CommonConfigKey.DECRYPTION_KEY_ID));
@@ -122,6 +123,10 @@ const handlerClass = new SessionLambda(
     new SessionService(dynamoDbClient, configService),
     new PersonIdentityService(dynamoDbClient, configService),
 );
+const requireDecryptionKeyId =
+    process.env.ENV_VAR_FEATURE_FLAG_KEY_ROTATION === "false" ||
+    process.env.ENV_VAR_FEATURE_FLAG_KEY_ROTATION_LEGACY_KEY_FALLBACK === "true";
+
 export const lambdaHandler = middy(handlerClass.handler.bind(handlerClass))
     .use(
         errorMiddleware(logger, {
@@ -137,8 +142,8 @@ export const lambdaHandler = middy(handlerClass.handler.bind(handlerClass))
                 CommonConfigKey.SESSION_TABLE_NAME,
                 CommonConfigKey.SESSION_TTL,
                 CommonConfigKey.PERSON_IDENTITY_TABLE_NAME,
-                CommonConfigKey.DECRYPTION_KEY_ID,
                 CommonConfigKey.VC_ISSUER,
+                ...(requireDecryptionKeyId ? [CommonConfigKey.DECRYPTION_KEY_ID] : []),
             ],
         }),
     )
