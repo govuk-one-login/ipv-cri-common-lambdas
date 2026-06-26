@@ -14,7 +14,7 @@
           "provider": "GitHub",
           "config": {
             "file": ".github/workflows/code-quality.yml",
-            "path": "$.jobs.run-pre-commit"
+            "path": "$.jobs.pre-commit"
           }
         },
         {
@@ -82,7 +82,7 @@
           "provider": "GitHub",
           "config": {
             "file": ".github/workflows/check-pr.yml",
-            "path": "$.jobs.apigw-tests"
+            "path": "$.jobs.integration-tests"
           }
         },
         {
