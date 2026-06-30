@@ -30,6 +30,10 @@ jobs:
           registry-url: "https://npm.pkg.github.com"
           scope: "@govuk-one-login"
           always-auth: true
+  
+      - name: Clear SAM build cache
+        shell: bash
+        run: rm -rf .aws-sam/cache
 
       - name: Build SAM application
         id: build
