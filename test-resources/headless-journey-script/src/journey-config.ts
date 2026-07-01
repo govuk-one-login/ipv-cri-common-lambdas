@@ -35,12 +35,49 @@ export const journeyConfig: Record<string, CriConfig> = {
                 headers: { session_id: sessionId },
                 jsonBody: [
                     {
-                        uprn: 100000000000,
                         buildingNumber: "10",
                         streetName: "street",
                         addressLocality: "City",
                         postalCode: "SW1A 2AA",
                         addressCountry: "GB",
+                        validFrom: "2000-01-01",
+                    },
+                ],
+            });
+
+            assert(response.status === 204);
+        },
+    },
+    ADDRESS_POSTCODE_LOOKUP_HAPPY: {
+        completeCri: async function ({ sessionId }) {
+            const lookupResponse = await invokeApi("private", {
+                method: "POST",
+                path: "/postcode-lookup",
+                headers: { session_id: sessionId },
+                jsonBody: {
+                    postcode: "BA2 5AA",
+                },
+            });
+
+            assert(lookupResponse.status === 200);
+            assert(lookupResponse.body);
+
+            const addresses: {
+                uprn: number;
+                buildingNumber: string;
+                streetName: string;
+                addressLocality: string;
+                postalCode: string;
+                addressCountry: string;
+            }[] = JSON.parse(lookupResponse.body);
+
+            const response = await invokeApi("private", {
+                method: "PUT",
+                path: "/address",
+                headers: { session_id: sessionId },
+                jsonBody: [
+                    {
+                        ...addresses[0],
                         validFrom: "2000-01-01",
                     },
                 ],
