@@ -49,4 +49,55 @@ export const journeyConfig: Record<string, CriConfig> = {
             assert(response.status === 204);
         },
     },
+    EXPERIAN_KBV_HAPPY: {
+        completeCri: async function ({ sessionId }) {
+            const kennethAnswers: Record<string, string> = {
+                Q00042: "OVER £550 UP TO £600",
+                Q00015: "UP TO £60,000",
+                Q00018: "UP TO £600",
+            };
+
+            let questionResponse = await invokeApi("private", {
+                method: "GET",
+                path: "/question",
+                headers: { "session-id": sessionId },
+            });
+
+            let questionStatus = questionResponse.status;
+
+            assert(questionStatus === 200);
+
+            // 204 response status from question API indicates no further questions
+            while (questionStatus === 200) {
+                assert(questionResponse.body);
+
+                const questionInfo: {
+                    text: string;
+                    tooltip: string;
+                    questionID: string;
+                    answerFormat: { identifier: string; fieldType: string; answerList: string[] };
+                } = JSON.parse(questionResponse.body);
+
+                const answerResponse = await invokeApi("private", {
+                    method: "POST",
+                    path: "/answer",
+                    headers: { "session-id": sessionId },
+                    jsonBody: {
+                        questionId: questionInfo.questionID,
+                        answer: kennethAnswers[questionInfo.questionID],
+                    },
+                });
+
+                assert(answerResponse.status === 200);
+
+                questionResponse = await invokeApi("private", {
+                    method: "GET",
+                    path: "/question",
+                    headers: { "session-id": sessionId },
+                });
+
+                questionStatus = questionResponse.status;
+            }
+        },
+    },
 };
