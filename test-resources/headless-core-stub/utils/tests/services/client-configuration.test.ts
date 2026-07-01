@@ -26,7 +26,6 @@ describe("getConfig", () => {
             `/${commonStackName}/clients/${clientId}/jwtAuthentication/audience`,
             `/${commonStackName}/clients/${clientId}/jwtAuthentication/issuer`,
             `/${commonStackName}/clients/${clientId}/jwtAuthentication/redirectUri`,
-            `/${commonStackName}/clients/${clientId}/jwtAuthentication/publicSigningJwkBase64`,
             `/test-resources/${clientId}/privateSigningKey`,
         ];
 
