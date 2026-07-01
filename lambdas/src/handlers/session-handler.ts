@@ -92,6 +92,7 @@ export class SessionLambda implements LambdaInterface {
                     session_id: sessionItem.sessionId,
                     state: jwtPayload.state,
                     redirect_uri: jwtPayload.redirect_uri,
+                    govuk_signin_journey_id: sessionRequestSummary.clientSessionId,
                 }),
             };
         } catch (err: unknown) {
