@@ -458,6 +458,7 @@ describe("SessionLambda", () => {
             session_id: "test-session-id",
             state: "test-state",
             redirect_uri: "test-redirect-uri",
+            govuk_signin_journey_id: "test-journey-id",
         });
         expect(result.statusCode).toBe(201);
     });
