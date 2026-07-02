@@ -1,0 +1,10 @@
+version = 0.1
+
+[default.deploy.parameters]
+stack_name = "<your_name>-common-lambdas"
+resolve_s3 = true
+s3_prefix = "<your_name>-common-lambdas"
+region = "eu-west-2"
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "CodeSigningConfigArn=\"none\" Environment=\"dev\" PermissionsBoundary=\"none\" AuditEventNamePrefix=\"/common-cri-parameters/AuditEventNamePrefix\" CriIdentifier=\"/common-cri-parameters/CriIdentifier\" TxmaStackName=\"txma-infrastructure\" LambdaDeploymentPreference=\"AllAtOnce\" ForceLambdaUpdate=\"initial\""
+image_repositories = []
