@@ -27,7 +27,7 @@ jobs:
       name: test-resources-dev
     steps:
       - name: Pull repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
 
       - name: Install Node
         uses: actions/setup-node@v4
