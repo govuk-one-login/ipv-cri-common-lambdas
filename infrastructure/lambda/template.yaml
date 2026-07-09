@@ -1583,6 +1583,7 @@ Resources:
       Action: lambda:InvokeFunction
       FunctionName: !GetAtt AccessTokenFunctionTS.Arn
       Principal: apigateway.amazonaws.com
+      SourceAccount: !Sub "${AWS::AccountId}"
 
   AccessTokenTSAliasPermission:
     Type: AWS::Lambda::Permission
@@ -1590,6 +1591,7 @@ Resources:
       Action: lambda:InvokeFunction
       FunctionName: !Ref AccessTokenFunctionTS.Alias
       Principal: apigateway.amazonaws.com
+      SourceAccount: !Sub "${AWS::AccountId}"
 
   AccessTokenFunctionLogGroup:
     Type: AWS::Logs::LogGroup
@@ -2245,6 +2247,7 @@ Resources:
       Action: lambda:InvokeFunction
       FunctionName: !GetAtt SessionFunction.Arn
       Principal: apigateway.amazonaws.com
+      SourceAccount: !Sub "${AWS::AccountId}"
 
   SessionFunctionAliasPermission:
     Type: AWS::Lambda::Permission
@@ -2252,6 +2255,7 @@ Resources:
       Action: lambda:InvokeFunction
       FunctionName: !Ref SessionFunction.Alias
       Principal: apigateway.amazonaws.com
+      SourceAccount: !Sub "${AWS::AccountId}"
 
   SessionFunctionTSPermission:
     Type: AWS::Lambda::Permission
@@ -2259,6 +2263,7 @@ Resources:
       Action: lambda:InvokeFunction
       FunctionName: !GetAtt SessionFunctionTS.Arn
       Principal: apigateway.amazonaws.com
+      SourceAccount: !Sub "${AWS::AccountId}"
 
   SessionFunctionTSAliasPermission:
     Type: AWS::Lambda::Permission
@@ -2266,6 +2271,7 @@ Resources:
       Action: lambda:InvokeFunction
       FunctionName: !Ref SessionFunctionTS.Alias
       Principal: apigateway.amazonaws.com
+      SourceAccount: !Sub "${AWS::AccountId}"
 
   AccessTokenFunctionPermission:
     Type: AWS::Lambda::Permission
@@ -2273,6 +2279,7 @@ Resources:
       Action: lambda:InvokeFunction
       FunctionName: !GetAtt AccessTokenFunction.Arn
       Principal: apigateway.amazonaws.com
+      SourceAccount: !Sub "${AWS::AccountId}"
 
   AccessTokenFunctionAliasPermission:
     Type: AWS::Lambda::Permission
@@ -2280,6 +2287,7 @@ Resources:
       Action: lambda:InvokeFunction
       FunctionName: !Ref AccessTokenFunction.Alias
       Principal: apigateway.amazonaws.com
+      SourceAccount: !Sub "${AWS::AccountId}"
 
   AuthorizationFunctionPermission:
     Type: AWS::Lambda::Permission
@@ -2287,6 +2295,7 @@ Resources:
       Action: lambda:InvokeFunction
       FunctionName: !GetAtt AuthorizationFunction.Arn
       Principal: apigateway.amazonaws.com
+      SourceAccount: !Sub "${AWS::AccountId}"
 
   AuthorizationFunctionAliasPermission:
     Type: AWS::Lambda::Permission
@@ -2294,6 +2303,7 @@ Resources:
       Action: lambda:InvokeFunction
       FunctionName: !Ref AuthorizationFunction.Alias
       Principal: apigateway.amazonaws.com
+      SourceAccount: !Sub "${AWS::AccountId}"
 
   AuthorizationFunctionTSPermission:
     Type: AWS::Lambda::Permission
@@ -2301,6 +2311,7 @@ Resources:
       Action: lambda:InvokeFunction
       FunctionName: !GetAtt AuthorizationFunctionTS.Arn
       Principal: apigateway.amazonaws.com
+      SourceAccount: !Sub "${AWS::AccountId}"
 
   AuthorizationFunctionTSAliasPermission:
     Type: AWS::Lambda::Permission
@@ -2308,6 +2319,7 @@ Resources:
       Action: lambda:InvokeFunction
       FunctionName: !Ref AuthorizationFunctionTS.Alias
       Principal: apigateway.amazonaws.com
+      SourceAccount: !Sub "${AWS::AccountId}"
 
   LoggingKmsKey:
     Type: AWS::KMS::Key
@@ -2394,6 +2406,7 @@ Resources:
       Action: lambda:InvokeFunction
       FunctionName: !GetAtt CreateAuthCodeFunction.Arn
       Principal: apigateway.amazonaws.com
+      SourceAccount: !Sub "${AWS::AccountId}"
 
   PreMergeDevOnlyApi:
     Type: AWS::Serverless::Api
