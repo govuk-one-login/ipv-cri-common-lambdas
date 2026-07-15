@@ -31,7 +31,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        cri-provider: ["PassportTokenProvider","DrivingLicenceTokenProvider","FraudTokenProvider","AddressCriTokenProvider"]
+        cri-provider: ["PassportTokenProvider","DrivingLicenceTokenProvider","FraudTokenProvider"]
     uses: ./.github/workflows/run-pact-tests-java.yml
     with:
       cri-provider: ${{ matrix.cri-provider }}
@@ -45,7 +45,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        cri-provider: ["ExperianKbvCriTokenProvider","NinoCriTokenProvider"]
+        cri-provider: ["ExperianKbvCriTokenProvider","NinoCriTokenProvider","AddressCriTokenProvider"]
     uses: ./.github/workflows/run-pact-tests-ts.yml
     with:
       cri-provider: ${{ matrix.cri-provider }}
