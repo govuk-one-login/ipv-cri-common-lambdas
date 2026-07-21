@@ -8,6 +8,8 @@ The automated deployments are triggered on a push to main after PR approval and 
 
 ## Required GitHub secrets:
 
+test
+
 Common CRI secrets for dev environments:
 
 | Secret                                             | Description            |
