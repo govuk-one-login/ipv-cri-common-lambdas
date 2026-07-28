@@ -137,4 +137,25 @@ export const journeyConfig: Record<string, CriConfig> = {
             }
         },
     },
+    DRIVING_LICENSE_HAPPY: {
+        completeCri: async function ({ sessionId }) {
+            const response = await invokeApi("private", {
+                method: "POST",
+                path: "/check-driving-licence",
+                headers: { session_id: sessionId },
+                jsonBody: {
+                    drivingLicenceNumber: "12345678",
+                    postcode: "BA2 5AA",
+                    licenceIssuer: "DVA",
+                    forenames: "KENNETH",
+                    surname: "DECERQUEIRA",
+                    dateOfBirth: "1965-07-08",
+                    issueDate: "2018-04-19",
+                    expiryDate: "2042-10-01",
+                },
+            });
+
+            assert(response.status === 200);
+        },
+    },
 };
