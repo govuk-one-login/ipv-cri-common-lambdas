@@ -44,10 +44,6 @@ describe(`Completes ${input.journeyIdentifier} OAuth journey`, { concurrency: fa
         const response = await invokeApi("private", {
             method: "POST",
             path: "/session",
-            headers: {
-                // Experian KBV CRI requires this
-                "X-Forwarded-For": "0.0.0.0",
-            },
             jsonBody: {
                 request: environment.sessionJar,
                 client_id: environment.clientId,
