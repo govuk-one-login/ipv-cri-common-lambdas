@@ -2,9 +2,7 @@
   "name": "ipv-cri-common-lambdas",
   "type": "module",
   "workspaces": [
-    "lambdas",
-    "test-resources",
-    "test-resources/headless-journey-script"
+    "lambdas"
   ],
   "devDependencies": {
     "@eslint/js": "^10.0.1",
