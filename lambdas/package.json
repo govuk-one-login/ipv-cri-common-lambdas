@@ -27,7 +27,7 @@
         "@aws-sdk/lib-dynamodb": "3.1048.0",
         "@govuk-one-login/cri-audit": "1.0.3",
         "@govuk-one-login/cri-logger": "1.0.1",
-        "@govuk-one-login/cri-metrics": "1.0.1",
+        "@govuk-one-login/cri-metrics": "1.0.3",
         "@middy/core": "4.7.0",
         "aws-sigv4-fetch": "4.4.1",
         "esbuild": "0.28.1",
