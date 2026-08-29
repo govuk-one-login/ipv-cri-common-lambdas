@@ -1,0 +1,42 @@
+CodeDeployServiceRole:
+  Type: AWS::IAM::Role
+  Properties:
+    AssumeRolePolicyDocument:
+      Version: "2012-10-17"
+      Statement:
+        - Action:
+            - sts:AssumeRole
+          Effect: Allow
+          Principal:
+            Service:
+              - codedeploy.amazonaws.com
+    ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/service-role/AWSCodeDeployRoleForLambda
+    PermissionsBoundary: !If [ UsePermissionsBoundary, !Ref PermissionsBoundary, !Ref AWS::NoValue ]
+
+LoggingKmsKey:
+  Type: AWS::KMS::Key
+  Properties:
+    EnableKeyRotation: true
+    KeyPolicy:
+      Version: 2012-10-17
+      Statement:
+        - Effect: Allow
+          Principal:
+            AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
+          Action:
+            - kms:*
+          Resource: "*"
+        - Effect: Allow
+          Principal:
+            Service: !Sub "logs.${AWS::Region}.amazonaws.com"
+          Action:
+            - "kms:Encrypt*"
+            - "kms:Decrypt*"
+            - "kms:ReEncrypt*"
+            - "kms:GenerateDataKey*"
+            - "kms:Describe*"
+          Resource: "*"
+          Condition:
+            ArnLike:
+              "kms:EncryptionContext:aws:logs:arn": !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*"

@@ -1,0 +1,434 @@
+CustomerManagedKey:
+  di-ipv-cri-address-api:
+    useCMK: true
+  di-ipv-cri-check-hmrc-api:
+    useCMK: true
+  di-ipv-cri-kbv-api:
+    useCMK: true
+  di-ipv-cri-fraud-api:
+    useCMK: false
+  di-ipv-cri-dl-api:
+    useCMK: false
+  di-ipv-cri-passport-api:
+    useCMK: false
+  di-ipv-cri-kbv-hmrc-api:
+    useCMK: false
+
+CorePublicSigningJwksEnabled:
+  di-ipv-cri-address-api:
+    dev: true
+    build: true
+    staging: true
+    integration: true
+    production: true
+  di-ipv-cri-fraud-api:
+    dev: true
+    build: true
+    staging: true
+    integration: true
+    production: true
+  di-ipv-cri-kbv-api:
+    dev: true
+    build: true
+    staging: true
+    integration: true
+    production: true
+  di-ipv-cri-dl-api:
+    dev: true
+    build: true
+    staging: true
+    integration: true
+    production: true
+  di-ipv-cri-passport-api:
+    dev: true
+    build: true
+    staging: true
+    integration: true
+    production: true
+  di-ipv-cri-kbv-hmrc-api:
+    dev: false
+    build: false
+    staging: false
+    integration: false
+    production: false
+  di-ipv-cri-check-hmrc-api:
+    dev: true
+    build: true
+    staging: true
+    integration: true
+    production: true
+
+KeyRotationMapping:
+  di-ipv-cri-address-api:
+    dev: "true"
+    build: "true"
+    staging: "true"
+    integration: "true"
+    production: "true"
+  di-ipv-cri-fraud-api:
+    dev: "true"
+    build: "true"
+    staging: "true"
+    integration: "true"
+    production: "true"
+  di-ipv-cri-kbv-api:
+    dev: "true"
+    build: "true"
+    staging: "true"
+    integration: "true"
+    production: "true"
+  di-ipv-cri-dl-api:
+    dev: "true"
+    build: "true"
+    staging: "true"
+    integration: "true"
+    production: "true"
+  di-ipv-cri-passport-api:
+    dev: "true"
+    build: "true"
+    staging: "true"
+    integration: "true"
+    production: "true"
+  di-ipv-cri-kbv-hmrc-api:
+    dev: "false"
+    build: "false"
+    staging: "false"
+    integration: "false"
+    production: "false"
+  di-ipv-cri-check-hmrc-api:
+    dev: "true"
+    build: "true"
+    staging: "true"
+    integration: "true"
+    production: "true"
+
+KeyRotationLegacyFallBackMapping:
+  di-ipv-cri-address-api:
+    dev: "false"
+    build: "false"
+    staging: "true"
+    integration: "true"
+    production: "true"
+  di-ipv-cri-fraud-api:
+    dev: "false"
+    build: "false"
+    staging: "false"
+    integration: "false"
+    production: "false"
+  di-ipv-cri-kbv-api:
+    dev: "true"
+    build: "true"
+    staging: "true"
+    integration: "true"
+    production: "true"
+  di-ipv-cri-dl-api:
+    dev: "false"
+    build: "false"
+    staging: "false"
+    integration: "false"
+    production: "false"
+  di-ipv-cri-passport-api:
+    dev: "false"
+    build: "false"
+    staging: "false"
+    integration: "false"
+    production: "false"
+  di-ipv-cri-kbv-hmrc-api:
+    dev: "false"
+    build: "false"
+    staging: "false"
+    integration: "false"
+    production: "false"
+  di-ipv-cri-check-hmrc-api:
+    dev: "true"
+    build: "true"
+    staging: "true"
+    integration: "true"
+    production: "true"
+
+TSProvisionedConcurrencyMapping:
+  di-ipv-cri-address-api:
+    dev: 0
+    build: 0
+    staging: 0
+    integration: 0
+    production: 0
+  di-ipv-cri-fraud-api:
+    dev: 0
+    build: 0
+    staging: 0
+    integration: 0
+    production: 0
+  di-ipv-cri-kbv-api:
+    dev: 0
+    build: 0
+    staging: 0
+    integration: 0
+    production: 0
+  di-ipv-cri-dl-api:
+    dev: 0
+    build: 0
+    staging: 0
+    integration: 0
+    production: 0
+  di-ipv-cri-passport-api:
+    dev: 0
+    build: 0
+    staging: 0
+    integration: 0
+    production: 0
+  di-ipv-cri-kbv-hmrc-api:
+    dev: 0
+    build: 0
+    staging: 0
+    integration: 0
+    production: 0
+  di-ipv-cri-check-hmrc-api:
+    dev: 0
+    build: 1
+    staging: 0
+    integration: 0
+    production: 1
+
+JavaProvisionedConcurrencyMapping:
+  di-ipv-cri-address-api:
+    dev: 0
+    build: 0
+    staging: 0
+    integration: 0
+    production: 0
+  di-ipv-cri-fraud-api:
+    dev: 0
+    build: 0
+    staging: 0
+    integration: 0
+    production: 0
+  di-ipv-cri-kbv-api:
+    dev: 0
+    build: 0
+    staging: 0
+    integration: 0
+    production: 0
+  di-ipv-cri-dl-api:
+    dev: 0
+    build: 0
+    staging: 0
+    integration: 0
+    production: 0
+  di-ipv-cri-passport-api:
+    dev: 0
+    build: 0
+    staging: 0
+    integration: 0
+    production: 0
+  di-ipv-cri-kbv-hmrc-api:
+    dev: 0
+    build: 0
+    staging: 0
+    integration: 0
+    production: 0
+  di-ipv-cri-check-hmrc-api:
+    dev: 0
+    build: 0
+    staging: 0
+    integration: 0
+    production: 0
+
+JavaSnapStartMapping:
+  di-ipv-cri-address-api:
+    dev: None
+    build: None
+    staging: None
+    integration: None
+    production: None
+  di-ipv-cri-fraud-api:
+    dev: PublishedVersions
+    build: PublishedVersions
+    staging: PublishedVersions
+    integration: PublishedVersions
+    production: PublishedVersions
+  di-ipv-cri-kbv-api:
+    dev: None
+    build: None
+    staging: None
+    integration: None
+    production: None
+  di-ipv-cri-dl-api:
+    dev: PublishedVersions
+    build: PublishedVersions
+    staging: PublishedVersions
+    integration: PublishedVersions
+    production: PublishedVersions
+  di-ipv-cri-passport-api:
+    dev: PublishedVersions
+    build: PublishedVersions
+    staging: PublishedVersions
+    integration: PublishedVersions
+    production: PublishedVersions
+  di-ipv-cri-kbv-hmrc-api:
+    dev: None
+    build: None
+    staging: None
+    integration: None
+    production: None
+  di-ipv-cri-check-hmrc-api:
+    dev: None
+    build: None
+    staging: None
+    integration: None
+    production: None
+
+CriVpcMapping:
+  di-ipv-cri-address-api:
+    dev: "di-ipv-cri-pipeline-deployment"
+    build: "di-ipv-cri-pipeline-deployment"
+    staging: "di-ipv-cri-pipeline-deployment"
+    integration: "di-ipv-cri-pipeline-deployment"
+    production: "di-ipv-cri-pipeline-deployment"
+  di-ipv-cri-fraud-api:
+    dev: "di-ipv-cri-pipeline-deployment"
+    build: "di-ipv-cri-pipeline-deployment"
+    staging: "di-ipv-cri-pipeline-deployment"
+    integration: "di-ipv-cri-pipeline-deployment"
+    production: "di-ipv-cri-pipeline-deployment"
+  di-ipv-cri-kbv-api:
+    dev: "di-ipv-cri-pipeline-deployment"
+    build: "di-ipv-cri-pipeline-deployment"
+    staging: "di-ipv-cri-pipeline-deployment"
+    integration: "di-ipv-cri-pipeline-deployment"
+    production: "di-ipv-cri-pipeline-deployment"
+  di-ipv-cri-dl-api:
+    dev: "di-ipv-cri-pipeline-deployment"
+    build: "di-ipv-cri-pipeline-deployment"
+    staging: "di-ipv-cri-pipeline-deployment"
+    integration: "di-ipv-cri-pipeline-deployment"
+    production: "di-ipv-cri-pipeline-deployment"
+  di-ipv-cri-passport-api:
+    dev: "di-devplatform-deploy"
+    build: "di-devplatform-deploy"
+    staging: "di-devplatform-deploy"
+    integration: "di-devplatform-deploy"
+    production: "di-devplatform-deploy"
+  di-ipv-cri-kbv-hmrc-api:
+    dev: "di-devplatform-deploy"
+    build: "di-devplatform-deploy"
+    staging: "di-devplatform-deploy"
+    integration: "di-devplatform-deploy"
+    production: "di-devplatform-deploy"
+  di-ipv-cri-check-hmrc-api:
+    dev: "di-devplatform-deploy"
+    build: "di-devplatform-deploy"
+    staging: "di-devplatform-deploy"
+    integration: "di-devplatform-deploy"
+    production: "di-devplatform-deploy"
+
+CriAudienceMapping:
+  di-ipv-cri-address-api:
+    dev: "https://review-a.dev.account.gov.uk"
+    build: "https://review-a.build.account.gov.uk"
+    staging: "https://review-a.staging.account.gov.uk"
+    integration: "https://review-a.integration.account.gov.uk"
+    production: "https://review-a.account.gov.uk"
+  di-ipv-cri-fraud-api:
+    dev: "https://review-f.dev.account.gov.uk"
+    build: "https://review-f.build.account.gov.uk"
+    staging: "https://review-f.staging.account.gov.uk"
+    integration: "https://review-f.integration.account.gov.uk"
+    production: "https://review-f.account.gov.uk"
+  di-ipv-cri-kbv-api:
+    dev: "https://review-k.dev.account.gov.uk"
+    build: "https://review-k.build.account.gov.uk"
+    staging: "https://review-k.staging.account.gov.uk"
+    integration: "https://review-k.integration.account.gov.uk"
+    production: "https://review-k.account.gov.uk"
+  di-ipv-cri-dl-api:
+    dev: "https://review-d.dev.account.gov.uk"
+    build: "https://review-d.build.account.gov.uk"
+    staging: "https://review-d.staging.account.gov.uk"
+    integration: "https://review-d.integration.account.gov.uk"
+    production: "https://review-d.account.gov.uk"
+  di-ipv-cri-passport-api:
+    dev: "https://review-p.dev.account.gov.uk"
+    build: "https://review-p.build.account.gov.uk"
+    staging: "https://review-p.staging.account.gov.uk"
+    integration: "https://review-p.integration.account.gov.uk"
+    production: "https://review-p.account.gov.uk"
+  di-ipv-cri-kbv-hmrc-api:
+    dev: "https://review-hk.dev.account.gov.uk"
+    build: "https://review-hk.build.account.gov.uk"
+    staging: "https://review-hk.staging.account.gov.uk"
+    integration: "https://review-hk.integration.account.gov.uk"
+    production: "https://review-hk.account.gov.uk"
+  di-ipv-cri-check-hmrc-api:
+    dev: "https://review-hc.dev.account.gov.uk"
+    build: "https://review-hc.build.account.gov.uk"
+    staging: "https://review-hc.staging.account.gov.uk"
+    integration: "https://review-hc.integration.account.gov.uk"
+    production: "https://review-hc.account.gov.uk"
+
+VerifiableCredentialIssuerMapping:
+  di-ipv-cri-address-api:
+    dev: "https://review-a.dev.account.gov.uk"
+    build: "https://review-a.build.account.gov.uk"
+    staging: "https://review-a.staging.account.gov.uk"
+    integration: "https://review-a.integration.account.gov.uk"
+    production: "https://review-a.account.gov.uk"
+  di-ipv-cri-fraud-api:
+    dev: "https://review-f.dev.account.gov.uk"
+    build: "https://review-f.build.account.gov.uk"
+    staging: "https://review-f.staging.account.gov.uk"
+    integration: "https://review-f.integration.account.gov.uk"
+    production: "https://review-f.account.gov.uk"
+  di-ipv-cri-kbv-api:
+    dev: "https://review-k.dev.account.gov.uk"
+    build: "https://review-k.build.account.gov.uk"
+    staging: "https://review-k.staging.account.gov.uk"
+    integration: "https://review-k.integration.account.gov.uk"
+    production: "https://review-k.account.gov.uk"
+  di-ipv-cri-dl-api:
+    dev: "https://review-d.dev.account.gov.uk"
+    build: "https://review-d.build.account.gov.uk"
+    staging: "https://review-d.staging.account.gov.uk"
+    integration: "https://review-d.integration.account.gov.uk"
+    production: "https://review-d.account.gov.uk"
+  di-ipv-cri-passport-api:
+    dev: "https://review-p.dev.account.gov.uk"
+    build: "https://review-p.build.account.gov.uk"
+    staging: "https://review-p.staging.account.gov.uk"
+    integration: "https://review-p.integration.account.gov.uk"
+    production: "https://review-p.account.gov.uk"
+  di-ipv-cri-kbv-hmrc-api:
+    dev: "https://review-hk.dev.account.gov.uk"
+    build: "https://review-hk.build.account.gov.uk"
+    staging: "https://review-hk.staging.account.gov.uk"
+    integration: "https://review-hk.integration.account.gov.uk"
+    production: "https://review-hk.account.gov.uk"
+  di-ipv-cri-check-hmrc-api:
+    dev: "https://review-hc.dev.account.gov.uk"
+    build: "https://review-hc.build.account.gov.uk"
+    staging: "https://review-hc.staging.account.gov.uk"
+    integration: "https://review-hc.integration.account.gov.uk"
+    production: "https://review-hc.account.gov.uk"
+
+CanaryDeploymentapigatewayidMapping:
+  di-ipv-cri-check-hmrc-api:
+    privateapigwname: "check-hmrc-cri-api-private"
+    publicapigwname: "check-hmrc-cri-api-public"
+  di-ipv-cri-address-api:
+    privateapigwname: "address-cri-api-v1-PrivateAddressApi"
+    publicapigwname: "address-cri-api-v1-PublicAddressApi"
+  di-ipv-cri-kbv-api:
+    privateapigwname: "kbv-cri-private-kbv-cri-api-v1"
+    publicapigwname: "kbv-cri-kbv-cri-api-v1"
+  di-ipv-cri-kbv-hmrc-api:
+    privateapigwname: "kbv-hmrc-cri-api-PrivateApiGatewayId-placehonder"
+    publicapigwname: "kbv-hmrc-cri-api-PublicApiGatewayId-placehonder"
+  di-ipv-cri-passport-api:
+    privateapigwname: "ipv-cri-passport-api-PrivateUKPassportApi"
+    publicapigwname: "ipv-cri-passport-api-PublicUKPassportApi"
+  di-ipv-cri-dl-api:
+    privateapigwname: "dl-cri-api-v1-PrivateDLApi"
+    publicapigwname: "dl-cri-api-v1-PublicDLApi"
+  di-ipv-cri-fraud-api:
+    privateapigwname: "fraud-cri-api-v1-PrivateFraudApi"
+    publicapigwname: "fraud-cri-api-v1-PublicFraudApi"
