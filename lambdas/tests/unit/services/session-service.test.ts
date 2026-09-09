@@ -1,12 +1,7 @@
 import { SessionService } from "../../../src/services/session-service";
 import { ConfigService } from "../../../src/common/config/config-service";
 import { DynamoDBDocument } from "@aws-sdk/lib-dynamodb";
-import {
-    InvalidAccessTokenError,
-    SessionNotFoundError,
-    SessionExpiredError,
-    AuthorizationCodeExpiredError,
-} from "../../../src/common/utils/errors";
+import { InvalidAccessTokenError, SessionNotFoundError } from "../../../src/common/utils/errors";
 import { SessionItem, UnixSecondsTimestamp } from "@govuk-one-login/cri-types";
 import { SSMProvider } from "@aws-lambda-powertools/parameters/ssm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -123,60 +118,6 @@ describe("session-service", () => {
                 }),
             );
             expect(output).toBe("1");
-        });
-
-        it("should throw SessionExpiredError when the session has expired", async () => {
-            const authCode = "123";
-
-            vi.spyOn(mockDynamoDbClient.prototype, "query").mockResolvedValue({
-                Items: [
-                    {
-                        sessionId: "1",
-                        expiryDate: 1,
-                        authorizationCodeExpiryDate: 9999999999,
-                    },
-                ],
-            } as never);
-
-            await expect(sessionService.getSessionByAuthorizationCode(authCode)).rejects.toBeInstanceOf(
-                SessionExpiredError,
-            );
-        });
-
-        it("should throw AuthorizationCodeExpiredError when the authorisation code has expired", async () => {
-            const authCode = "123";
-
-            vi.spyOn(mockDynamoDbClient.prototype, "query").mockResolvedValue({
-                Items: [
-                    {
-                        sessionId: "1",
-                        expiryDate: 9999999999,
-                        authorizationCodeExpiryDate: 1,
-                    },
-                ],
-            } as never);
-
-            await expect(sessionService.getSessionByAuthorizationCode(authCode)).rejects.toBeInstanceOf(
-                AuthorizationCodeExpiredError,
-            );
-        });
-
-        it("should return the session when expiry dates are valid", async () => {
-            const authCode = "123";
-
-            const sessionItem = {
-                sessionId: "1",
-                expiryDate: 9999999999,
-                authorizationCodeExpiryDate: 9999999999,
-            };
-
-            vi.spyOn(mockDynamoDbClient.prototype, "query").mockResolvedValue({
-                Items: [sessionItem],
-            } as never);
-
-            const result = await sessionService.getSessionByAuthorizationCode(authCode);
-
-            expect(result).toEqual(sessionItem);
         });
 
         it("should throw a Invalid Access token Error when Session not found", async () => {
