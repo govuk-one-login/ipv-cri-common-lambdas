@@ -944,7 +944,7 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub "/aws/lambda/${SessionFunction}"
-      RetentionInDays: 30
+      RetentionInDays: 365
 
   SessionFunctionLogGroupSubscriptionFilterCSLS:
     Type: AWS::Logs::SubscriptionFilter
@@ -1115,7 +1115,7 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub "/aws/lambda/${SessionFunctionTS}"
-      RetentionInDays: 30
+      RetentionInDays: 365
 
   SessionFunctionLogGroupSubscriptionFilterCSLSTS:
     Type: AWS::Logs::SubscriptionFilter
@@ -1211,7 +1211,7 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub "/aws/lambda/${AuthorizationFunction}"
-      RetentionInDays: 30
+      RetentionInDays: 365
 
   AuthorizationFunctionLambdaErrors:
     Type: AWS::CloudWatch::Alarm
@@ -1335,7 +1335,7 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub "/aws/lambda/${AuthorizationFunctionTS}"
-      RetentionInDays: 30
+      RetentionInDays: 365
 
   AuthorizationFunctionLogGroupSubscriptionFilterCSLS:
     Type: AWS::Logs::SubscriptionFilter
@@ -1574,7 +1574,7 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub "/aws/lambda/${AccessTokenFunctionTS}"
-      RetentionInDays: 30
+      RetentionInDays: 365
 
   AccessTokenTSPermission:
     Type: AWS::Lambda::Permission
@@ -1596,7 +1596,7 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub "/aws/lambda/${AccessTokenFunction}"
-      RetentionInDays: 30
+      RetentionInDays: 365
 
   AccessTokenFunctionLogGroupSubscriptionFilterCSLS:
     Type: AWS::Logs::SubscriptionFilter
@@ -2456,7 +2456,7 @@ Resources:
     Condition: IsDevEnvironment
     Properties:
       LogGroupName: !Sub /aws/apigateway/${AWS::StackName}-${PreMergeDevOnlyApi}-private-AccessLogs
-      RetentionInDays: 30
+      RetentionInDays: 365
 
   ##################################################################################################
   # ipv-core-3rd-party-stubs clientId configuration (real ipv-core + real cri's + 3rd-party-stubs Only Staging)
