@@ -22,22 +22,22 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up JDK
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           java-version: 17
           distribution: zulu
           cache: gradle
 
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: 3.11.2
 
       - name: Setup Gradle
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/actions/setup-gradle@b9bee63ef481cc545e4517ec730544a4d8b1dfa0 # v6.4.0
         with:
           gradle-version: 7.5.1
 
@@ -49,7 +49,7 @@ jobs:
       - name: Cache build
         if: ${{ always() }}
         id: cache-commom-lambda-build
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             out/
@@ -109,12 +109,12 @@ jobs:
     steps:
       - name: Checkout code
         if: matrix.ENABLED == 'true'
-        uses: actions/checkout@v3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Cache restore common lambdas build
         if: ${{ matrix.ENABLED == 'true' }}
         id: cache-common-lambdas-restore
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             out/
@@ -122,20 +122,20 @@ jobs:
 
       - name: Assume temporary AWS role
         if: matrix.ENABLED == 'true'
-        uses: aws-actions/configure-aws-credentials@v2
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
         with:
           role-to-assume: ${{ secrets[matrix.GH_ACTIONS_ROLE_ARN_SECRET] }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Setup Python
         if: matrix.ENABLED == 'true'
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: 3.11.2
 
       - name: Setup SAM
         if: matrix.ENABLED == 'true'
-        uses: aws-actions/setup-sam@v2
+        uses: aws-actions/setup-sam@89ddb14d60e682855e3fea4be85b3c56485de310 # v3
         with:
           version: 1.131.0
 
@@ -145,7 +145,7 @@ jobs:
 
       - name: Deploy SAM app
         if: matrix.ENABLED == 'true'
-        uses: govuk-one-login/devplatform-upload-action@v3.8.1
+        uses: govuk-one-login/devplatform-upload-action/sam@7076683de6e38a0ecdfbcd273b510a47c7b9489c # v4.4.0
         with:
           artifact-bucket-name: "${{ secrets[matrix.ARTIFACT_SOURCE_BUCKET_NAME_SECRET] }}"
           signing-profile-name: "${{ secrets[matrix.SIGNING_PROFILE_NAME] }}"
@@ -205,12 +205,12 @@ jobs:
     steps:
       - name: Checkout code
         if: matrix.ENABLED == 'true'
-        uses: actions/checkout@v3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Cache restore common lambdas build
         if: ${{ matrix.ENABLED == 'true' }}
         id: cache-common-lambdas-restore
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             out/
@@ -218,20 +218,20 @@ jobs:
 
       - name: Assume temporary AWS role
         if: matrix.ENABLED == 'true'
-        uses: aws-actions/configure-aws-credentials@v2
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
         with:
           role-to-assume: ${{ secrets[matrix.GH_ACTIONS_ROLE_ARN_SECRET] }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Setup Python
         if: matrix.ENABLED == 'true'
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: 3.11.2
 
       - name: Setup SAM
         if: matrix.ENABLED == 'true'
-        uses: aws-actions/setup-sam@v2
+        uses: aws-actions/setup-sam@89ddb14d60e682855e3fea4be85b3c56485de310 # v3
         with:
           version: 1.131.0
 
@@ -241,7 +241,7 @@ jobs:
 
       - name: Deploy SAM app
         if: matrix.ENABLED == 'true'
-        uses: govuk-one-login/devplatform-upload-action@v3.8.1
+        uses: govuk-one-login/devplatform-upload-action/sam@7076683de6e38a0ecdfbcd273b510a47c7b9489c # v4.4.0
         with:
           artifact-bucket-name: "${{ secrets[matrix.ARTIFACT_SOURCE_BUCKET_NAME_SECRET] }}"
           signing-profile-name: "${{ secrets[matrix.SIGNING_PROFILE_NAME] }}"
