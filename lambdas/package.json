@@ -28,7 +28,7 @@
         "@govuk-one-login/cri-audit": "1.0.3",
         "@govuk-one-login/cri-logger": "1.0.1",
         "@govuk-one-login/cri-metrics": "1.0.1",
-        "@middy/core": "4.7.0",
+        "@middy/core": "7.6.7",
         "aws-sigv4-fetch": "4.4.1",
         "esbuild": "0.28.1",
         "jose": "6.2.3",
