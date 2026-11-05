@@ -12,6 +12,7 @@ Metadata:
         - E3031
         - E3033
         - E1020
+        - E3724 #Due to updated linting it is now showing "Additional properties are not allowed ('CodeSigningConfigArn' was unexpected)" but it's the correct in AWS documentation
 
 Parameters:
   CodeSigningConfigArn:
@@ -62,10 +63,10 @@ Parameters:
     Type: String
     Default: "none"
   VpcStackNameOverride:
-    Description: "The name of the stack containing VPC infrastructure. This parameter will be renamed to VpcStackName 
-    in line with a similar parameter set on the pipeline. However, some of the pipelines currently set VpcStackName to 
-    None, which is not a valid value for the parameter in this template. This parameter will be renamed once the 
-    pipelines are updated to set the VpcStackName explicitly, or not at all (thus relying on the default value in the 
+    Description: "The name of the stack containing VPC infrastructure. This parameter will be renamed to VpcStackName
+    in line with a similar parameter set on the pipeline. However, some of the pipelines currently set VpcStackName to
+    None, which is not a valid value for the parameter in this template. This parameter will be renamed once the
+    pipelines are updated to set the VpcStackName explicitly, or not at all (thus relying on the default value in the
     template)."
     Type: String
     Default: "cri-vpc"
@@ -964,9 +965,9 @@ Resources:
       AlarmName: !Sub "${AWS::StackName}-SessionFunctionLambdaErrors"
       AlarmDescription: !Sub "Trigger an alarm when lambda errors occurs"
       ActionsEnabled: true
-      AlarmActions: 
+      AlarmActions:
         - Fn::ImportValue: !Sub "${BuildNotificationStackName}-WarningAlertsTopicArn"
-      OKActions: 
+      OKActions:
         - Fn::ImportValue: !Sub "${BuildNotificationStackName}-WarningAlertsTopicArn"
       InsufficientDataActions: []
       MetricName: Errors
@@ -988,9 +989,9 @@ Resources:
     Condition: UseCanaryDeploymentAlarms
     Properties:
       ActionsEnabled: true
-      AlarmActions: 
+      AlarmActions:
         - Fn::ImportValue: !Sub "${BuildNotificationStackName}-WarningAlertsTopicArn"
-      OKActions:  
+      OKActions:
         - Fn::ImportValue: !Sub "${BuildNotificationStackName}-WarningAlertsTopicArn"
       AlarmName: !Sub "${AWS::StackName}-SessionFunctionCanary5xxErrors"
       AlarmDescription: !Sub "SessionFunction Lambda returning 5xx response."
@@ -1135,9 +1136,9 @@ Resources:
       AlarmName: !Sub "${AWS::StackName}-SessionFunctionTSLambdaErrors"
       AlarmDescription: !Sub "Trigger an alarm when lambda errors occurs"
       ActionsEnabled: true
-      AlarmActions: 
+      AlarmActions:
         - Fn::ImportValue: !Sub "${BuildNotificationStackName}-WarningAlertsTopicArn"
-      OKActions: 
+      OKActions:
         - Fn::ImportValue: !Sub "${BuildNotificationStackName}-WarningAlertsTopicArn"
       InsufficientDataActions: []
       MetricName: Errors
@@ -1220,9 +1221,9 @@ Resources:
       AlarmName: !Sub "${AWS::StackName}-AuthorizationFunctionLambdaErrors"
       AlarmDescription: !Sub "Trigger an alarm when lambda errors occurs"
       ActionsEnabled: true
-      AlarmActions: 
+      AlarmActions:
         - Fn::ImportValue: !Sub "${BuildNotificationStackName}-WarningAlertsTopicArn"
-      OKActions: 
+      OKActions:
         - Fn::ImportValue: !Sub "${BuildNotificationStackName}-WarningAlertsTopicArn"
       InsufficientDataActions: []
       MetricName: Errors
@@ -1244,9 +1245,9 @@ Resources:
     Condition: UseCanaryDeploymentAlarms
     Properties:
       ActionsEnabled: true
-      AlarmActions: 
+      AlarmActions:
         - Fn::ImportValue: !Sub "${BuildNotificationStackName}-WarningAlertsTopicArn"
-      OKActions: 
+      OKActions:
         - Fn::ImportValue: !Sub "${BuildNotificationStackName}-WarningAlertsTopicArn"
       AlarmName: !Sub "${AWS::StackName}-AuthorizationFunctionCanary5xxErrors"
       AlarmDescription: !Sub "AuthorizationFunction Lambda returning 5xx response."
@@ -1366,9 +1367,9 @@ Resources:
       AlarmName: !Sub "${AWS::StackName}-AuthorizationFunctionTSLambdaErrors"
       AlarmDescription: !Sub "Trigger an alarm when lambda errors occurs"
       ActionsEnabled: true
-      AlarmActions: 
+      AlarmActions:
         - Fn::ImportValue: !Sub "${BuildNotificationStackName}-WarningAlertsTopicArn"
-      OKActions: 
+      OKActions:
         - Fn::ImportValue: !Sub "${BuildNotificationStackName}-WarningAlertsTopicArn"
       InsufficientDataActions: []
       MetricName: Errors
@@ -1452,9 +1453,9 @@ Resources:
       AlarmName: !Sub "${AWS::StackName}-AccessTokenFunctionLambdaErrors"
       AlarmDescription: !Sub "Trigger an alarm when lambda errors occurs"
       ActionsEnabled: true
-      AlarmActions: 
+      AlarmActions:
         - Fn::ImportValue: !Sub "${BuildNotificationStackName}-WarningAlertsTopicArn"
-      OKActions: 
+      OKActions:
         - Fn::ImportValue: !Sub "${BuildNotificationStackName}-WarningAlertsTopicArn"
       InsufficientDataActions: []
       MetricName: Errors
@@ -1476,9 +1477,9 @@ Resources:
     Condition: UseCanaryDeploymentAlarms
     Properties:
       ActionsEnabled: true
-      AlarmActions: 
+      AlarmActions:
         - Fn::ImportValue: !Sub "${BuildNotificationStackName}-WarningAlertsTopicArn"
-      OKActions: 
+      OKActions:
         - Fn::ImportValue: !Sub "${BuildNotificationStackName}-WarningAlertsTopicArn"
       AlarmName: !Sub "${AWS::StackName}-AccessTokenFunctionCanary5xxErrors"
       AlarmDescription: !Sub "AccessTokenFunction Lambda returning 5xx response."
@@ -1605,7 +1606,7 @@ Resources:
       DestinationArn: !If
         - UseNewCSLSDestinationArn
         - "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2"
-        - "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython" 
+        - "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython"
       FilterPattern: ""
       LogGroupName: !Ref AccessTokenFunctionLogGroup
 
@@ -1616,7 +1617,7 @@ Resources:
       DestinationArn: !If
         - UseNewCSLSDestinationArn
         - "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2"
-        - "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython" 
+        - "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython"
       FilterPattern: ""
       LogGroupName: !Ref AccessTokenTSFunctionLogGroup
 
@@ -1627,9 +1628,9 @@ Resources:
       AlarmName: !Sub "${AWS::StackName}-AccessTokenFunctionTSLambdaErrors"
       AlarmDescription: !Sub "Trigger an alarm when lambda errors occurs"
       ActionsEnabled: true
-      AlarmActions: 
+      AlarmActions:
         - Fn::ImportValue: !Sub "${BuildNotificationStackName}-WarningAlertsTopicArn"
-      OKActions: 
+      OKActions:
         - Fn::ImportValue: !Sub "${BuildNotificationStackName}-WarningAlertsTopicArn"
       InsufficientDataActions: []
       MetricName: Errors
